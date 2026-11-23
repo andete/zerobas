@@ -83,6 +83,11 @@ Measured 2026-11-23 on the HB-F900 and NMS 8250 (MSX2) and the FS-A1WSX (MSX2+):
 |---|---|---|
 | every rule | holds [M] | holds [M] |
 
+
+**On the turbo R** (FS-A1GT and FS-A1ST, which agree; measured 2026-11-23, D-TRSPEC: [AE_trall/xtap1.out](../../scratchpad/AE_trall/xtap1.out), [AE_trall/xtap5.out](../../scratchpad/AE_trall/xtap5.out), [AE_trall/b7tape.out](../../scratchpad/AE_trall/b7tape.out); this page's rules run on that capture by [trnew_recheck.py](../../scratchpad/trnew_recheck.py): [AE_trnew_recheck.out](../../scratchpad/AE_trnew_recheck.out); overview: [turbor/remeasured.md](../turbor/remeasured.md)):
+
+- Every TAPIN returns with the carry SET and A as entered (the $A7 the TAPION before it left), F as entered with the carry set ($01; $ED from $FF): no byte is read (XT 24-31, XX 10-13) [M]. R-TP-A fails [M]. The b7tape round trip (TAPOON, 16 x TAPOUT, TAPOOF, TAPION, 16 x TAPIN, TAPIOF) gets the carry on every call and no byte back [M]. The turbo R has no cassette port: openMSX's turbo R machines have no cassette player (`@tape` reports "There is no cassetteplayer available." and acknowledges with 2), so what would reach a tape cannot be measured.
+
 ## Open (not measured)
 
 - **[A]** The carry set on entry was measured for four bytes ($00, $55, $AA, $FF), after a long leader,

@@ -1,0 +1,161 @@
+===== xtap1: A1GT == A1ST
+ 0 STMOTR A00 F00 EI0 pc50       A1GT : A 00 F 00 BC 1357 DE 9BDF HL 2468 IFF 0 portC 50
+                                VG-8020: A 09 F 54 BC 1357 DE 9BDF HL 2468 IFF 0 portC 50
+                                A1WSX: A 09 F 54 BC 1357 DE 9BDF HL 2468 IFF 0 portC 50
+ 1 STMOTR A01 F00 EI0 pc50       A1GT : A 01 F 00 BC 1357 DE 9BDF HL 2468 IFF 0 portC 50
+                                VG-8020: A 08 F 10 BC 1357 DE 9BDF HL 2468 IFF 0 portC 40
+                                A1WSX: A 08 F 10 BC 1357 DE 9BDF HL 2468 IFF 0 portC 40
+ 2 STMOTR A00 F00 EI0 pc40       A1GT : A 00 F 00 BC 1357 DE 9BDF HL 2468 IFF 0 portC 40
+                                VG-8020: A 09 F 54 BC 1357 DE 9BDF HL 2468 IFF 0 portC 50
+                                A1WSX: A 09 F 54 BC 1357 DE 9BDF HL 2468 IFF 0 portC 50
+ 3 STMOTR A01 F00 EI0 pc40       A1GT : A 01 F 00 BC 1357 DE 9BDF HL 2468 IFF 0 portC 40
+                                VG-8020: A 08 F 10 BC 1357 DE 9BDF HL 2468 IFF 0 portC 40
+                                A1WSX: A 08 F 10 BC 1357 DE 9BDF HL 2468 IFF 0 portC 40
+ 4 STMOTR AFF F00 EI0 pc50       A1GT : A FF F 00 BC 1357 DE 9BDF HL 2468 IFF 0 portC 50
+                                VG-8020: A 08 F 10 BC 1357 DE 9BDF HL 2468 IFF 0 portC 40
+                                A1WSX: A 08 F 10 BC 1357 DE 9BDF HL 2468 IFF 0 portC 40
+ 5 STMOTR AFF F00 EI0 pc40       A1GT : A FF F 00 BC 1357 DE 9BDF HL 2468 IFF 0 portC 40
+                                VG-8020: A 09 F 54 BC 1357 DE 9BDF HL 2468 IFF 0 portC 50
+                                A1WSX: A 09 F 54 BC 1357 DE 9BDF HL 2468 IFF 0 portC 50
+ 6 STMOTR A80 F00 EI0 pc50       A1GT : A 80 F 00 BC 1357 DE 9BDF HL 2468 IFF 0 portC 50
+                                VG-8020: A 08 F 10 BC 1357 DE 9BDF HL 2468 IFF 0 portC 40
+                                A1WSX: A 08 F 10 BC 1357 DE 9BDF HL 2468 IFF 0 portC 40
+ 7 STMOTR A02 F00 EI0 pc40       A1GT : A 02 F 00 BC 1357 DE 9BDF HL 2468 IFF 0 portC 40
+                                VG-8020: A 08 F 10 BC 1357 DE 9BDF HL 2468 IFF 0 portC 40
+                                A1WSX: A 08 F 10 BC 1357 DE 9BDF HL 2468 IFF 0 portC 40
+ 8 STMOTR A01 FFF EI1 pc50       A1GT : A 01 F FF BC 1357 DE 9BDF HL 2468 IFF 1 portC 50
+                                VG-8020: A 08 F 10 BC 1357 DE 9BDF HL 2468 IFF 1 portC 40
+                                A1WSX: A 08 F 10 BC 1357 DE 9BDF HL 2468 IFF 1 portC 40
+ 9 TAPIOF AA7 F00 EI0 pc40       A1GT : A A7 F 01 BC 1357 DE 9BDF HL 2468 IFF 0 portC 40
+                                VG-8020: A A7 F 00 BC 1357 DE 9BDF HL 2468 IFF 1 portC 50
+                                A1WSX: A A7 F 00 BC 1357 DE 9BDF HL 2468 IFF 1 portC 50
+10 TAPIOF AA7 FFF EI1 pc40       A1GT : A A7 F ED BC 1357 DE 9BDF HL 2468 IFF 1 portC 40
+                                VG-8020: A A7 F FF BC 1357 DE 9BDF HL 2468 IFF 1 portC 50
+                                A1WSX: A A7 F FF BC 1357 DE 9BDF HL 2468 IFF 1 portC 50
+11 TAPOOF AA7 F00 EI0 pc40       A1GT : A A7 F 01 BC 1357 DE 9BDF HL 2468 IFF 0 portC 40
+                                VG-8020: A A7 F 00 BC 1357 DE 9BDF HL 2468 IFF 1 portC 5A
+                                A1WSX: A A7 F 00 BC 1357 DE 9BDF HL 2468 IFF 1 portC 50
+12 TAPOOF AA7 FFF EI1 pc40       A1GT : A A7 F ED BC 1357 DE 9BDF HL 2468 IFF 1 portC 40
+                                VG-8020: A A7 F FF BC 1357 DE 9BDF HL 2468 IFF 1 portC 5A
+                                A1WSX: A A7 F FF BC 1357 DE 9BDF HL 2468 IFF 1 portC 5A
+13 TAPOON AFF F00 EI1 pc50       A1GT : A FF F 09 BC 1357 DE 1234 HL 2468 IFF 1 portC 50
+                                VG-8020: A 10 F 10 BC 0000 DE 1234 HL 0000 IFF 0 portC 47
+                                A1WSX: A 10 F 10 BC 0000 DE 1234 HL 0000 IFF 0 portC 47
+14 TAPOUT A00 EI0                A1GT : A 00 F 09
+                                VG-8020: A 10 F 10
+                                A1WSX: A 10 F 10
+15 TAPOUT A55 EI0                A1GT : A 55 F 09
+                                VG-8020: A 10 F 10
+                                A1WSX: A 10 F 10
+16 TAPOUT AAA EI0                A1GT : A AA F 09
+                                VG-8020: A 10 F 10
+                                A1WSX: A 10 F 10
+17 TAPOUT AFF EI0                A1GT : A FF F 09
+                                VG-8020: A 10 F 10
+                                A1WSX: A 10 F 10
+18 TAPOUT A01 EI0                A1GT : A 01 F 09
+                                VG-8020: A 10 F 10
+                                A1WSX: A 10 F 10
+19 TAPOUT A80 EI0                A1GT : A 80 F 09
+                                VG-8020: A 10 F 10
+                                A1WSX: A 10 F 10
+20 TAPOUT A7F EI0                A1GT : A 7F F 09
+                                VG-8020: A 10 F 10
+                                A1WSX: A 10 F 10
+21 TAPOUT AFE EI0                A1GT : A FE F 09
+                                VG-8020: A 10 F 10
+                                A1WSX: A 10 F 10
+22 PORTC                         A1GT : portC 50
+                                VG-8020: portC 47
+                                A1WSX: portC 47
+23 TAPOOF AA7 F00 EI0            A1GT : A A7 F 01 BC 1357 DE 9BDF HL 2468 IFF 0 portC 50
+                                VG-8020: A A7 F 00 BC 1357 DE 9BDF HL 2468 IFF 1 portC 57
+                                A1WSX: A A7 F 00 BC 1357 DE 9BDF HL 2468 IFF 1 portC 5A
+24 TAPION AA7 F00 EI1 pc50       A1GT : A A7 F 01 BC 1357 DE 4321 HL 2468 IFF 1 portC 5A
+                                VG-8020: A 22 F 24 BC 25AE DE 3700 HL 4926 IFF 0 portC 47
+                                A1WSX: A 22 F 24 BC 25AE DE 3700 HL 4926 IFF 0 portC 47
+25 TAPIN  A00 EI0                A1GT : A A7 F 01
+                                VG-8020: A 00 F 10
+                                A1WSX: A 00 F 10
+26 TAPIN  A01 EI0                A1GT : A A7 F 01
+                                VG-8020: A 55 F 10
+                                A1WSX: A 55 F 10
+27 TAPIN  A02 EI0                A1GT : A A7 F 01
+                                VG-8020: A AA F 10
+                                A1WSX: A AA F 10
+28 TAPIN  A03 EI0                A1GT : A A7 F 01
+                                VG-8020: A FF F 10
+                                A1WSX: A FF F 10
+29 TAPIN  A04 EI0                A1GT : A A7 F 01
+                                VG-8020: A 01 F 10
+                                A1WSX: A 01 F 10
+30 TAPIN  A05 EI0                A1GT : A A7 F 01
+                                VG-8020: A 80 F 10
+                                A1WSX: A 80 F 10
+31 TAPIN  A06 EI0                A1GT : A A7 F 01
+                                VG-8020: A 7F F 10
+                                A1WSX: A 7F F 10
+32 TAPIN  A07 EI0                A1GT : A A7 F 01
+                                VG-8020: A FE F 10
+                                A1WSX: A FE F 10
+33 PORTC                         A1GT : portC 5A
+                                VG-8020: portC 47
+                                A1WSX: portC 47
+34 TAPIOF AA7 F00 EI0            A1GT : A A7 F 01 BC 1357 DE 9BDF HL 2468 IFF 0 portC 5A
+                                VG-8020: A A7 F 00 BC 1357 DE 9BDF HL 2468 IFF 1 portC 5A
+                                A1WSX: A A7 F 00 BC 1357 DE 9BDF HL 2468 IFF 1 portC 57
+===== xtap5: A1GT == A1ST
+ 0 STMOTR AFF F00 EI0 pcB0       A1GT : A FF F 00 BC 1357 DE 9BDF HL 2468 IFF 0 portC B0
+                                VG-8020: A 08 F 10 BC 1357 DE 9BDF HL 2468 IFF 0 portC A0
+                                A1WSX: A 08 F 10 BC 1357 DE 9BDF HL 2468 IFF 0 portC A0
+ 1 STMOTR A01 F00 EI0 pcF0       A1GT : A 01 F 00 BC 1357 DE 9BDF HL 2468 IFF 0 portC F0
+                                VG-8020: A 08 F 10 BC 1357 DE 9BDF HL 2468 IFF 0 portC E0
+                                A1WSX: A 08 F 10 BC 1357 DE 9BDF HL 2468 IFF 0 portC E0
+ 2 STMOTR A00 F00 EI0 pc48       A1GT : A 00 F 00 BC 1357 DE 9BDF HL 2468 IFF 0 portC 48
+                                VG-8020: A 09 F 54 BC 1357 DE 9BDF HL 2468 IFF 0 portC 58
+                                A1WSX: A 09 F 54 BC 1357 DE 9BDF HL 2468 IFF 0 portC 58
+ 3 TAPOON AFF FFF EI0 pc4A       A1GT : A FF F ED BC 1357 DE 1234 HL 2468 IFF 0 portC 4A
+                                VG-8020: A 10 F 10 BC 0000 DE 1234 HL 0000 IFF 0 portC 47
+                                A1WSX: A 10 F 10 BC 0000 DE 1234 HL 0000 IFF 0 portC 47
+ 4 TAPOUT A00 FFF EI0            A1GT : A 00 F ED
+                                VG-8020: A 10 F 10
+                                A1WSX: A 10 F 10
+ 5 TAPOUT A55 FFF EI0            A1GT : A 55 F ED
+                                VG-8020: A 10 F 10
+                                A1WSX: A 10 F 10
+ 6 TAPOUT AAA FFF EI0            A1GT : A AA F ED
+                                VG-8020: A 10 F 10
+                                A1WSX: A 10 F 10
+ 7 TAPOUT AFF FFF EI0            A1GT : A FF F ED
+                                VG-8020: A 10 F 10
+                                A1WSX: A 10 F 10
+ 8 PORTC                         A1GT : portC 4A
+                                VG-8020: portC 47
+                                A1WSX: portC 47
+ 9 TAPOOF AA7 F00 EI0            A1GT : A A7 F 01 BC 1357 DE 9BDF HL 2468 IFF 0 portC 4A
+                                VG-8020: A A7 F 00 BC 1357 DE 9BDF HL 2468 IFF 1 portC 5A
+                                A1WSX: A A7 F 00 BC 1357 DE 9BDF HL 2468 IFF 1 portC 57
+10 TAPION AA7 FFF EI0 pcF8       A1GT : A A7 F ED BC 1357 DE 4321 HL 2468 IFF 0 portC F8
+                                VG-8020: A 22 F 24 BC 25AE DE 3700 HL 4926 IFF 0 portC E7
+                                A1WSX: A 22 F 24 BC 25AE DE 3700 HL 4926 IFF 0 portC E7
+11 TAPIN  A00 FFF EI0            A1GT : A A7 F ED
+                                VG-8020: A 00 F 10
+                                A1WSX: A 00 F 10
+12 TAPIN  A01 FFF EI0            A1GT : A A7 F ED
+                                VG-8020: A 55 F 10
+                                A1WSX: A 55 F 10
+13 TAPIN  A02 FFF EI0            A1GT : A A7 F ED
+                                VG-8020: A AA F 10
+                                A1WSX: A AA F 10
+14 TAPIN  A03 FFF EI0            A1GT : A A7 F ED
+                                VG-8020: A FF F 10
+                                A1WSX: A FF F 10
+15 PORTC                         A1GT : portC F8
+                                VG-8020: portC E7
+                                A1WSX: portC E7
+16 TAPIOF AA7 F00 EI0            A1GT : A A7 F 01 BC 1357 DE 9BDF HL 2468 IFF 0 portC F8
+                                VG-8020: A A7 F 00 BC 1357 DE 9BDF HL 2468 IFF 1 portC FA
+                                A1WSX: A A7 F 00 BC 1357 DE 9BDF HL 2468 IFF 1 portC FA
+===== b7tape: A1GT == A1ST
+TAPOON CF FF  TAPOUT CF-or FF  TAPION CF FF  TAPIN CF-or FF  bytes as written 00  bytes read ffffffffffffffffffffffffffffffff
+VG-8020 (AE_cbios_review_d23.out, b7tape nodisk): 010f1d2518 bytes 0018ff186142370201031800000000e0

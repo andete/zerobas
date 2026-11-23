@@ -88,6 +88,11 @@ Measured 2026-11-23 on the HB-F900 and NMS 8250 (MSX2) and the FS-A1WSX (MSX2+):
 |---|---|---|
 | every rule | holds [M] | holds [M] |
 
+
+**On the turbo R** (FS-A1GT and FS-A1ST, which agree; measured 2026-11-23, D-TRSPEC: [AE_trall/xtap1.out](../../scratchpad/AE_trall/xtap1.out), [AE_trall/xtap2.out](../../scratchpad/AE_trall/xtap2.out), [AE_trall/xtap3.out](../../scratchpad/AE_trall/xtap3.out), [AE_trall/xtap4.out](../../scratchpad/AE_trall/xtap4.out), [AE_trall/xtap5.out](../../scratchpad/AE_trall/xtap5.out); this page's rules run on that capture by [trnew_recheck.py](../../scratchpad/trnew_recheck.py): [AE_trnew_recheck.out](../../scratchpad/AE_trnew_recheck.out); overview: [turbor/remeasured.md](../turbor/remeasured.md)):
+
+- TAPOON returns with the carry SET and changes nothing else visible: A, BC, DE and HL as entered, port C as found (the motor not started, the low nibble not set to 7), the interrupt state kept (entered with interrupts on, still on; the VG-8020 and the A1WSX return with them off) [M]. F: $00 gives $01 with A $00 (XV) and $09 with A $FF (XT 13), $FF gives $ED (XX) [M]. R-TN-OK, R-TN-MOTOR and R-TN-PORT fail; R-TN-DE holds [M]. The turbo R has no cassette port: openMSX's turbo R machines have no cassette player (`@tape` reports "There is no cassetteplayer available." and acknowledges with 2), so what would reach a tape cannot be measured.
+
 ## Open (not measured)
 
 - **[A]** F beyond the carry: the VG-8020 returns $10, zerobas $44; no rule reads it.

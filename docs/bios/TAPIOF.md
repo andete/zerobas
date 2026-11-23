@@ -84,6 +84,11 @@ Measured 2026-11-23 on the HB-F900 and NMS 8250 (MSX2) and the FS-A1WSX (MSX2+):
 |---|---|---|
 | every rule | holds [M] | holds [M] |
 
+
+**On the turbo R** (FS-A1GT and FS-A1ST, which agree; measured 2026-11-23, D-TRSPEC: [AE_trall/xtap1.out](../../scratchpad/AE_trall/xtap1.out), [AE_trall/xtap2.out](../../scratchpad/AE_trall/xtap2.out), [AE_trall/xtap3.out](../../scratchpad/AE_trall/xtap3.out), [AE_trall/xtap4.out](../../scratchpad/AE_trall/xtap4.out), [AE_trall/xtap5.out](../../scratchpad/AE_trall/xtap5.out); this page's rules run on that capture by [trnew_recheck.py](../../scratchpad/trnew_recheck.py): [AE_trnew_recheck.out](../../scratchpad/AE_trnew_recheck.out); overview: [turbor/remeasured.md](../turbor/remeasured.md)):
+
+- TAPIOF returns with the carry SET (F $00 gives $01, $FF gives $ED), A / BC / DE / HL as entered, port C as found (the motor is not stopped), the interrupt state kept (the VG-8020 and the A1WSX turn them on) [M]. R-TI-MOTOR, R-TI-KEEP and R-TI-EI fail [M]. The turbo R has no cassette port: openMSX's turbo R machines have no cassette player (`@tape` reports "There is no cassetteplayer available." and acknowledges with 2), so what would reach a tape cannot be measured.
+
 ## Open (not measured)
 
 - **[A]** F values other than $00 and $FF (a flag remapped onto another passes both);

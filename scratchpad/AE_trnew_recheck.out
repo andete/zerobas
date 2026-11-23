@@ -1,0 +1,338 @@
+# D-TRSPEC: each page's rules on the turbo R captures (scratchpad/AE_trall/) and the FS-A1WSX's (AE_m1on2/).
+# An N / D (xbsys: D / C) case pair is ONE capture, fed to both of the loader's rows.
+===== xgtpdl_rules (docs/bios/GTPDL.md)  [GT = FS-A1GT, ST = FS-A1ST, WSX = FS-A1WSX: the cases where the rule fails]
+  R-PD-PORT           8 cases  NEW ON TURBO R    GT FALSE XI N60, XI N63, XI D60, XI D63  |  ST FALSE XI N60, XI N63, XI D60, XI D63  |  WSX ok
+  R-PD-A              8 cases  NEW ON TURBO R    GT FALSE XI N60, XI N61, XI N62, XI N63 … (+4)  |  ST FALSE XI N60, XI N61, XI N62, XI N63 … (+4)  |  WSX ok
+  R-PD-KEEP           8 cases  AS MSX2+          GT FALSE XI N60, XI N61, XI N62, XI N63 … (+4)  |  ST FALSE XI N60, XI N61, XI N62, XI N63 … (+4)  |  WSX FALSE XI N60, XI N61, XI N62, XI N63 … (+4)
+  R-PD-EI             8 cases  NEW ON TURBO R    GT FALSE XI N60, XI N61, XI N62, XI D60 … (+2)  |  ST FALSE XI N60, XI N61, XI N62, XI D60 … (+2)  |  WSX ok
+  hold on all three: -
+  decoded fields, A1WSX -> A1GT (and A1GT vs A1ST):
+    XI N60: a 255->0; f 186->68; bc 511->4951; de 943->39903; iff 1->0; r14 255->127; r15 143->207
+    XI N61: a 255->0; f 186->68; bc 511->4951; de 19615->39903; iff 1->0; r14 255->127
+    XI N62: a 255->0; f 186->68; bc 8447->4951; de 19615->39903; iff 1->0; r14 255->127
+    XI N63: a 255->0; f 186->68; bc 511->4951; de 943->39903; r14 255->127; r15 143->207
+    XI D60: a 255->0; f 186->68; bc 511->4951; de 943->39903; iff 1->0; r14 255->127; r15 143->207
+    XI D61: a 255->0; f 186->68; bc 511->4951; de 19615->39903; iff 1->0; r14 255->127
+    XI D62: a 255->0; f 186->68; bc 8447->4951; de 19615->39903; iff 1->0; r14 255->127
+    XI D63: a 255->0; f 186->68; bc 511->4951; de 943->39903; r14 255->127; r15 143->207
+===== xgtpad_rules (docs/bios/GTPAD.md)  [GT = FS-A1GT, ST = FS-A1ST, WSX = FS-A1WSX: the cases where the rule fails]
+  R-GP-KEEP          18 cases  AS MSX2+          GT FALSE XI N54, XI N55, XI N56, XI N57 … (+14)  |  ST FALSE XI N54, XI N55, XI N56, XI N57 … (+14)  |  WSX FALSE XI N54, XI N55, XI N56, XI N57 … (+14)
+  R-GP-EI            18 cases  NEW ON TURBO R    GT FALSE XI N55, XI N56, XI D55, XI D56  |  ST FALSE XI N55, XI N56, XI D55, XI D56  |  WSX ok
+  hold on all three: R-GP-A
+  decoded fields, A1WSX -> A1GT (and A1GT vs A1ST):
+    XI N54: de 13672->13568; hl 65535->9216; r14 255->127
+    XI N55: hl 9320->9216; iff 0->1; r14 255->127
+    XI N56: hl 9320->9216; iff 0->1; r14 255->127
+    XI N57: de 9320->9216; hl 3308->9216; r14 255->127
+    XI N58: de 13672->13568; hl 65535->9216; r14 255->127
+    XI N59: de 9320->9216; hl 979->9216; r14 255->127
+    XI N64: de 13672->13568; hl 65535->9216; r14 255->127
+    XI N65: hl 9320->9216; r14 255->127
+    XI N94: hl 9320->9216; r14 255->127
+    XI D54: de 13672->13568; hl 65535->9216; r14 255->127
+    XI D55: hl 9320->9216; iff 0->1; r14 255->127
+    XI D56: hl 9320->9216; iff 0->1; r14 255->127
+    XI D57: de 9320->9216; hl 3308->9216; r14 255->127
+    XI D58: de 13672->13568; hl 65535->9216; r14 255->127
+    XI D59: de 9320->9216; hl 979->9216; r14 255->127
+    XI D64: de 13672->13568; hl 65535->9216; r14 255->127
+    XI D65: hl 9320->9216; r14 255->127
+    XI D94: hl 9320->9216; r14 255->127
+===== xbeep_rules (docs/bios/BEEP.md)  [GT = FS-A1GT, ST = FS-A1ST, WSX = FS-A1WSX: the cases where the rule fails]
+  R-BP-REGS          12 cases  AS MSX2+          GT FALSE XS N73, XS N74, XS D73, XS D74 … (+8)  |  ST FALSE XS N73, XS N74, XS D73, XS D74 … (+8)  |  WSX FALSE XS N73, XS N74, XS D73, XS D74 … (+8)
+  R-BP-EI            12 cases  AS MSX2+          GT FALSE XS N73, XS D73, XS N118, XS N119 … (+6)  |  ST FALSE XS N73, XS D73, XS N118, XS N119 … (+6)  |  WSX FALSE XS N73, XS D73, XS N118, XS N119 … (+6)
+  hold on all three: R-BP-PSG, R-BP-RESET, R-BP-KEEP
+  decoded fields, A1WSX -> A1GT (and A1GT vs A1ST):
+    XS N73: bc 3792->3625; psg (85, 0, 179, 4, 197, 6, 23, 184, 0, 0, 0->(85, 0, 179, 4, 197, 6, 23, 184, 0, 0, 0
+    XS N74: bc 3792->3625; psg (85, 0, 179, 4, 197, 6, 23, 184, 0, 0, 0->(85, 0, 179, 4, 197, 6, 23, 184, 0, 0, 0
+    XS D73: bc 3792->3625; psg (85, 0, 179, 4, 197, 6, 23, 184, 0, 0, 0->(85, 0, 179, 4, 197, 6, 23, 184, 0, 0, 0
+    XS D74: bc 3792->3625; psg (85, 0, 179, 4, 197, 6, 23, 184, 0, 0, 0->(85, 0, 179, 4, 197, 6, 23, 184, 0, 0, 0
+    XS N118: bc 3792->3625; psg (85, 0, 179, 4, 197, 6, 23, 184, 0, 0, 0->(85, 0, 179, 4, 197, 6, 23, 184, 0, 0, 0
+    XS N119: bc 3792->3625; psg (85, 0, 179, 4, 197, 6, 23, 184, 0, 0, 0->(85, 0, 179, 4, 197, 6, 23, 184, 0, 0, 0
+    XS N120: bc 3792->3625; psg (85, 0, 179, 4, 197, 6, 23, 184, 0, 0, 0->(85, 0, 179, 4, 197, 6, 23, 184, 0, 0, 0
+    XS N121: bc 3792->3625; psg (85, 0, 179, 4, 197, 6, 23, 184, 0, 0, 0->(85, 0, 179, 4, 197, 6, 23, 184, 0, 0, 0
+    XS D118: bc 3792->3625; psg (85, 0, 179, 4, 197, 6, 23, 184, 0, 0, 0->(85, 0, 179, 4, 197, 6, 23, 184, 0, 0, 0
+    XS D119: bc 3792->3625; psg (85, 0, 179, 4, 197, 6, 23, 184, 0, 0, 0->(85, 0, 179, 4, 197, 6, 23, 184, 0, 0, 0
+    XS D120: bc 3792->3625; psg (85, 0, 179, 4, 197, 6, 23, 184, 0, 0, 0->(85, 0, 179, 4, 197, 6, 23, 184, 0, 0, 0
+    XS D121: bc 3792->3625; psg (85, 0, 179, 4, 197, 6, 23, 184, 0, 0, 0->(85, 0, 179, 4, 197, 6, 23, 184, 0, 0, 0
+===== xstmotr_rules (docs/bios/STMOTR.md)  [GT = FS-A1GT, ST = FS-A1ST, WSX = FS-A1WSX: the cases where the rule fails]
+  R-SM-MOTOR         74 cases  NEW ON TURBO R    GT FALSE XT N01, XT N02, XT N04, XT N05 … (+52)  |  ST FALSE XT N01, XT N02, XT N04, XT N05 … (+52)  |  WSX ok
+  R-SM-AF            74 cases  NEW ON TURBO R    GT FALSE XT N00, XT N01, XT N02, XT N03 … (+70)  |  ST FALSE XT N00, XT N01, XT N02, XT N03 … (+70)  |  WSX ok
+  hold on all three: R-SM-KEEP
+  decoded fields, A1WSX -> A1GT (and A1GT vs A1ST):
+    XT N00: a 9->0; f 84->0
+    XT N01: a 8->1; f 16->0; aa 64->80
+    XT N02: a 9->0; f 84->0; aa 80->64
+    XT N03: a 8->1; f 16->0
+    XT N04: a 8->255; f 16->0; aa 64->80
+    XT N05: a 9->255; f 84->0; aa 80->64
+    XT N06: a 8->128; f 16->0; aa 64->80
+    XT N07: a 8->2; f 16->0
+    XT N08: a 8->1; f 16->255; aa 64->80
+    XT D00: a 9->0; f 84->0
+    XT D01: a 8->1; f 16->0; aa 64->80
+    XT D02: a 9->0; f 84->0; aa 80->64
+    XT D03: a 8->1; f 16->0
+    XT D04: a 8->255; f 16->0; aa 64->80
+    XT D05: a 9->255; f 84->0; aa 80->64
+    XT D06: a 8->128; f 16->0; aa 64->80
+    XT D07: a 8->2; f 16->0
+    XT D08: a 8->1; f 16->255; aa 64->80
+    XU N00: a 9->0; f 84->0; aa 176->160
+    XU N01: a 8->1; f 16->0
+    XU N02: a 9->255; f 84->0; aa 176->160
+    XU N03: a 9->255; f 84->0; aa 240->224
+    XU N04: a 9->0; f 84->0
+    XU N05: a 8->127; f 56->0; aa 64->80
+    XU N06: a 8->254; f 16->0; aa 64->80
+    XU N07: a 8->129; f 16->0; aa 64->80
+    XU N08: a 9->0; f 84->255; aa 80->64
+    XU N09: a 9->255; f 84->255; aa 80->64
+    XU N10: a 8->255; f 16->255; aa 64->80
+    XU D00: a 9->0; f 84->0; aa 176->160
+    XU D01: a 8->1; f 16->0
+    XU D02: a 9->255; f 84->0; aa 176->160
+    XU D03: a 9->255; f 84->0; aa 240->224
+    XU D04: a 9->0; f 84->0
+    XU D05: a 8->127; f 56->0; aa 64->80
+    XU D06: a 8->254; f 16->0; aa 64->80
+    XU D07: a 8->129; f 16->0; aa 64->80
+    XU D08: a 9->0; f 84->255; aa 80->64
+    XU D09: a 9->255; f 84->255; aa 80->64
+    XU D10: a 8->255; f 16->255; aa 64->80
+    XV N00: a 9->128; f 84->0; aa 80->64
+    XV N01: a 9->254; f 84->0; aa 80->64
+    XV N02: a 9->129; f 84->0; aa 80->64
+    XV N03: a 8->2; f 16->0; aa 64->80
+    XV N04: a 8->3; f 20->0; aa 64->80
+    XV N05: a 8->40; f 60->0; aa 64->80
+    XV N06: a 8->1; f 16->0; aa 74->90
+    XV N07: a 9->0; f 84->0; aa 90->74
+    XV N08: a 9->255; f 84->0; aa 85->69
+    XV D00: a 9->128; f 84->0; aa 80->64
+    XV D01: a 9->254; f 84->0; aa 80->64
+    XV D02: a 9->129; f 84->0; aa 80->64
+    XV D03: a 8->2; f 16->0; aa 64->80
+    XV D04: a 8->3; f 20->0; aa 64->80
+    XV D05: a 8->40; f 60->0; aa 64->80
+    XV D06: a 8->1; f 16->0; aa 74->90
+    XV D07: a 9->0; f 84->0; aa 90->74
+    XV D08: a 9->255; f 84->0; aa 85->69
+    XW N00: a 8->3; f 20->0
+    XW N01: a 8->40; f 60->0
+    XW N02: a 8->127; f 56->0
+    XW N03: a 8->64; f 16->0
+    XW N04: a 8->64; f 16->0; aa 64->80
+    XW D00: a 8->3; f 20->0
+    XW D01: a 8->40; f 60->0
+    XW D02: a 8->127; f 56->0
+    XW D03: a 8->64; f 16->0
+    XW D04: a 8->64; f 16->0; aa 64->80
+    XX N00: a 8->255; f 16->0; aa 160->176
+    XX N01: a 8->1; f 16->0; aa 224->240
+    XX N02: a 9->0; f 84->0; aa 88->72
+    XX D00: a 8->255; f 16->0; aa 160->176
+    XX D01: a 8->1; f 16->0; aa 224->240
+    XX D02: a 9->0; f 84->0; aa 88->72
+===== xtapoon_rules (docs/bios/TAPOON.md)  [GT = FS-A1GT, ST = FS-A1ST, WSX = FS-A1WSX: the cases where the rule fails]
+  R-TN-OK            12 cases  NEW ON TURBO R    GT FALSE XT N13, XT D13, XV N09, XV N11 … (+8)  |  ST FALSE XT N13, XT D13, XV N09, XV N11 … (+8)  |  WSX ok
+  R-TN-MOTOR         12 cases  NEW ON TURBO R    GT FALSE XT N13, XT D13  |  ST FALSE XT N13, XT D13  |  WSX ok
+  R-TN-PORT          12 cases  NEW ON TURBO R    GT FALSE XT N13, XT D13, XV N09, XV N11 … (+8)  |  ST FALSE XT N13, XT D13, XV N09, XV N11 … (+8)  |  WSX ok
+  hold on all three: R-TN-DE
+  decoded fields, A1WSX -> A1GT (and A1GT vs A1ST):
+    XT N13: a 16->255; f 16->9; bc 0->4951; hl 0->9320; iff 0->1; aa 71->80
+    XT D13: a 16->255; f 16->9; bc 0->4951; hl 0->9320; iff 0->1; aa 71->80
+    XV N09: a 16->0; f 16->1; bc 0->4951; hl 0->9320; aa 71->64
+    XV N11: a 16->255; f 16->9; bc 0->4951; hl 0->9320; aa 71->69
+    XV D09: a 16->0; f 16->1; bc 0->4951; hl 0->9320; aa 71->64
+    XV D11: a 16->255; f 16->9; bc 0->4951; hl 0->9320; aa 71->69
+    XW N05: a 16->0; f 16->1; bc 0->4951; hl 0->9320; aa 199->224
+    XW N07: a 16->0; f 16->1; bc 0->4951; hl 0->9320; aa 135->165
+    XW D05: a 16->0; f 16->1; bc 0->4951; hl 0->9320; aa 199->224
+    XW D07: a 16->0; f 16->1; bc 0->4951; hl 0->9320; aa 135->165
+    XX N03: a 16->255; f 16->237; bc 0->4951; hl 0->9320; aa 71->74
+    XX D03: a 16->255; f 16->237; bc 0->4951; hl 0->9320; aa 71->74
+===== xtapoof_rules (docs/bios/TAPOOF.md)  [GT = FS-A1GT, ST = FS-A1ST, WSX = FS-A1WSX: the cases where the rule fails]
+  R-TO-MOTOR         24 cases  NEW ON TURBO R    GT FALSE XT N11, XT N12, XT D11, XT D12 … (+14)  |  ST FALSE XT N11, XT N12, XT D11, XT D12 … (+14)  |  WSX ok
+  R-TO-KEEP          24 cases  NEW ON TURBO R    GT FALSE XT N11, XT N12, XT N22, XT D11 … (+20)  |  ST FALSE XT N11, XT N12, XT N22, XT D11 … (+20)  |  WSX ok
+  R-TO-EI            24 cases  NEW ON TURBO R    GT FALSE XT N11, XT N22, XT D11, XT D22 … (+18)  |  ST FALSE XT N11, XT N22, XT D11, XT D22 … (+18)  |  WSX ok
+  hold on all three: -
+  decoded fields, A1WSX -> A1GT (and A1GT vs A1ST):
+    XT N11: f 0->1; iff 1->0; aa 80->64
+    XT N12: f 255->237; aa 90->64
+    XT N22: cpc 71->80; f 0->1; iff 1->0; aa 90->80
+    XT D11: f 0->1; iff 1->0; aa 80->64
+    XT D12: f 255->237; aa 90->64
+    XT D22: cpc 71->80; f 0->1; iff 1->0; aa 90->80
+    XU N15: f 0->9; iff 1->0; aa 240->224
+    XU N16: f 0->9; iff 1->0; aa 186->160
+    XU N17: f 0->1; iff 1->0
+    XU N18: f 0->1; iff 1->0; aa 122->112
+    XU D15: f 0->9; iff 1->0; aa 240->224
+    XU D16: f 0->9; iff 1->0; aa 186->160
+    XU D17: f 0->1; iff 1->0
+    XU D18: f 0->1; iff 1->0; aa 122->112
+    XV N10: f 0->1; iff 1->0; aa 80->64
+    XV N12: f 0->1; iff 1->0; aa 90->64
+    XV D10: f 0->1; iff 1->0; aa 80->64
+    XV D12: f 0->1; iff 1->0; aa 90->64
+    XW N06: f 0->1; iff 1->0; aa 80->64
+    XW N08: f 0->1; iff 1->0; aa 90->64
+    XW D06: f 0->1; iff 1->0; aa 80->64
+    XW D08: f 0->1; iff 1->0; aa 90->64
+    XX N08: cpc 71->74; f 0->1; iff 1->0; aa 87->74
+    XX D08: cpc 71->74; f 0->1; iff 1->0; aa 87->74
+===== xtapiof_rules (docs/bios/TAPIOF.md)  [GT = FS-A1GT, ST = FS-A1ST, WSX = FS-A1WSX: the cases where the rule fails]
+  R-TI-MOTOR         16 cases  NEW ON TURBO R    GT FALSE XT N09, XT N10, XT D09, XT D10 … (+4)  |  ST FALSE XT N09, XT N10, XT D09, XT D10 … (+4)  |  WSX ok
+  R-TI-KEEP          16 cases  NEW ON TURBO R    GT FALSE XT N09, XT N10, XT N32, XT D09 … (+12)  |  ST FALSE XT N09, XT N10, XT N32, XT D09 … (+12)  |  WSX ok
+  R-TI-EI            16 cases  NEW ON TURBO R    GT FALSE XT N09, XT N32, XT D09, XT D32 … (+10)  |  ST FALSE XT N09, XT N32, XT D09, XT D32 … (+10)  |  WSX ok
+  hold on all three: -
+  decoded fields, A1WSX -> A1GT (and A1GT vs A1ST):
+    XT N09: f 0->1; iff 1->0; aa 80->64
+    XT N10: f 255->237; aa 80->64
+    XT N32: cpc 71->90; f 0->1; iff 1->0; aa 87->90
+    XT D09: f 0->1; iff 1->0; aa 80->64
+    XT D10: f 255->237; aa 80->64
+    XT D32: cpc 71->90; f 0->1; iff 1->0; aa 87->90
+    XU N11: f 0->9; iff 1->0; aa 240->224
+    XU N12: f 0->9; iff 1->0; aa 176->160
+    XU N13: f 0->1; iff 1->0
+    XU N14: f 0->1; iff 1->0
+    XU D11: f 0->9; iff 1->0; aa 240->224
+    XU D12: f 0->9; iff 1->0; aa 176->160
+    XU D13: f 0->1; iff 1->0
+    XU D14: f 0->1; iff 1->0
+    XX N14: cpc 231->248; f 0->1; iff 1->0; aa 250->248
+    XX D14: cpc 231->248; f 0->1; iff 1->0; aa 250->248
+===== xtapion_rules (docs/bios/TAPION.md)  [GT = FS-A1GT, ST = FS-A1ST, WSX = FS-A1WSX: the cases where the rule fails]
+  R-TA-OK             4 cases  NEW ON TURBO R    GT FALSE XT N23, XT D23, XX N09, XX D09  |  ST FALSE XT N23, XT D23, XX N09, XX D09  |  WSX ok
+  R-TA-MOTOR          4 cases  NEW ON TURBO R    GT FALSE XT N23, XT D23, XX N09, XX D09  |  ST FALSE XT N23, XT D23, XX N09, XX D09  |  WSX ok
+  R-TA-PORT           4 cases  NEW ON TURBO R    GT FALSE XT N23, XT D23, XX N09, XX D09  |  ST FALSE XT N23, XT D23, XX N09, XX D09  |  WSX ok
+  hold on all three: -
+  decoded fields, A1WSX -> A1GT (and A1GT vs A1ST):
+    XT N23: a 34->167; f 36->1; bc 9646->4951; de 14080->17185; hl 18726->9320; iff 0->1; aa 71->90
+    XT D23: a 34->167; f 36->1; bc 9646->4951; de 14080->17185; hl 18726->9320; iff 0->1; aa 71->90
+    XX N09: a 34->167; f 36->237; bc 9646->4951; de 14080->17185; hl 18726->9320; aa 231->248
+    XX D09: a 34->167; f 36->237; bc 9646->4951; de 14080->17185; hl 18726->9320; aa 231->248
+===== xtapin_rules (docs/bios/TAPIN.md)  [GT = FS-A1GT, ST = FS-A1ST, WSX = FS-A1WSX: the cases where the rule fails]
+  R-TP-A             24 cases  NEW ON TURBO R    GT FALSE XT N24, XT N25, XT N26, XT N27 … (+20)  |  ST FALSE XT N24, XT N25, XT N26, XT N27 … (+20)  |  WSX ok
+  hold on all three: -
+  decoded fields, A1WSX -> A1GT (and A1GT vs A1ST):
+    XT N24: a 0->167; f 16->1
+    XT N25: a 85->167; f 16->1
+    XT N26: a 170->167; f 16->1
+    XT N27: a 255->167; f 16->1
+    XT N28: a 1->167; f 16->1
+    XT N29: a 128->167; f 16->1
+    XT N30: a 127->167; f 16->1
+    XT N31: a 254->167; f 16->1
+    XT D24: a 0->167; f 16->1
+    XT D25: a 85->167; f 16->1
+    XT D26: a 170->167; f 16->1
+    XT D27: a 255->167; f 16->1
+    XT D28: a 1->167; f 16->1
+    XT D29: a 128->167; f 16->1
+    XT D30: a 127->167; f 16->1
+    XT D31: a 254->167; f 16->1
+    XX N10: a 0->167; f 16->237
+    XX N11: a 85->167; f 16->237
+    XX N12: a 170->167; f 16->237
+    XX N13: a 255->167; f 16->237
+    XX D10: a 0->167; f 16->237
+    XX D11: a 85->167; f 16->237
+    XX D12: a 170->167; f 16->237
+    XX D13: a 255->167; f 16->237
+===== xtapout_rules (docs/bios/TAPOUT.md)  [GT = FS-A1GT, ST = FS-A1ST, WSX = FS-A1WSX: the cases where the rule fails]
+  R-TU-OK            24 cases  NEW ON TURBO R    GT FALSE XT N14, XT N15, XT N16, XT N17 … (+20)  |  ST FALSE XT N14, XT N15, XT N16, XT N17 … (+20)  |  WSX ok
+  hold on all three: -
+  decoded fields, A1WSX -> A1GT (and A1GT vs A1ST):
+    XT N14: a 16->0; f 16->9
+    XT N15: a 16->85; f 16->9
+    XT N16: a 16->170; f 16->9
+    XT N17: a 16->255; f 16->9
+    XT N18: a 16->1; f 16->9
+    XT N19: a 16->128; f 16->9
+    XT N20: a 16->127; f 16->9
+    XT N21: a 16->254; f 16->9
+    XT D14: a 16->0; f 16->9
+    XT D15: a 16->85; f 16->9
+    XT D16: a 16->170; f 16->9
+    XT D17: a 16->255; f 16->9
+    XT D18: a 16->1; f 16->9
+    XT D19: a 16->128; f 16->9
+    XT D20: a 16->127; f 16->9
+    XT D21: a 16->254; f 16->9
+    XX N04: a 16->0; f 16->237
+    XX N05: a 16->85; f 16->237
+    XX N06: a 16->170; f 16->237
+    XX N07: a 16->255; f 16->237
+    XX D04: a 16->0; f 16->237
+    XX D05: a 16->85; f 16->237
+    XX D06: a 16->170; f 16->237
+    XX D07: a 16->255; f 16->237
+===== xinit_rules (docs/bios/INITXT.md)  [GT = FS-A1GT, ST = FS-A1ST, WSX = FS-A1WSX: the cases where the rule fails]
+  R-I-REGS-TXT       66 cases  AS MSX2+          GT FALSE XI 00, XI 01, XI 02, XI 03 … (+62)  |  ST FALSE XI 00, XI 01, XI 02, XI 03 … (+62)  |  WSX FALSE XI 00, XI 01, XI 02, XI 03 … (+62)
+  R-I-ATR-TXT         4 cases  AS MSX2+          GT FALSE XI 49, XI 50, XJ 16, XJ 17  |  ST FALSE XI 49, XI 50, XJ 16, XJ 17  |  WSX FALSE XI 49, XI 50, XJ 16, XJ 17
+  R-I-REGS-32        62 cases  AS MSX2+          GT FALSE XI 22, XI 23, XI 24, XI 25 … (+56)  |  ST FALSE XI 22, XI 23, XI 24, XI 25 … (+56)  |  WSX FALSE XI 22, XI 23, XI 24, XI 25 … (+56)
+  R-I-COL32          60 cases  AS MSX2+          GT FALSE XI 56, XI 57  |  ST FALSE XI 56, XI 57  |  WSX FALSE XI 56, XI 57
+  R-I-R0            128 cases  AS MSX2+          GT FALSE XI 00, XI 01, XI 02, XI 03 … (+116)  |  ST FALSE XI 00, XI 01, XI 02, XI 03 … (+116)  |  WSX FALSE XI 00, XI 01, XI 02, XI 03 … (+116)
+  R-I-READBACK       66 cases  AS MSX2+          GT FALSE XJ 00, XJ 01, XJ 02, XJ 03 … (+30)  |  ST FALSE XJ 00, XJ 01, XJ 02, XJ 03 … (+30)  |  WSX FALSE XJ 00, XJ 01, XJ 02, XJ 03 … (+30)
+  R-I-VRAM           61 cases  AS MSX2+          GT FALSE XJ 00, XJ 01  |  ST FALSE XJ 00, XJ 01  |  WSX FALSE XJ 00, XJ 01
+  R-I-NOCOL-TXT      30 cases  AS MSX2+          GT FALSE XJ 00, XJ 01, XJ 02, XJ 03 … (+22)  |  ST FALSE XJ 00, XJ 01, XJ 02, XJ 03 … (+22)  |  WSX FALSE XJ 00, XJ 01, XJ 02, XJ 03 … (+22)
+  R-I-EDGE4           3 cases  AS MSX2+          GT FALSE XJ4 17, XJ4 18, XJ4 20  |  ST FALSE XJ4 17, XJ4 18, XJ4 20  |  WSX FALSE XJ4 17, XJ4 18, XJ4 20
+  R-I-W0              4 cases  AS MSX2+          GT FALSE XI 01, XI 23, XJ4 16, XJ4 19  |  ST FALSE XI 01, XI 23, XJ4 16, XJ4 19  |  WSX FALSE XI 01, XI 23, XJ4 16, XJ4 19
+  R-I-CLEAR          58 cases  AS MSX2+          GT FALSE XI 16, XI 18, XI 20  |  ST FALSE XI 16, XI 18, XI 20  |  WSX FALSE XI 16, XI 18, XI 20
+  R-I-KEYS           27 cases  AS MSX2+          GT FALSE XI 05, XI 07, XI 09, XI 11 … (+11)  |  ST FALSE XI 05, XI 07, XI 09, XI 11 … (+11)  |  WSX FALSE XI 05, XI 07, XI 09, XI 11 … (+11)
+  R-I-KEYEDGE         5 cases  AS MSX2+          GT FALSE XI 03, XI 19, XI 21, XI 39  |  ST FALSE XI 03, XI 19, XI 21, XI 39  |  WSX FALSE XI 03, XI 19, XI 21, XI 39
+  R-I-FONT          128 cases  AS MSX2+          GT FALSE XI 00, XI 01, XI 02, XI 03 … (+124)  |  ST FALSE XI 00, XI 01, XI 02, XI 03 … (+124)  |  WSX FALSE XI 00, XI 01, XI 02, XI 03 … (+124)
+  hold on all three: R-I-TAIL-TXT, R-I-SPR32, R-I-MODE, R-I-LINLEN, R-I-HOME, R-I-CRTCNT, R-I-CNSDFG, R-I-LT, R-I-KEYPLACE, R-I-KEYOUT
+  decoded fields, A1WSX -> A1GT (and A1GT vs A1ST):
+    XI 01: namesum 26243->26005
+    XI 23: namesum 22972->21136
+    XI 39: namesum 27345->22601; row13 [32, 32, 32, 32, 32, 32, 32, 32, 32, 32,->[32, 32, 32, 32, 32, 32, 32, 32, 32, 32,
+    XJ 00: vsum 61641->60586
+    XJ 01: vsum 62896->61841
+    XJ4 16: namesum 26243->26005; vsum 64685->64447
+    XJ4 18: vsum 16249->11505
+    XJ4 19: namesum 22972->21136; vsum 17110->15274
+    XJ4 20: namesum 27345->22601; row13 [32, 32, 32, 32, 32, 32, 32, 32, 32, 32,->[32, 32, 32, 32, 32, 32, 32, 32, 32, 32,; rowc [32, 32, 32, 32, 32, 32, 32, 32, 32, 32,->[32, 32, 32, 32, 32, 32, 32, 32, 32, 32,; vsum 21483->16739
+===== xbsys_rules (docs/bdos/SYSTEM.md)  [GT = FS-A1GT, ST = FS-A1ST, WSX = FS-A1WSX: the cases where the rule fails]
+  R-BS-DATE          10 cases  AS MSX2+          GT FALSE XS D06, XS C06  |  ST FALSE XS D06, XS C06  |  WSX FALSE XS D06, XS C06
+  R-BS-TIME           8 cases  AS MSX2+          GT FALSE XS D09, XS D11, XS C09, XS C11  |  ST FALSE XS D09, XS D11, XS C09, XS C11  |  WSX FALSE XS D09, XS D11, XS C09, XS C11
+  R-BS-DI            94 cases  BOTH, OTHER CASES GT FALSE XS D00, XS D01, XS D02, XS D03 … (+88)  |  ST FALSE XS D00, XS D01, XS D02, XS D03 … (+90)  |  WSX FALSE XS D00, XS D01, XS D02, XS D03 … (+90)
+  R-BS-WORK          94 cases  NEW ON TURBO R    GT ok  |  ST FALSE XS D09, XS C09  |  WSX ok
+  R-BS-SLOT          88 cases  AS MSX2+          GT FALSE XS D00, XS D01, XS D02, XS D03 … (+40)  |  ST FALSE XS D00, XS D01, XS D02, XS D03 … (+40)  |  WSX FALSE XS D00, XS D01, XS D02, XS D03 … (+40)
+  hold on all three: R-BS-VERSION, R-BS-DRIVES, R-BS-DTA, R-BS-ALLOC2, R-BS-DATE2, R-BS-TIME2, R-BS-DSKRST2, R-BS-DATE3, R-BS-DSKRST3, R-BS-ALLOC
+  decoded fields, A1WSX -> A1GT (and A1GT vs A1ST):
+    XS D05: ix 61829->61824; iy 58757->58752   || GT/ST: ix GT 61824 ST 61829; iy GT 58752 ST 58757
+    XS D06: b 7->21; c 36->58
+    XS D08: b 7->21; c 36->58
+    XS D09: b 7->21; c 36->58; h 7->21; l 36->58   || GT/ST: d GT 24 ST 23
+    XS D12: e 154->149; ix 61850->61845   || GT/ST: e GT 149 ST 154; ix GT 61845 ST 61850
+    XS C05: ix 61829->61824; iy 58757->58752   || GT/ST: ix GT 61824 ST 61829; iy GT 58752 ST 58757
+    XS C06: b 7->21; c 36->58
+    XS C08: b 7->21; c 36->58
+    XS C09: b 7->21; c 36->58; h 7->21; l 36->58   || GT/ST: d GT 24 ST 23
+    XS C12: e 154->149; ix 61850->61845   || GT/ST: e GT 149 ST 154; ix GT 61845 ST 61850
+    XS2 D01: b 7->21; c 36->58
+    XS2 D03: b 7->21; c 36->58
+    XS2 D10: ix 61829->61824; iy 58757->58752   || GT/ST: ix GT 61824 ST 61829; iy GT 58752 ST 58757
+    XS2 D11: ix 61829->61824; iy 58757->58752   || GT/ST: ix GT 61824 ST 61829; iy GT 58752 ST 58757
+    XS2 D14: e 154->149; iff 1->0; ix 61850->61845   || GT/ST: e GT 149 ST 154; iff GT 0 ST 1; ix GT 61845 ST 61850
+    XS2 C01: b 7->21; c 36->58
+    XS2 C03: b 7->21; c 36->58
+    XS2 C10: ix 61829->61824; iy 58757->58752   || GT/ST: ix GT 61824 ST 61829; iy GT 58752 ST 58757
+    XS2 C11: ix 61829->61824; iy 58757->58752   || GT/ST: ix GT 61824 ST 61829; iy GT 58752 ST 58757
+    XS2 C14: e 154->149; iff 1->0; ix 61850->61845   || GT/ST: e GT 149 ST 154; iff GT 0 ST 1; ix GT 61845 ST 61850
+    XS3 D01: b 7->21; c 36->58
+    XS3 D03: b 7->21; c 36->58
+    XS3 D05: b 7->21; c 36->58
+    XS3 D07: b 7->21; c 36->58
+    XS3 D10: b 7->21; c 36->58
+    XS3 D13: e 154->149; ix 61850->61845   || GT/ST: e GT 149 ST 154; ix GT 61845 ST 61850
+    XS3 C01: b 7->21; c 36->58
+    XS3 C03: b 7->21; c 36->58
+    XS3 C05: b 7->21; c 36->58
+    XS3 C07: b 7->21; c 36->58
+    XS3 C10: b 7->21; c 36->58
+    XS3 C13: e 154->149; ix 61850->61845   || GT/ST: e GT 149 ST 154; ix GT 61845 ST 61850

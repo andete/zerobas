@@ -1,34 +1,12 @@
-# rc=1
-Traceback (most recent call last):
-  File "/Users/joost/projects/zerobas-iso-tr3/probes/bios/biosl_run.py", line 542, in <module>
-    raise SystemExit(main())
-                     ~~~~^^
-  File "/Users/joost/projects/zerobas-iso-tr3/probes/bios/biosl_run.py", line 456, in main
-    rc = max(rc, one(rung, a.row))
-                 ~~~^^^^^^^^^^^^^
-  File "/Users/joost/projects/zerobas-iso-tr3/probes/bios/biosl_run.py", line 475, in one
-    ref = run(ref_m, rom, st, td, disk=(row != "nodisk"), cpuinfo=tr)
-  File "/Users/joost/projects/zerobas-iso-tr3/probes/bios/biosl_run.py", line 414, in run
-    subprocess.run(omsx_preflight.guarded(
-    ~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^
-        [openmsx_paths.find_openmsx_binary(), "-machine", machine, "-cart", rom] + media +
-        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-        ["-command", "set renderer none; set sound_driver null" + plug, "-script", script]),
-        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-        stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, timeout=600)
-        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  File "/opt/homebrew/Cellar/python@3.14/3.14.7/Frameworks/Python.framework/Versions/3.14/lib/python3.14/subprocess.py", line 557, in run
-    stdout, stderr = process.communicate(input, timeout=timeout)
-                     ~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^
-  File "/opt/homebrew/Cellar/python@3.14/3.14.7/Frameworks/Python.framework/Versions/3.14/lib/python3.14/subprocess.py", line 1221, in communicate
-    stdout, stderr = self._communicate(input, endtime, timeout)
-                     ~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^
-  File "/opt/homebrew/Cellar/python@3.14/3.14.7/Frameworks/Python.framework/Versions/3.14/lib/python3.14/subprocess.py", line 2179, in _communicate
-    self.wait(timeout=self._remaining_time(endtime))
-    ~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  File "/opt/homebrew/Cellar/python@3.14/3.14.7/Frameworks/Python.framework/Versions/3.14/lib/python3.14/subprocess.py", line 1279, in wait
-    return self._wait(timeout=timeout)
-           ~~~~~~~~~~^^^^^^^^^^^^^^^^^
-  File "/opt/homebrew/Cellar/python@3.14/3.14.7/Frameworks/Python.framework/Versions/3.14/lib/python3.14/subprocess.py", line 2076, in _wait
-    raise TimeoutExpired(self.args, timeout)
-subprocess.TimeoutExpired: Command '['/opt/homebrew/bin/openmsx', '-command', 'set save_settings_on_exit false', '-command', 'proc ::__zb_unarm {args} { if {[info exists ::openmsx::auto_run_bp]} { debug remove_bp $::openmsx::auto_run_bp; unset ::openmsx::auto_run_bp } }; catch {trace add execution cassetteplayer leave ::__zb_unarm}; ::__zb_unarm', '-machine', 'Panasonic_FS-A1GT', '-cart', '/tmp/zerobas/iso-tr3/biosl_9rf4jiuv/xtap1.rom', '-command', 'set renderer none; set sound_driver null', '-script', '/tmp/zerobas/iso-tr3/biosl_9rf4jiuv/Panasonic_FS-A1GT.tcl']' timed out after 600 seconds
+# rc=0
+===== probes/bios/spec/xtap1.asm turbor: Panasonic_FS-A1GT vs Panasonic_FS-A1ST =====
+  TAPE ref : no cassette port (There is no cassetteplayer available.) -- nothing recorded or played; TAPEREADY acknowledged with 2
+  TAPE ours: no cassette port (There is no cassetteplayer available.) -- nothing recorded or played; TAPEREADY acknowledged with 2
+  (turbor: two REFERENCES -- 'ref' = FS-A1GT, 'ours' = FS-A1ST; a DIFF is where they disagree)
+  VDP R#1 at the dump: ref 96, ours 96
+  ref : jiffy=3700 typed=0 scncnt=02 newkey=ffffffffffffffffffffff hkeyi,htimi=c9c9c9c9c9c9c9c9c9c9 cpu=z80 t=5.100 fcb1=2 s1990r6=0.1:60 0.7:40 1.9:60
+  ours: jiffy=3700 typed=0 scncnt=02 newkey=ffffffffffffffffffffff hkeyi,htimi=c9c9c9c9c9c9c9c9c9c9 cpu=z80 t=5.100 fcb1=2 s1990r6=0.1:60 0.6:40 1.9:60
+  CAP ref : 000013579bdf24680050010013579bdf24680050000013579bdf24680040010013579bdf24680040ff0013579bdf24680050ff0013579bdf24680040800013579bdf24680050020013579bdf2468004001ff13579bdf24680150a70113579bdf24680040a7ed13579bdf24680140a70113579bdf24680040a7ed13579bdf24680140ff09135712342468015000095509aa09ff09010980097f09fe0950a70113579bdf24680050a701135743212468015aa701a701a701a701a701a701a701a7015aa70113579bdf2468005a
+  CAP ours: 000013579bdf24680050010013579bdf24680050000013579bdf24680040010013579bdf24680040ff0013579bdf24680050ff0013579bdf24680040800013579bdf24680050020013579bdf2468004001ff13579bdf24680150a70113579bdf24680040a7ed13579bdf24680140a70113579bdf24680040a7ed13579bdf24680140ff09135712342468015000095509aa09ff09010980097f09fe0950a70113579bdf24680050a701135743212468015aa701a701a701a701a701a701a701a7015aa70113579bdf2468005a
+  SAME (0 allowlisted)
+===== biosl: ALL SAME (allowlisted bytes excused) =====

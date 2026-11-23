@@ -1,6 +1,12 @@
-# rc=NOT RUN
-# D-TRSPEC (trall_run.py): not run. The probe declares `; @tape`, so biosl_run.py starts each machine with
-# `cassetteplayer new`; the turbo R has no cassette interface, the Tcl script stops at that command, the poll that
-# writes the dump is never scheduled, and openMSX runs until biosl_run.py's 600 s subprocess timeout (seen on
-# xtap1, scratchpad/AE_trall/xtap1.out). A turbo R reading of a tape call needs a harness that skips @tape (or
-# records "no cassette") on a machine without a cassette port.
+# rc=0
+===== probes/bios/spec/xtap5.asm turbor: Panasonic_FS-A1GT vs Panasonic_FS-A1ST =====
+  TAPE ref : no cassette port (There is no cassetteplayer available.) -- nothing recorded or played; TAPEREADY acknowledged with 2
+  TAPE ours: no cassette port (There is no cassetteplayer available.) -- nothing recorded or played; TAPEREADY acknowledged with 2
+  (turbor: two REFERENCES -- 'ref' = FS-A1GT, 'ours' = FS-A1ST; a DIFF is where they disagree)
+  VDP R#1 at the dump: ref 96, ours 96
+  ref : jiffy=3600 typed=0 scncnt=01 newkey=ffffffffffffffffffffff hkeyi,htimi=c9c9c9c9c9c9c9c9c9c9 cpu=z80 t=5.100 fcb1=2 s1990r6=0.1:60 0.7:40 1.9:60
+  ours: jiffy=3600 typed=0 scncnt=01 newkey=ffffffffffffffffffffff hkeyi,htimi=c9c9c9c9c9c9c9c9c9c9 cpu=z80 t=5.100 fcb1=2 s1990r6=0.1:60 0.6:40 1.9:60
+  CAP ref : ff0013579bdf246800b0010013579bdf246800f0000013579bdf24680048ffed135712342468004a00ed55edaaedffed4aa70113579bdf2468004aa7ed13574321246800f8a7eda7eda7eda7edf8a70113579bdf246800f8
+  CAP ours: ff0013579bdf246800b0010013579bdf246800f0000013579bdf24680048ffed135712342468004a00ed55edaaedffed4aa70113579bdf2468004aa7ed13574321246800f8a7eda7eda7eda7edf8a70113579bdf246800f8
+  SAME (0 allowlisted)
+===== biosl: ALL SAME (allowlisted bytes excused) =====
