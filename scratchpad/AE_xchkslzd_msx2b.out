@@ -1,0 +1,86 @@
+WARNING: Var RG1SAV is never used on line 20 of file probes/bios/spec/xchkslzd.asm
+===== probes/bios/spec/xchkslzd.asm msx2eu: Philips_NMS_8250 vs CBIOS2_CUR_MSX2_EU =====
+  VDP R#1 at the dump: ref 96, ours 96
+  ref : jiffy=ec00 typed=0 scncnt=01 newkey=ffffffffffffffffffffff hkeyi,htimi=c9c9c9c9c9c9c9c9c9c9
+  ours: jiffy=d100 typed=0 scncnt=01 newkey=ffffffffffffffffffffff hkeyi,htimi=c9c9c9c9c9c9c9c9c9c9
+  CAP ref : ff
+  CAP ours: 00
+  DIFF (20 unexcused byte(s)):
+  CAP E001: ref=FF ours=00
+  VRAM 3F02: ref=F5 ours=F4
+  VRAM 3F04: ref=A9 ours=83
+  VRAM 3F05: ref=FF ours=41
+  VRAM 3F06: ref=FF ours=03
+  VRAM 3F07: ref=00 ours=01
+  VRAM 3F08: ref=32 ours=44
+  VRAM 3F09: ref=00 ours=F4
+  VRAM 3F0A: ref=FF ours=C4
+  VRAM 3F0B: ref=C6 ours=FC
+  VRAM 3F0D: ref=FF ours=00
+  VRAM 3F0E: ref=00 ours=B8
+  VRAM 3F10: ref=A5 ours=83
+  VRAM 3F11: ref=EC ours=D1
+  VRAM 3F13: ref=EC ours=D1
+  VRAM 3F15: ref=F4 ours=00
+  VRAM 3F16: ref=F5 ours=00
+  VRAM 3F17: ref=8E ours=00
+  VRAM 3F18: ref=F4 ours=00
+  VRAM 3F19: ref=F5 ours=00
+===== probes/bios/spec/xchkslzd.asm msx2jp: Sony_HB-F900 vs CBIOS2_CUR_MSX2_JP =====
+  VDP R#1 at the dump: ref 96, ours 96
+  ref : jiffy=e904 typed=0 scncnt=02 newkey=ffffffffffffffffffffff hkeyi,htimi=c9c9c9c9c9c9c9c9c9c9
+  ours: jiffy=d400 typed=0 scncnt=01 newkey=ffffffffffffffffffffff hkeyi,htimi=c9c9c9c9c9c9c9c9c9c9
+  CAP ref : ff
+  CAP ours: 00
+  DIFF (15 unexcused byte(s)):
+  CAP E001: ref=FF ours=00
+  VRAM 3F03: ref=50 ours=A0
+  VRAM 3F04: ref=FC ours=83
+  VRAM 3F05: ref=A8 ours=41
+  VRAM 3F06: ref=04 ours=03
+  VRAM 3F07: ref=FC ours=01
+  VRAM 3F08: ref=FC ours=44
+  VRAM 3F09: ref=FC ours=F4
+  VRAM 3F0A: ref=09 ours=C4
+  VRAM 3F0B: ref=FD ours=FC
+  VRAM 3F0C: ref=44 ours=41
+  VRAM 3F10: ref=A5 ours=83
+  VRAM 3F11: ref=8A ours=D4
+  VRAM 3F13: ref=E4 ours=D4
+  VRAM 3F14: ref=04 ours=00
+===== probes/bios/spec/xchkslzd.asm msx2p: Panasonic_FS-A1WSX vs CBIOS2_CUR_MSX2P_JP =====
+  NO READING: DONE never set on ref (ref 0, ours 165)
+  VDP R#1 at the dump: ref 96, ours 96
+  ref : jiffy=e903 typed=0 scncnt=02 newkey=ffffffffffffffffffffff hkeyi,htimi=c9c9c9c9c9f78bce77c9
+  ours: jiffy=d400 typed=0 scncnt=01 newkey=ffffffffffffffffffffff hkeyi,htimi=c9c9c9c9c9c9c9c9c9c9
+  CAP ref : ff
+  CAP ours: 00
+  DIFF (27 unexcused byte(s)):
+  CAP E001: ref=FF ours=00
+  VRAM 3F00: ref=00 ours=42
+  VRAM 3F01: ref=00 ours=52
+  VRAM 3F02: ref=00 ours=F4
+  VRAM 3F03: ref=00 ours=A0
+  VRAM 3F04: ref=00 ours=83
+  VRAM 3F05: ref=00 ours=41
+  VRAM 3F06: ref=00 ours=03
+  VRAM 3F07: ref=00 ours=01
+  VRAM 3F08: ref=00 ours=44
+  VRAM 3F09: ref=00 ours=F4
+  VRAM 3F0A: ref=00 ours=C4
+  VRAM 3F0B: ref=00 ours=FC
+  VRAM 3F0C: ref=00 ours=41
+  VRAM 3F0E: ref=00 ours=B8
+  VRAM 3F0F: ref=00 ours=50
+  VRAM 3F10: ref=00 ours=83
+  VRAM 3F11: ref=00 ours=D4
+  VRAM 3F13: ref=00 ours=D4
+  VRAM 3F20: ref=49 ours=00
+  VRAM 3F21: ref=8E ours=00
+  VRAM 3F22: ref=F0 ours=00
+  VRAM 3F23: ref=F4 ours=00
+  VRAM 3F24: ref=49 ours=00
+  VRAM 3F25: ref=8E ours=00
+  VRAM 3F26: ref=F0 ours=00
+  VRAM 3F27: ref=F4 ours=00
+===== biosl: NO READING =====
