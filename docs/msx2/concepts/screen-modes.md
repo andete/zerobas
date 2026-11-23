@@ -5,7 +5,9 @@ SPDX-License-Identifier: BSD-2-Clause
 
 # Screen modes on the MSX2 / MSX2+ — the sub-ROM's mode and text entries
 
-> **Spec:** DRAFT 0 (2026-11-23), from the published interface only; nothing measured yet. References to measure: HB-F900, NMS 8250, FS-A1WSX.
+> **Spec:** DRAFT 0 (2026-11-23), from the published interface; the mode calls' measurements (HB-F900, NMS 8250, FS-A1WSX: [xmode.asm](../../../probes/bios/spec/xmode.asm), [scratchpad/AE_xmode_msx2_decoded.out](../../../scratchpad/AE_xmode_msx2_decoded.out); [xmode2.asm](../../../probes/bios/spec/xmode2.asm), [scratchpad/AE_xmode2_msx2_decoded.out](../../../scratchpad/AE_xmode2_msx2_decoded.out)) are cited here where they settle a shared fact; the rules themselves are on the call pages.
+>
+> Goldfish pass 1 (test writer) 2026-11-23: 2 findings, 2 measured, 0 moved to open.
 
 ## Summary
 
@@ -35,7 +37,9 @@ listing, App. 4 the work area, App. 5 the VRAM map, Ch. 4 the VDP, Ch. 5 §6 the
   SUB-ROM" [P App. 1, notation \*3]; DSPFNK and WRTVDP / GRPPRT "call SUB-ROM in screen modes 5 to 8"
   (\*2). Whether a main-ROM call and its sub-ROM namesake leave identical outputs is [A] and is a
   matrix row on each call's page.
-- The interrupt state on return, and whether the call enables interrupts, is [A] for every entry.
+- The interrupt state on return differs per call: CHGMOD and INITXT .. INIMLT return interrupts as entered; CHGMDP,
+  SETTXT .. SETMLT and SETPAG return them ON after a DI entry [M xmode2 0-28; see each call's page]. For the other
+  entries it is [A].
 
 ## The modes
 
@@ -60,8 +64,10 @@ Mode bits: M3 = R#0 bit 1, M4 = R#0 bit 2, M5 = R#0 bit 3, M1 = R#1 bit 4, M2 = 
 - What `SCREEN 0` chooses between TEXT 1 and TEXT 2 is the width: BASIC's "SCREEN 0 (WIDTH 80)" is
   TEXT 2 [P Ch. 4 §3, Table 4.4]. Which cell a BIOS call reads for that choice (LINL40? LINLEN?) is
   [A], on [INITXT](../sub/INITXT.md)'s page.
-- `SCREEN 9` does not exist on the handbook's machines (Table 4.4 lists none) [P Ch. 4 §3]; what
-  a mode call does with A = 9 or above 12 is [A].
+- `SCREEN 9` does not exist on the handbook's machines (Table 4.4 lists none) [P Ch. 4 §3]. The sub-ROM CHGMOD
+  returns at once for A = 9, 10, 11, 12 and $FF -- on the FS-A1WSX too -- changing nothing (no register, cell, VRAM or
+  palette) [M xmode 9, 10, 23-25; xmode2 6]: SCREEN 10-12 are not reached through CHGMOD. Values from 13 to $FE are
+  [A].
 
 ## The VDP registers in the modes
 
@@ -90,8 +96,9 @@ The register functions are [P Ch. 4 §1.1, Table 4.1]; the bit positions are [P]
 ## The default table addresses
 
 The VRAM map BASIC uses [P App. 5]. Modes 0-3 have screen-table cells (below); modes 4-8 have none
-in the work area, so where a mode call takes their addresses from is [A] (constants, or for SCREEN 4
-the GRP\* cells).
+in the work area. CHGMOD writes NAMBAS / PATBAS / ATRBAS for them ($0000 / $7800 / $7600 for 5 and 6, $0000 /
+$F000 / $FA00 for 7 and 8, the SCREEN 2 values with ATRBAS $1E00 for 4) [M xmode 4-8; xmode2 7]; whether SCREEN 4
+takes them from the GRP\* cells or from constants is [A] (the GRP\* cells were at their defaults).
 
 | SCREEN | name | colour / blink | patterns | sprite attr. | sprite colour | sprite patterns | palette |
 |---|---|---|---|---|---|---|---|
@@ -106,9 +113,11 @@ the GRP\* cells).
 
 The "palette table" is the VRAM copy of the 16 palette entries that INIPLT saves and RSTPLT restores
 [P App. 1, INIPLT / RSTPLT; App. 5]. App. 5 bounds each at 48 bytes ($0400-$042F), where 16 entries of
-2 bytes need 32 [A: which bytes are written is measured]. App. 5 prints SCREEN 5 / 6's sprite
-patterns at $7A00, but R#6 holds only A16-A11 [P Ch. 4 §3.4, §5], so the base a register can
-address is 2 KB-aligned: $7800 in R#6 is [A], and the table's real start is a measured output.
+2 bytes need 32; CHGMDP writes exactly 32 bytes there, the 16 entries in order (R·16 + B, G), for SCREEN 0, 5 and 8
+[M xmode2 9-11]. App. 5 prints SCREEN 5 / 6's sprite patterns at $7A00, but R#6 holds only A16-A11 [P Ch. 4 §3.4,
+§5]: CHGMOD 5 / 6 sets R#6 $0F and PATBAS $7800 (and $1E / $F000 for 7 / 8) [M xmode 5-8], so the table starts at
+$7800. SCREEN 4's sprite colour table is the 512 bytes below ATRBAS: CHGMOD 4 rewrites 512 bytes more than CHGMOD 2
+[M xmode2 2, 7].
 
 ## The work-area cells
 
@@ -128,10 +137,13 @@ address is 2 KB-aligned: $7800 in R#6 is [A], and the table's real start is a me
 | MODE | $FAFC | VRAM size (bits 2-1), and bit 3: mask VRAM addresses to $3FFF in SCREEN 0-3 | [P App. 4] |
 | LINTTB | $FBB2 | line-continuation table | [P App. 4] |
 | SCRMOD, OLDSCR | $FCAF, $FCB0 | current mode, "screen mode reservation" | [P App. 4] |
-| R#25-R#27 copies | — | MSX2+: where they are kept [A]; located before any YJK case by a whole-RAM diff around a sub-ROM WRTVDP to R#25 / R#26 / R#27 on the FS-A1WSX | [A] |
+| R#25-R#27 copies | — | MSX2+: where they are kept [A]; $FFFA-$FFFC (right after the R#8-R#23 copies) read $00 $00 $00 on the FS-A1WSX, $FF $FF $FF on the HB-F900, $FF $00 $FF on the NMS 8250, unchanged by CHGMOD 10-12 [M xmode 0, 23-25] -- a first candidate; to be located by a whole-RAM diff around a sub-ROM WRTVDP to R#25 / R#26 / R#27 on the FS-A1WSX | [A] |
 
 `VDP(n)` in BASIC reads these copies, not the VDP [P Ch. 4 §2.1.1]: a copy that does not match the
-VDP is a state the calls can meet, so every matrix desyncs them.
+VDP is a state the calls can meet, so every matrix desyncs them. The mode calls rebuild R#0-R#7 from the copies
+(not from the VDP) and write the result back to both [M xmode2 0-28]. The VDP keeps fewer bits than the copies: an
+OUT of $FF reads back R#0 $7E, R#1 $7F, R#2 $7F, R#4 $3F, R#6 $3F, R#10 $07, R#11 $03 (R#3, R#5, R#7 all 8) on all
+three references [M xmode2 29] -- a test compares the VDP on those bits and the copies on all 8.
 
 ## The clock chip's screen settings
 

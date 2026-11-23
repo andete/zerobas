@@ -5,46 +5,58 @@ SPDX-License-Identifier: BSD-2-Clause
 
 # `CHGMDP` (sub-ROM $01B5) — change the screen mode and reset the palette
 
-> **Spec:** DRAFT 1 (2026-11-23): MEASURED on the HB-F900, NMS 8250 and FS-A1WSX ([xmode.asm](../../../probes/bios/spec/xmode.asm), [scratchpad/AE_xmode_msx2.out](../../../scratchpad/AE_xmode_msx2.out), decoded by `scratchpad/xmode_decode.py`).
+> **Spec:** DRAFT 1 (2026-11-23): MEASURED on the HB-F900, NMS 8250 and FS-A1WSX ([xmode.asm](../../../probes/bios/spec/xmode.asm), [scratchpad/AE_xmode_msx2.out](../../../scratchpad/AE_xmode_msx2.out), decoded by [scratchpad/xmode_decode.py](../../../scratchpad/xmode_decode.py) into [scratchpad/AE_xmode_msx2_decoded.out](../../../scratchpad/AE_xmode_msx2_decoded.out); round 2 [xmode2.asm](../../../probes/bios/spec/xmode2.asm), [scratchpad/AE_xmode2_msx2.out](../../../scratchpad/AE_xmode2_msx2.out), decoded by [scratchpad/xmode2_decode.py](../../../scratchpad/xmode2_decode.py) into [scratchpad/AE_xmode2_msx2_decoded.out](../../../scratchpad/AE_xmode2_msx2_decoded.out)).
+>
+> Goldfish pass 1 (test writer) 2026-11-23: 7 findings, 5 measured, 1 moved to open.
 
 ## Summary
 
-`CHGMDP` is [CHGMOD](CHGMOD.md) plus a palette reset: it switches to the mode in A and initialises
-the 16 palette entries. Shared facts: [the screen-modes page](../concepts/screen-modes.md).
+`CHGMDP` is [CHGMOD](CHGMOD.md) plus a palette reset: it switches to the mode in A, sets the 16 palette entries to
+the default palette and saves them (32 bytes) at the new mode's palette table in VRAM. Shared facts:
+[the screen-modes page](../concepts/screen-modes.md).
 
 ## The specification
 
+Case numbers as on [CHGMOD](CHGMOD.md#the-specification): `[M xmode r]` round 1, `[M xmode2 n]` round 2 (palette
+:= 16 non-default entries and VRAM := $5A before the call). The three references agree on every output.
+
 **Interface.**
-- In: A = the screen mode, 0 to 8 [P App. 1, SUB-ROM CHGMDP]; 10-12 on an MSX2+ [A].
-- Out: none. Registers: all [P App. 1, SUB-ROM CHGMDP].
-- Interrupts on return: [A].
+- In: A = the screen mode, 0 to 8 [P App. 1, SUB-ROM CHGMDP]; A 0, 5 and 8 measured [M xmode2 9-11; xmode 22].
+- Out: A $07, F $10, BC $0001, DE $1007; IX the entry ($01B5) for A 5 / 8, $000C for A 0; IY and the alternates kept
+  [M xmode2 9-11]. Registers: all may change [P App. 1, SUB-ROM CHGMDP].
+- Interrupts on return: **ON**, after a DI entry and after an EI entry [M xmode2 9-11; xmode 22] -- unlike CHGMOD,
+  which returns them as entered.
 
 **Behaviour.**
-- Changes the VDP mode; the palette is initialised [P App. 1, SUB-ROM CHGMDP].
-- Equals CHGMOD then INIPLT [A]; INIPLT also saves the palette in VRAM [P App. 1, INIPLT] — at the
-  NEW mode's palette-table address [A] ([P App. 5] gives one per mode).
-- The initial palette's values [A].
-
-**Measured** [M] (the same on all three references, A 5): the mode as CHGMOD 5, plus R#16 (the palette
-pointer) moved -- the palette is written; out A $07, F $10, interrupts ON.
+- The mode: as CHGMOD with the same A -- the same VDP registers, copies and cells [M xmode2 9 vs 0, 11 vs 5 (equal
+  but for the inputs the cases set differently: colours, RG9SAV); xmode 22 vs 5].
+- The palette: all 16 entries := the default palette, the same for A 0, 5 and 8 (SCREEN 8 included): entries 0-15
+  (R·16 + B, G) = 00 00, 00 00, 11 06, 33 07, 17 01, 27 03, 51 01, 27 06, 71 01, 73 03, 61 06, 64 06, 11 04, 65 02,
+  55 05, 77 07 [M xmode2 9-11].
+- Saved in VRAM at the **new** mode's palette table [P App. 1, INIPLT; App. 5]: $0400 for A 0, $7680 for A 5,
+  $FA80 for A 8 hold the 16 entries, 2 bytes each in the order above (the first 6 entries read back), and exactly
+  **32** bytes are written there (VRAM counts: CHGMOD's + 32) [M xmode2 9-11]. App. 5's 48-byte bound is not filled.
+- So "CHGMDP = CHGMOD then INIPLT" holds for the VDP, the cells, VRAM and the palette; the outputs that differ are the
+  registers on return and the interrupt state (CHGMOD: as entered; CHGMDP: on) [M xmode2 9-11 vs 0, 5].
 
 ## Differences from the reference
 
-C-BIOS's MSX2 / MSX2+ builds set the same mode; their R#16 and F on return differ ([scratchpad/AE_xmode_msx2.out](../../../scratchpad/AE_xmode_msx2.out)).
+C-BIOS's MSX2 / MSX2+ builds set the same mode, palette and VRAM palette table; they return other registers (F $A8,
+BC $0010, DE $8800) [M xmode2 9-11]. In round 1 their R#17 (the indirect-register pointer, internal) was $18 where the
+references leave $2C; R#16 was $00 on both [M xmode 22].
 
 ## Open (not measured)
 
-Recorded per case: as [CHGMOD](CHGMOD.md#open-not-measured), plus all 16 palette entries and every
-mode's palette table as App. 5 bounds it ($0400-$042F: 48 bytes, although 16 entries of 2 bytes need 32; which bytes are written is part of the measurement).
+Recorded per case: as [CHGMOD](CHGMOD.md#open-not-measured) (the palette and the palette table included).
 
 | case | inputs | state | what it separates | HB-F900 | NMS 8250 | FS-A1WSX |
 |---|---|---|---|---|---|---|
-| IE | the page's base case (its first row) | entered once with DI, once with EI | interrupt state on return: forced on, forced off, or kept (read twice, §3a) | ? | ? | ? |
-| CP-EQ | A = 0..8 | same set-up as CHGMOD's cases | = CHGMOD + INIPLT, output for output | ? | ? | ? |
-| CP-PAL | A = 0, 5, 8 | palette entries distinct non-defaults | the reset palette's 16 values; SCREEN 8 differs? | ? | ? | ? |
-| CP-SAVE | A = 5, entered from SCREEN 0 width 80 (old table $0F00); also A = 0 (40, 80), 1, 2, 7 | VRAM at every App. 5 palette address garbage | saved at the new mode's address ($7680) vs the old mode's vs not saved | ? | ? | ? |
-| CP-OOR | A = 9, $FF | — | CHGMOD's out-of-range rule, palette reset anyway? | ? | ? | ? |
-| CP-YJK | A = 10..12 (on the MSX2s: out of range), after locating the R#25-R#27 copies | — | palette in YJK modes | ? | ? | ? |
+| IE | A 0 | entered once with DI, once with EI | interrupt state on return | on / on [M xmode2 9, 10] | on / on | on / on |
+| CP-EQ | A = 1, 2, 3, 4, 6, 7 | same set-up as CHGMOD's cases | = CHGMOD + INIPLT, output for output (A 0, 5, 8 measured: equal but for registers and interrupts) | ? | ? | ? |
+| CP-PAL | A = 0, 5, 8 | palette entries distinct non-defaults | the reset palette's 16 values | the default palette above [M xmode2 9-11] | same | same |
+| CP-SAVE | A = 0 at 80 columns (table $0F00), 1, 2 | VRAM at every App. 5 palette address $5A | saved at the new mode's address vs the old one's (A 0 / 5 / 8: the new one) | ? | ? | ? |
+| CP-OOR | A = 9, $FF | palette non-default | CHGMOD's out-of-range rule (no change), palette reset anyway? | ? | ? | ? |
+| CP-YJK | A = 10..12 on the MSX2+ | — | palette in YJK modes (CHGMOD ignores 10-12) | ? | ? | ? |
 
 ## Related pages
 

@@ -2,7 +2,8 @@
 # Copyright (c) 2026 Joost Yervante Damad
 # SPDX-License-Identifier: BSD-2-Clause
 """D-MSX2SPEC: decode probes/bios/spec/xmode.asm (the sub-ROM screen-mode calls).
-    python3 scratchpad/xmode_decode.py RUNFILE [--side ref|ours]"""
+    python3 scratchpad/xmode_decode.py RUNFILE [--side ref|ours]
+The decoded file: scratchpad/AE_xmode_msx2_decoded.out (both sides)."""
 import re
 import sys
 
@@ -26,7 +27,8 @@ def main():
             # the copies that disagree with the VDP (R#0-7 vs $F3DF.., R#8-27 vs $FFE7..)
             dis = [f"R{i}" for i in range(8) if cp[i] != vdp[i]] + [f"R{8 + i}" for i in range(20) if cp[8 + i] != vdp[8 + i]]
             cells = " ".join(f"{r[66 + 2 * i] | r[67 + 2 * i] << 8:04X}" for i in range(5))
-            print(f"  {NAMES[r[3]]:12} A={r[0]:02X} F={r[1]:02X} IFF={r[2]} R0-9={vdp[:10].hex()} R25-27={vdp[25:28].hex()}"
+            print(f"  {NAMES[r[3]]:12} A={r[0]:02X} F={r[1]:02X} IFF={r[2]} R0-11={vdp[:12].hex()} R12-17={vdp[12:18].hex()}"
+                  f" R25-27={vdp[25:28].hex()} RG0-7SAV={r[32:40].hex()} FFE7-FFFC={r[40:62].hex()}"
                   f" SCRMOD={r[62]} OLD={r[63]} LINLEN={r[64]} CRTCNT={r[65]} cells={cells} DP/AC={r[76]}/{r[77]}"
                   f" copy!=vdp:{','.join(dis) or '-'}")
 
