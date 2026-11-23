@@ -5,7 +5,7 @@ SPDX-License-Identifier: BSD-2-Clause
 
 # `SCALXY` (sub-ROM $008D) — clip a graphics coordinate
 
-> **Spec:** DRAFT 0 (2026-11-23), from the published interface only; nothing measured yet. References to measure: HB-F900, NMS 8250, FS-A1WSX.
+> **Spec:** DRAFT 1 (2026-11-23): MEASURED on the HB-F900, NMS 8250 and FS-A1WSX ([xsubgc.asm](../../probes/bios/spec/xsubgc.asm), [scratchpad/AE_xsubgc_msx2.out](../../scratchpad/AE_xsubgc_msx2.out), decoded by `scratchpad/xsubgc_decode.py`).
 
 ## Summary
 
@@ -27,9 +27,15 @@ and possibly on R#9's line count; none of that is published.
 - In SCREEN 3 the MSX1 call divides by 4 [A for this entry]; in SCREEN 5-8 no scaling is expected [A].
 - Cells and VDP registers: none written [A].
 
+**Measured** [M] (the same on all three references; BC = X, DE = Y, signed): SCREEN 5 / 8 clip to 255 x 211,
+SCREEN 6 / 7 to 511 x 211; negative values to 0; carry SET only when nothing was clipped (F $81), clear when clipped
+(F $80 / $00). **In SCREEN 2 the result is MULTICOLOUR scaled**: (300, 250) -> (63, 47), (100, 100) -> (25, 25) --
+divided by 4 and clipped to 63 x 47.
+
 ## Differences from the reference
 
-Not measured yet.
+C-BIOS's MSX2 / MSX2+ builds clip the same in SCREEN 5-8 (F's bit 7 clear where the references set it); in SCREEN 2
+they clip to 255 x 191 and do not divide ([scratchpad/AE_xsubgc_msx2.out](../../scratchpad/AE_xsubgc_msx2.out)).
 
 ## Open (not measured)
 

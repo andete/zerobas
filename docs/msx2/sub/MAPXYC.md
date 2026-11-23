@@ -5,7 +5,7 @@ SPDX-License-Identifier: BSD-2-Clause
 
 # `MAPXYC` (sub-ROM $0091) — turn coordinates into a graphics position
 
-> **Spec:** DRAFT 0 (2026-11-23), from the published interface only; nothing measured yet. References to measure: HB-F900, NMS 8250, FS-A1WSX.
+> **Spec:** DRAFT 1 (2026-11-23): MEASURED on the HB-F900, NMS 8250 and FS-A1WSX ([xsubgc.asm](../../probes/bios/spec/xsubgc.asm), [scratchpad/AE_xsubgc_msx2.out](../../scratchpad/AE_xsubgc_msx2.out), decoded by `scratchpad/xsubgc_decode.py`).
 
 ## Summary
 
@@ -33,9 +33,14 @@ other cursor call depends on the answer.
 - Whether ACPAGE enters CLOC (a page's $8000 / $10000 offset) is [A].
 - VDP registers: none written [A] (the MSX1 call writes none, measured there).
 
+**Measured** [M] (the same on all three references): in SCREEN 5-8 **CLOC := X and CMASK := Y** (the low byte):
+(10, 20) gives CLOC $000A, CMASK $14; (511, 211) $01FF / $D3. In SCREEN 2 the result is the MULTICOLOUR form, not the
+SCREEN 2 one: (0, 0) CLOC $0000 CMASK $F0, (1, 0) CMASK $0F, (10, 20) CLOC $022C, (255, 191) CLOC $07FF -- nibble
+masks, not bit masks. F $44 / $00 (SCREEN 2), $42 (5), $02 (6-8).
+
 ## Differences from the reference
 
-Not measured yet.
+C-BIOS's MSX2 / MSX2+ builds give the same CLOC / CMASK ([scratchpad/AE_xsubgc_msx2.out](../../scratchpad/AE_xsubgc_msx2.out)).
 
 ## Open (not measured)
 

@@ -16785,7 +16785,8 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
       $F3DF / $FFE7 / $FFFA, R#0 also writes R#9); the sprite calls (xspr2.asm); REDCLK / WRTCLK (xclk.asm: C-BIOS's REDCLK does not
       select the block reliably); the screen-mode calls (xmode.asm: CHGMOD, INIT*, SET*, SETPAG,
       CHGMDP; CHGMOD 10-12 are invalid even on the MSX2+); CHGCLR / CLS (xsubcls.asm: CLS's fill byte
-      unmasked, per-mode). NEXT: VA-13
+      unmasked, per-mode); the graphics-cursor core (xsubgc.asm: MAPXYC / SETC / READC /
+      SETATR / SCALXY; SCREEN 2 behaves as MULTICOLOUR in the sub-ROM). NEXT: VA-13
       / VA-14 / VA-16, then the sub-ROM pages region by region.
 - [ ] **D-MSX1ON2 — THE MSX1 BIOS CALLS ON THE MSX2 / MSX2+ REFERENCES: SAME CASES, NOT ASSUMED THE SAME ANSWERS**
       🔁 THE RULE IS GENERAL (Joost 2026-11-23): every generation's calls are re-measured on EVERY later one --

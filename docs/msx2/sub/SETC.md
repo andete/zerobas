@@ -5,7 +5,7 @@ SPDX-License-Identifier: BSD-2-Clause
 
 # `SETC` (sub-ROM $009D) — set the current pixel
 
-> **Spec:** DRAFT 0 (2026-11-23), from the published interface only; nothing measured yet. References to measure: HB-F900, NMS 8250, FS-A1WSX.
+> **Spec:** DRAFT 1 (2026-11-23): MEASURED on the HB-F900, NMS 8250 and FS-A1WSX ([xsubgc.asm](../../probes/bios/spec/xsubgc.asm), [scratchpad/AE_xsubgc_msx2.out](../../scratchpad/AE_xsubgc_msx2.out), decoded by `scratchpad/xsubgc_decode.py`).
 
 ## Summary
 
@@ -28,9 +28,15 @@ operation in LOGOPR applies, whether the VDP's PSET command does the work, and w
   spills an over-15 ATRBYT into the other nibble, measured there) [A].
 - Registers kept and interrupts on after [A, as MSX1].
 
+**Measured** [M] (the same on all three references, ATRBYT from SETATR $0B): the pixel at CLOC / CMASK takes
+ATRBYT -- SCREEN 5 / 7: the high nibble for even X ($B0), the low one for odd ($0B); SCREEN 6: 2 bits per pixel, X 0
+-> bits 7-6 ($C0), X 1 -> 5-4, X 3 -> 1-0 (ATRBYT $0F there, all ones); SCREEN 8: the byte ($0B). In SCREEN 2 it writes
+ATRBYT into the nibble MAPXYC's mask names ($B0 / $0B at $0000).
+
 ## Differences from the reference
 
-Not measured yet.
+C-BIOS's MSX2 / MSX2+ builds write the same in SCREEN 5-8; in SCREEN 2 they write the MASK ($F0 / $0F) where the
+references write the colour ($B0 / $0B) ([scratchpad/AE_xsubgc_msx2.out](../../scratchpad/AE_xsubgc_msx2.out)).
 
 ## Open (not measured)
 

@@ -5,7 +5,7 @@ SPDX-License-Identifier: BSD-2-Clause
 
 # `SETATR` (sub-ROM $0099) — set the graphics colour
 
-> **Spec:** DRAFT 0 (2026-11-23), from the published interface only; nothing measured yet. References to measure: HB-F900, NMS 8250, FS-A1WSX.
+> **Spec:** DRAFT 1 (2026-11-23): MEASURED on the HB-F900, NMS 8250 and FS-A1WSX ([xsubgc.asm](../../probes/bios/spec/xsubgc.asm), [scratchpad/AE_xsubgc_msx2.out](../../scratchpad/AE_xsubgc_msx2.out), decoded by `scratchpad/xsubgc_decode.py`).
 
 ## Summary
 
@@ -24,9 +24,12 @@ so the range test is the open question.
   bits there, [P TH 4 §3.7.3]); 0-255 in SCREEN 8; 0-15 in SCREEN 2-4.
 - Other registers and the interrupt state kept [A, as MSX1].
 
+**Measured** [M] (the same on all three references): A $0B gives ATRBYT $0B in SCREEN 2, 5, 7 and 8, and
+**$0F in SCREEN 6** (not $0B, nor $0B AND 3).
+
 ## Differences from the reference
 
-Not measured yet.
+C-BIOS's MSX2 / MSX2+ builds store the same ([scratchpad/AE_xsubgc_msx2.out](../../scratchpad/AE_xsubgc_msx2.out)).
 
 ## Open (not measured)
 
