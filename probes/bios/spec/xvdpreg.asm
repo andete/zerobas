@@ -49,6 +49,7 @@ riff    equ     $E91C
 rkept   equ     $E91D
 farp    equ     $E91E                   ; RG0SAV + C
 farv    equ     $E920                   ; its byte before
+V8SAVE  equ     $E940                   ; D-MSX1ON2: $FFE7-$FFF6 (the R#8-R#23 copies) at boot, MSX2 only
 
                 org     $4000
                 db      "AB"
@@ -77,12 +78,40 @@ h_lp:
                 call    emit
                 inc     hl
                 djnz    h_lp
+                ld      hl, $FFE7               ; D-MSX1ON2: keep the boot R#8-R#23 copies (used only where EXBRSA != 0)
+                ld      de, V8SAVE
+                ld      bc, 16
+                ldir
                 ld      hl, cases
                 ld      (tptr), hl
                 xor     a
                 ld      (cidx), a
 next:
                 di
+                ; D-MSX1ON2: on an MSX2 (EXBRSA, $FAF8, RAM, non-zero) WRTVDP with C 8-46 reaches the V9938's own
+                ; registers: a case left R#14 (VRAM bank) / R#15 (status pointer) at $A5 and the status polls never
+                ; saw a frame. So each case first puts R#8-R#23 and their copies back as they were at boot. On an
+                ; MSX1 nothing is written (on a TMS9918 R#8-R#15 would alias R#0-R#7).
+                ld      a, ($FAF8)
+                or      a
+                jr      z, v8_done
+                ld      hl, V8SAVE
+                ld      de, $FFE7
+                ld      bc, 16
+                ldir
+                ld      hl, V8SAVE
+                ld      c, $88                  ; $80 | 8: register 8 first
+v8_lp:
+                ld      a, (hl)
+                out     ($99), a
+                ld      a, c
+                out     ($99), a
+                inc     hl
+                inc     c
+                ld      a, c
+                cp      $98                     ; through R#23
+                jr      nz, v8_lp
+v8_done:
                 ld      hl, (tptr)
                 ld      a, (hl)
                 cp      $FF

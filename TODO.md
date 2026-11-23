@@ -16794,7 +16794,8 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
           KEYREADY handshake; VG-8020 captures byte-identical, now gen=0 on all three MSX2s); ✅ xinit3 / xinit4 DONE 2026-11-23 (an H.KEYI guard,
           installed only where EXBRSA != 0; VG-8020 byte-identical bar xinit4's 4 known run-to-run cells) -- and a GEN
           FINDING: RG0SAV $1A hangs the NMS 8250 (IE1 reaches R#0, the line interrupt is never acknowledged; $4A does
-          not), C-BIOS MSX2 the same; xvdpreg (R#14 / R#15 left at $A5);
+          not), C-BIOS MSX2 the same; ✅ xvdpreg DONE 2026-11-23 (R#8-R#23 + copies put back per case, MSX2 only;
+          all three references read; C-BIOS's MSX2 JP / MSX2+ builds overrun RAM there, the EU build does not);
           xsetw (no @caplen); xcalslt (copies its target into sub-slot 3-0, not the RAM slot); xenaslt2 / xrdslt2
           (assume RAM in 3-0); xdsk3 (no reading on two machines: dump CAP + a progress cell on timeout); disk
           R-BS-SLOT's per-row IY constant. A probe edit changes the MSX1 runs too: re-measure the VG-8020 rows.

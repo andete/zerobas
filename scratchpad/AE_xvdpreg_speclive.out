@@ -1,0 +1,7 @@
+  live XVDPREG_run4.out nodisk: xvdpreg.asm 1.9 s, zerobas as committed
+  live XVDPREG_run4.out disk: xvdpreg.asm 0.1 s, zerobas as committed
+OK   docs/bios/WRTVDP.md: 6 rules, 0 failing on zerobas (live, 1 run file(s))
+OK   docs/bios/DISSCR.md: 3 rules, 0 failing on zerobas (live, 1 run file(s))
+OK   docs/bios/ENASCR.md: 3 rules, 0 failing on zerobas (live, 1 run file(s))
+OK   docs/bios/RDVDP.md: 4 rules, 0 failing on zerobas (live, 1 run file(s))
+===== spec-live: ALL PAGES AGREE =====

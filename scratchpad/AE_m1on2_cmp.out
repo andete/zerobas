@@ -87,7 +87,7 @@ xgfx6       msx2eu: gen=89 cbios=350  msx2jp: gen=178 cbios=350  msx2p: gen=179 
 xinig       msx2eu: gen=832 cbios=510  msx2jp: gen=866 cbios=520  msx2p: gen=866 cbios=520
 xinit       msx2eu: gen=1004 cbios=183  msx2jp: gen=1128 cbios=183  msx2p: gen=1128 cbios=183
 xinit3      msx2eu: gen=561 cbios=211  msx2jp: gen=657 cbios=239  msx2p: gen=657 cbios=239
-xinit4      msx2eu: gen=1251 cbios=310  msx2jp: gen=1403 cbios=319  msx2p: gen=1404 cbios=320
+xinit4      msx2eu: gen=1251 cbios=310  msx2jp: gen=1404 cbios=319  msx2p: gen=1404 cbios=320
 xinitio     msx2eu: gen=0 cbios=0  msx2jp: gen=20 cbios=20  msx2p: gen=30 cbios=30
 xinitio2    msx2eu: gen=0 cbios=0  msx2jp: gen=20 cbios=20  msx2p: gen=30 cbios=30
 xinitio3    msx2eu: gen=0 cbios=0  msx2jp: gen=25 cbios=25  msx2p: gen=37 cbios=37
@@ -133,5 +133,5 @@ xtap4       msx2eu: gen=1 cbios=10  msx2jp: gen=0 cbios=10  msx2p: gen=2 cbios=1
 xtap5       msx2eu: gen=0 cbios=25  msx2jp: gen=1 cbios=25  msx2p: gen=1 cbios=27
 xtot        msx2eu: gen=98 cbios=36  msx2jp: gen=120 cbios=36  msx2p: gen=120 cbios=36
 xtot2       msx2eu: gen=167 cbios=33  msx2jp: gen=167 cbios=33  msx2p: gen=167 cbios=33
-xvdpreg     msx2eu: gen=108+LEN cbios=94+LEN  msx2jp: gen=154+LEN cbios=98+LEN  msx2p: gen=199+LEN cbios=120
+xvdpreg     msx2eu: gen=206 cbios=179  msx2jp: gen=286 cbios=2566+LEN  msx2p: gen=331 cbios=2566+LEN
 xvram       msx2eu: gen=12 cbios=1  msx2jp: gen=12 cbios=1  msx2p: gen=12 cbios=1
