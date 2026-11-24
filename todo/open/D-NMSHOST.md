@@ -123,3 +123,5 @@
       second are now ignored; the printed time was taken at definition, not at the hit.
       ⛔ FOR JOOST: is a VG-8020 + NMS 1200 known to boot MSX-DOS 1 (another disk, another setting, another MSX1 host
       with the NMS 1200)? Without a reference that boots DOS the step after the date prompt has nothing to match.
+      HOST-CONTRACT PAGE: docs/concepts/disk-rom-host.md (2026-11-24) -- items 1-3 with their evidence, the disk ROM's
+      write map, and the open list (date format, screen clear, DOS).
