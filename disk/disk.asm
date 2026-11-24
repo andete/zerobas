@@ -24,7 +24,9 @@
 ; -> DSKIO ($4010) inter-slot hook so a real MSX-BASIC / MSX-DOS host can drive
 ; us via PHYDIO (the Phase-1.5 PROVIDER surface), and (2) publishes the BDOS
 ; entry point via the SYSTEM ($F37D) sysvar (and seeds the default DTA), then
-; returns to the BIOS boot scan. zerobas-BASIC itself reaches the file layer
+; returns. (Since D-DISKROMHOST INIT only claims HIMEM and the hooks -- (1), and
+; H.RUNC; (2), the rest of the set-up and the DOS boot run from the host's first
+; H.RUNC call, as on a stock disk ROM -- disk/init.asm.) zerobas-BASIC itself reaches the file layer
 ; through that SYSTEM-vector BDOS entry across slots with CALSLT (the internal
 ; path) — NOT through the H.* / HPHYD chain; HPHYD exists for FOREIGN hosts. The
 ; disk subsystem reaches the physical driver through the six fixed-offset entry

@@ -1,0 +1,162 @@
+# D-DISKROMHOST step 2 (2026-11-24): zerobas's disk ROM as a cartridge in the VG-8020, and the references' H.RUNC.
+# scratchpad/diskhost_probe.py MACHINE EXT DISK SECONDS [KEYS]; DISK = a private copy of an MSX-DOS 1.03 + COMMAND 1.11 disk.
+# SYM lines: zerobas's OWN disk-ROM labels (build/disk.sym), traced only while page 1 is a non-slot-0 slot holding our ROM.
+# H.RUNC-all-RET: $FECB..$FECF all $C9 (RAM).
+
+## BEFORE (e807c097d's disk ROM): the DOS boot runs from INIT, in the boot scan
+### Philips_VG_8020 + zerobas-disk, disk msxdos103-cmd111.dsk, 20.0 s, keys ''
+HRUNC 1.1909 SP=F09A HIMEM=F380
+=== SCREEN 3 s HIMEM=F380 H.RUNC-is-RET=1
+  |           MSX  system          
+  |           version 1.0          
+  |   Copyright 1983 by Microsoft  
+SYM init 4.9521 SP=F08E HIMEM=F380
+SYM boot_disk_go 4.9550 SP=F08E HIMEM=DE77
+SYM dos_handoff 5.1819 SP=F08C HIMEM=DE77
+HIT0100 6.590 SCRMOD=1 LINLEN=29 HIMEM=DE77
+=== SCREEN 8 s HIMEM=DE77 H.RUNC-is-RET=1
+  |  MSX-DOS version 1.03          
+  |  Copyright 1984 by Microsoft   
+HIT0100 11.650 SCRMOD=1 LINLEN=29 HIMEM=DE77
+=== SCREEN 19 s HIMEM=DE77 H.RUNC-is-RET=1
+  |  MSX-DOS version 1.03          
+  |  Copyright 1984 by Microsoft   
+  |  COMMAND version 1.11          
+  |  Current date is Sun 84-01-01  
+  |  Enter new date:               
+hits0100 2
+
+# (H.RUNC-is-RET above = the old name of H.RUNC-all-RET; no SYM hrunc_h/init_p2: those labels did not exist)
+
+## AFTER: INIT is phase 1; the cold start's H.RUNC runs phase 2 and boots MSX-DOS
+### Philips_VG_8020 + zerobas-disk, disk msxdos103-cmd111.dsk, 20.0 s, keys ''
+HRUNC 1.1909 SP=F09A HIMEM=F380
+=== SCREEN 3 s HIMEM=F380 H.RUNC-all-RET=1 H.RUNC-byte0=c9
+  |           MSX  system          
+  |           version 1.0          
+  |   Copyright 1983 by Microsoft  
+SYM init 4.9521 SP=F08E HIMEM=F380
+HRUNC 4.9581 SP=F09A HIMEM=DE77
+SYM hrunc_h 4.9583 SP=F094 HIMEM=DE77
+SYM init_p2 4.9583 SP=F094 HIMEM=DE77
+SYM boot_disk_go 4.9591 SP=F094 HIMEM=DE77
+SYM dos_handoff 4.9863 SP=F092 HIMEM=DE77
+HIT0100 6.394 SCRMOD=1 LINLEN=29 HIMEM=DE77
+=== SCREEN 8 s HIMEM=DE77 H.RUNC-all-RET=1 H.RUNC-byte0=c9
+  |  MSX-DOS version 1.03          
+  |  Copyright 1984 by Microsoft   
+HIT0100 11.658 SCRMOD=1 LINLEN=29 HIMEM=DE77
+=== SCREEN 19 s HIMEM=DE77 H.RUNC-all-RET=1 H.RUNC-byte0=c9
+  |  MSX-DOS version 1.03          
+  |  Copyright 1984 by Microsoft   
+  |  COMMAND version 1.11          
+  |  Current date is Sun 84-01-01  
+  |  Enter new date:               
+hits0100 2
+
+
+## AFTER, no disk: BASIC comes up; the layout is still HIMEM $F380's (unchanged from before, see BEFORE below)
+### Philips_VG_8020 + zerobas-disk, disk none, 30.0 s, keys '12:PRINT FRE(0);FRE("");HEX$(PEEK(&HFC4A)+256*PEEK(&HFC4B))\\r'
+HRUNC 1.1909 SP=F09A HIMEM=F380
+SYM init 4.9521 SP=F08E HIMEM=F380
+HRUNC 4.9581 SP=F09A HIMEM=DE77
+SYM hrunc_h 4.9583 SP=F094 HIMEM=DE77
+SYM init_p2 4.9583 SP=F094 HIMEM=DE77
+SYM boot_disk_go 4.9591 SP=F094 HIMEM=DE77
+=== SCREEN 11 s HIMEM=DE77 H.RUNC-all-RET=1 H.RUNC-byte0=c9
+  |  MSX BASIC version 1.0                 
+  |  Copyright 1983 by Microsoft           
+  |  28815 Bytes free                      
+  |  Ok                                    
+  |  color  auto   goto   list   run       
+=== SCREEN 29 s HIMEM=DE77 H.RUNC-all-RET=1 H.RUNC-byte0=c9
+  |  MSX BASIC version 1.0                 
+  |  Copyright 1983 by Microsoft           
+  |  28815 Bytes free                      
+  |  Ok                                    
+  |  PRINT FRE(0);FRE("");HEX$(PEEK(&HFC4A 
+  |  )+256*PEEK(&HFC4B))                   
+  |   28815  200 DE77                      
+  |  Ok                                    
+  |  color  auto   goto   list   run       
+hits0100 0
+
+## BEFORE, no disk (SYM names from the AFTER build's symbol table do not apply to this ROM and are dropped)
+### Philips_VG_8020 + zerobas-disk, disk none, 25.0 s, keys '12:PRINT FRE(0);FRE("");HEX$(PEEK(&HFC4A)+256*PEEK(&HFC4B))\\r'
+HRUNC 1.1909 SP=F09A HIMEM=F380
+HRUNC 4.9635 SP=F09A HIMEM=DE77
+=== SCREEN 11 s HIMEM=DE77 H.RUNC-all-RET=1 H.RUNC-byte0=c9
+  |  MSX BASIC version 1.0                 
+  |  Copyright 1983 by Microsoft           
+  |  28815 Bytes free                      
+  |  Ok                                    
+  |  color  auto   goto   list   run       
+=== SCREEN 24 s HIMEM=DE77 H.RUNC-all-RET=1 H.RUNC-byte0=c9
+  |  MSX BASIC version 1.0                 
+  |  Copyright 1983 by Microsoft           
+  |  28815 Bytes free                      
+  |  Ok                                    
+  |  PRINT FRE(0);FRE("");HEX$(PEEK(&HFC4A 
+  |  )+256*PEEK(&HFC4B))                   
+  |   28815  200 DE77                      
+  |  Ok                                    
+  |  color  auto   goto   list   run       
+hits0100 0
+
+
+## The DISK machine (C-BIOS_MSX1_EU_REPACK_DISK), AFTER: the same order, inside zerobas's own H.RUNC call
+### C-BIOS_MSX1_EU_REPACK_DISK + none, disk msxdos103-cmd111.dsk, 20.0 s, keys ''
+SYM init 2.6541 SP=F092 HIMEM=F380
+HRUNC 2.6596 SP=F090 HIMEM=DE77
+SYM hrunc_h 2.6599 SP=F086 HIMEM=DE77
+SYM init_p2 2.6599 SP=F086 HIMEM=DE77
+SYM boot_disk_go 2.6607 SP=F086 HIMEM=DE77
+SYM dos_handoff 2.6878 SP=F084 HIMEM=DE77
+HIT0100 4.088 SCRMOD=1 LINLEN=29 HIMEM=DE77
+=== SCREEN 8 s HIMEM=DE77 H.RUNC-all-RET=1 H.RUNC-byte0=c9
+  |  MSX-DOS version 1.03          
+  |  Copyright 1984 by Microsoft   
+HIT0100 8.939 SCRMOD=1 LINLEN=29 HIMEM=DE77
+=== SCREEN 19 s HIMEM=DE77 H.RUNC-all-RET=1 H.RUNC-byte0=c9
+  |  MSX-DOS version 1.03          
+  |  Copyright 1984 by Microsoft   
+  |  COMMAND version 1.11          
+  |  Current date is Sun 84-01-01  
+  |  Enter new date:               
+hits0100 2
+
+
+## References (black box: hook breakpoint, RAM, screen): HIMEM at their H.RUNC, and the hook after it
+### National_CF-3300 + none, disk msxdos103-cmd111.dsk, 20.0 s, keys ''
+HRUNC 1.1913 SP=F09A HIMEM=F380
+HRUNC 6.9100 SP=EEAF HIMEM=F195
+=== SCREEN 8 s HIMEM=DF93 H.RUNC-all-RET=1 H.RUNC-byte0=c9
+HIT0100 10.414 SCRMOD=1 LINLEN=29 HIMEM=DF93
+HIT0100 11.286 SCRMOD=1 LINLEN=29 HIMEM=DF93
+=== SCREEN 19 s HIMEM=DF93 H.RUNC-all-RET=1 H.RUNC-byte0=c9
+  |  MSX-DOS version 1.03          
+  |  Copyright 1984 by Microsoft   
+  |  COMMAND version 1.11          
+  |  Current date is Sun 84-01-01  
+  |  Enter new date:               
+hits0100 2
+
+### National_CF-3300 + none, disk test720.dsk, 25.0 s, keys '22:PRINT FRE(0);FRE("");HEX$(PEEK(&HFC4A)+256*PEEK(&HFC4B))\\r'
+HRUNC 1.1913 SP=F09A HIMEM=F380
+HRUNC 6.9100 SP=EEAF HIMEM=F195
+=== SCREEN 11 s HIMEM=DF93 H.RUNC-all-RET=1 H.RUNC-byte0=c9
+  |  Enter date (年-月-日):           
+=== SCREEN 24 s HIMEM=DF93 H.RUNC-all-RET=1 H.RUNC-byte0=c9
+  |  Enter date (年-月-日):PRINT FRE( 
+  |  0);FRE("")                    
+hits0100 0
+
+### Philips_VG_8020 + Sony_HBD-F1, disk none, 25.0 s, keys '22:PRINT FRE(0);FRE("");HEX$(PEEK(&HFC4A)+256*PEEK(&HFC4B))\\r'
+HRUNC 1.1909 SP=F09A HIMEM=F380
+HRUNC 9.1581 SP=EEB0 HIMEM=F196
+=== SCREEN 11 s HIMEM=DF94 H.RUNC-all-RET=1 H.RUNC-byte0=c9
+=== SCREEN 24 s HIMEM=DF94 H.RUNC-all-RET=1 H.RUNC-byte0=c9
+  |  Enter date (M-D-Y):PRINT FRE(0);FRE(" 
+  |  ")                                    
+hits0100 0
+

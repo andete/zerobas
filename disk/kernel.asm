@@ -199,6 +199,15 @@ fmt_bnone:
 fmt_bfcb:
                 db      0, "MSXDOS  SYS"
 FMT_BOOTLEN     equ     $ - fmt_boot
+; rh_init -- INIT's half of D-PUTCACHE (disk/init.asm's init_p2 calls it): no sector
+; held. Keeps A (INIT's 0 is still needed after the call). Here, AFTER FMT_BOOTLEN (not
+; part of the boot template), since D-DISKROMHOST took its bytes in front of $75A5 for
+; hrunc_h. (Before that: in front of $543C until D-F37DSETDATE, and disk/fat.asm's $47C1
+; fill until D-WRZER.)
+rh_init:
+                ld      hl, 0
+                ld      (RND_HSEC), hl
+                ret
                 ds      $4EDE - $, $00  ; pad to the $4EDE kernel veneer
                 jp      k_4EDE          ; $4EDE: COMMAND.COM-load kernel veneer
 ; 📌 In the $4EE1..$4FB8 fill (check_disk_walls: the largest hole, 2026-10-21).
@@ -5828,6 +5837,9 @@ hook_tab:
                 hookrow H_DGET, hk_dget      ; S10.D: GET / PUT's record I/O
                 hookrow H_CHIN, hk_chin      ; S10.C: an INPUT channel's byte / EOF /
                                              ; numeric item (disk/fat.asm)
+                hookrow HPHYD, DSKIO_ENTRY  ; so a foreign MSX-BASIC / MSX-DOS host reaches our
+                                             ; DSKIO (it was 9 B inline in INIT's pinned pad)
+                hookrow H_RUNC, hrunc_h      ; D-DISKROMHOST: phase 2 + the DOS boot (disk/init.asm)
                 ; --- H_FOPEN: INSTALLED 2026-09-20 (D-STOPRELATCH) --------
                 ; 🏗️ Joost ruled §6.6m, re-affirmed in §6.7's *"we do as the
                 ; reference does"*: LOAD arrives at the cell the REFERENCE uses,
@@ -5874,14 +5886,8 @@ hook_tab:
 ; out: HL advanced past the stub. Clobbers A, HL.
 ; Sited here rather than in init.asm because the pad before the $41EF pin is only
 ; 25 B and one inline install already spent all of it.
-; --- fat_bufinit: point the FAT engine at the BDOS buffer pair ---------------
-; disk/docs/spec-diskcode-eviction.md §6.4a (the fork and its ruling) and §0.1
-; (why a base parameter is needed at all, and what D-FATBUF measured).
-; D-FATENG, Joost's ruling (b): the engine loads its buffer bases from RAM
-; instead of assembling them in, so ONE engine can serve two callers. This sets
-; the BDOS pair; a later slice sets the Disk-BASIC pair before its own calls.
-; Sited HERE and not in init.asm for the reason install_hook records below: the
-; pad before the $41EF pin is 25 B and one inline install already spent it.
+; (fat_bufinit, the BDOS buffer pair's set-up, is inline in disk/init.asm's init_p2 since
+; D-DISKROMHOST: its 13 B here went to hrunc_h below.)
 ; --- ftc_totsec: total sectors from the boot sector's BPB +19 ----------------
 ; disk/docs/spec-diskcode-eviction.md §6.4a. Split out of fat_total_clusters
 ; because that routine then sat in a region pinned by `ds $4B59 - $` with no slack (that pin is gone, 2026-10-15):
@@ -5889,12 +5895,19 @@ hook_tab:
 ; label only, so it is position-free here.
 ;   in   the boot sector is already in the METADATA buffer
 ;   out  HL = total sectors (16-bit, BPB +19). Clobbers DE.
-fat_bufinit:
-                ld      hl, SECTOR_BUF
-                ld      (DBUF_PTR), hl
-                ld      hl, WBUF
-                ld      (MBUF_PTR), hl
-                ret
+; hrunc_h -- D-DISKROMHOST (2026-11-24): the H.RUNC ($FECB) handler INIT claims
+; (hook_tab's H_RUNC row): this ROM's phase 2 and the DOS boot, ONCE. The hook goes
+; back to five RETs first -- its RST 30h has run already, and the CALLF returns to the
+; stub's own RET at $FECF -- so the later H.RUNC calls (NEW, a typed line, RUN, on
+; either host) find a plain RET and phase 2 never repeats. A BASENT restart reruns
+; INIT, which claims the hook again, and phase 2 then runs once more, as it ran in
+; INIT before. Here in the corridor because the INIT region has 1 B left; it took
+; fat_bufinit's 13 B, whose body is inline in init_p2 now (disk/init.asm).
+hrunc_h:
+                ld      hl, $C9C9           ; $FECB..$FECE; $FECF is the stub's own RET:
+                ld      (H_RUNC), hl        ; all five RET, as the CF-3300 and the
+                ld      (H_RUNC + 2), hl    ; VG-8020 + HBD-F1 leave the hook after it
+                jp      init_p2             ; (scratchpad/AE_diskhost_*.out, H.RUNC-all-RET)
 
 ; 🏗️ D-FATENG Option 2 (Joost, 2026-09-18): ONE FAT12 ENGINE, ONE SOURCE, TWO
 ; ROMs -- the same file sub.rom assembles. disk/fat.asm keeps only the
@@ -7546,14 +7559,7 @@ wba_loop:
                 inc     hl
                 djnz    wba_loop
                 ret
-; rh_init -- INIT's half of D-PUTCACHE (disk/init.asm calls it): no sector held.
-; Keeps A (INIT's 0 is still needed after the call). (Moved here from in front of
-; $543C by D-F37DSETDATE, whose bdos_tab rows needed those bytes; before that from
-; disk/fat.asm's $47C1 fill by D-WRZER.)
-rh_init:
-                ld      hl, 0
-                ld      (RND_HSEC), hl
-                ret
+; (rh_init moved to the pad in front of $4EDE by D-DISKROMHOST: this region's bytes went to hrunc_h.)
 ; stime_body -- BDOS $2D STIME ($55E6's body, and bdos_tab's row for $F37D): H hour,
 ; L minute, D second. 🔴 D-F37DSETDATE (2026-11-22): it checks them now -- the
 ; VG-8020 + NMS 1200 and the CF-3300 refuse hour 24, minute 60 and second 60 with A

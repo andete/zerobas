@@ -72,7 +72,12 @@ k_4025:         jp      fmt_dos         ; $4025: FORMAT (kernel.asm)
 
 ; --- INIT -------------------------------------------------------------------
 ; Called by the BIOS boot scan (or by zerobas-BASIC's slot scan, which finishes
-; the scan C-BIOS skips — see basic/initext.asm). INIT does two things:
+; the scan C-BIOS skips — see basic/initext.asm).
+; 🏗️ D-DISKROMHOST (2026-11-24): IN TWO PHASES, AS A STOCK DISK ROM. INIT itself
+; (phase 1) keeps the slot byte, lowers HIMEM and claims the hooks -- including
+; H.RUNC ($FECB); the host's first H.RUNC call (MS-BASIC's cold start, after the
+; scan; zerobas's the same, basic/interp.asm) runs `init_p2` (phase 2): item 2
+; below, the rest of the set-up and the DOS boot. Item 1 is phase 1:
 ;
 ;   1. installs the standard HPHYD ($FFA7) -> DSKIO ($4010) inter-slot hook, so a
 ;      real MSX-BASIC / MSX-DOS host that issues PHYDIO reaches our sector engine.
@@ -116,43 +121,42 @@ init:
                 ; Do this FIRST, before anything clobbers A.
                 ld      (HOOK_SLOT), a      ; HOOK_SLOT = our slot byte (e.g. $87 = 3-1)
 
-                ; D-FATENG: the FAT engine reads its buffer bases from RAM now,
-                ; so they must exist before any FAT call. Three bytes here; the
-                ; body is in the free corridor (disk/kernel.asm) because the pad
-                ; before the $41EF pin is only 25 B.
-                call    fat_bufinit
-
                 ; --- install the hooks this ROM claims -------------------------
                 ; Each is the standard 5-byte CALLF stub `F7 <slot> <lo> <hi> C9`
                 ; (RST 30h ; slot ; addr-lo ; addr-hi ; RET -- MSX2 TH §2), written
-                ; by the shared `install_hook` helper (disk/kernel.asm).
+                ; by the shared `install_hook` helper through the table-driven loop
+                ; `install_basic_hooks` (disk/kernel.asm), which also makes the HIMEM
+                ; claim. 🔴 The pad before the $41EF pin has shaped this code three
+                ; times (D-MKHOOK: inline installs overran it and pasmo emitted an
+                ; EMPTY image, which tools/pad_rom.py refuses): every hook is a
+                ; 3-byte table row there, none is inline here. The table holds HPHYD
+                ; (so a foreign MSX-BASIC / MSX-DOS host reaches our DSKIO), the
+                ; BASIC-extension hooks, and H.RUNC (see below).
                 ;
-                ; 🔴 FACTORED 2026-09-03 (D-MKHOOK), AND THE REGION IS WHY. This was
-                ; 25 B of inline writes for ONE hook, and the pad before the $41EF
-                ; pin is 25 B -- so a SECOND inline install overran it and pasmo
-                ; emitted an EMPTY image (caught by tools/pad_rom.py, exactly the
-                ; refusal its header describes). Nine bytes per hook instead of 25,
-                ; and the helper sits in the free $607B-$75A5 corridor where space
-                ; is not scarce.
-                ;
-                ; HPHYD: so a foreign MSX-BASIC / MSX-DOS host reaches our DSKIO.
-                ld      hl, HPHYD
-                ld      de, DSKIO_ENTRY
-                call    install_hook
-                ; The BASIC-EXTENSION hooks -- all seven, through a table-driven
-                ; loop in the free corridor (disk/kernel.asm). Until D-MKHOOK the
-                ; main ROM implemented every disk verb itself, so a DISKLESS build
-                ; ANSWERED where a diskless MSX raises ERR 5. With these claimed the
-                ; main ROM finds a handler; with no disk ROM each slot is C-BIOS's
-                ; `ret`, CF stays clear, and the main ROM defers ERR 5 -- correct BY
-                ; ABSENCE, which is how the reference gets it right.
-                ;
-                ; 🔴 A LOOP, NOT SEVEN INLINE PAIRS, AND THE REGION IS WHY -- AGAIN.
-                ; The pad before the $41EF pin is 31 B; seven inline installs need
-                ; 45 and overran it, so pasmo emitted an EMPTY image (pad_rom.py
-                ; refused it). This is the SECOND time this pad has decided the
-                ; shape of this code in one day: 3 B here instead of 45.
-                call    install_basic_hooks
+                ; 🏗️ D-DISKROMHOST step 2 (2026-11-24): INIT IS PHASE 1 ONLY -- the
+                ; slot byte, the HIMEM claim and the hooks, nothing else -- and
+                ; everything below `init_p2` runs from H.RUNC ($FECB), as a stock disk
+                ; ROM does it (docs/concepts/disk-rom-host.md items 1-3: the INIT runs
+                ; on the host's boot-scan stack INSIDE the RAM a disk ROM claims, with
+                ; MS-BASIC's layout still there; the stock ROMs patch H.RUNC in INIT
+                ; and boot MSX-DOS from inside the cold start's H.RUNC call). zerobas's
+                ; main ROM calls H.RUNC once after its scan (basic/interp.asm), so
+                ; the order on the DISK machine is the one it had: phase 2 before the
+                ; banner, the DOS boot before BASIC.
+                jp      install_basic_hooks
+; init_p2 -- PHASE 2, entered from the H.RUNC handler `hrunc_h` (disk/kernel.asm, in
+; the corridor: this region before the $41EF pin has 1 B left).
+init_p2:
+                ; D-FATENG: the FAT engine reads its buffer bases from RAM, so they
+                ; must exist before any FAT call. Inline (11 B) since D-DISKROMHOST:
+                ; the corridor needed fat_bufinit's 13 B for the H.RUNC handler. WBUF
+                ; is SECTOR_BUF + 512 (asserted in disk/disk.asm), hence the two
+                ; `inc h`.
+                ld      hl, SECTOR_BUF
+                ld      (DBUF_PTR), hl
+                inc     h
+                inc     h
+                ld      (MBUF_PTR), hl
 
                 ; --- publish the BDOS entry as an executable JP vector ---------
                 ; $F37D (SYSTEM) is the disk system's BDOS-call jump vector. The
@@ -197,8 +201,9 @@ init:
                 ld      (DATE_DAYS), hl
                 xor     a                   ; D-F346: MSX-DOS not booted (the CF-3300's
                 ld      (DOS_F346), a       ; 0) -- at power-on only: A>BASIC keeps 255
-                ; fall into the DOS-boot bridge (TH ch.3); it returns to the BIOS
-                ; boot scan, falling through to BASIC for a non-system disk.
+                ; fall into the DOS-boot bridge (TH ch.3); it returns to the H.RUNC
+                ; caller (the host's cold start), falling through to BASIC for a
+                ; non-system disk.
                 ; --- intentional fall-through to boot_disk -------------------
 
 ; --- DOS-boot bridge (slice 2-Tier2-a1; MSX2 TH ch.3 steps 4-5) ------------
@@ -381,7 +386,7 @@ boot_disk:
                 ; fallback first asks the date (D-BOOTDATE).
                 call    basent_pending
                 jr      nz, boot_disk_go
-                jp      basent_resume       ; HL = the mark; returns to the scan
+                jp      basent_resume       ; HL = the mark; returns to H.RUNC's caller
 boot_disk_go:
                 call    boot_rd         ; drive A's sector 0 -> $C000, its signature
                 ret     c               ; no disk / read error -> BASIC
@@ -424,7 +429,7 @@ boot_sig_ok:
                 ; pad-packed to the $41FD anchor. (tier2-f338-default-spec.md)
                 call    dos_handoff     ; DOS disk JPs into MSXDOS.SYS (no return)
                 call    page0_ram_out   ; data disk returned: BIOS ROM back in page 0
-                jp      bd_step7        ; D-STEP7DATE: the date, then the scan -> BASIC
+                jp      bd_step7        ; D-STEP7DATE: the date, then H.RUNC's caller -> BASIC
 
 ; page0_ram_in — map page 3's slot/subslot (always RAM: the stack lives there)
 ; into page 0, so the boot code/MSXDOS see RAM where the BIOS ROM was. Derives

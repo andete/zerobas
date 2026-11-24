@@ -145,6 +145,8 @@ H_FORM          equ     $FFAC   ; CALL FORMAT (D-FMTHOOK): H.FORM, MSX2 TH hook 
 ; calls and the CF-3300's disk ROM leaves unclaimed (docs/spec-basic-nodisk.md
 ; §5.2.2). NOT $FEB7: the reference claims that one and fires it at every OPEN.
 H_SYST          equ     $FDF4
+H_RUNC          equ     $FECB   ; BASIC clears its program state (NEW / a typed line / RUN / the cold start):
+                                ; this ROM's phase 2 and DOS boot run from it (D-DISKROMHOST; MSX2 TH hook table)
 ; --- H_FOPEN: the cell every file-OPENING verb arrives at (D-DPLMOVE) --------
 ; 🏗️ RULED BY JOOST 2026-09-19 (spec-diskcode-eviction.md §6.6m): "the reference
 ; is the better oracle then me, so go with FE5D + selector". "Every disk command

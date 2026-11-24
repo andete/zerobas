@@ -75,6 +75,14 @@ zerobas before and after; [hrunc_when.py](../../scratchpad/hrunc_when.py)).
 
 **zerobas:** `hrunc` ([basic/files.asm](../../basic/files.asm)) from NEW, a typed line, RUN and the cold start.
 
+**zerobas's own disk ROM (D-DISKROMHOST step 2, 2026-11-24):** follows this item as the stock cartridges do. Its INIT
+(phase 1) keeps its slot byte, lowers HIMEM and claims the hooks -- H.RUNC among them; the first H.RUNC call runs the
+rest of its set-up and, with a DOS disk in, the MSX-DOS boot, which never returns. The handler first puts the hook
+back to five RETs, which is how the CF-3300 and the VG-8020 + HBD-F1 leave it, so the later calls (NEW, a typed line,
+RUN) find a RET. As a cartridge in the VG-8020 it boots MSX-DOS 1.03 to COMMAND.COM's date prompt from inside the cold
+start's H.RUNC call (before the change it did so from INIT, in the boot scan):
+[AE_diskhost_vg8020.out](../../scratchpad/AE_diskhost_vg8020.out), [diskhost_probe.py](../../scratchpad/diskhost_probe.py).
+
 ## 4. The main ROM word at $7D2F is a routine the disk ROM calls from H.RUNC [M]
 
 In its H.RUNC handler the disk ROM reads two bytes from the main ROM (slot 0) at $7D2F-$7D30 with RDSLT and CALSLTs
@@ -149,5 +157,12 @@ ROM's.
   its cartridge / ROM / emulation, not the host. The Sony HBD-F1 is the working cartridge DOS reference. With the Sony HBD-F1 the VG-8020 boots MSX-DOS 1.03 to COMMAND.COM's date prompt, and so does zerobas
   without its disk ROM (2026-11-24) -- apart from the screen (item 4).
 - H.RUNC on LOAD: unmeasured (zerobas calls it through NEW's code on LOAD's ASCII path).
+- The stock disk ROMs claim RAM in two steps: HIMEM at their H.RUNC entry is $F196 (VG-8020 + HBD-F1) / $F195
+  (CF-3300) -- the INIT's claim is the published disk work area only -- and the H.RUNC step lowers it to $DF94 / $DF93;
+  MS-BASIC's stack at that H.RUNC is below the INIT's claim (SP $EEB0 / $EEAF), so the layout was rebuilt under it.
+  zerobas's disk ROM claims all of it ($DE77) in INIT and rebuilds no layout: as a cartridge in the VG-8020 with no
+  DOS disk, BASIC keeps the layout of HIMEM $F380 (FRE(0) 28815, HIMEM $DE77), its string space and file blocks inside
+  the claim. Unchanged by D-DISKROMHOST step 2 (the same before), and not needed for the MSX-DOS boot
+  ([AE_diskhost_vg8020.out](../../scratchpad/AE_diskhost_vg8020.out)).
 - Other disk interfaces: the Sony HBD-F1 measured (items 1-4 hold); the Panasonic FS-FD1A does not start in this
   openMSX (no ROM).
