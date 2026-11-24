@@ -100,6 +100,14 @@ own addresses), [AE_dosref_patch.out](../../scratchpad/AE_dosref_patch.out) and
 [AE_dosref_nms_patch.out](../../scratchpad/AE_dosref_nms_patch.out) (the patched copy);
 [dosref_probe.py](../../scratchpad/dosref_probe.py).
 
+What the reference's routine does, measured between H.RUNC's entry and the disk ROM's first H.PHYD on the
+reference and on the patched copy ([snapdiff.py](../../scratchpad/snapdiff.py),
+[AE_dosref_snapdiff.out](../../scratchpad/AE_dosref_snapdiff.out)): the same 30 published bytes change, to the same
+values (SCRMOD / OLDSCR, LINLEN, CSRY, RG0SAV-RG7SAV, the layout the disk ROM rebuilds; beyond them only the timer
+counters differ); both write VRAM 3,008 times -- the font and a cleared 40 x 24 name table -- and end with the same
+name table and VDP registers. Differences: the glyphs (each machine's own font) and the order -- the reference loads
+VRAM with the display off before it reprograms R#2-R#6. The effect is INITXT's.
+
 **zerobas:** not yet -- a fixed word at $7D2F changes the layout of main page 1 (zerobas BASIC's code is there).
 
 ## What the disk ROM writes

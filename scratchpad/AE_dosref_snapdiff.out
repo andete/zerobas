@@ -1,0 +1,214 @@
+### AE_dosref_snap_ref.out: 30 published-area byte(s) change S0 -> S1
+    $F3B0 LINLEN: 1D->25
+    $F3DC CSRY: 0F->01
+    $F3E0 RG1SAV: E0->F0
+    $F3E1 ?: 06->00
+    $F3E2 ?: 80->00
+    $F3E3 ?: 00->01
+    $F3E4 ?: 36->00
+    $F3E5 ?: 07->00
+    $F3E6 ?: 04->F4
+    $F3F6 SCNCNT: 01->03
+    $F55B ?: 00->0D
+    $F672 MEMSIZ: 7E->7C
+    $F673 MEMSIZ+1: EF->DD
+    $F674 STKTOP: B6->B4
+    $F675 STKTOP+1: EE->DC
+    $F6B1 SAVSTK: B4->B2
+    $F6B2 ?: EE->DC
+    $F860 FILTAB: 80->7E
+    $F861 FILTAB+1: EF->DD
+    $F862 FILTAB+2: 8D->8B
+    $F863 FILTAB+3: EF->DD
+    $F923 ?: 18->00
+    $F925 ?: 00->08
+    $FC4A HIMEM: 96->94
+    $FC4B ?: F1->DF
+    $FC9E JIFFY: 11->21
+    $FCA2 ?: EF->DF
+    $FCAF SCRMOD: 01->00
+    $FCB0 ?: 01->00
+    $FD99 ?: 01->00
+### AE_dosref_snap_zbpatch.out: 30 published-area byte(s) change S0 -> S1
+    $F3B0 LINLEN: 1D->25
+    $F3DC CSRY: 0A->01
+    $F3E0 RG1SAV: E0->F0
+    $F3E1 ?: 06->00
+    $F3E2 ?: 80->00
+    $F3E3 ?: 00->01
+    $F3E4 ?: 36->00
+    $F3E5 ?: 07->00
+    $F3E6 ?: 04->F4
+    $F3F6 SCNCNT: 03->01
+    $F55B ?: 00->0D
+    $F672 MEMSIZ: 7E->7C
+    $F673 MEMSIZ+1: EF->DD
+    $F674 STKTOP: B6->B4
+    $F675 STKTOP+1: EE->DC
+    $F6B1 SAVSTK: B4->B2
+    $F6B2 ?: EE->DC
+    $F860 FILTAB: 80->7E
+    $F861 FILTAB+1: EF->DD
+    $F862 FILTAB+2: 8D->8B
+    $F863 FILTAB+3: EF->DD
+    $F923 ?: 18->00
+    $F925 ?: 00->08
+    $FBB2 LINTTB: 00->18
+    $FC4A HIMEM: 96->94
+    $FC4B ?: F1->DF
+    $FC9E JIFFY: D6->D8
+    $FCAF SCRMOD: 01->00
+    $FCB0 ?: 01->00
+    $FD99 ?: 01->00
+### AE_dosref_snap_zb.out: 14 published-area byte(s) change S0 -> S1
+    $F55B ?: 00->0D
+    $F672 MEMSIZ: 7E->7C
+    $F673 MEMSIZ+1: EF->DD
+    $F674 STKTOP: B6->B4
+    $F675 STKTOP+1: EE->DC
+    $F6B1 SAVSTK: B4->B2
+    $F6B2 ?: EE->DC
+    $F860 FILTAB: 80->7E
+    $F861 FILTAB+1: EF->DD
+    $F862 FILTAB+2: 8D->8B
+    $F863 FILTAB+3: EF->DD
+    $FC4A HIMEM: 96->94
+    $FC4B ?: F1->DF
+    $FD99 ?: 01->00
+### S1: AE_dosref_snap_zbpatch.out vs AE_dosref_snap_ref.out
+    cell $F3EC GFX_SN: C3->00 (ref->this)
+    cell $F3EF ?: C3->00 (ref->this)
+    cell $F3F5 GFX_CPHASE: FF->00 (ref->this)
+    cell $F3F6 SCNCNT: 03->01 (ref->this)
+    cell $F3F7 ?: 01->B8 (ref->this)
+    cell $F40F ?: 3A->00 (ref->this)
+    cell $F41E ?: 3A->00 (ref->this)
+    cell $F55D ?: 2C->00 (ref->this)
+    cell $F5F5 ?: 00->F6 (ref->this)
+    cell $F663 FACTYP: 03->00 (ref->this)
+    cell $F66A POOLSIZE: 00->C8 (ref->this)
+    cell $F66C TXTCEIL: 00->AD (ref->this)
+    cell $F66D ?: 00->E7 (ref->this)
+    cell $F67A TEMPPOOL: 1D->00 (ref->this)
+    cell $F67B ?: FD->00 (ref->this)
+    cell $F67C ?: 7E->00 (ref->this)
+    cell $F698 RVDESC: 1D->00 (ref->this)
+    cell $F699 ?: FD->00 (ref->this)
+    cell $F69A ?: 7E->00 (ref->this)
+    cell $F6A5 DATASTATE: 00->03 (ref->this)
+    cell $F6A8 ?: 80->00 (ref->this)
+    cell $F6C6 STREND: 03->00 (ref->this)
+    cell $F6C7 ?: 80->00 (ref->this)
+    cell $F6C9 DATAPTR+1: 80->00 (ref->this)
+    cell $F6E8 PRGEND: 00->01 (ref->this)
+    cell $F6E9 ?: 00->80 (ref->this)
+    cell $F74C FOR_STK_END: E4->00 (ref->this)
+    cell $F74D ?: F6->00 (ref->this)
+    cell $F753 ?: 00->56 (ref->this)
+    cell $F7F8 FAC+2: 7A->00 (ref->this)
+    cell $F7F9 FAC+3: F6->00 (ref->this)
+    cell $FC9E JIFFY: 21->D8 (ref->this)
+    cell $FC9F ?: 01->00 (ref->this)
+    cell $FCA2 ?: DF->00 (ref->this)
+    cell $FCA3 ?: FE->00 (ref->this)
+    cell $FCC4 ?: 00->80 (ref->this)
+    cell $FCC8 ?: 0F->00 (ref->this)
+    cell $FCDA ?: 20->00 (ref->this)
+    cell $FD09 SUBSLOT: 00->8B (ref->this)
+    cell $FD0A SUBSLOT_OK: 00->01 (ref->this)
+    VRAM: 3447 differing byte(s) in 448 range(s)
+      $03C2-$03C6
+      $03CC-$03CD
+      $03D3-$03D6
+      $03D8-$03D8
+      $03DE-$03DE
+      $03E3-$03E3
+      $03E8-$03E8
+      $03EE-$03EE
+      $03F0-$03F2
+      $03F9-$03FA
+      $0407-$0408
+      $040A-$040E
+      $0410-$0411
+      $0413-$0416
+      $041A-$041E
+      $0420-$0420
+      $0422-$0426
+      $0428-$042E
+      $0432-$0436
+      $0439-$043A
+### S1: AE_dosref_snap_zb.out vs AE_dosref_snap_ref.out
+    cell $F3B0 LINLEN: 25->1D (ref->this)
+    cell $F3DC CSRY: 01->0A (ref->this)
+    cell $F3E0 RG1SAV: F0->E0 (ref->this)
+    cell $F3E1 ?: 00->06 (ref->this)
+    cell $F3E2 ?: 00->80 (ref->this)
+    cell $F3E3 ?: 01->00 (ref->this)
+    cell $F3E4 ?: 00->36 (ref->this)
+    cell $F3E5 ?: 00->07 (ref->this)
+    cell $F3E6 ?: F4->04 (ref->this)
+    cell $F3EC GFX_SN: C3->00 (ref->this)
+    cell $F3EF ?: C3->00 (ref->this)
+    cell $F3F5 GFX_CPHASE: FF->00 (ref->this)
+    cell $F3F7 ?: 01->B8 (ref->this)
+    cell $F40F ?: 3A->00 (ref->this)
+    cell $F41E ?: 3A->00 (ref->this)
+    cell $F55D ?: 2C->00 (ref->this)
+    cell $F5F5 ?: 00->F6 (ref->this)
+    cell $F663 FACTYP: 03->00 (ref->this)
+    cell $F66A POOLSIZE: 00->C8 (ref->this)
+    cell $F66C TXTCEIL: 00->AD (ref->this)
+    cell $F66D ?: 00->E7 (ref->this)
+    cell $F67A TEMPPOOL: 1D->00 (ref->this)
+    cell $F67B ?: FD->00 (ref->this)
+    cell $F67C ?: 7E->00 (ref->this)
+    cell $F698 RVDESC: 1D->00 (ref->this)
+    cell $F699 ?: FD->00 (ref->this)
+    cell $F69A ?: 7E->00 (ref->this)
+    cell $F6A5 DATASTATE: 00->03 (ref->this)
+    cell $F6A8 ?: 80->00 (ref->this)
+    cell $F6C6 STREND: 03->00 (ref->this)
+    cell $F6C7 ?: 80->00 (ref->this)
+    cell $F6C9 DATAPTR+1: 80->00 (ref->this)
+    cell $F6E8 PRGEND: 00->01 (ref->this)
+    cell $F6E9 ?: 00->80 (ref->this)
+    cell $F74C FOR_STK_END: E4->00 (ref->this)
+    cell $F74D ?: F6->00 (ref->this)
+    cell $F753 ?: 00->56 (ref->this)
+    cell $F7F8 FAC+2: 7A->00 (ref->this)
+    cell $F7F9 FAC+3: F6->00 (ref->this)
+    cell $F923 ?: 00->18 (ref->this)
+    cell $F925 ?: 08->00 (ref->this)
+    cell $FBB2 LINTTB: 18->00 (ref->this)
+    cell $FC9E JIFFY: 21->D6 (ref->this)
+    cell $FC9F ?: 01->00 (ref->this)
+    cell $FCA2 ?: DF->00 (ref->this)
+    cell $FCA3 ?: FE->00 (ref->this)
+    cell $FCAF SCRMOD: 00->01 (ref->this)
+    cell $FCB0 ?: 00->01 (ref->this)
+    cell $FCC4 ?: 00->80 (ref->this)
+    cell $FCC8 ?: 0F->00 (ref->this)
+    cell $FCDA ?: 20->00 (ref->this)
+    cell $FD09 SUBSLOT: 00->8B (ref->this)
+    cell $FD0A SUBSLOT_OK: 00->01 (ref->this)
+    VRAM: 4353 differing byte(s) in 483 range(s)
+      $0000-$0064
+      $0066-$0066
+      $0069-$006B
+      $006D-$00EC
+      $00EE-$00F1
+      $00F3-$0107
+      $010C-$010C
+      $010E-$011F
+      $0121-$0125
+      $0127-$012A
+      $012C-$013F
+      $0141-$0144
+      $0146-$0147
+      $0149-$014C
+      $014E-$0150
+      $0152-$0158
+      $015B-$015B
+      $015E-$017A
+      $017C-$0187
+      $0189-$0189

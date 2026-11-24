@@ -255,6 +255,15 @@ pass here (date, scope, commit, verdict) so a later session knows what was
 verified clean and at what point, rather than re-deriving it. A clean verdict is
 a load-bearing fact for the public-release gate.
 
+### 2026-11-24 — disk host (D-NMSHOST step 13), NEAR MISS — a VRAM snapshot held the reference's font — CONTAINED, nothing committed
+
+`scratchpad/dosref_probe.py` (DOSREF_SNAP) dumps all of VRAM to compare the screen a disk cartridge's H.RUNC call
+leaves. After the call VRAM holds the machine's font, which the VG-8020 copies from its ROM: ROM bytes by proxy. They
+were used only to say "the glyphs differ" (one glyph's bytes were printed to the session, never to a file in the
+repo). The committed run files have the SNAPVRAM lines removed; `scratchpad/snapdiff.py` says so in its header; the
+diff it commits reports VRAM as differing address ranges only. Rule: a VRAM capture of a reference machine stays out
+of the repo, and its pattern-generator area is compared, never printed.
+
 ### 2026-11-24 — keywords (D-KWSPEC review fixes), NEAR MISS — a record area grew past $F380 — CONTAINED, cache purged
 
 While acting on the strings-page review an isolated agent grew `kstr.py`'s record from 22 to 30 bytes; one group's

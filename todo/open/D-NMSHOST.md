@@ -155,3 +155,14 @@
       INITXT ($006C) or to a zerobas routine with the same effect? Without it any MSX1 disk cartridge calls into the
       middle of zerobas's code at $2323 (it survives today by luck).
       Also open, a C-BIOS question: the date format byte (C-BIOS EU = D-M-Y; the VG-8020's disk prompt reads M-D-Y).
+      STEP 13 (2026-11-24; Joost: "Find a way to investigate") -- WHAT THE $7D2F ROUTINE DOES, black box: snapshots of
+      the published cells $F39A-$FD99, VRAM and VDP R#0-7 at H.RUNC's entry (S0) and at the disk ROM's first H.PHYD
+      (S1), every VDP register change and the VRAM write count between, on the VG-8020, zerobas NODISK and the patched
+      copy ($006C at $7D2F), all + HBD-F1 (dosref_probe.py DOSREF_SNAP; scratchpad/snapdiff.py, AE_dosref_snapdiff.out).
+      The reference and the patched copy: the SAME 30 published bytes change to the same values (screen mode, LINLEN,
+      cursor, RG0SAV-RG7SAV, the disk ROM's rebuilt layout); beyond them only timer counters (JIFFY, INTCNT, SCNCNT)
+      differ, and zerobas also sets LINTTB+0 (the reference's already held $18). Both: 3,008 VRAM writes (font 2,048 + a
+      40 x 24 clear 960), the same final name table and registers; the font glyphs differ (each machine's own font, ROM
+      content). Order: the reference writes VRAM with the display off ($A0) before it reprograms R#2-R#6, 300 ms; INITXT
+      reprograms first, 26 ms. CONCLUSION: the routine's observable effect is INITXT's; $006C reproduces it.
+      ⛔ STILL FOR JOOST: the pin itself (page-1 layout).

@@ -82,6 +82,31 @@ if {[info exists ::env(DOSREF_PATCH)]} {
   foreach b [lrange $::env(DOSREF_PATCH) 1 end] { debug write "C-BIOS Main ROM" $pa $b; incr pa }
   puts $::f "PATCHED $::env(DOSREF_PATCH) readback [debug read "C-BIOS Main ROM" [lindex $::env(DOSREF_PATCH) 0]]"
 }
+# DOSREF_SNAP=T: published data cells $F39A-$FD99, VRAM and VDP R#0-7 at the first H.RUNC entry after T s (S0) and
+# at the first H.PHYD entry after that (S1); every VDP register change and the VRAM write count in between
+if {[info exists ::env(DOSREF_SNAP)]} {
+  proc snap {tag} {
+    binary scan [debug read_block memory 0xF39A 0xA00] H* d
+    binary scan [debug read_block "physical VRAM" 0 0x4000] H* v
+    set r {}; for {set i 0} {$i < 8} {incr i} { lappend r [vdpreg $i] }
+    puts $::f "SNAP $tag [format %.5f [machine_info time]] REGS $r"
+    puts $::f "SNAPDATA $tag $d"
+    puts $::f "SNAPVRAM $tag $v"
+  }
+  set ::snapst 0; set ::vw 0
+  debug set_bp 0xFECB {[machine_info time] > $::env(DOSREF_SNAP) && $::snapst == 0} {
+    set ::snapst 1; snap S0
+    set ::regs {}; for {set i 0} {$i < 8} {incr i} { lappend ::regs [vdpreg $i] }
+    set ::vwid [debug set_watchpoint write_io 0x98 {} { incr ::vw }]
+    proc regpoll {} {
+      if {$::snapst != 1} return
+      for {set i 0} {$i < 8} {incr i} { if {[vdpreg $i] != [lindex $::regs $i]} { lset ::regs $i [vdpreg $i]; puts $::f "VDPREG [format %.5f [machine_info time]] R$i=[vdpreg $i] vramwrites=$::vw" } }
+      after time 0.0002 regpoll
+    }
+    regpoll
+  }
+  debug set_bp 0xFFA7 {$::snapst == 1} { set ::snapst 2; puts $::f "VRAMWRITES $::vw"; snap S1 }
+}
 proc shot {tag} { puts $::f "=== SCREEN $tag s"; foreach l [split [get_screen] "\n"] { if {[string trim $l] ne ""} { puts $::f "  |$l" } } ; flush $::f }
 foreach s {10 20} { after time $s "shot $s" }
 after time SECS { puts $::f "hits0100 $::hits"; close $::f; exit }
