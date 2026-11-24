@@ -89,16 +89,16 @@ errors table rest on the earlier measurements cited under "What we found", not o
 | situation | error | evidence |
 |---|---|---|
 | truncated position 0, negative, or 256 and up; truncated count negative or 256 and up | 5 `Illegal function call` | R-MID-POS, R-MID-COUNT |
-| statement: position past the end of `A$` (`A$="AB":MID$(A$,3)="X"`) | 5 `Illegal function call` | [A] statement |
+| statement: position past the end of `A$` (`A$="AB":MID$(A$,3)="X"`) | 5 `Illegal function call` | not measured (Open: the statement) |
 | a number outside −32768 to 32767 (`MID$(a$,70000,1)`) | 6 `Overflow` | R-MID-POS, R-MID-COUNT |
 | a number where a string belongs, or a string where a number belongs | 13 `Type mismatch` | R-MID-TYPE |
-| statement: the target is a numeric variable (`MID$(A,1,1)="X"`) | 13 `Type mismatch` | [A] statement |
-| statement: a number on the right (`MID$(A$,1)=5`) | 13 `Type mismatch` | [A] statement |
-| statement: nothing after `=` (`MID$(A$,2)=`) | 24 `Missing operand` | [A] statement |
+| statement: the target is a numeric variable (`MID$(A,1,1)="X"`) | 13 `Type mismatch` | not measured (Open: the statement) |
+| statement: a number on the right (`MID$(A$,1)=5`) | 13 `Type mismatch` | not measured (Open: the statement) |
+| statement: nothing after `=` (`MID$(A$,2)=`) | 24 `Missing operand` | not measured (Open: the statement) |
 | a missing or empty argument (`MID$(a$)`, `MID$(a$,,1)`, `MID$(a$,1,)`, `MID$()`) | 2 `Syntax error` | R-MID-SYNTAX |
-| statement: a missing argument (`MID$(A$)="X"`), or no `=` | 2 `Syntax error` | [A] statement |
+| statement: a missing argument (`MID$(A$)="X"`), or no `=` | 2 `Syntax error` | not measured (Open: the statement) |
 | an extra argument (`MID$(a$,1,1,1)`) | 2 `Syntax error` | R-MID-SYNTAX |
-| statement: a target that is not a variable (`MID$(5,1)="X"`) | 2 `Syntax error` | [A] statement |
+| statement: a target that is not a variable (`MID$(5,1)="X"`) | 2 `Syntax error` | not measured (Open: the statement) |
 
 ## Example
 

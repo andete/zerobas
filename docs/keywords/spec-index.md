@@ -17,7 +17,7 @@ Every keyword page, the region the spec loop takes it in, and how far its page h
 | `LEN` | [strings](../concepts/strings-and-string-space.md) | RAM record | VG-8020 | [DRAFT 1](LEN.md) | 6 | — |
 | `LEFT$` | [strings](../concepts/strings-and-string-space.md) | RAM record | VG-8020 | [DRAFT 1](LEFT$.md) | 9 | — |
 | `RIGHT$` | [strings](../concepts/strings-and-string-space.md) | RAM record | VG-8020 | [DRAFT 1](RIGHT$.md) | 9 | — |
-| `MID$` | [strings](../concepts/strings-and-string-space.md) | RAM record | VG-8020 | [DRAFT 1](MID$.md) | 17 | — |
+| `MID$` | [strings](../concepts/strings-and-string-space.md) | RAM record | VG-8020 | [DRAFT 1](MID$.md) | 11 | — |
 | `ASC` | [strings](../concepts/strings-and-string-space.md) | RAM record | VG-8020 | [DRAFT 1](ASC.md) | 5 | — |
 | `CHR$` | [strings](../concepts/strings-and-string-space.md) | RAM record | VG-8020 | [DRAFT 1](CHR$.md) | 6 | — |
 | `INSTR` | [strings](../concepts/strings-and-string-space.md) | RAM record | VG-8020 | [DRAFT 1](INSTR.md) | 7 | D-INSTREMPTY, D-CLOSESPACE |
