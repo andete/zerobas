@@ -56,6 +56,8 @@ def seed_local(mfun):
 def _fx_arg(c):
     if c.stmt in ("R=RND(-1/3)", "R=RND(-1!/3)"):
         return "D", M.THIRD
+    if c.stmt == "R#=RND(Z!)":                     # KRN EDIT: a sign-bit zero single
+        return "S", bytes.fromhex("80000000")
     ty, t = M.FX_ARG.get(c.stmt) or ("I", c.stmt[len("R#=RND("):-1])
     return ty, M.enc(t, ty)
 
@@ -138,6 +140,9 @@ CONTROLS = [
     ("R-RND-START", "RUN keeps the state", sel("R-RND-START"), chain_control(alt={"no-run-reset"})),
     ("R-RND-START", "CLEAR keeps the state", sel("R-RND-START"), chain_control(alt={"no-clear-reset"})),
     ("R-RND-START", "NEW keeps the state", sel("R-RND-START"), chain_control(alt={"no-new-reset"})),
+    ("R-RND-START", "MAXFILES= keeps the state", sel("R-RND-START"), chain_control(alt={"no-maxfiles-reset"})),
+    ("R-RND-CELL", "RNDX is a copy: a POKE into it does not reach the state", sel("R-RND-REPEAT"),
+     local_is(alt={"rndx-copy"})),
     ("R-RND-STRTARGET", "the string target refused before RND runs (the state stays)", sel("R-RND-STRTARGET"),
      local_is(alt={"type-first"})),
     ("R-RND-CHECKS", "the argument's type checked before the `)` (13) -- zerobas's rule", sel("R-RND-CHECKS"),

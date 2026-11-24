@@ -182,7 +182,11 @@ def fx_calls(c):
     if s in FX_ARG:
         ty, t = FX_ARG[s]
         return [classify(ty, enc(t, ty))]
-    if s.startswith("R#=RND("):                 # BOOT: integer literals
+    if s == "R#=RND(-RND(0))":                 # EDIT
+        return [("zero", None), ("res", 0)]
+    if s == "R#=RND(Z!)":                       # EDIT: a single 80 00 00 00
+        return [classify("S", bytes.fromhex("80000000"))]
+    if s.startswith("R#=RND("):                 # BOOT / EDIT: integer literals
         t = s[len("R#=RND("):-1]
         return [classify("I", enc(t, "I"))]
     raise KeyError(s)
@@ -284,10 +288,10 @@ def same(c, rec):
 
 
 # ---- the events between recorded steps (BOOT's unrecorded lines, RUN / GOTO's direct steps) ------------------------
-def boot_events():
-    """BOOT: for each recorded step, the unrecorded lines typed before it"""
+def boot_events(group="BOOT"):
+    """a direct-mode group (BOOT, EDIT): for each recorded step, the unrecorded lines typed before it"""
     ev, cur = [], []
-    for stmt, why in krnd.BOOT:
+    for stmt, why in krnd.DIRECT[group]:
         if why is None:
             cur.append(stmt)
         else:
@@ -297,10 +301,17 @@ def boot_events():
 
 
 def apply_event(line, S, g=GEN, alt=frozenset()):
-    if line[0].isdigit():
+    if line[0].isdigit():                       # a program line typed: new, re-typed, replaced or deleted
         return S if "line-keeps" in alt else g["S0"]
-    if line in ("NEW", "RUN"):
-        return S if f"no-{line.lower()}-reset" in alt else g["S0"]
+    if line in ("NEW", "RUN") or line.startswith("RUN "):
+        return S if f"no-{line.split()[0].lower()}-reset" in alt else g["S0"]
+    if line.startswith("MAXFILES"):
+        return S if "no-maxfiles-reset" in alt else g["S0"]
+    if line.startswith("POKE &HF85"):            # a POKE into RNDX: the cell IS the state (R-RND-CELL)
+        a, v = line[len("POKE "):].split(",")
+        b = bytearray(cell(S))
+        b[int(a[2:], 16) - krnd.RNDX] = int(v[2:], 16)
+        return S if "rndx-copy" in alt else state_of(bytes(b))
     return S
 
 
@@ -323,7 +334,7 @@ def chain(cases, g=GEN, alt=frozenset()):
         return {}
     grp = cases[0].src
     S = start_state(grp, g, alt)
-    ev = boot_events() if grp == "BOOT" else None
+    ev = boot_events(grp) if grp in krnd.DIRECT else None
     exp = {}
     for i, c in enumerate(cases):
         if ev:
@@ -363,9 +374,9 @@ def local(c, g=GEN, alt=frozenset()):
     """the expected record from the previous record's measured state (None for a group's first record)"""
     if c.prev is None:
         return None
-    if c.src == "BOOT":
+    if c.src in krnd.DIRECT:
         S = c.prev
-        for line in boot_events()[int(c.id.split()[-1])]:
+        for line in boot_events(c.src)[int(c.id.split()[-1])]:
             S = apply_event(line, S, g, alt)
         return predict(c, S, g, alt)[0]
     return predict(c, c.prev, g, alt)[0]
@@ -383,7 +394,7 @@ def kinds(c):
 
 
 def plain(c):
-    return c.op in ("R", "U") or (c.src in ("FX", "BOOT", "RUNR", "GOTO", "GOTO2") and kind_of(c) == "val"
+    return c.op in ("R", "U") or (c.src in ("FX", "BOOT", "EDIT", "RUNR", "GOTO", "GOTO2") and kind_of(c) == "val"
                                   and len(fx_calls(c)) == 1 and not any(c.stmt.startswith(p) for p in ODD))
 
 
@@ -409,14 +420,18 @@ def rules():
     s1 = "1. The generator"
     add("R-RND-CELL", s1, "The state is a 14-digit number S held in RNDX ($F857, 8 bytes; C-BIOS's source names the "
         "address): byte 0 is 00 and bytes 1-7 are S's 14 digits in packed BCD, the most significant first, leading "
-        "zeros kept (S = 1 is 00 00 00 00 00 00 00 01). Read after every step.",
-        lambda c: True, lambda c: state_of(c.rndx) is not None)
+        "zeros kept (S = 1 is 00 00 00 00 00 00 00 01). Read after every step. It IS the state, not a copy: after "
+        "`POKE &HF858,&H12` RND(0) returns .12389820420821 and RND(1) steps from that (KRN EDIT 11, 12).",
+        lambda c: True, lambda c: state_of(c.rndx) is not None and (c.id not in ("KRN EDIT 11", "KRN EDIT 12")
+                                                                     or local_ok(c)))
     add("R-RND-NEXT", s1, "A positive argument -- any type, any value: 1, 7, 32767, .3, .5, 1E-64, 9.99999E62, "
-        "9.9999999999999D62, a nested RND(1) -- steps the state once: S' = (21132486540519 * S + 14389820420821) "
+        "9.9999999999999D62 -- steps the state once (nested, R-RND-NESTED): S' = (21132486540519 * S + 14389820420821) "
         "mod 10^14, S the state RNDX held before the call; the argument's value plays no part.",
         lambda c: c.prev is not None and plain(c) and kinds(c) == {"pos"}, local_ok)
-    add("R-RND-REPEAT", s1, "A zero argument (0%, 0!, -0!, 0#, -0#, the literals 0 and -0) leaves the state as it "
-        "is, and RND returns the last number again.",
+    add("R-RND-REPEAT", s1, "A zero argument (0%, 0!, 0#, and the literals 0 and -0 -- `-0`, `-0!` and `-0#` "
+        "give 8 zero bytes like 0) leaves the state as it is, and RND returns the CURRENT state's number, S / 10^14: "
+        "the last number returned, or, before any (at power-on, after CLEAR, NEW or a typed line), S0's "
+        ".40649651372358, never returned before (KRN BOOT 1).",
         lambda c: c.prev is not None and plain(c) and kinds(c) == {"zero"}, local_ok)
     add("R-RND-SEED", s1, "A negative argument sets the state from its own digits, whatever the state was: S' = "
         "(21132486540519 * m + 14389820420821) mod 10^14, m the argument's 14 mantissa digits -- a double's 14, a "
@@ -426,12 +441,16 @@ def rules():
         lambda c: c.prev is not None and plain(c) and kinds(c) == {"seed"}, local_ok)
     add("R-RND-SIGN", s1, "What counts as negative is the sign BIT: a single 80 10 00 00 or a double 80 12 34 56 78 "
         "90 12 34 (exponent byte &H80) reseeds from its digit bytes (10 00 00 ..., 12 34 56 78 90 12 34); without "
-        "the sign bit an exponent byte of 0 is a zero (00 10 00 00 and 00 12 34 ... repeat the last number).",
-        lambda c: c.src == "FX" and any(c.stmt.startswith(p) for p in ODD), local_ok)
+        "the sign bit an exponent byte of 0 is a zero (00 10 00 00 and 00 12 34 ... repeat the last number). A sign-bit "
+        "zero, 80 00 00 00, reseeds from m = 0: the state becomes C, 14389820420821 (KRN EDIT 15).",
+        lambda c: (c.src == "FX" and any(c.stmt.startswith(p) for p in ODD)) or (c.src == "EDIT" and c.stmt == "R#=RND(Z!)"),
+        local_ok)
     add("R-RND-NESTED", s1, "An RND inside RND's argument runs first, and the outer call takes its result as any "
         "other argument: RND(RND(1)) steps twice, RND(RND(0)) once, and RND(-RND(1)) reseeds from the digits of the "
-        "number RND(1) returned (normalised, R-RND-VALUE); RND(-RND(0)) in state 0 is RND(-0), which repeats the 0.",
-        lambda c: c.src == "FX" and c.kind == "val" and c.stmt.startswith("R=RND(") and "RND(" in c.stmt[6:],
+        "number RND(1) returned (normalised, R-RND-VALUE: after RND(-1), state 04389820420821, RND(-RND(0)) reseeds "
+        "from 43898204208210, KRN EDIT 14); RND(-RND(0)) in state 0 is RND(-0), which repeats the 0.",
+        lambda c: c.src in ("FX", "EDIT") and kind_of(c) == "val" and c.stmt.startswith(("R=RND(", "R#=RND("))
+        and "RND(" in c.stmt[6:],
         local_ok)
     add("R-RND-ORDER", s1, "Two calls in one expression run left to right: RND(1)-RND(0) is exactly 0 (8 zero bytes) "
         "and steps once; RND(0)-RND(1) is the old number minus the new one, exactly.",
@@ -460,12 +479,13 @@ def rules():
     s3 = "3. Start-up and resets"
     add("R-RND-START", s3, "At power-on RNDX holds 00 40 64 96 51 37 23 58: S0 = 40649651372358, so the first "
         "RND(1) is .59521943994623 and RND(0) before it .40649651372358. CLEAR (with or without arguments), NEW, RUN "
-        "and ENTERING A PROGRAM LINE (`10 REM` typed in direct mode) each put S0 back; CLS and GOTO do not.",
-        lambda c: c.src in ("BOOT", "RUNR", "GOTO", "GOTO2") and kind_of(c) == "peek", chain_ok)
+        "(also `RUN 20`), MAXFILES= and ENTERING A PROGRAM LINE in direct mode -- a new line, the same line re-typed "
+        "unchanged, a line replaced, a line deleted by its number alone -- each put S0 back; CLS and GOTO do not.",
+        lambda c: c.src in ("BOOT", "EDIT", "RUNR", "GOTO", "GOTO2") and kind_of(c) == "peek", chain_ok)
     add("R-RND-OTHER", s3, "Statements that do not call RND leave the state alone: other maths (SIN, EXP, SQR, LOG, "
-        "ATN, INT, ABS, STR$, HEX$), READ, POKE, VARPTR, USR of a number, an error.",
+        "ATN, INT, ABS, STR$, HEX$), READ, POKE (outside RNDX), VARPTR, USR of a number (the errors: R-RND-ERR).",
         lambda c: c.prev is not None and kind_of(c) in ("other", "peek", "id", "lit")
-        and not resets(c) and c.src != "BOOT",
+        and not resets(c) and c.src not in krnd.DIRECT,
         lambda c: state_of(c.rndx) == c.prev and local_ok(c))
 
     s4 = "4. Forms, errors and literals"

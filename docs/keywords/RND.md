@@ -6,16 +6,15 @@ SPDX-License-Identifier: BSD-2-Clause
 
 # `RND` — a pseudo-random number
 
-> **Spec:** DRAFT 1 (2026-11-24) — 556 steps measured on the Philips VG-8020 (BASIC's reference) and on
+> **Spec:** DRAFT 1 (2026-11-24) — 573 steps measured on the Philips VG-8020 (BASIC's reference) and on
 > zerobas, by typed BASIC ([`krnd.py`](../../probes/basic/spec/krnd.py)): every result's bytes and the generator's
-> state after every step. Every rule is executable and every recorded output is read by one. Not yet reviewed
-> ([the keyword plan](spec-plan.md)).
+> state after every step. Every rule is executable and every recorded output is read by one. Goldfish pass 1
+> (2026-11-24) acted on ([the keyword plan](spec-plan.md)).
 >
-> **Status (2026-10-09):** level 3 — happy path ✓ · reasonable time ✓ · common
-> errors ✓ · RAM usage not yet proven · every error ✓. Three differences, found
-> by the spec probe (below): entering a program line does not restart the
-> sequence here, the bytes of a zero result, and the error of an unclosed call
-> given a string.
+> **Status (2026-11-24):** level 3 — happy path ✓ · reasonable time ✓ · common
+> errors ✓ · RAM usage not yet proven · every error ✗ (`RND("A"` is error 13 here, 2 there). Three
+> differences, found by the spec probe (below): the bytes of a zero result, the error of an unclosed call given a
+> string, and a sign-bit zero argument (only reachable by POKE).
 > Speed is deliberately left out of these docs until on-par speed is
 > established for every keyword.
 
@@ -24,8 +23,8 @@ SPDX-License-Identifier: BSD-2-Clause
 `RND(x)` returns a pseudo-random number from 0 up to (but not including) 1,
 with 14 significant digits. The numbers come from a fixed formula, so a
 program can make the sequence repeat. zerobas produces **the same sequence,
-digit for digit**, as the Philips VG-8020 -- in all 556 measured steps the
-numbers agree -- and keeps the generator's state in the same 8 bytes the
+digit for digit**, as the Philips VG-8020 -- in all 573 measured steps the
+numbers agree, except the two after a sign-bit zero POKEd into an argument -- and keeps the generator's state in the same 8 bytes the
 reference does: the formula was worked out by watching the reference's
 output, without reading its ROM.
 
@@ -42,7 +41,8 @@ One argument, always. What the argument does depends only on its sign.
 - **A positive argument gives the next number.** Its value and type do not
   matter: `RND(1)`, `RND(7)`, `RND(.3)`, `RND(1E-64)` and `RND(1%)` all step the
   sequence once, identically.
-- **`RND(0)` repeats the last number** without stepping.
+- **`RND(0)` repeats the current number** without stepping: the last one returned -- or, before any (at power-on,
+  after `CLEAR`, `NEW` or a typed line), the start-up state's .40649651372358.
 - **A negative argument restarts the sequence** from a point chosen by the
   argument's digits, and returns the first number from there. The same
   argument always gives the same restart, so `RND(-1)` makes everything after
@@ -50,8 +50,8 @@ One argument, always. What the argument does depends only on its sign.
   point: `RND(-1)`, `RND(-0.001)`, `RND(-1E9)` and `RND(&HFFFF)` restart at the
   same place. A single variable holding −1/3 (−.333333, 6 digits) and the double
   −1/3 (14 digits) have different digits, so they restart at different places.
-- **The sequence restarts at its power-on start** after `RUN`, `NEW`, `CLEAR`
-  and -- on the VG-8020 -- whenever a program line is typed or edited, so an
+- **The sequence restarts at its power-on start** after `RUN` (also `RUN 20`), `NEW`, `CLEAR`, `MAXFILES=`
+  and whenever a program line is typed, re-typed, replaced or deleted, so an
   unseeded program draws the same numbers every time it is run; `CLS` and
   `GOTO` do not restart it.
 - **Two calls in one expression run left to right**: `RND(1)-RND(0)` is 0.
@@ -134,7 +134,7 @@ before). The rules predict in two ways, so no rule replays the reference's own o
 (R-RND-NEXT, -REPEAT, -SEED ...: from the state the PREVIOUS record read), and **whole sequences** (R-RND-CHAIN:
 from the start-up constant and the arguments alone, reading no measured state). The three constants -- A =
 21132486540519, C = 14389820420821, S0 = 40649651372358 -- were recovered black-box in July 2026 from 19 values
-([spec-basic-mathpack-slice2.md](../spec-basic-mathpack-slice2.md) §15.1); here they predict 556 measured steps,
+([spec-basic-mathpack-slice2.md](../spec-basic-mathpack-slice2.md) §15.1); here they predict 573 measured steps,
 and changing the last digit of any one of them makes its rule false (controls, below).
 
 **Evidence.** One probe, [`probes/basic/spec/krnd.py`](../../probes/basic/spec/krnd.py) (on the shared RAM-record
@@ -155,7 +155,8 @@ USR readout on each type, or the loader refuses the run. Only the probe's own me
   records the state at its first line, `RND(1)`, `RND(0)`, then the state after `CLEAR 2000,&HBF00` and `RND(1)`.
 - **[KRN SQ1 *i*]**: after `CLEAR`: positive arguments of every type (1, 7, 32767 integers; 1, .3, 1E-64,
   9.99999E62 singles; 1, .5, 1D-64, 9.9999999999999D62, 12345.678901234 doubles) as `R=` and as `USR` steps; zero
-  arguments (0%, 0!, -0!, 0#, -0#); other maths between (SIN, EXP, SQR, LOG, ATN, INT, ABS, STR$, HEX$); RND(1) 20
+  arguments (0%, 0!, -0!, 0#, -0#; typed, `-0!` and `-0#` are stored as zero bytes like 0, so none of these is a
+  sign-bit zero -- that one is EDIT's); other maths between (SIN, EXP, SQR, LOG, ATN, INT, ABS, STR$, HEX$); RND(1) 20
   more times.
 - **[KRN SQ2 *i*]**: 46 reseeds, each followed by `RND(1)`, `USR(RND(1))` and `RND(0)`. Integers -1, -2, -5, -10,
   -100, -12345, -32767, -32768, -3; singles -1, -.001, -1E9, -.333333, -.5, -5, -1E-64, -9.99999E62, -123456,
@@ -165,53 +166,56 @@ USR readout on each type, or the loader refuses the run. Only the probe's own me
   99999999999999, 50000000000000 (the reseed's own result), 12300000000000 (one `RND(1)` later) and
   01000000000000 (two later): results with leading zero digits, trailing zeros, and none at all.
 - **[KRN SQ3 *i*]**: `RND(-1)`, then 200 steps of `RND(1)` with `RND(0)` every 25.
+- **[KRN EDIT *i*]**: DIRECT MODE, each after `RND(-3)`: line 10 re-typed unchanged, replaced, deleted by its
+  number alone; `RUN 20`; `MAXFILES=1`; `POKE &HF858,&H12` then `RND(0)` and `RND(1)`; `RND(-1)` then
+  `RND(-RND(0))` (state 04389820420821: a number with a leading zero); `RND` of a single POKEd to 80 00 00 00 (a
+  sign-bit zero), then `RND(1)`.
 - **[KRN FX *i*]**: 61 fixed statements, one a step, the state flowing through them (`FX` in the probe): every
-  error form (none may move the state), spaces, literals (with apparatus rows measuring each literal's own type),
+  error form (none moves the state but `R$=RND(1)`, R-RND-STRTARGET), spaces, literals (with apparatus rows measuring each literal's own type),
   `RND(RND(1))`, `RND(-RND(1))`, `RND(1)-RND(0)` and `RND(0)-RND(1)`, the result's type through USR for each
   argument type, singles and doubles whose exponent byte is POKEd to 0 or `&H80`, and the state 0.
 
 **Controls** ([`krnd_controls.py`](../../probes/basic/spec/krnd_controls.py)): each is a rival rule run over the
-reference's cases, and each is FALSE on some: A's last digit changed (FALSE on 360 of 362 steps), C's (362 of 362),
-S0's (119 of 556); a positive argument that reseeds from its own digits (361); `RND(0)` that steps (76 of 76); the
-reseed taken from the argument's VALUE (the exponent counting: 42 of 60), an integer's digits right-aligned (15), a
-single's digits repeated instead of followed by zeros (17); an exponent-0 number with the sign bit taken as zero (2
-of 4); right-to-left evaluation (2 of 2); the result not normalised (66 of 413); a zero result keeping digit bytes
--- zerobas's (5); RNDX holding the normalised result instead of the state (549 of 556); the result in the
-argument's type (20 of 94); a program line, RUN, CLEAR or NEW that keeps the state (2 / 1 / 4 / 1 of 12); the
+reference's cases, and each is FALSE on some: A's last digit changed (FALSE on 362 of 364 steps), C's (364 of 364),
+S0's (124 of 573); a positive argument that reseeds from its own digits (363 of 364); `RND(0)` that steps (77 of 77); the reseed taken from the argument's VALUE (the exponent counting: 42 of 67), an integer's digits right-aligned (21), a
+single's digits repeated instead of followed by zeros (17); an exponent-0 number with the sign bit taken as zero (3
+of 5: zerobas's, on 80 00 00 00); right-to-left evaluation (2 of 2); the result not normalised (67 of 425); a zero result keeping digit bytes -- zerobas's (5); RNDX holding the
+normalised result instead of the state (566 of 573); RNDX a copy that a POKE does not reach (1 of 77); the result in the
+argument's type (20 of 94); a program line, RUN, CLEAR, NEW or MAXFILES= that keeps the state (5 / 2 / 4 / 1 / 1 of 17); the
 string target refused before RND runs (1 of 1); the type checked before the `)` -- zerobas's (2 of 3).
 
 <!-- RULES BEGIN -->
 <!-- GENERATED by tools/spec_rules.py from probes/basic/spec/rnd_rules.py -- do not edit; `python3 tools/spec_rules.py probes/basic/spec/rnd_rules.py --write` -->
 
-**18 rules; 18 hold on the reference. Of the 2780 recorded outputs (each step's error, R's 8 bytes, the result's type and own bytes as USR saw them, and RNDX's 8 bytes after the step): 2780 read by a rule's check, 0 declared NOT evidence (below), 0 unread.**
+**18 rules; 18 hold on the reference. Of the 2865 recorded outputs (each step's error, R's 8 bytes, the result's type and own bytes as USR saw them, and RNDX's 8 bytes after the step): 2865 read by a rule's check, 0 declared NOT evidence (below), 0 unread.**
 
 #### 1. The generator
 
 | rule | cases | reference | zerobas |
 |---|---|---|---|
-| **R-RND-CELL** The state is a 14-digit number S held in RNDX ($F857, 8 bytes; C-BIOS's source names the address): byte 0 is 00 and bytes 1-7 are S's 14 digits in packed BCD, the most significant first, leading zeros kept (S = 1 is 00 00 00 00 00 00 00 01). Read after every step. | 556 | ✓ | ✓ |
-| **R-RND-NEXT** A positive argument -- any type, any value: 1, 7, 32767, .3, .5, 1E-64, 9.99999E62, 9.9999999999999D62, a nested RND(1) -- steps the state once: S' = (21132486540519 * S + 14389820420821) mod 10^14, S the state RNDX held before the call; the argument's value plays no part. | 362 | ✓ | ✓ |
-| **R-RND-REPEAT** A zero argument (0%, 0!, -0!, 0#, -0#, the literals 0 and -0) leaves the state as it is, and RND returns the last number again. | 76 | ✓ | ✗ 2: KRN FX 57, KRN FX 58 |
-| **R-RND-SEED** A negative argument sets the state from its own digits, whatever the state was: S' = (21132486540519 * m + 14389820420821) mod 10^14, m the argument's 14 mantissa digits -- a double's 14, a single's 6 followed by 8 zeros, an integer's decimal digits left-aligned (-12345% gives m = 12345000000000). Neither the exponent nor the sign counts: RND(-1), RND(-.001), RND(-1E9), RND(-1D-64) and RND(&HFFFF) restart at the same place; -.333333! and -.33333333333333# at different ones. | 60 | ✓ | ✗ 3: KRN SQ2 121, KRN FX 54, KRN FX 56 |
-| **R-RND-SIGN** What counts as negative is the sign BIT: a single 80 10 00 00 or a double 80 12 34 56 78 90 12 34 (exponent byte &H80) reseeds from its digit bytes (10 00 00 ..., 12 34 56 78 90 12 34); without the sign bit an exponent byte of 0 is a zero (00 10 00 00 and 00 12 34 ... repeat the last number). | 4 | ✓ | ✓ |
-| **R-RND-NESTED** An RND inside RND's argument runs first, and the outer call takes its result as any other argument: RND(RND(1)) steps twice, RND(RND(0)) once, and RND(-RND(1)) reseeds from the digits of the number RND(1) returned (normalised, R-RND-VALUE); RND(-RND(0)) in state 0 is RND(-0), which repeats the 0. | 5 | ✓ | ✗ 1: KRN FX 59 |
+| **R-RND-CELL** The state is a 14-digit number S held in RNDX ($F857, 8 bytes; C-BIOS's source names the address): byte 0 is 00 and bytes 1-7 are S's 14 digits in packed BCD, the most significant first, leading zeros kept (S = 1 is 00 00 00 00 00 00 00 01). Read after every step. It IS the state, not a copy: after `POKE &HF858,&H12` RND(0) returns .12389820420821 and RND(1) steps from that (KRN EDIT 11, 12). | 573 | ✓ | ✓ |
+| **R-RND-NEXT** A positive argument -- any type, any value: 1, 7, 32767, .3, .5, 1E-64, 9.99999E62, 9.9999999999999D62 -- steps the state once (nested, R-RND-NESTED): S' = (21132486540519 * S + 14389820420821) mod 10^14, S the state RNDX held before the call; the argument's value plays no part. | 364 | ✓ | ✓ |
+| **R-RND-REPEAT** A zero argument (0%, 0!, 0#, and the literals 0 and -0 -- `-0`, `-0!` and `-0#` give 8 zero bytes like 0) leaves the state as it is, and RND returns the CURRENT state's number, S / 10^14: the last number returned, or, before any (at power-on, after CLEAR, NEW or a typed line), S0's .40649651372358, never returned before (KRN BOOT 1). | 77 | ✓ | ✗ 2: KRN FX 57, KRN FX 58 |
+| **R-RND-SEED** A negative argument sets the state from its own digits, whatever the state was: S' = (21132486540519 * m + 14389820420821) mod 10^14, m the argument's 14 mantissa digits -- a double's 14, a single's 6 followed by 8 zeros, an integer's decimal digits left-aligned (-12345% gives m = 12345000000000). Neither the exponent nor the sign counts: RND(-1), RND(-.001), RND(-1E9), RND(-1D-64) and RND(&HFFFF) restart at the same place; -.333333! and -.33333333333333# at different ones. | 67 | ✓ | ✗ 4: KRN SQ2 121, KRN FX 54, KRN FX 56, KRN EDIT 15 |
+| **R-RND-SIGN** What counts as negative is the sign BIT: a single 80 10 00 00 or a double 80 12 34 56 78 90 12 34 (exponent byte &H80) reseeds from its digit bytes (10 00 00 ..., 12 34 56 78 90 12 34); without the sign bit an exponent byte of 0 is a zero (00 10 00 00 and 00 12 34 ... repeat the last number). A sign-bit zero, 80 00 00 00, reseeds from m = 0: the state becomes C, 14389820420821 (KRN EDIT 15). | 5 | ✓ | ✗ 1: KRN EDIT 15 |
+| **R-RND-NESTED** An RND inside RND's argument runs first, and the outer call takes its result as any other argument: RND(RND(1)) steps twice, RND(RND(0)) once, and RND(-RND(1)) reseeds from the digits of the number RND(1) returned (normalised, R-RND-VALUE: after RND(-1), state 04389820420821, RND(-RND(0)) reseeds from 43898204208210, KRN EDIT 14); RND(-RND(0)) in state 0 is RND(-0), which repeats the 0. | 6 | ✓ | ✗ 1: KRN FX 59 |
 | **R-RND-ORDER** Two calls in one expression run left to right: RND(1)-RND(0) is exactly 0 (8 zero bytes) and steps once; RND(0)-RND(1) is the old number minus the new one, exactly. | 2 | ✓ | ✓ |
-| **R-RND-CHAIN** Every group's whole sequence -- each result's bytes and each RNDX -- follows from the start-up state 40649651372358 and the arguments alone, by R-RND-NEXT, R-RND-REPEAT, R-RND-SEED and R-RND-START, reading no measured state (SQ3: RND(-1) then 200 steps of RND(1)). | 556 | ✓ | ✗ 8: KRN SQ2 121, KRN FX 13, KRN FX 14, KRN FX 54, KRN FX 56, KRN FX 57 … (+2) |
+| **R-RND-CHAIN** Every group's whole sequence -- each result's bytes and each RNDX -- follows from the start-up state 40649651372358 and the arguments alone, by R-RND-NEXT, R-RND-REPEAT, R-RND-SEED and R-RND-START, reading no measured state (SQ3: RND(-1) then 200 steps of RND(1)). | 573 | ✓ | ✗ 10: KRN SQ2 121, KRN FX 13, KRN FX 14, KRN FX 54, KRN FX 56, KRN FX 57 … (+4) |
 
 #### 2. The result
 
 | rule | cases | reference | zerobas |
 |---|---|---|---|
-| **R-RND-VALUE** The number returned is S / 10^14 as a DOUBLE, normalised: S's 14 digits shifted left past their leading zeros, the exponent byte &H40 minus the count (S = 4389820420821 is .04389820420821, 3F 43 89 82 04 20 82 10; S = 1 is 1E-14, 33 10 00 ...); S = 0 gives 8 zero bytes. Read on every step that assigns R. | 413 | ✓ | ✗ 5: KRN SQ2 121, KRN FX 54, KRN FX 56, KRN FX 57, KRN FX 59 |
+| **R-RND-VALUE** The number returned is S / 10^14 as a DOUBLE, normalised: S's 14 digits shifted left past their leading zeros, the exponent byte &H40 minus the count (S = 4389820420821 is .04389820420821, 3F 43 89 82 04 20 82 10; S = 1 is 1E-14, 33 10 00 ...); S = 0 gives 8 zero bytes. Read on every step that assigns R. | 425 | ✓ | ✗ 5: KRN SQ2 121, KRN FX 54, KRN FX 56, KRN FX 57, KRN FX 59 |
 | **R-RND-TYPE** The result is always a double, whatever the argument's type (USR sees VALTYP 8 and the same 8 bytes R-RND-VALUE gives): RND(1%), RND(1!), RND(1#), RND(0), RND(-1), RND(0) in state 0 (8 zero bytes). | 94 | ✓ | ✗ 1: KRN FX 58 |
-| **R-RND-ASSIGN** `R=RND(x)` with R a double stores the result's 8 bytes; a step that assigns nothing (an error, `Q=USR(...)`, another statement) leaves R's sentinel -12345. Read in every case. | 556 | ✓ | ✗ 5: KRN SQ2 121, KRN FX 54, KRN FX 56, KRN FX 57, KRN FX 59 |
+| **R-RND-ASSIGN** `R=RND(x)` with R a double stores the result's 8 bytes; a step that assigns nothing (an error, `Q=USR(...)`, another statement) leaves R's sentinel -12345. Read in every case. | 573 | ✓ | ✗ 7: KRN SQ2 121, KRN FX 54, KRN FX 56, KRN FX 57, KRN FX 59, KRN EDIT 15 … (+1) |
 
 #### 3. Start-up and resets
 
 | rule | cases | reference | zerobas |
 |---|---|---|---|
-| **R-RND-START** At power-on RNDX holds 00 40 64 96 51 37 23 58: S0 = 40649651372358, so the first RND(1) is .59521943994623 and RND(0) before it .40649651372358. CLEAR (with or without arguments), NEW, RUN and ENTERING A PROGRAM LINE (`10 REM` typed in direct mode) each put S0 back; CLS and GOTO do not. | 12 | ✓ | ✓ |
-| **R-RND-OTHER** Statements that do not call RND leave the state alone: other maths (SIN, EXP, SQR, LOG, ATN, INT, ABS, STR$, HEX$), READ, POKE, VARPTR, USR of a number, an error. | 16 | ✓ | ✓ |
+| **R-RND-START** At power-on RNDX holds 00 40 64 96 51 37 23 58: S0 = 40649651372358, so the first RND(1) is .59521943994623 and RND(0) before it .40649651372358. CLEAR (with or without arguments), NEW, RUN (also `RUN 20`), MAXFILES= and ENTERING A PROGRAM LINE in direct mode -- a new line, the same line re-typed unchanged, a line replaced, a line deleted by its number alone -- each put S0 back; CLS and GOTO do not. | 17 | ✓ | ✓ |
+| **R-RND-OTHER** Statements that do not call RND leave the state alone: other maths (SIN, EXP, SQR, LOG, ATN, INT, ABS, STR$, HEX$), READ, POKE (outside RNDX), VARPTR, USR of a number (the errors: R-RND-ERR). | 16 | ✓ | ✓ |
 
 #### 4. Forms, errors and literals
 
@@ -230,11 +234,16 @@ string target refused before RND runs (1 of 1); the type checked before the `)` 
 - **A zero result's bytes** ([D-RNDZERO](../../todo/open/D-RNDZERO.md)). In the one state that is 0, the
   reference returns 8 zero bytes; zerobas returns exponent 0 with leftover digit bytes (the reseed's argument
   digits, or other scratch). The value is 0 on both and RNDX agrees (rules R-RND-VALUE, -SEED, -REPEAT, -TYPE, -NESTED, -ASSIGN,
-  -CHAIN; KRN SQ2 121, FX 54-59).
+  -CHAIN; KRN SQ2 121, FX 54, 56-59).
 - **`RND("A"` and `RND("A",2)` are error 13 here, 2 on the reference** ([D-ARGTYPEORDER](../../todo/open/D-ARGTYPEORDER.md),
   shared with the other maths functions): the reference requires the `)` before it refuses a string (rules R-RND-CHECKS, R-RND-CHAIN, KRN FX 13-14).
 
-Everything else agrees byte for byte, RNDX included, in all 556 steps.
+- **A sign-bit zero argument** ([D-RNDNEGZERO](../../todo/open/D-RNDNEGZERO.md)): `RND` of a single POKEd to 80 00
+  00 00 reseeds from m = 0 on the reference (the state becomes C, 14389820420821) and repeats the last number here,
+  so every later number differs (rules R-RND-SIGN, -SEED, -ASSIGN, -CHAIN; KRN EDIT 15, 16). Typed `-0` never
+  produces those bytes.
+
+Everything else agrees byte for byte, RNDX included, in all 573 steps.
 
 The one rung not yet proven is **RAM usage**: `RND` uses the same amount of
 free memory on both machines, and its state lives at the same address as the
@@ -250,19 +259,27 @@ of its own.
 
 - [A] Power-on was measured once a group, under the harness's own start (`SCREEN 0:WIDTH 40` typed first); that
   no other start-up path (a disk boot, a cartridge) leaves another state is assumed.
-- [A] Whether `LOAD`, `MERGE`, `CLOAD`, `DELETE`, `RENUM`, `CHAIN`-like paths, or an error stop reset the state (only
-  CLEAR, NEW, RUN, a typed line, CLS and GOTO were measured).
+- [A] Whether `LOAD`, `MERGE`, `CLOAD`, `DELETE`, `RENUM`, `AUTO`, or an error stop reset the state (measured: CLEAR,
+  NEW, RUN, `RUN 20`, MAXFILES=, a line typed / re-typed / replaced / deleted, CLS and GOTO).
 - [A] Which work-area cells the call writes besides RNDX (the RAM-usage rung).
 - [A] Non-canonical arguments other than the four measured (a single or double whose exponent byte is 0 or `&H80`,
-  digit bytes `10 00 00` or `12 34 56 78 90 12 34`): non-BCD digit nibbles; `&H80` with zero digit bytes.
+  digit bytes `10 00 00` or `12 34 56 78 90 12 34`): non-BCD digit nibbles; a double 80 00 ... (the single 80 00 00 00 is measured, EDIT 15).
 - [A] A result inside a larger expression other than `RND(1)-RND(0)` / `RND(0)-RND(1)` and the nested calls; a
   result stored in a single or an integer variable (the conversion region, [CSNG](CSNG.md), [CINT](CINT.md)).
 - [A] The zero result (state 0) used in arithmetic, `STR$` or a comparison on either machine.
-- [A] RNDX written by the program (POKE) before an RND: whether the generator reads it back as the state.
+- [A] R-RND-VALUE's examples S = 1, 12345 and 10^13 are measured only through `USR` (SQ2 125, 133, 141: read by
+  R-RND-TYPE, the same bytes); no `R=` step has those states.
+- [A] A POKE into RNDX of a non-BCD nibble, or of byte 0 (measured: one digit byte, EDIT 11).
 
 ## What we found, and how
 
-- **The spec probe** (D-KWSPEC, 2026-11-24): the July generator predicts all 556 measured steps on the VG-8020, one
+- **The goldfish review** (2026-11-24, [REVIEW-m2-gRND1.md](../../scratchpad/REVIEW-m2-gRND1.md)): four rules
+  were asserted further than the cases reached. Group EDIT measured them, and the reference agreed with every
+  prediction: a re-typed, replaced or deleted line, `RUN 20` and `MAXFILES=` each restart the sequence; RNDX IS the
+  state (a POKE into it changes what `RND(0)` returns); a reseed from a number with a leading zero takes the
+  NORMALISED digits; and a sign-bit zero reseeds from 0 -- which zerobas does not (D-RNDNEGZERO). The wording of
+  `RND(0)` ("the current number", not "the last one") and of the `-0` arguments was corrected.
+- **The spec probe** (D-KWSPEC, 2026-11-24): the July generator predicts all 556 steps measured then (573 since the review) on the VG-8020, one
   at a time and as whole sequences; and three new facts, each a rule now. Entering a program line restarts the
   sequence on the reference (zerobas too since D-RNDLINE's fix, 2026-11-24). `R$=RND(1)` steps the sequence before it reports `Type
   mismatch`. A single whose exponent byte is `&H80` (a zero with its sign bit set) RESEEDS from its digit bytes, while

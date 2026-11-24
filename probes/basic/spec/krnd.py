@@ -26,12 +26,13 @@ THE SETUP SEPARATES (spec-method §3a):
     call, so the rules work from the value given;
   * the arguments sit where rival rules disagree: every type, both ends of each range, the same digits at different
     exponents (-1, -.001, -1E9), the same value with 6 and 14 digits (-.333333! / -.33333333333333#), and reseeds
-    chosen (by inverting the recurrence) so that the NEXT state is 0, 1, 10, 12345, 10^13 - 1, 10^13 or 99...9 --
-    a result with leading zero digits, or none at all.
+    chosen (by inverting the recurrence) so that the sequence passes through 0, 1, 10, 12345, 10^13 - 1, 10^13 or
+    99...9 at the reseed itself, 12300000000000 one RND(1) later and 01000000000000 two later -- a result with
+    leading zero digits, or none at all.
 
 THE RECORD (34 bytes per step, from $C001):
   0 E           ERR after the step (0: none)
-  1-8 ARG       the argument's own bytes, read before the call (2 / 4 / 8 of them, the rest 0); FX / BOOT: all 0
+  1-8 ARG       the argument's own bytes, read before the call (2 / 4 / 8 of them, the rest 0); FX / BOOT / EDIT: all 0
   9-16 R        R's 8 bytes after the step (a double; -12345 unless the step assigned it)
   17 VT         the result's type as USR saw it (2 / 4 / 8; 255: no USR in this step)
   18-25 DAC     DAC's 8 bytes as USR saw them
@@ -47,7 +48,9 @@ THE GROUPS (case ids "KRN <group> <i>"):
   SQ1   after CLEAR: positive and zero arguments of every type, R and USR steps, other maths between
   SQ2   reseeds: 46 negative arguments, each followed by RND(1), USR(RND(1)) and RND(0)
   SQ3   a long run: RND(-1), then 200 x RND(1) with RND(0) every 25
-  FX    fixed statements: errors (none may move the state), forms, literals, nesting, evaluation order,
+  EDIT  DIRECT MODE, each after a reseed: a line re-typed unchanged, replaced, deleted; RUN 20; MAXFILES=1; a POKE
+        into RNDX then RND(0) / RND(1); RND(-RND(0)) after RND(-1) (a leading zero); RND of a sign-bit zero single
+  FX    fixed statements: errors (only R$=RND(1) moves the state), forms, literals, nesting, evaluation order,
         non-canonical arguments (exponent byte 0 with digit bytes)
 
     python3 probes/basic/spec/krnd.py [GROUP ...] [--out scratchpad/KRN_run1.out]
@@ -116,8 +119,9 @@ SQ1 += [(1, t, x) for t, x in ZERO] + [(2, t, x) for t, x in ZERO]
 SQ1 += [(3, 3, "0"), (1, 3, "1"), (3, 3, "0"), (3, 3, "0"), (1, 3, "0")]
 SQ1 += [(1, 3, "1")] * 12 + [(1, 1, "1")] * 4 + [(1, 2, "1")] * 4
 
-# reseeds; the last group are the PRE-IMAGES of chosen states (pre(T) = (T - C) / A mod 10^14), so the step after the
-# reseed lands on T exactly: T = 0, 1, 10, 12345, 10^13 - 1, 10^13, 99999999999999, 12300000000000, 50000000000000
+# reseeds; the last group are the PRE-IMAGES of chosen states (pre(T) = (T - C) / A mod 10^14): the reseed lands on T
+# = 0, 1, 10, 12345, 10^13 - 1, 10^13, 99999999999999, 50000000000000 itself; 12300000000000 is reached one RND(1)
+# later and 01000000000000 two later (the goldfish review of 2026-11-24 decoded it so)
 SEEDS = [(1, "-1"), (1, "-2"), (1, "-5"), (1, "-10"), (1, "-100"), (1, "-12345"), (1, "-32767"), (1, "-32768"),
          (2, "-1"), (2, "-.001"), (2, "-1E9"), (2, "-.333333"), (2, "-.5"), (2, "-5"), (2, "-1E-64"),
          (2, "-9.99999E62"), (2, "-123456"), (2, "-.000001"), (2, "-7"),
@@ -211,8 +215,9 @@ FX = [
     ("R=RND(-RND(0))", "a reseed from RND(0) in state 0 (an exact zero: RND(0)'s rule)", "val", None),
     ("R=-12345", "the state at the end", "peek", None),
 ]
-GAPS = {"BOOT": 2500.0, "RUNR": 2500.0, "GOTO": 2500.0, "GOTO2": 2500.0, "SQ1": 3000.0, "SQ2": 4000.0, "SQ3": 5000.0, "FX": 2500.0}
-ORDER = ["BOOT", "RUNR", "GOTO", "GOTO2", "SQ1", "SQ2", "SQ3", "FX"]
+GAPS = {"BOOT": 2500.0, "RUNR": 2500.0, "GOTO": 2500.0, "GOTO2": 2500.0, "SQ1": 3000.0, "SQ2": 4000.0, "SQ3": 5000.0, "FX": 2500.0,
+        "EDIT": 2500.0}
+ORDER = ["BOOT", "RUNR", "GOTO", "GOTO2", "SQ1", "SQ2", "SQ3", "FX", "EDIT"]
 
 
 def _drec(i, stmt):
@@ -244,6 +249,38 @@ BOOT = [("R#=-12345", "power-on"),
         ("R#=RND(1)", "RND(1) after it"),
         ("R#=RND(1)", "and again")]
 
+# EDIT (2026-11-24, goldfish pass 1 on RND.md): direct mode, the resets BOOT does not reach -- a line re-typed
+# identically, replaced, deleted (its number alone); RUN <line>; MAXFILES= -- each after a reseed, so a reset shows;
+# then whether RNDX IS the state (a POKE into it, then RND(0) / RND(1)), a reseed from a number with a leading zero
+# (RND(-1)'s state is 04389820420821: normalised digits or the raw state's?), and a sign-bit zero argument
+EDIT = [("10 REM", None),
+        ("R#=RND(-3)", "a reseed"),
+        ("10 REM", None),
+        ("R#=-12345", "after re-typing line 10 unchanged"),
+        ("R#=RND(-3)", "a reseed"),
+        ("10 PRINT", None),
+        ("R#=-12345", "after replacing line 10"),
+        ("R#=RND(-3)", "a reseed"),
+        ("10", None),
+        ("R#=-12345", "after deleting line 10 (its number alone)"),
+        ("20 END", None),
+        ("R#=RND(-3)", "a reseed"),
+        ("RUN 20", None),
+        ("R#=-12345", "after RUN 20"),
+        ("R#=RND(-3)", "a reseed"),
+        ("MAXFILES=1", None),
+        ("R#=-12345", "after MAXFILES=1"),
+        ("R#=RND(-3)", "a reseed"),
+        ("POKE &HF858,&H12", None),
+        ("R#=RND(0)", "RND(0) after a POKE of &H12 into RNDX+1"),
+        ("R#=RND(1)", "RND(1) after it"),
+        ("R#=RND(-1)", "RND(-1)"),
+        ("R#=RND(-RND(0))", "a reseed from RND(0), whose number has a leading zero"),
+        ("Z!=0:V=VARPTR(Z!):POKE V,128", None),
+        ("R#=RND(Z!)", "a single 80 00 00 00: a zero with its sign bit set"),
+        ("R#=RND(1)", "RND(1) after it")]
+DIRECT = {"BOOT": BOOT, "EDIT": EDIT}
+
 RUNPROG = [
     "5 DEFDBL A-Z:DEFINT I-K:E=0:R=-12345:A=&HC001:GOSUB 900",
     "6 R=RND(1):GOSUB 900",
@@ -265,15 +302,15 @@ RUN_STEPS = [("R=-12345", "at the program's first line", "peek", None),
 def program(group):
     """the typed lines and the case list [(id, meta)] in record order"""
     routine = [str(x) for x in kmath.ROUTINE]
-    if group == "BOOT":
+    if group in DIRECT:
         lines, cases = [], []
-        for stmt, why in BOOT:
+        for stmt, why in DIRECT[group]:
             if why is None:
                 lines.append(stmt)
                 continue
             i = len(cases)
             lines.append(_drec(i, stmt))
-            cases.append((f"KRN BOOT {i}", dict(op="FX", stmt=stmt, why=why, ty=None, text=None)))
+            cases.append((f"KRN {group} {i}", dict(op="FX", stmt=stmt, why=why, ty=None, text=None)))
         lines.append(f"POKE &HC001+{REC * len(cases)},&HC3:POKE &HC000,&H5A")
         _fits(group, cases)
         return lines, cases
@@ -326,7 +363,7 @@ def decode(hexs, n, group=None):
             res = dac[2:4]
         elif vt in (4, 8):
             res = dac[:vt]
-        arg = bytes(8) if group == "BOOT" else r[1:9]
+        arg = bytes(8) if group in DIRECT else r[1:9]
         out.append(dict(e=r[0], arg=arg, rbytes=r[9:17], vt=vt, res=res, rndx=r[26:34]))
     return out, None
 

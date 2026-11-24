@@ -344,6 +344,19 @@ One probe, one rules module, RND.md at DRAFT 1; with it all twelve maths keyword
   zero; `-1!/3` is a DOUBLE (so `RND(-1!/3)` is `RND(-1/3)`); two calls in one expression run left to right; CLS and
   GOTO keep the state.
 
+### Goldfish pass 1 over RND (2026-11-24)
+
+One reviewer ([REVIEW-m2-gRND1.md](../../scratchpad/REVIEW-m2-gRND1.md)), 19 items, scored: **real 15**, known 1,
+wrong 0, minor 3. Four rules asserted more than their cases reached; a new direct-mode group, **EDIT** (17 steps),
+measured them and the reference held every prediction (a line re-typed / replaced / deleted, `RUN 20` and
+`MAXFILES=` reset; RNDX is the state; a reseed from a leading-zero number takes the normalised digits; a sign-bit
+zero reseeds from 0). One new difference: zerobas takes that sign-bit zero for a zero,
+[D-RNDNEGZERO](../../todo/open/D-RNDNEGZERO.md) (TIER 6). The citation items (a stale status block, FX 55 counted
+as a difference, `-0` arguments that are stored as zero bytes, rule texts citing rows their selections exclude, the
+probe's pre-image comment) are corrected. Kept as minor: an integer's "left-aligned digits" equal a conversion's
+(no case can separate them); the S = 1 example read only through USR (open list); the known item is the
+RNDX-copy rival, now a control. Two new controls: MAXFILES= keeping the state, RNDX a copy.
+
 ## 7. Tooling: what exists, what is missing
 
 Exists and fits unchanged: `tools/spec_rules.py` (the checker is not BIOS-specific: a module, its cases, its rules,
