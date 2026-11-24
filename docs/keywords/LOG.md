@@ -6,9 +6,10 @@ SPDX-License-Identifier: BSD-2-Clause
 
 # `LOG` — the natural logarithm of a number
 
-> **Spec:** DRAFT 1 (2026-11-24) — 255 cases measured on the Philips VG-8020 (BASIC's reference) and on
+> **Spec:** DRAFT 1 (2026-11-24) — 321 cases measured on the Philips VG-8020 (BASIC's reference) and on
 > zerobas, by typed BASIC ([`ktrans.py`](../../probes/basic/spec/ktrans.py)); every rule is executable and
 > every recorded output is read by one. Not yet reviewed ([the keyword plan](spec-plan.md)).
+> Goldfish pass 1 (test writer) 2026-11-24: 6 findings, 0 measured, 1 moved to open (new cases: KTR TS3, TD3, FY).
 >
 > **Status (2026-10-09):** level 3 — happy path ✓ · reasonable time ✓ · common
 > errors ✓ · RAM usage not yet proven · every error ✓. One recorded
@@ -90,15 +91,15 @@ The tables are generated from the checks, so a sentence here cannot say more tha
 
 **Bounds, not digits.** `LOG`'s last digits are the reference's own approximation. Where a rule says "within B
 units", the target is computed exactly (to 60 digits and more, in Python, from the argument's own bytes) and a unit is
-one in the 14th significant digit of the target; B is the worst error MEASURED on the VG-8020, rounded up (the measured
-worst is in the sentence), and a control shows that a tighter bound is false. Whether zerobas's digits equal the
+one in the 14th significant digit of the target; B is the worst error MEASURED on the VG-8020, rounded up to a whole unit (the measured
+worst is in the sentence), and a control with a bound just below that worst is FALSE, so the bound cannot be tightened past the measured worst. Whether zerobas's digits equal the
 reference's byte for byte is a separate observation, under *Differences*: a zerobas result inside the bound agrees
 with the rule even where its digits differ.
 
 **Evidence.** One probe, [`probes/basic/spec/ktrans.py`](../../probes/basic/spec/ktrans.py) (the maths region's
 second, on the shared RAM-record harness [`ramrec.py`](../../probes/basic/spec/ramrec.py) and the frame of
 [`kmath.py`](../../probes/basic/spec/kmath.py)), typed on both machines; run file
-[`scratchpad/KTR_run1.out`](../../scratchpad/KTR_run1.out) (2026-11-24; zerobas's side on that day's build). The
+[`scratchpad/KTR_run1.out`](../../scratchpad/KTR_run1.out) (2026-11-24, all groups; zerobas's side on that day's build). The
 argument is `READ` into a variable of the case's own type (`N%`, `N!` or `N#`) and that variable's own bytes are
 recorded before the call. Each case is evaluated twice: `R=LOG(N)`, with `R` a double whose 8 bytes are recorded,
 and `Q=USR(LOG(N))`, where `USR` is the probe's own 18-byte routine (POKEd above `CLEAR`'s limit) that copies
@@ -114,22 +115,24 @@ type and bytes on both machines, or the loader refuses the run.
   `)`, no parenthesis; the literals `2.5`, `-2.5`, `7`, `7%`, `2.5!`, `2.5#`, `&H8000`, `-32768`, `-0`, `1/4`;
   spaces; `LOG(LOG(.5))`; and a single `N!` assigned 1 whose exponent byte is then POKEd to 0 or `&H80`
   (digit bytes `10 00 00`).
+- **[KTR TS3 LOG *n*]** (singles) and **[KTR TD3 LOG *n*]** (doubles), added by the goldfish pass to separate rival rules the first run could not tell apart: the angles where p has 13 integer digits, ties in p, p just below and above 1E-64, EXP's edges and its huge-negative threshold. Singles: 6E12, 7E12, -7E12, 9E12, 1.1E13, -1.1E13, 1.2E13, 1.3E13, -1.3E13, 1.5E13, -1.5E13, 1.7E13, 3E13, 6.3E13, 1.75, 2.75, 7.5, -7.5, 9.5, 13.5, 5E-64, -5E-64, 6E-64, 6.28318E-64, 6.28319E-64, -6.28319E-64, 7E-64, -65536.5, -65537, -70000, -80000, -90000, -99990, -99998, -75000, -75450, -75451, -75452, -75453, -76000, -75460, -75500, -75600, -75700, -75800, -75900. Doubles: -147.36, -147.365, -147.3654, -147.3655, -147.36544595, -147.36544596, -147.366, 145.06286085, 145.06286086, 145.0628609, 145.06287, 145.0629, 1.1D13, -1.1D13, 1.3D13, 1.5D13, 6.2831D-64, 6.2832D-64.
+- **[KTR FY *i*]**: fixed statements that USE a non-canonical result (SIN(0), COS(7E13), TAN(1E13), EXP(-147.4), ATN of the single `80 10 00 00`) -- in `STR$` (PRINT's number format; its length and first bytes are recorded), `=0`, `<0`, `+1`, `*1E10`, negated, assigned to a single `Z!` and an integer `Z%` (read back through `USR`) -- and the non-canonical single `00 12 34 56` / `80 12 34 56` as the argument; `FY` in the probe.
 
-**Controls** ([`ktrans_controls.py`](../../probes/basic/spec/ktrans_controls.py)): each is a rival rule run over the reference's cases: “within 5 units (this page before 2026-11-24)” is FALSE on 3 of the 150 cases it selects (e.g. KTR TD1 LOG 2.718281828459); “correctly rounded” is FALSE on 94 of the 150 cases it selects (e.g. KTR TI LOG 2).
+**Controls** ([`ktrans_controls.py`](../../probes/basic/spec/ktrans_controls.py)): each is a rival rule run over the reference's cases: “within 5 units (this page before 2026-11-24)” is FALSE on 3 of the 180 cases it selects (e.g. KTR TD1 LOG 2.718281828459); “within 8 units” is FALSE on 1 of the 180 cases it selects (e.g. KTR TD2 LOG .5235987755983); “correctly rounded” is FALSE on 106 of the 180 cases it selects (e.g. KTR TI LOG 2).
 
 <!-- RULES BEGIN -->
 <!-- GENERATED by tools/spec_rules.py from probes/basic/spec/log_rules.py -- do not edit; `python3 tools/spec_rules.py probes/basic/spec/log_rules.py --write` -->
 
-**10 rules; 10 hold on the reference. Of the 1275 recorded outputs (each case's error from `R=F(x)` and from `Q=USR(F(x))`, R's 8 bytes, the result's type as USR saw it and the result's own bytes): 1275 read by a rule's check, 0 declared NOT evidence (below), 0 unread.**
+**10 rules; 10 hold on the reference. Of the 1607 recorded outputs (each case's error from `R=F(x)` and from `Q=USR(F(x))`, R's 8 bytes, the result's type as USR saw it and the result's own bytes): 1607 read by a rule's check, 0 declared NOT evidence (below), 0 unread.**
 
 #### 1. LOG(x)
 
 | rule | cases | reference | zerobas |
 |---|---|---|---|
-| **R-LOG-DOMAIN** Zero or a negative argument is error 5 (Illegal function call), in every type and size (0, -0, -1E-64, -9.99999E62) -- also a single whose exponent byte is 0 or &H80 (a zero, signed or not). | 93 | ✓ | ✓ |
+| **R-LOG-DOMAIN** Zero or a negative argument is error 5 (Illegal function call), in every type and size (0, -0, -1E-64, -9.99999E62) -- also a single whose exponent byte is 0 or &H80 (a zero, signed or not). | 129 | ✓ | ✓ |
 | **R-LOG-ONE** LOG(1) is exactly 0: 8 zero bytes, a double. | 3 | ✓ | ✓ |
-| **R-LOG-NEAR** Any other positive argument gives a DOUBLE within 10 units of the 14th significant digit of ln x -- measured worst 8.3 (LOG(.5235987755983#)); LOG(2) 1.5 units low, LOG(1D-64) and LOG(9.99999E62) within 0.5. | 150 | ✓ | ✓ |
-| **R-LOG-ODDBYTES** On a non-canonical single (exponent byte 0 or &H80, digit bytes 10 00 00) it gives what the rules above say for a zero argument. | 2 | ✓ | ✓ |
+| **R-LOG-NEAR** Any other positive argument gives a DOUBLE within 9 units of the 14th significant digit of ln x -- measured worst 8.3 (LOG(.5235987755983#)), the next 7.3 (LOG(2.718281828459#)); LOG(2) 1.5 units low, LOG(1D-64) and LOG(9.99999E62) within 0.5. | 180 | ✓ | ✓ |
+| **R-LOG-ODDBYTES** On a non-canonical single (exponent byte 0 or &H80, digit bytes 10 00 00 or 12 34 56) it gives what the rules above say for a zero argument. | 4 | ✓ | ✓ |
 | **R-LOG-NESTED** LOG(LOG(.5)) is LOG of the double that LOG(.5) returns (the KTR TS1 row): what the rules above say for that double -- error 5, LOG(.5) being negative. | 1 | ✓ | ✓ |
 
 #### 2. LOG(x): forms, errors and assignment
@@ -140,15 +143,16 @@ type and bytes on both machines, or the loader refuses the run.
 | **R-LOG-OWNERR** An argument that fails to compute raises its own error (1/0: error 11). | 1 | ✓ | ✓ |
 | **R-LOG-SYNTAX** No argument, a second argument, no closing parenthesis, or the name without a parenthesis is error 2 (Syntax error). | 4 | ✓ | ✓ |
 | **R-LOG-FORMS** Spaces before the parenthesis and around the argument are allowed, and a literal's own type is the argument's (2.5 a single, 7 an integer, &H8000 the integer -32768, -32768 a single, -0 the integer 0, 1/4 a double); each gives what the rules above say for that value. | 12 | ✓ | ✓ |
-| **R-LOG-ASSIGN** `R=LOG(x)` with R a double stores the result's 8 bytes as they are (a zero's digit bytes included), and an error stores nothing (R keeps its sentinel). Read in every case. | 255 | ✓ | ✓ |
+| **R-LOG-ASSIGN** `R=LOG(x)` with R a double stores the result's 8 bytes as they are (a zero's digit bytes included), and an error stores nothing (R keeps its sentinel). Read in every case. | 321 | ✓ | ✓ |
 
 <!-- RULES END -->
 
 ## Differences from the reference
 
 - **The last digits of a result can differ.** The VG-8020's `LOG` is within 8.3 units of the 14th digit of ln x over
-  the 150 positive arguments measured (R-LOG-NEAR, bound 10; this page said "up to 5 units" before 2026-11-24 -- a
-  control shows 5 is false on 3 cases), zerobas within 1.7. zerobas uses its own calculation, never the reference's;
+  the 180 positive arguments measured (R-LOG-NEAR, bound 9; this page said "up to 5 units" before 2026-11-24 -- a
+  control shows 5 is false on 3 cases, and 8 on 1), zerobas within 1.69 (LOG(1.00001!); an observation,
+  `ktrans_controls.py --zb`, not a rule). zerobas uses its own calculation, never the reference's;
   reproducing the reference's digits would need its internal constants, which can only be read from its ROM --
   something this project does not do. The approach — be accurate and record the difference rather than imitate —
   was signed off by Joost on 2026-07-13 ([spec-basic-mathpack-slice2.md](../spec-basic-mathpack-slice2.md) §2).
@@ -165,12 +169,19 @@ The one rung not yet proven is **RAM usage**: `LOG` uses the same amount of free
 - [A] Direct mode: every case ran inside a program.
 - [A] An argument's own error was measured with one kind (`1/0`, error 11); that any error of the argument wins is assumed.
 - [A] Which work-area cells the call writes (the RAM-usage rung).
-- [A] Non-canonical bytes other than the two measured singles (exponent byte 0 or `&H80` with digit bytes `10 00 00`).
-- [A] Whether the reference's error is ever more than 10 units: 150 results measured; the bound is the measured
-  worst (8.3) rounded up.
+- [A] Non-canonical bytes other than the four measured singles (exponent byte 0 or `&H80` with digit bytes `10 00 00`
+  or `12 34 56`: all error 5).
+- [A] Whether the reference's error is ever more than 9 units: 180 results measured; the bound is the measured
+  worst (8.27) rounded up.
+- [A] LOG's result assigned to a single or an integer, or used inside a larger expression (only `R=LOG(x)` and
+  `USR(LOG(x))` were measured). LOG's one zero result, LOG(1), is the canonical 8 zero bytes, so the non-canonical
+  zeros the other pages measure in use (KTR FY) do not arise here.
 
 ## What we found, and how
 
+- **Goldfish pass 1** (2026-11-24, a fresh test-writer review of the six pages): the bound is now 9 (the measured
+  worst 8.27 rounded up to a whole unit, with a control at 8), not 10; zerobas's own accuracy is quoted from a
+  committed readout; the non-canonical singles 00 12 34 56 and 80 12 34 56 are error 5 too.
 - **The transcendentals' rules are bounds, measured** (2026-11-24, D-KWSPEC's maths region, second unit). LOG is a double always, LOG(1) exactly 0 (8 zero bytes), error 5 for 0, -0 and every negative (also a zero whose sign bit is set); the VG-8020 is within 8.3 units of the 14th digit, not 5.
 - **`LOG()` gave the wrong error** (fixed 2026-07-14, D-F2-4). Empty, bare
   (`PRINT LOG`) or two-argument calls answered `Illegal function call`: the

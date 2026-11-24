@@ -16,10 +16,18 @@ points' bytes, the errors and where they start, the symmetry of SIN / TAN / ATN 
 THE ANGLE REDUCTION (SIN / COS / TAN; measured from the outside, D-TANBIG 2026-11-04 and here): the reference turns
 the angle into turns, p = x * C rounded to 14 significant digits (half up), C = 0.15915494309190 (1 / 2 pi to 14
 digits), and works on the fraction of p (its sign kept): SIN(x) approximates sin(2 pi f), f = frac(p); COS(x)
-approximates sin(2 pi g), g = frac(r14(1/4 - p)). A p below 1E-64 in size is 0. The bound is then against
+approximates sin(2 pi g), g = frac(rd14(1/4 - p)). A p below 1E-64 in size is 0. The bound is then against
 sin(2 pi f) -- the true sine of the REDUCED angle -- not against sin(x), which the reference misses by up to 0.5
-for x >= 1E12 (a control)."""
+for x >= 1E12 (a control).
+
+The two roundings differ (goldfish pass 1, 2026-11-24, KTR TS3): p = x * C is rounded half UP in size (SIN(9.5):
+p = 1.51197195937305 exactly, ...731 fits within 1.9 units, ...730 is 626 units off); 1/4 - p is rounded half DOWN
+in size -- a tie goes toward zero (rd14). Ties in 1/4 - p are every case where p has 13 integer digits (x from about
+6.3E12 to 6.3E13): COS(1.2E13) is the half-turn zero (1/4 - p = -1909859317102.55 -> .5; half-even and half-up both
+give .6), COS(1.1E13) .58778525229247 (-1750704374010.65 -> .6; half-up gives .7). Truncation fits the ties too but
+not the other cases (a control)."""
 import os
+import re
 import sys
 from decimal import Decimal as D, localcontext
 from functools import lru_cache
@@ -36,19 +44,21 @@ from spec_rules import Rule  # noqa: E402
 
 FIELDS = KM.FIELDS
 OUTPUTS = {g: FIELDS for g in ktrans.ORDER}
+OUTPUTS["FY"] = FIELDS + ["arg"]           # FY: ARG holds STR$'s length and first 7 bytes (0 where no STR$ ran)
 OUTPUTS_DESC = KM.OUTPUTS_DESC
 R_SENT = KM.R_SENT
 NB = KM.NB
 ONE = bytes([0x41, 0x10, 0, 0, 0, 0, 0, 0])                      # the double 1
 ZERO8 = bytes(8)
 TWOPI_ZERO = bytes([0x00, 0x62, 0x83, 0x18, 0x53, 0x07, 0x17, 0x96])   # exponent 0, the digits of 2 pi
+ATN_NEGZERO = bytes([0x00, 0x10, 0, 0, 0, 0, 0, 0])                     # ATN of a zero whose sign bit is set
 
 # --- the bounds, in units of the 14th significant digit of the target (measured worst on the VG-8020 in ( )) ---
 B_EXP_SMALL = 3          # |x| <= 1                      (2.5: EXP(.9!), EXP(1))
 B_EXP_POS = 500          # x > 1                         (472: EXP(145.0628#))
-B_EXP_NEG = 40000        # x < -1, and the digits below 1E-64 (39525: EXP(-149.668#); 27178: EXP(-147.3))
-B_LOG = 10               #                               (8.3: LOG(.5235987755983#))
-B_TRIG = 2.5             # SIN / COS against the reduced angle (2.07: COS(.25!); SIN 1.86: SIN(1D11))
+B_EXP_NEG = 40000        # x < -1, and the digits below 1E-64 (39533: EXP(-147.36544595#); 39525: EXP(-149.668#))
+B_LOG = 9                #                               (8.3: LOG(.5235987755983#))
+B_TRIG = 2               # SIN / COS against the reduced angle (COS 1.95: COS(.2!); SIN 1.86: SIN(1D11))
 B_TAN = 6                # TAN against sin(2 pi f) / sin(2 pi g)   (5.2: TAN(4.71239!))
 B_TAN_OWN = 3            # TAN against the same machine's SIN(x) / COS(x)  (2.79: TAN(12345%))
 B_ATN = 3                # (2.69: ATN(1.0471975511966#))
@@ -148,6 +158,8 @@ EXP_OVER = 63 * LN10          # e^x >= 1E63 from here: Overflow
 EXP_M64 = -64 * LN10          # e^x = 1E-64
 EXP_M65 = -65 * LN10
 EXP_M129 = -129 * LN10
+EXP_HUGE = Fr(-75460)         # Overflow from here down: measured 0 at -75453, Overflow at -75460 (KTR TS3); the edge
+                              # between is not measured
 
 
 # --- numbers ---
@@ -185,6 +197,23 @@ def r14(v):
     return out if v > 0 else -out
 
 
+def rd14(v):
+    """v rounded to 14 significant digits, half DOWN in size (a tie goes toward zero); below 1E-64 in size 0 --
+    COS's rounding of 1/4 - p"""
+    v = Fr(v)
+    if v == 0:
+        return v
+    e = dexp(v)
+    m = abs(v) * Fr(10) ** (14 - e)
+    n = int(m)
+    if m - n > Fr(1, 2):
+        n += 1
+    out = Fr(n) * Fr(10) ** (e - 14)
+    if out < Fr(1, 10 ** 64):
+        return Fr(0)
+    return out if v > 0 else -out
+
+
 def frac(p):
     """the fraction of p, its sign kept (toward zero)"""
     return p - int(p)
@@ -199,8 +228,8 @@ def turns_sin(x):
 
 
 def turns_cos(x):
-    """g: COS's reduced angle in turns -- a quarter turn minus the angle's turns, rounded, its fraction"""
-    return frac(r14(Fr(1, 4) - r14(Fr(x) * C_TURN)))
+    """g: COS's reduced angle in turns -- a quarter turn minus the angle's turns, rounded half down, its fraction"""
+    return frac(rd14(Fr(1, 4) - r14(Fr(x) * C_TURN)))
 
 
 def units(v, target):
@@ -225,7 +254,7 @@ def m_exp(ty, b):
     x = argval(ty, b)
     if x == 0:
         return "bytes", ONE
-    if x <= -99999:
+    if x <= EXP_HUGE:
         return "err", 6
     if x >= EXP_OVER:
         return "err", 6
@@ -282,6 +311,8 @@ def m_atn(ty, b):
     if ty == "I" and value(b) == 0:
         return "bytes", ZERO8
     if ty != "I" and b[0] & 0x7F == 0:
+        if b[0] & 0x80:
+            return "bytes", ATN_NEGZERO
         return "bytes", bytes([0]) + b[1:] + bytes(8 - len(b))
     return "near", x_atan(value(b)), B_ATN
 
@@ -319,7 +350,7 @@ def argb(c):
 
 def xval(c):
     """the argument's value: a matrix case's own bytes, a fixed statement's literal (FX_ARG)"""
-    if c.src == "FX":
+    if c.src in FIXED:
         return argval(*FX_ARG[c.why])
     return argval(c.ty, argb(c))
 
@@ -327,25 +358,28 @@ def xval(c):
 # the fixed statements' arguments: the type and bytes each literal is (kmath's, measured through USR there)
 FX_ARG = dict(KM.FX_ARG)
 FX_ARG.pop("nested")
+FX_ARG["a single with exponent byte 0, digit bytes 12 34 56"] = ("S", bytes([0x00, 0x12, 0x34, 0x56]))   # KTR FY
+FX_ARG["a single with exponent byte 80, digit bytes 12 34 56"] = ("S", bytes([0x80, 0x12, 0x34, 0x56]))
 FORM_WHYS = tuple(w for w in FX_ARG if "exponent byte" not in w)
-ODD_WHYS = KM.ODD_WHYS
+ODD_WHYS = tuple(w for w in FX_ARG if "exponent byte" in w)
+FIXED = ("FX", "FY")
 NESTED_IN = ("S", KM.enc(Fr(1, 2), "S"))           # F(F(.5)): the inner call's argument
 
 
 def want(c, model=None):
     m = model or MODELS[c.fn]
-    if c.src != "FX":
+    if c.src not in FIXED:
         return m(c.ty, argb(c))
     ty, b = FX_ARG[c.why]
     return m(ty, b)
 
 
 def fx_by(c, *whys):
-    return c.src == "FX" and c.why in whys
+    return c.src in FIXED and c.why in whys
 
 
 def mx(c):
-    return c.src != "FX"
+    return c.src not in FIXED
 
 
 def load(fn):
@@ -354,24 +388,80 @@ def load(fn):
     same group) -- the partners the pair rules read"""
     out = {"ref": [], "zb": []}
     half = {}
+    rows = {"ref": {}, "zb": {}}          # (group, fn, text or why) -> case, every group so far: FY's partners
     for g in ktrans.ORDER:
         cs = ktrans.load(g)
         for who in out:
-            by = {(c.fn, c.text): c for c in cs[who] if c.src != "FX"}
+            by = {(c.fn, c.text): c for c in cs[who] if c.src not in FIXED}
+            rows[who].update({(g, c.fn, c.text if c.src not in FIXED else c.why): c for c in cs[who]})
             if g == "TS1":
                 half[who] = by[(fn, ".5")]
             for c in cs[who]:
                 if c.fn != fn:
                     continue
                 c.neg = c.sinrow = c.cosrow = c.inner = None
-                if c.src != "FX":
+                if c.src not in FIXED:
                     t = c.text
                     c.neg = by.get((fn, t[1:] if t.startswith("-") else "-" + t))
                     c.sinrow, c.cosrow = by[("SIN", t)], by[("COS", t)]
                 elif c.why == "nested":
                     c.inner = half[who]
+                elif c.src == "FY" and c.why not in FX_ARG:
+                    c.inner = rows[who][FY_INNER[re.search(r"[A-Z]{3}\([^)]*\)", c.why).group(0)]]
                 out[who].append(c)
     return out
+
+
+# FY: the call each statement uses, and the same machine's own row of that call (its matrix row, or FX's)
+FY_INNER = {"SIN(0)": ("TI", "SIN", "0"), "COS(7E13)": ("TS2", "COS", "7E13"), "TAN(1E13)": ("TS2", "TAN", "1E13"),
+            "EXP(-147.4)": ("TS1", "EXP", "-147.4"),
+            "ATN(N!)": ("FX", "ATN", "a single with exponent byte 80, digit bytes 10 00 00"),
+            "TAN(1.3E13)": ("TS3", "TAN", "1.3E13")}
+STR_ZERO = bytes([2, 0x20, 0x30, 0, 0, 0, 0, 0])      # STR$'s " 0": length 2, then its bytes
+
+
+def round6(b):
+    """a double's 8 bytes as a single's 4: the 14 digits rounded half up to 6, the exponent byte kept (+1 on a
+    carry)"""
+    d = int(b[1:].hex())
+    n, r = divmod(d, 10 ** 8)
+    e = b[0]
+    if r >= 5 * 10 ** 7:
+        n += 1
+    if n == 10 ** 6:
+        n, e = 10 ** 5, e + 1
+    return bytes([e]) + bytes.fromhex(f"{n:06d}")
+
+
+def fy_use(c):
+    """a FY statement that USES a result (not the 12 34 56 arguments): what it records, from the same machine's own
+    row of the call (c.inner) -- STR$ " 0"; = 0 true, < 0 false; + 1 exactly 1; * 1E10 and negation the same bytes;
+    a single the digits rounded to 6; an integer 0"""
+    z = c.inner.res
+    if z is None or c.e1 or c.e2:
+        return False
+    w = c.why
+    if "PRINT's number format" in w:
+        return c.vt == 255 and c.res is None and c.rbytes == R_SENT and c.arg == STR_ZERO
+    if c.arg != ZERO8:
+        return False
+    if "compared with 0" in w:
+        return c.vt == 255 and c.res is None and c.rbytes == ONE
+    if "below 0" in w:
+        return c.vt == 255 and c.res is None and c.rbytes == ZERO8
+    if "plus 1" in w:
+        return c.vt == 8 and c.res == ONE and c.rbytes == ONE
+    if "times 1E10" in w or w.startswith("minus"):
+        return c.vt == 8 and c.res == z and c.rbytes == z
+    if "assigned to a single" in w:
+        return c.vt == 4 and c.res == round6(z) and c.rbytes == c.res + bytes(4)
+    if "assigned to an integer" in w:
+        return c.vt == 2 and c.res == bytes(2) and c.rbytes == ZERO8
+    raise KeyError(w)
+
+
+def fy_by(c):
+    return c.src == "FY" and c.why not in FX_ARG
 
 
 def odd_pair(c):
@@ -454,27 +544,32 @@ def rules(fn):
                  cls(lambda x: x > 1, lambda x: True), _ok),
             Rule("R-EXP-NEG", sec,
                  f"For x < -1, while e^x >= 1E-64, a double within {B_EXP_NEG} units of e^x -- an irregular error: "
-                 f"EXP(-3) 5 units, EXP(-2) 5,930, EXP(-50) 331, EXP(-147.3) 27,178 (all high).",
+                 f"EXP(-3) 5 units, EXP(-2) 5,930, EXP(-50) 331, EXP(-147.3) 27,178, EXP(-147.36544595#) 39,533 "
+                 f"(all high). It is not a 14-digit reduction's artefact: 10^r14(x * log10 e) misses EXP(-2) by "
+                 f"5,930 units too (a control).",
                  cls(lambda x: x < -1, lambda x: True), _ok),
             Rule("R-EXP-OVER", sec,
-                 "From e^x >= 1E63 on (x >= 145.063: 145.06286# still gives 9.99...E62) it is error 6 (Overflow).",
+                 "From e^x >= 1E63 on it is error 6 (Overflow): the edge is 63 ln 10 = 145.0628608586..., and "
+                 "145.06286085# still gives 9.9999999137221E+62, 145.06286086# Overflow.",
                  _sel(lambda c, w: w == ("err", 6) and xval(c) > 0), _ok),
             Rule("R-EXP-TINY", sec,
-                 f"Where 1E-65 <= e^x < 1E-64 (x from about -147.36 to -149.668) the result is a double whose "
-                 f"exponent byte is 0 -- it reads as zero -- and whose digit bytes are the digits of e^x (within "
+                 f"Where 1E-65 <= e^x < 1E-64 (x from -64 ln 10 = -147.3654459516...: -147.36544595# still gives "
+                 f"1.0000000055722E-64, -147.36544596# the first such zero; down to -149.668) the result is a double "
+                 f"whose exponent byte is 0 -- it reads as zero -- and whose digit bytes are the digits of e^x (within "
                  f"{B_EXP_NEG} units; measured worst 39,525, EXP(-149.668#)): EXP(-147.4) is 00 96 60 36 12 55 89 73.",
                  _sel(lambda c, w: w[0] == "zdig"), _ok),
             Rule("R-EXP-BAND", sec,
                  "Where 1E-129 <= e^x < 1E-65 (x from -149.67 to -297.033) it is error 6 (Overflow), not 0.",
-                 _sel(lambda c, w: w == ("err", 6) and -99999 < xval(c) < 0), _ok),
+                 _sel(lambda c, w: w == ("err", 6) and EXP_M129 <= xval(c) < 0), _ok),
             Rule("R-EXP-FLUSH", sec,
-                 "Below that, down to at least x = -65536 (e^x < 1E-129: -297.04, -298, -1000, -32768, -40000, "
-                 "-65535, -65536) it is a clean double zero, 8 zero bytes.",
+                 "Below that, down to at least x = -75453 (e^x < 1E-129: -297.04, -298, -1000, -32768, -40000, "
+                 "-65536, -70000, -75000, -75453) it is a clean double zero, 8 zero bytes.",
                  _sel(lambda c, w: w == ("bytes", ZERO8)), _ok),
             Rule("R-EXP-HUGE", sec,
-                 "From x = -99999 down (measured -99999, -1E5, -999999, -1E6, -1E10, -1E30, -1E38, -9.99999E62 "
-                 "and -9.9999999999999D62) it is error 6 (Overflow) again.",
-                 _sel(lambda c, w: w == ("err", 6) and xval(c) <= -99999), _ok),
+                 "From x = -75460 down it is error 6 (Overflow) again (measured -75460, -75500, -76000, -80000, "
+                 "-90000, -99999, -1E5, -1E6, -1E10, -1E30, -1E38, -9.99999E62, -9.9999999999999D62 ...); between "
+                 "-75453 and -75460 it is not measured.",
+                 _sel(lambda c, w: w == ("err", 6) and xval(c) <= EXP_HUGE), _ok),
         ]
     elif fn == "LOG":
         out = [
@@ -486,13 +581,16 @@ def rules(fn):
                  _sel(lambda c, w: w == ("bytes", ZERO8)), _ok),
             Rule("R-LOG-NEAR", sec,
                  f"Any other positive argument gives a DOUBLE within {B_LOG} units of the 14th significant digit of "
-                 f"ln x -- measured worst 8.3 (LOG(.5235987755983#)); LOG(2) 1.5 units low, LOG(1D-64) and "
+                 f"ln x -- measured worst 8.3 (LOG(.5235987755983#)), the next 7.3 (LOG(2.718281828459#)); LOG(2) "
+                 f"1.5 units low, LOG(1D-64) and "
                  f"LOG(9.99999E62) within 0.5.",
                  _sel(lambda c, w: w[0] == "near"), _ok),
         ]
     elif fn in ("SIN", "COS"):
-        red = ("f = frac(p), p = x * 0.15915494309190 rounded to 14 significant digits" if fn == "SIN" else
-               "g = frac(r14(1/4 - p)), p = x * 0.15915494309190 rounded to 14 significant digits")
+        red = ("f = frac(p), p = x * 0.15915494309190 rounded half up to 14 significant digits, a p below 1E-64 "
+               "in size 0" if fn == "SIN" else
+               "g = frac(rd14(1/4 - p)), p = x * 0.15915494309190 rounded half up to 14 significant digits, and "
+               "1/4 - p rounded to 14 digits half DOWN in size -- a tie goes toward zero")
         out = []
         if fn == "COS":
             out.append(Rule("R-COS-ONE", sec, "COS of zero is exactly the double 1 (41 10 00 00 00 00 00 00), "
@@ -502,19 +600,25 @@ def rules(fn):
             Rule(f"R-{fn}-ZERO", sec,
                  f"The result is a DOUBLE. When the reduced angle is a whole or a half turn ({red}; a whole turn "
                  f"when p is 0 or whole) it is a zero whose digit bytes are 2 pi's: 00 62 83 18 53 07 17 96 -- "
-                 + ("SIN(0), SIN(1E-64) (p below 1E-64 is 0), SIN(3.1415926535897#) (p is .5), and every x "
-                    "from 1E13 up, where p has no fraction digit left." if fn == "SIN" else
-                    "COS(x) from x = 7E13 up, where 1/4 - p rounds to a whole number."),
+                 + ("SIN(0), SIN(6.28318E-64) (p is 9.99999E-65: 0; SIN(6.28319E-64) is not), "
+                    "SIN(3.1415926535897#) (p is .5); where p has 13 integer digits (x from about 6.3E12) its one "
+                    "fraction digit decides: 0 or 5 gives this zero (SIN(1E13), SIN(1.5E13), SIN(3E13)), any other "
+                    "does not (SIN(1.1E13) is -.58778525229247, f = .9); from 6.3E13 up p has no fraction digit "
+                    "and every x gives it." if fn == "SIN" else
+                    "where p has 13 integer digits (x from about 6.3E12) every 1/4 - p is a tie, and a fraction "
+                    "digit 3 or 8 in p rounds it to a whole or half turn: COS(7E12), COS(1.2E13) (1/4 - p = "
+                    "-1909859317102.55 -> .5), COS(1.7E13); from 6.3E13 up every x gives it (COS(7E13))."),
                  _sel(lambda c, w: w == ("bytes", TWOPI_ZERO)), _ok),
             Rule(f"R-{fn}-NEAR", sec,
                  f"Otherwise a double within {B_TRIG} units of the 14th significant digit of sin(2 pi "
                  f"{'f' if fn == 'SIN' else 'g'}) -- the sine of the REDUCED angle, not {fn.lower()}(x): "
                  + ("SIN(1000) is .82687954054849 (the reduced target .8268795405485..., sin(1000) is "
                     ".8268795405320...), SIN(3.1415926535898#) -1.2566370614359E-13 (f = -2E-14 turns from a half "
-                    "turn), SIN(1E12) -.58778525229247 (f = .9). Measured worst 1.9 units." if fn == "SIN" else
+                    "turn), SIN(1E12) -.58778525229247 (f = .9). Measured worst 1.86 units (SIN(1D11))."
+                    if fn == "SIN" else
                     "COS(1.5707963267949#) is -6.2831853071796E-14 (g = -1E-14), COS(4.71239!) 1.0196154567834E-06, "
-                    "COS(1E13) .95105651629516 (1/4 - p rounds to -1591549430918.8, g = -.8). Measured worst 2.1 "
-                    "units."),
+                    "COS(1.1E13) .58778525229247 (1/4 - p = -1750704374010.65 rounds to .6, g = -.6). Measured "
+                    "worst 1.95 units (COS(.2!))."),
                  _sel(lambda c, w: w[0] == "near"), _ok),
         ]
         if fn == "SIN":
@@ -529,16 +633,19 @@ def rules(fn):
         out = [
             Rule("R-TAN-POLE", sec,
                  "When COS's reduced angle is a whole or a half turn (COS(x) is the 2-pi-digit zero, COS's page) TAN "
-                 "is error 6 (Overflow): every x from 7E13 up (1E14, 1E20, 1E38, 9.99999E62, the negatives too).",
+                 "is error 6 (Overflow): every x from 6.3E13 up (7E13, 1E14, 1E38, 9.99999E62, the negatives too), "
+                 "and below it where p has 13 integer digits and the fraction digit 3 or 8 (TAN(7E12), "
+                 "TAN(1.2E13), TAN(1.7E13); TAN(1.3E13) is 1.6180339887499).",
                  _sel(lambda c, w: w == ("err", 6)), _ok),
             Rule("R-TAN-ZERO", sec,
                  "Otherwise, when SIN's is (SIN(x) the 2-pi-digit zero), TAN is that zero too: 00 62 83 18 53 07 17 "
-                 "96 -- TAN(0), TAN(1E-64), TAN(3.1415926535897#), TAN(1E13), TAN(5E13).",
+                 "96 -- TAN(0), TAN(6.28318E-64), TAN(3.1415926535897#), TAN(1E13), TAN(1.5E13), TAN(3E13).",
                  _sel(lambda c, w: w == ("bytes", TWOPI_ZERO)), _ok),
             Rule("R-TAN-NEAR", sec,
                  f"Otherwise a DOUBLE within {B_TAN} units of the 14th significant digit of sin(2 pi f) / "
                  f"sin(2 pi g) -- the reduced angles of SIN and COS (their pages): TAN(1.5707963267949#) is "
-                 f"-15915494309189 (g is -1E-14 turns), TAN(1) 1.5574077246549. Measured worst 5.2 units.",
+                 f"-15915494309189 (g is -1E-14 turns), TAN(1) 1.5574077246549. Measured worst 5.2 units "
+                 f"(TAN(4.71239!)).",
                  _sel(lambda c, w: w[0] == "near"), _ok),
             Rule("R-TAN-OWN", sec,
                  f"And within {B_TAN_OWN} units of SIN(x) / COS(x) as the same machine computes them (the case's "
@@ -551,8 +658,10 @@ def rules(fn):
     elif fn == "ATN":
         out = [
             Rule("R-ATN-ZERO", sec,
-                 "A zero argument gives a zero DOUBLE that keeps the argument's digit bytes, the sign dropped: "
-                 "ATN(0) is 8 zero bytes, ATN of the single 00 10 00 00 or 80 10 00 00 is 00 10 00 00 00 00 00 00.",
+                 "A zero argument gives a zero DOUBLE: ATN(0) is 8 zero bytes; a single whose exponent byte is 0 "
+                 "keeps its digit bytes (00 10 00 00 gives 00 10 00 00 00 00 00 00, 00 12 34 56 gives 00 12 34 56 "
+                 "00 00 00 00); with the sign bit set too (exponent byte &H80) it is 00 10 00 00 00 00 00 00 "
+                 "whatever the digits (80 10 00 00 and 80 12 34 56 alike).",
                  _sel(lambda c, w: w[0] == "bytes"), _ok),
             Rule("R-ATN-NEAR", sec,
                  f"Any other argument gives a DOUBLE within {B_ATN} units of the 14th significant digit of atan x "
@@ -565,14 +674,37 @@ def rules(fn):
     else:
         raise KeyError(fn)
     out.append(Rule(f"R-{tag}-ODDBYTES", sec,
-                    "On a non-canonical single (exponent byte 0 or &H80, digit bytes 10 00 00) it gives what the "
-                    "rules above say for a zero argument.", lambda c: fx_by(c, *ODD_WHYS), _ok))
+                    "On a non-canonical single (exponent byte 0 or &H80, digit bytes 10 00 00 or 12 34 56) it gives "
+                    "what the rules above say for a zero argument.", lambda c: fx_by(c, *ODD_WHYS),
+                    lambda c: _ok(c) and (c.src != "FY" or c.arg == ZERO8)))
+    if fn in USE_WHAT:
+        out.append(Rule(f"R-{tag}-USE", sec,
+                        f"{USE_WHAT[fn]} is an ordinary zero to the rest of BASIC (KTR FY, each the same machine's "
+                        f"own zero): PRINT's number format (STR$) gives \" 0\", it equals 0 and is not below 0, plus 1 "
+                        f"is exactly the double 1, and an integer variable takes it as 0; but times 1E10 and negated "
+                        f"it comes back with the SAME bytes (exponent byte 0, no sign bit), and a single variable "
+                        f"keeps exponent byte 0 and the digits rounded half up to 6 ({USE_EX[fn]})."
+                        + (" TAN(1.3E13) in a single is 1.61803 (41 16 18 03), the double rounded the same way."
+                           if fn == "TAN" else ""),
+                        fy_by, fy_use))
     out.append(Rule(f"R-{tag}-NESTED", sec,
                     f"{fn}({fn}(.5)) is {fn} of the double that {fn}(.5) returns (the KTR TS1 row): what the rules "
                     f"above say for that double" + (" -- error 5, LOG(.5) being negative" if fn == "LOG" else "")
                     + ".",
                     lambda c: fx_by(c, "nested"), nested_ok))
-    return out + _common(fn, tag, f"2. {fn}(x): forms, errors and assignment")
+    out = out + _common(fn, tag, f"2. {fn}(x): forms, errors and assignment")
+    for r in out:
+        if r.id.endswith("-ASSIGN"):
+            r.select = lambda c: not fy_by(c)
+    return out
+
+
+USE_WHAT = {"SIN": "The 2-pi-digit zero (SIN(0))", "COS": "The 2-pi-digit zero (COS(7E13))",
+            "TAN": "The 2-pi-digit zero (TAN(1E13))",
+            "EXP": "The exponent-0 result below 1E-64 (EXP(-147.4): 00 96 60 36 12 55 89 73)",
+            "ATN": "The zero ATN gives for a signed zero single (80 10 00 00: 00 10 00 00 00 00 00 00)"}
+USE_EX = {"SIN": "00 62 83 19", "COS": "00 62 83 19", "TAN": "00 62 83 19", "EXP": "00 96 60 36",
+          "ATN": "00 10 00 00"}
 
 
 def nested_ok(c):

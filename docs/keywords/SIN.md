@@ -6,14 +6,17 @@ SPDX-License-Identifier: BSD-2-Clause
 
 # `SIN` — the sine of an angle
 
-> **Spec:** DRAFT 1 (2026-11-24) — 255 cases measured on the Philips VG-8020 (BASIC's reference) and on
+> **Spec:** DRAFT 1 (2026-11-24) — 329 cases measured on the Philips VG-8020 (BASIC's reference) and on
 > zerobas, by typed BASIC ([`ktrans.py`](../../probes/basic/spec/ktrans.py)); every rule is executable and
 > every recorded output is read by one. Not yet reviewed ([the keyword plan](spec-plan.md)).
+> Goldfish pass 1 (test writer) 2026-11-24: 14 findings, 10 measured, 1 moved to open (new cases: KTR TS3, TD3, FY).
 >
 > **Status (2026-11-04):** level 3 — happy path ✓ · reasonable time ✓ · common
-> errors ✓ · RAM usage not yet proven · every error ✓. One recorded
-> difference: the last digit or two of a result; huge angles give the
-> reference's answers since D-TANBIG (below).
+> errors ✓ · RAM usage not yet proven · every error ✓. Recorded
+> differences (below): near a half or a whole turn the LEADING digits of a
+> small result (D-TRIGHALF), elsewhere the last digit or two (D-SINDIGITS),
+> and the bytes of a zero result (D-TRANSZERO); huge angles give the
+> reference's answers since D-TANBIG.
 > Speed is deliberately left out of these docs until on-par speed is
 > established for every keyword.
 
@@ -22,9 +25,11 @@ SPDX-License-Identifier: BSD-2-Clause
 `SIN(x)` returns the sine of the angle `x`, given in **radians** (a full turn
 is 2π, about 6.2832). The answer lies between −1 and 1 and has 14 significant
 digits. zerobas raises the same errors as the Philips VG-8020 in every case we
-have measured, and reduces the angle exactly as the reference does, so large
-angles give the reference's answers too; only the last digit or two of a
-result can differ. [`COS`](COS.md) and [`TAN`](TAN.md) share the same
+have measured, and reduces the angle by the reference's 14-digit rule, so
+large angles give the reference's answers too. Near a half or a whole turn,
+where the result is small, zerobas keeps more of the angle and the result's
+LEADING digits differ (`SIN(3.1415926535898#)`); elsewhere the last digit or
+two can differ. [`COS`](COS.md) and [`TAN`](TAN.md) share the same
 calculation and the same differences.
 
 ## Syntax
@@ -38,7 +43,8 @@ first (multiply by π/180).
 
 ## Details
 
-- **`SIN(0)` is exactly 0**, on both machines, and the result is always double precision.
+- **`SIN(0)` is 0**, on both machines, and the result is always double precision. `PRINT` shows 0, it equals 0
+  and adding 1 gives exactly 1 (rule R-SIN-USE); only its bytes are not eight zeros (R-SIN-ZERO).
 - **Every number is a legal angle.** There is no domain error and no overflow:
   `SIN(1E38)` answers without an error on both machines (but see
   *Differences* for what it answers).
@@ -91,15 +97,15 @@ The tables are generated from the checks, so a sentence here cannot say more tha
 
 **Bounds, not digits.** `SIN`'s last digits are the reference's own approximation. Where a rule says "within B
 units", the target is computed exactly (to 60 digits and more, in Python, from the argument's own bytes) and a unit is
-one in the 14th significant digit of the target; B is the worst error MEASURED on the VG-8020, rounded up (the measured
-worst is in the sentence), and a control shows that a tighter bound is false. Whether zerobas's digits equal the
+one in the 14th significant digit of the target; B is the worst error MEASURED on the VG-8020, rounded up to a whole unit (the measured
+worst is in the sentence), and a control with a bound just below that worst is FALSE, so the bound cannot be tightened past the measured worst. Whether zerobas's digits equal the
 reference's byte for byte is a separate observation, under *Differences*: a zerobas result inside the bound agrees
 with the rule even where its digits differ.
 
 **Evidence.** One probe, [`probes/basic/spec/ktrans.py`](../../probes/basic/spec/ktrans.py) (the maths region's
 second, on the shared RAM-record harness [`ramrec.py`](../../probes/basic/spec/ramrec.py) and the frame of
 [`kmath.py`](../../probes/basic/spec/kmath.py)), typed on both machines; run file
-[`scratchpad/KTR_run1.out`](../../scratchpad/KTR_run1.out) (2026-11-24; zerobas's side on that day's build). The
+[`scratchpad/KTR_run1.out`](../../scratchpad/KTR_run1.out) (2026-11-24, all groups; zerobas's side on that day's build). The
 argument is `READ` into a variable of the case's own type (`N%`, `N!` or `N#`) and that variable's own bytes are
 recorded before the call. Each case is evaluated twice: `R=SIN(N)`, with `R` a double whose 8 bytes are recorded,
 and `Q=USR(SIN(N))`, where `USR` is the probe's own 18-byte routine (POKEd above `CLEAR`'s limit) that copies
@@ -115,22 +121,25 @@ type and bytes on both machines, or the loader refuses the run.
   `)`, no parenthesis; the literals `2.5`, `-2.5`, `7`, `7%`, `2.5!`, `2.5#`, `&H8000`, `-32768`, `-0`, `1/4`;
   spaces; `SIN(SIN(.5))`; and a single `N!` assigned 1 whose exponent byte is then POKEd to 0 or `&H80`
   (digit bytes `10 00 00`).
+- **[KTR TS3 SIN *n*]** (singles) and **[KTR TD3 SIN *n*]** (doubles), added by the goldfish pass to separate rival rules the first run could not tell apart: the angles where p has 13 integer digits, ties in p, p just below and above 1E-64, EXP's edges and its huge-negative threshold. Singles: 6E12, 7E12, -7E12, 9E12, 1.1E13, -1.1E13, 1.2E13, 1.3E13, -1.3E13, 1.5E13, -1.5E13, 1.7E13, 3E13, 6.3E13, 1.75, 2.75, 7.5, -7.5, 9.5, 13.5, 5E-64, -5E-64, 6E-64, 6.28318E-64, 6.28319E-64, -6.28319E-64, 7E-64, -65536.5, -65537, -70000, -80000, -90000, -99990, -99998, -75000, -75450, -75451, -75452, -75453, -76000, -75460, -75500, -75600, -75700, -75800, -75900. Doubles: -147.36, -147.365, -147.3654, -147.3655, -147.36544595, -147.36544596, -147.366, 145.06286085, 145.06286086, 145.0628609, 145.06287, 145.0629, 1.1D13, -1.1D13, 1.3D13, 1.5D13, 6.2831D-64, 6.2832D-64.
+- **[KTR FY *i*]**: fixed statements that USE a non-canonical result (SIN(0), COS(7E13), TAN(1E13), EXP(-147.4), ATN of the single `80 10 00 00`) -- in `STR$` (PRINT's number format; its length and first bytes are recorded), `=0`, `<0`, `+1`, `*1E10`, negated, assigned to a single `Z!` and an integer `Z%` (read back through `USR`) -- and the non-canonical single `00 12 34 56` / `80 12 34 56` as the argument; `FY` in the probe.
 
-**Controls** ([`ktrans_controls.py`](../../probes/basic/spec/ktrans_controls.py)): each is a rival rule run over the reference's cases: “within 2.5 units of the TRUE sin(x)” is FALSE on 145 of the 210 cases it selects (e.g. KTR TI SIN 3); “the reduction with 1/2 pi exact (not 14 digits)” is FALSE on 84 of the 210 cases it selects (e.g. KTR TI SIN 3); “within 1 unit of the reduced target” is FALSE on 13 of the 210 cases it selects (e.g. KTR TI SIN -200); “the zero 8 zero bytes” is FALSE on 36 of the 36 cases it selects (e.g. KTR TI SIN 0).
+**Controls** ([`ktrans_controls.py`](../../probes/basic/spec/ktrans_controls.py)): each is a rival rule run over the reference's cases: “within 2.5 units of the TRUE sin(x)” is FALSE on 194 of the 264 cases it selects (e.g. KTR TI SIN 3); “the reduction with 1/2 pi exact (not 14 digits)” is FALSE on 111 of the 264 cases it selects (e.g. KTR TI SIN 3); “within 1 unit of the reduced target” is FALSE on 16 of the 264 cases it selects (e.g. KTR TI SIN -200); “within 1.5 units of the reduced target” is FALSE on 4 of the 264 cases it selects (e.g. KTR TS1 SIN -297.04); “p = x * C rounded half-even, not half up” is FALSE on 7 of the 296 cases it selects (e.g. KTR TS1 SIN .75); “the zero 8 zero bytes” is FALSE on 48 of the 48 cases it selects (e.g. KTR TI SIN 0); “the 2-pi zero for every x from 1E13 up (this page's sentence before the goldfish pass)” is FALSE on 6 of the 25 cases it selects (e.g. KTR TS3 SIN 1.1E13); “the zero below x = 1E-63 (an x threshold, not p's)” is FALSE on 3 of the 9 cases it selects (e.g. KTR TS3 SIN 6.28319E-64); “times 1E10 gives a clean zero (8 zero bytes) -- zerobas's” is FALSE on 1 of the 1 cases it selects (e.g. KTR FY 4); “negation sets the sign bit” is FALSE on 1 of the 1 cases it selects (e.g. KTR FY 5); “a single takes the zero as 4 zero bytes -- zerobas's” is FALSE on 1 of the 1 cases it selects (e.g. KTR FY 6).
 
 <!-- RULES BEGIN -->
 <!-- GENERATED by tools/spec_rules.py from probes/basic/spec/sin_rules.py -- do not edit; `python3 tools/spec_rules.py probes/basic/spec/sin_rules.py --write` -->
 
-**10 rules; 10 hold on the reference. Of the 1275 recorded outputs (each case's error from `R=F(x)` and from `Q=USR(F(x))`, R's 8 bytes, the result's type as USR saw it and the result's own bytes): 1275 read by a rule's check, 0 declared NOT evidence (below), 0 unread.**
+**11 rules; 11 hold on the reference. Of the 1655 recorded outputs (each case's error from `R=F(x)` and from `Q=USR(F(x))`, R's 8 bytes, the result's type as USR saw it and the result's own bytes): 1655 read by a rule's check, 0 declared NOT evidence (below), 0 unread.**
 
 #### 1. SIN(x)
 
 | rule | cases | reference | zerobas |
 |---|---|---|---|
-| **R-SIN-ZERO** The result is a DOUBLE. When the reduced angle is a whole or a half turn (f = frac(p), p = x * 0.15915494309190 rounded to 14 significant digits; a whole turn when p is 0 or whole) it is a zero whose digit bytes are 2 pi's: 00 62 83 18 53 07 17 96 -- SIN(0), SIN(1E-64) (p below 1E-64 is 0), SIN(3.1415926535897#) (p is .5), and every x from 1E13 up, where p has no fraction digit left. | 36 | ✓ | ✗ 36: KTR TI SIN 0, KTR TS1 SIN 0, KTR TS1 SIN -0, KTR TS1 SIN 1E-64, KTR TS1 SIN -1E-64, KTR TS2 SIN 1E13 … (+30) |
-| **R-SIN-NEAR** Otherwise a double within 2.5 units of the 14th significant digit of sin(2 pi f) -- the sine of the REDUCED angle, not sin(x): SIN(1000) is .82687954054849 (the reduced target .8268795405485..., sin(1000) is .8268795405320...), SIN(3.1415926535898#) -1.2566370614359E-13 (f = -2E-14 turns from a half turn), SIN(1E12) -.58778525229247 (f = .9). Measured worst 1.9 units. | 210 | ✓ | ✗ 11: KTR TS1 SIN .01, KTR TS2 SIN 3.14159, KTR TS2 SIN -3.14159, KTR TS2 SIN 3.1416, KTR TS2 SIN 6.28318, KTR TS2 SIN 3.33333 … (+5) |
-| **R-SIN-ODD** SIN(-x) is SIN(x) with the sign bit flipped -- byte for byte, the zero's bytes the same (every x measured with its negation). | 57 | ✓ | ✓ |
-| **R-SIN-ODDBYTES** On a non-canonical single (exponent byte 0 or &H80, digit bytes 10 00 00) it gives what the rules above say for a zero argument. | 2 | ✓ | ✗ 2: KTR FX 67, KTR FX 68 |
+| **R-SIN-ZERO** The result is a DOUBLE. When the reduced angle is a whole or a half turn (f = frac(p), p = x * 0.15915494309190 rounded half up to 14 significant digits, a p below 1E-64 in size 0; a whole turn when p is 0 or whole) it is a zero whose digit bytes are 2 pi's: 00 62 83 18 53 07 17 96 -- SIN(0), SIN(6.28318E-64) (p is 9.99999E-65: 0; SIN(6.28319E-64) is not), SIN(3.1415926535897#) (p is .5); where p has 13 integer digits (x from about 6.3E12) its one fraction digit decides: 0 or 5 gives this zero (SIN(1E13), SIN(1.5E13), SIN(3E13)), any other does not (SIN(1.1E13) is -.58778525229247, f = .9); from 6.3E13 up p has no fraction digit and every x gives it. | 48 | ✓ | ✗ 48: KTR TI SIN 0, KTR TS1 SIN 0, KTR TS1 SIN -0, KTR TS1 SIN 1E-64, KTR TS1 SIN -1E-64, KTR TS2 SIN 1E13 … (+42) |
+| **R-SIN-NEAR** Otherwise a double within 2 units of the 14th significant digit of sin(2 pi f) -- the sine of the REDUCED angle, not sin(x): SIN(1000) is .82687954054849 (the reduced target .8268795405485..., sin(1000) is .8268795405320...), SIN(3.1415926535898#) -1.2566370614359E-13 (f = -2E-14 turns from a half turn), SIN(1E12) -.58778525229247 (f = .9). Measured worst 1.86 units (SIN(1D11)). | 264 | ✓ | ✗ 24: KTR TS1 SIN 1E-6, KTR TS1 SIN -1E-6, KTR TS1 SIN .001, KTR TS1 SIN -.001, KTR TS1 SIN .01, KTR TS1 SIN .1 … (+18) |
+| **R-SIN-ODD** SIN(-x) is SIN(x) with the sign bit flipped -- byte for byte, the zero's bytes the same (every x measured with its negation). | 65 | ✓ | ✓ |
+| **R-SIN-ODDBYTES** On a non-canonical single (exponent byte 0 or &H80, digit bytes 10 00 00 or 12 34 56) it gives what the rules above say for a zero argument. | 4 | ✓ | ✗ 4: KTR FX 67, KTR FX 68, KTR FY 45, KTR FY 46 |
+| **R-SIN-USE** The 2-pi-digit zero (SIN(0)) is an ordinary zero to the rest of BASIC (KTR FY, each the same machine's own zero): PRINT's number format (STR$) gives " 0", it equals 0 and is not below 0, plus 1 is exactly the double 1, and an integer variable takes it as 0; but times 1E10 and negated it comes back with the SAME bytes (exponent byte 0, no sign bit), and a single variable keeps exponent byte 0 and the digits rounded half up to 6 (00 62 83 19). | 8 | ✓ | ✗ 2: KTR FY 4, KTR FY 6 |
 | **R-SIN-NESTED** SIN(SIN(.5)) is SIN of the double that SIN(.5) returns (the KTR TS1 row): what the rules above say for that double. | 1 | ✓ | ✓ |
 
 #### 2. SIN(x): forms, errors and assignment
@@ -141,7 +150,7 @@ type and bytes on both machines, or the loader refuses the run.
 | **R-SIN-OWNERR** An argument that fails to compute raises its own error (1/0: error 11). | 1 | ✓ | ✓ |
 | **R-SIN-SYNTAX** No argument, a second argument, no closing parenthesis, or the name without a parenthesis is error 2 (Syntax error). | 4 | ✓ | ✓ |
 | **R-SIN-FORMS** Spaces before the parenthesis and around the argument are allowed, and a literal's own type is the argument's (2.5 a single, 7 an integer, &H8000 the integer -32768, -32768 a single, -0 the integer 0, 1/4 a double); each gives what the rules above say for that value. | 12 | ✓ | ✗ 1: KTR FX 64 |
-| **R-SIN-ASSIGN** `R=SIN(x)` with R a double stores the result's 8 bytes as they are (a zero's digit bytes included), and an error stores nothing (R keeps its sentinel). Read in every case. | 255 | ✓ | ✓ |
+| **R-SIN-ASSIGN** `R=SIN(x)` with R a double stores the result's 8 bytes as they are (a zero's digit bytes included), and an error stores nothing (R keeps its sentinel). Read in every case. | 321 | ✓ | ✓ |
 
 <!-- RULES END -->
 
@@ -154,11 +163,13 @@ type and bytes on both machines, or the loader refuses the run.
   2.6535897144938E-06 there and 2.6535897459098E-06 here, COS(4.7123889803847#) 1.2566370614359E-13 there and
   1.5707963267949E-13 here, TAN(4.7123889803847#) -7957747154594.6 there and -6366197723675.8 here.
 - **The last digit elsewhere** ([D-SINDIGITS](../../todo/open/D-SINDIGITS.md)). Inside the bound zerobas's digits may
-  differ and do (`SIN(1E10)` is -.48725012572533 there, -.48725012572534 here); outside it, zerobas's sine is up to 6.1
-  units off the reduced target where the reference's worst is 1.9 (SIN(2.718281828459#) .41078129050281 here,
-  .41078129050287 there), and TAN inherits it (6.4 units, TAN(3.3333333333333#)).
-- **The zeros' bytes** (invisible to PRINT; [D-TRANSZERO](../../todo/open/D-TRANSZERO.md)): the reference's zero
-  result carries 2 pi's digits, 00 62 83 18 53 07 17 96; zerobas's other bytes (rule R-SIN-ZERO).
+  differ and do (`SIN(1E10)` is -.48725012572533 there, -.48725012572534 here); outside it -- 17 R-SIN-NEAR cases,
+  2.1 to 6.1 units off the reduced target where the reference's worst is 1.86 -- e.g. SIN(2.718281828459#)
+  .41078129050281 here, .41078129050287 there; TAN inherits it (6.4 units, TAN(3.3333333333333#)).
+- **The zeros' bytes** ([D-TRANSZERO](../../todo/open/D-TRANSZERO.md)): the reference's zero result carries 2 pi's
+  digits, 00 62 83 18 53 07 17 96, zerobas's other bytes (rule R-SIN-ZERO); measured invisible to `PRINT`, to `=0` and
+  to `+1` on both machines (R-SIN-USE), but `SIN(0)*1E10` and `Z!=SIN(0)` keep the reference's digit bytes there and
+  give zeros here (KTR FY 4, 6).
 
 The one rung not yet proven is **RAM usage**: `SIN` uses the same amount of free memory on both machines, but the two write different work-area cells along the way — the VG-8020 a few that zerobas does not, and zerobas some scratch cells of its own for the calculation.
 
@@ -171,16 +182,25 @@ The one rung not yet proven is **RAM usage**: `SIN` uses the same amount of free
 - [A] Direct mode: every case ran inside a program.
 - [A] An argument's own error was measured with one kind (`1/0`, error 11); that any error of the argument wins is assumed.
 - [A] Which work-area cells the call writes (the RAM-usage rung).
-- [A] Non-canonical bytes other than the two measured singles (exponent byte 0 or `&H80` with digit bytes `10 00 00`).
-- [A] The reduction is a black-box model fitted to the measured results (431 nonzero SIN / COS values within 2.1
-  units); its intermediate rounding is not observed directly, so a case where a different rounding of p or of
-  1/4 - p decides the result may still separate it from the reference.
+- [A] Non-canonical bytes other than the four measured singles (exponent byte 0 or `&H80` with digit bytes `10 00 00`
+  or `12 34 56`).
+- [A] The reduction is a black-box model fitted to the measured results (544 nonzero SIN / COS values within 1.95
+  units). Its two roundings are separated by measured ties (p half up: SIN(9.5), SIN(.75); 1/4 - p half down:
+  COS(1.2E13), COS(1.1E13); controls), but no intermediate is observed directly: a reduction that keeps a guard digit
+  and agrees with these on every tie measured is not excluded.
+- [A] A result inside a larger expression other than the measured `+1`, `*1E10`, negation, `=0` and `<0`; and a
+  NONZERO result assigned to a single or an integer (only the zero, and TAN(1.3E13) to a single, were measured).
 - [A] Whether the reference's error against the reduced target is ever more than the bound: the bound is the measured
   worst rounded up.
 
 ## What we found, and how
 
-- **The transcendentals' rules are bounds, measured** (2026-11-24, D-KWSPEC's maths region, second unit). SIN is a double always. Its angle reduction, inferred from the outside by D-TANBIG for large angles, fits EVERY measured result: p = x * 0.15915494309190 in 14 digits, f its fraction, and SIN(x) within 1.9 units of sin(2 pi f) -- against the true sin(x) the reference misses by far more (a control: 145 cases outside 2.5 units). A zero result keeps 2 pi's digits; SIN is odd, byte for byte.
+- **Goldfish pass 1** (2026-11-24, a fresh test-writer review of the six pages):
+  the 13-integer-digit window was measured -- SIN(1.1E13) is -.58778525229247, not the zero the sentence had said
+  "from 1E13 up"; the tie SIN(9.5) shows p is rounded half up; p flushes to 0 between x = 6.28318E-64 and
+  6.28319E-64; the 2-pi zero reads as 0 to PRINT, `=` and `+1` (KTR FY). The bound is now 2 (the measured worst 1.86,
+  rounded up), so 17 zerobas results are outside it (D-SINDIGITS), not 5.
+- **The transcendentals' rules are bounds, measured** (2026-11-24, D-KWSPEC's maths region, second unit). SIN is a double always. Its angle reduction, inferred from the outside by D-TANBIG for large angles, fits EVERY measured result: p = x * 0.15915494309190 in 14 digits, f its fraction, and SIN(x) within 1.86 units of sin(2 pi f) -- against the true sin(x) the reference misses by far more (a control: 194 of 264 cases outside 2.5 units). A zero result keeps 2 pi's digits; SIN is odd, byte for byte.
 - **`SIN`, `COS` and `TAN` arrived together on 2026-07-14**, after the
   VG-8020 was measured from the outside: its `TAN` is exactly `SIN/COS`, its
   `COS` appears to share the sine's calculation, and its large-angle error

@@ -33,12 +33,12 @@ Every keyword page, the region the spec loop takes it in, and how far its page h
 | `INT` | [maths](../concepts/numbers.md) | RAM record | VG-8020 | [DRAFT 1](INT.md) | 7 | D-INTNEGTYPE, D-ZEROLET, D-ZEROMUL, D-ARGTYPEORDER |
 | `FIX` | [maths](../concepts/numbers.md) | RAM record | VG-8020 | [DRAFT 1](FIX.md) | 7 | D-ZEROLET, D-ZEROMUL, D-ARGTYPEORDER |
 | `SQR` | [maths](../concepts/numbers.md) | RAM record | VG-8020 | [DRAFT 1](SQR.md) | 8 | D-SQRZERO, D-ARGTYPEORDER |
-| `EXP` | [maths](../concepts/numbers.md) | RAM record | VG-8020 | [DRAFT 1](EXP.md) | 8 | D-EXPNEG, D-TRANSZERO |
-| `LOG` | [maths](../concepts/numbers.md) | RAM record | VG-8020 | [DRAFT 1](LOG.md) | 6 | — |
-| `SIN` | [maths](../concepts/numbers.md) | RAM record | VG-8020 | [DRAFT 1](SIN.md) | 7 | D-TRIGHALF, D-SINDIGITS, D-TRANSZERO |
-| `COS` | [maths](../concepts/numbers.md) | RAM record | VG-8020 | [DRAFT 1](COS.md) | 7 | D-TRIGHALF, D-TRANSZERO |
-| `TAN` | [maths](../concepts/numbers.md) | RAM record | VG-8020 | [DRAFT 1](TAN.md) | 7 | D-TRIGHALF, D-SINDIGITS, D-TRANSZERO |
-| `ATN` | [maths](../concepts/numbers.md) | RAM record | VG-8020 | [DRAFT 1](ATN.md) | 6 | D-TRANSZERO, D-SQRZERO |
+| `EXP` | [maths](../concepts/numbers.md) | RAM record | VG-8020 | [DRAFT 1](EXP.md) | 9 | D-EXPNEG, D-TRANSZERO |
+| `LOG` | [maths](../concepts/numbers.md) | RAM record | VG-8020 | [DRAFT 1](LOG.md) | 7 | — |
+| `SIN` | [maths](../concepts/numbers.md) | RAM record | VG-8020 | [DRAFT 1](SIN.md) | 8 | D-TRIGHALF, D-SINDIGITS, D-TRANSZERO |
+| `COS` | [maths](../concepts/numbers.md) | RAM record | VG-8020 | [DRAFT 1](COS.md) | 8 | D-TRIGHALF, D-TRANSZERO |
+| `TAN` | [maths](../concepts/numbers.md) | RAM record | VG-8020 | [DRAFT 1](TAN.md) | 8 | D-TRIGHALF, D-SINDIGITS, D-TRANSZERO |
+| `ATN` | [maths](../concepts/numbers.md) | RAM record | VG-8020 | [DRAFT 1](ATN.md) | 7 | D-TRANSZERO, D-SQRZERO |
 | `RND` | [maths](../concepts/numbers.md) | RAM record | VG-8020 | [user page](RND.md) | — | — |
 | `CINT` | [conversion](../concepts/numbers.md) | RAM record | VG-8020 | [user page](CINT.md) | — | — |
 | `CSNG` | [conversion](../concepts/numbers.md) | RAM record | VG-8020 | [user page](CSNG.md) | — | — |

@@ -33,6 +33,11 @@ argument type per group, sized so no group's records reach $F380 (asserted):
   TD1   doubles, the EXP / LOG landmarks      TD2   doubles, the angle landmarks
   FX    fixed statements (types, missing / extra arguments, spaces, literals, nesting, non-canonical bytes;
         S$ = "12")
+  TS3 / TD3  singles / doubles added by goldfish pass 1 (2026-11-24): the angles where p has 13 integer digits, ties
+        in p, p around 1E-64, EXP's tiny / overflow edges and its huge-negative threshold
+  FY    fixed statements (goldfish pass 1): a non-canonical result USED -- STR$ (its length and first 7 bytes go in
+        the record's ARG field), =0, <0, +1, *1E10, negation, a single Z! and an integer Z% (read back through
+        USR) -- and the non-canonical singles 00 12 34 56 / 80 12 34 56 as the argument
 
     python3 probes/basic/spec/ktrans.py [GROUP ...] [--out scratchpad/KTR_run1.out]
 (run through tools/agent_wt.py: it boots the VG-8020 and zerobas's NODISK machine)."""
@@ -78,10 +83,26 @@ TD2_ARGS = [".78539816339745", "-.78539816339745", ".78539816339744", "1.0471975
             "-1000", "1D10", "-1D10", "1D11", "1D12", "1D13", "7D13", "1D14", "1D38", "1.7320508075689",
             ".57735026918963", "-.57735026918963", "1D-5", "-1D-5", ".12345678901234", "-.12345678901234",
             "1234.5678901234", "31415.926535898", "100", "3.3333333333333", "1D30", "-1D30", "1D-30"]
+# goldfish pass 1 (2026-11-24, scratchpad/REVIEW-m2-gkwmath2.md): the cases that separate rival rules the first run
+# could not tell apart -- p = x * C with 13 integer digits (6.3E12 .. 6.3E13), where every r14(1/4 - p) is a
+# rounding tie and half-up / half-even give different COS / TAN; ties in p itself with an EVEN digit before the 5
+# (1.75, 2.75, 7.5, 9.5, 13.5); p just below / above 1E-64 (SIN / TAN's flush to 0); EXP's huge-negative threshold
+# between -65536 and -99999 (two more rounds bisected it: the last twelve)
+TS3_ARGS = ["6E12", "7E12", "-7E12", "9E12", "1.1E13", "-1.1E13", "1.2E13", "1.3E13", "-1.3E13", "1.5E13",
+            "-1.5E13", "1.7E13", "3E13", "6.3E13", "1.75", "2.75", "7.5", "-7.5", "9.5", "13.5", "5E-64", "-5E-64",
+            "6E-64", "6.28318E-64", "6.28319E-64", "-6.28319E-64", "7E-64", "-65536.5", "-65537", "-70000",
+            "-80000", "-90000", "-99990", "-99998", "-75000", "-75450", "-75451", "-75452", "-75453", "-76000",
+            "-75460", "-75500", "-75600", "-75700", "-75800", "-75900"]
+# doubles: EXP's tiny-entry edge (e^x = 1E-64 at x = -147.36544595...) and overflow edge (e^x = 1E63 at
+# x = 145.06286085862...), each bracketed to 1E-8; the angle window as doubles
+TD3_ARGS = ["-147.36", "-147.365", "-147.3654", "-147.3655", "-147.36544595", "-147.36544596", "-147.366",
+            "145.06286085", "145.06286086", "145.0628609", "145.06287", "145.0629", "1.1D13", "-1.1D13", "1.3D13",
+            "1.5D13", "6.2831D-64", "6.2832D-64"]
 ARGS = {"TI": ("I", TI_ARGS), "TS1": ("S", TS1_ARGS), "TS2": ("S", TS2_ARGS), "TD1": ("D", TD1_ARGS),
-        "TD2": ("D", TD2_ARGS)}
-GAPS = {"TI": 6000.0, "TS1": 6000.0, "TS2": 6000.0, "TD1": 6000.0, "TD2": 6000.0, "FX": 2500.0}
-ORDER = ["TI", "TS1", "TS2", "TD1", "TD2", "FX"]
+        "TD2": ("D", TD2_ARGS), "TS3": ("S", TS3_ARGS), "TD3": ("D", TD3_ARGS)}
+GAPS = {"TI": 6000.0, "TS1": 6000.0, "TS2": 6000.0, "TD1": 6000.0, "TD2": 6000.0, "FX": 2500.0, "TS3": 6000.0,
+        "TD3": 6000.0, "FY": 2500.0}
+ORDER = ["TI", "TS1", "TS2", "TD1", "TD2", "FX", "TS3", "TD3", "FY"]
 
 # FX: (fn, statement, what it separates, the USR form or None) -- kmath's list for these functions. S$ = "12".
 PRE0, PRE80 = kmath.PRE0, kmath.PRE80
@@ -117,10 +138,55 @@ for _f in FNS[1:]:
     _v(f"{_f}(N!)", "a single with exponent byte 80, digit bytes 10 00 00", PRE80)
 FX_S = "12"
 
+# FY (goldfish pass 1): what a NON-CANONICAL result does next -- the 2-pi-digit zero (SIN(0), COS(7E13),
+# TAN(1E13)), EXP's exponent-0 tiny result (EXP(-147.4)), ATN of a signed zero -- in PRINT's number format (STR$,
+# which PRINT's number output is: docs/keywords/STR$.md), a comparison, arithmetic, and assigned to a single or an
+# integer (Z! / Z%, read back through USR, so their own bytes are seen); and the non-canonical ARGUMENT with other
+# digit bytes (00 12 34 56 / 80 12 34 56) for every function. (fn, statement, what it separates, the USR form,
+# whether the statement records STR$'s bytes). Z!, Z%, R and S$ are assigned before every case (line 880).
+PRE12 = "N!=.123456:V=VARPTR(N!):POKE V,0:"
+PRE92 = "N!=.123456:V=VARPTR(N!):POKE V,128:"
+FY = []
+for _f, _z in (("SIN", "SIN(0)"), ("COS", "COS(7E13)"), ("TAN", "TAN(1E13)"), ("EXP", "EXP(-147.4)"),
+               ("ATN", "ATN(N!)")):
+    _p = PRE80 if _f == "ATN" else ""
+    FY += [(_f, f'{_p}S$=STR$({_z}):GOSUB 870', f"{_z} in PRINT's number format (STR$)", None, True),
+           (_f, f"{_p}R=0:IF {_z}=0 THEN R=1", f"{_z} compared with 0", None, False),
+           (_f, f"{_p}R=0:IF {_z}<0 THEN R=1", f"{_z} below 0", None, False),
+           (_f, f"{_p}R={_z}+1", f"{_z} plus 1", f"Q=USR({_z}+1)", False),
+           (_f, f"{_p}R={_z}*1E10", f"{_z} times 1E10", f"Q=USR({_z}*1E10)", False),
+           (_f, f"{_p}R=-{_z}", f"minus {_z}", f"Q=USR(-{_z})", False),
+           (_f, f"{_p}Z!={_z}:R=Z!", f"{_z} assigned to a single", "Q=USR(Z!)", False),
+           (_f, f"{_p}Z%={_z}:R=Z%", f"{_z} assigned to an integer", "Q=USR(Z%)", False)]
+FY += [("TAN", "Z!=TAN(1.3E13):R=Z!", "TAN(1.3E13) assigned to a single", "Q=USR(Z!)", False)]
+for _f in FNS[1:]:
+    FY += [(_f, f"{PRE12}R={_f}(N!)", "a single with exponent byte 0, digit bytes 12 34 56", f"Q=USR({_f}(N!))",
+            False),
+           (_f, f"{PRE92}R={_f}(N!)", "a single with exponent byte 80, digit bytes 12 34 56", f"Q=USR({_f}(N!))",
+            False)]
+
 
 def program(group):
     """the typed lines (numbered program + RUN) and the case list [(id, meta)] in record order"""
     routine = [str(x) for x in kmath.ROUTINE]
+    if group == "FY":
+        # FX's frame; 880 also assigns Z!, Z% and S$ (every VARPTR'd variable assigned first), and 870 copies S$'s
+        # length and its first 7 bytes into the record's ARG field (bytes 1-8; 880 zeroed them)
+        lines = [kmath.head(), "20 FOR K=0 TO 17:READ X:POKE &HBF00+K,X:NEXT:DEFUSR=&HBF00", "25 GOTO 2000",
+                 "870 V=VARPTR(S$):L=PEEK(V):P=PEEK(V+1)+256*PEEK(V+2):POKE A+1,L:FOR K=1 TO 7:X=0",
+                 "871 IF K<=L THEN X=PEEK(P+K-1)",
+                 "872 POKE A+1+K,X:NEXT:RETURN",
+                 f'880 E=0:R={R_SENT}:Z!=-12345:Z%=-1234:S$="":POKE &HBF80,255:FOR K=1 TO 8:POKE A+K,0:NEXT:RETURN']
+        cases = []
+        for i, (fn, stmt, why, ustmt, strs) in enumerate(FY):
+            n = 2000 + 2 * i
+            lines.append(f"{n} GOSUB 880:{stmt}")
+            lines.append(f"{n + 1} E1=E:E=0:" + (f"{ustmt}:E2=E" if ustmt else "E2=0") + ":GOSUB 900")
+            cases.append((f"KTR FY {i}", dict(fn=fn, stmt=stmt, why=why, ustmt=ustmt, strs=strs, ty=None,
+                                               text=None)))
+        lines += [f"{2000 + 2 * len(FY)} " + ramrec.TAIL] + kmath.RECORD + ramrec.data(1000, routine)
+        _fits(group, cases)
+        return lines + ["RUN"], cases
     if group == "FX":
         # kmath's FX frame in two lines a case and a shared prefix (880), so 138 cases fit below CLEAR's limit:
         # the statement stays LAST on its line (RESUME NEXT after a syntax error goes to the next line)
