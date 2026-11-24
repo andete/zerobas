@@ -45,6 +45,10 @@ references, the harnesses, what a case and a rule are, and how a spec page diffe
   `INT` (`-.9`), the overflow test before vs after truncation (`-32768.5`, `32767.9`), both ends of each range.
 - **A capture is ended by the program**, not by a timer: a done flag the harness waits for (omsx_repl's
   sentinel capture) and an end byte after the last record. The decoder refuses a capture without both.
+- **Every variable read through `VARPTR` is assigned first.** The third unit's first run read `S$` in a group that
+  never assigned it: `VARPTR` returned bytes that were not a string descriptor, and the digest PEEKed 197 bytes at a
+  page-0 address -- reference ROM -- on both machines. That run was discarded, not read, and the frame now assigns
+  `S$=""` before its loop; a decoder cannot tell such a "length" from a real one, so the frame must prevent it.
 - **The probe's own BASIC is apparatus.** The pilot found that a `FOR` whose start is past its limit runs its body
   once, on both machines (§6): a probe frame that relied on an empty loop would have built the wrong input.
 
@@ -186,6 +190,35 @@ One probe, six rules modules, six pages at DRAFT 1:
   form, so the third argument is one too many); `STRING$(-1,"A"` (unclosed) is error 5 -- the count is checked
   before the rest of the call is even parsed.
 
+### The third unit (2026-11-24): STR$, VAL, HEX$, OCT$, BIN$
+
+One probe, five rules modules, five pages at DRAFT 1:
+
+- [probes/basic/spec/knum.py](../../probes/basic/spec/knum.py): 571 cases on each machine in four groups (SN: STR$
+  over 13 integers, 76 singles and 32 doubles; RX: HEX$ / OCT$ / BIN$ over 8 integers, 8 singles and 43 doubles;
+  VL: VAL over 183 byte strings; FX: 90 fixed statements). Run file
+  [scratchpad/KNM_run1.out](../../scratchpad/KNM_run1.out). A numeric argument is READ into a variable of the
+  case's own type and that variable's bytes are recorded BEFORE the call, so the rules work from the exact value
+  given (`ramrec.number`), not from the DATA text; a string result is recorded byte for byte (24 bytes, the length,
+  the sum); VAL's result as R's 8 bytes. VAL's record also holds the byte that follows its string in memory (the
+  build leaves the string's own prefix there), so reading past the end would be seen.
+- [knum_model.py](../../probes/basic/spec/knum_model.py) holds the models -- PRINT's number format, the 16-bit
+  pattern of the radix functions, VAL's scanner -- and the rule builders; `str_s_rules.py`, `val_rules.py`,
+  `hex_s_rules.py`, `oct_s_rules.py`, `bin_s_rules.py` are the pages' modules.
+  [knum_controls.py](../../probes/basic/spec/knum_controls.py) runs 17 rival rules over the reference's cases; every
+  one is FALSE on some (PRINT's trailing space, no leading space, full form only to 6 digits or down to .001, `D`
+  for doubles; truncation above 32767, rounding, the range test before truncation; zerobas's four VAL rules,
+  half-even rounding, truncation, 6 digits after an `E`).
+- Result: every rule holds on the VG-8020 and every recorded output is read by a rule. STR$, HEX$, OCT$ and BIN$
+  agree in every case. VAL differs in 19 cases, two new items: **D-VALWS** (TAB and LF are skipped inside a number,
+  and whitespace between `&` and its letter, on the reference; 13 cases) and **D-VALEXP** (the exponent byte wraps
+  past 255 digits, and a value whose exponent lands on 0 keeps its digit bytes, on the reference; 6 cases).
+- Measured on both machines, now rules (the user pages said otherwise or nothing): HEX$ / OCT$ / BIN$ truncate
+  below 32768 but take n - 65536 BEFORE truncating from 32768 up, so 32768.5 is &H8001 and 65535.5 is "0", not an
+  error; STR$ writes a number in full from .01 to below 10^14 for singles too (1E13! is 14 digits), with `E` for a
+  double's exponent; VAL keeps 14 digits rounded half up, keeps 7+ digits through an `E` exponent, and `"1E-66"` is
+  Overflow (the exponent wraps below 0).
+
 ## 7. Tooling: what exists, what is missing
 
 Exists and fits unchanged: `tools/spec_rules.py` (the checker is not BIOS-specific: a module, its cases, its rules,
@@ -204,7 +237,7 @@ Missing:
    (refuses a capture without the done flag and the end byte), `digest`, the run file's sections. kslice uses it;
    its program text, run file and decoded cases are byte-identical through it.
 3. **Number readouts:** half built. `ramrec.number` decodes a numeric variable's own bytes exactly (integer,
-   single, double BCD), and kstr records `R`'s 8 bytes through it; the maths region still needs a matrix whose
+   single, double BCD); kstr records `R`'s 8 bytes through it, and knum a typed ARGUMENT's own bytes as well; the maths region still needs a matrix whose
    result TYPE is seen (today a result is assigned to a double, so an integer-returning function's type is not).
 4. **A tie to the existing denominators:** a rules module could assert that its fixed expressions reach every
    (form, error) pair `kwerrset.py` lists for the keyword, so a spec page cannot miss an error the T6 rung knows.

@@ -10,7 +10,7 @@ SPDX-License-Identifier: BSD-2-Clause
 
 Every keyword page, the region the spec loop takes it in, and how far its page has become a SPECIFICATION: measured rules, each checked against the reference machine's cases ([the plan](spec-plan.md), [the method](../spec-method.md)). A page that is not yet a spec is a "user page": it says what the keyword does and was checked by its example, but its sentences are not yet executable rules. The reference is the Philips VG-8020; disk statements, the National CF-3300.
 
-**9 of 150 keyword pages are specs; 0 are FINAL.**
+**14 of 150 keyword pages are specs; 0 are FINAL.**
 
 | keyword | region | harness | reference | page | open (not measured) | differences (TODO items, from the page) |
 |---|---|---|---|---|---|---|
@@ -23,11 +23,11 @@ Every keyword page, the region the spec loop takes it in, and how far its page h
 | `INSTR` | [strings](../concepts/strings-and-string-space.md) | RAM record | VG-8020 | [DRAFT 1](INSTR.md) | 7 | D-INSTREMPTY, D-CLOSESPACE |
 | `SPACE$` | [strings](../concepts/strings-and-string-space.md) | RAM record | VG-8020 | [DRAFT 1](SPACE$.md) | 7 | — |
 | `STRING$` | [strings](../concepts/strings-and-string-space.md) | RAM record | VG-8020 | [DRAFT 1](STRING$.md) | 7 | D-CLOSESPACE |
-| `STR$` | [strings](../concepts/strings-and-string-space.md) | RAM record | VG-8020 | [user page](STR$.md) | — | — |
-| `VAL` | [strings](../concepts/strings-and-string-space.md) | RAM record | VG-8020 | [user page](VAL.md) | — | — |
-| `HEX$` | [strings](../concepts/strings-and-string-space.md) | RAM record | VG-8020 | [user page](HEX$.md) | — | — |
-| `OCT$` | [strings](../concepts/strings-and-string-space.md) | RAM record | VG-8020 | [user page](OCT$.md) | — | — |
-| `BIN$` | [strings](../concepts/strings-and-string-space.md) | RAM record | VG-8020 | [user page](BIN$.md) | — | — |
+| `STR$` | [strings](../concepts/strings-and-string-space.md) | RAM record | VG-8020 | [DRAFT 1](STR$.md) | 6 | — |
+| `VAL` | [strings](../concepts/strings-and-string-space.md) | RAM record | VG-8020 | [DRAFT 1](VAL.md) | 7 | D-VALWS, D-VALEXP |
+| `HEX$` | [strings](../concepts/strings-and-string-space.md) | RAM record | VG-8020 | [DRAFT 1](HEX$.md) | 6 | — |
+| `OCT$` | [strings](../concepts/strings-and-string-space.md) | RAM record | VG-8020 | [DRAFT 1](OCT$.md) | 6 | — |
+| `BIN$` | [strings](../concepts/strings-and-string-space.md) | RAM record | VG-8020 | [DRAFT 1](BIN$.md) | 6 | — |
 | `ABS` | [maths](../concepts/numbers.md) | RAM record | VG-8020 | [user page](ABS.md) | — | — |
 | `SGN` | [maths](../concepts/numbers.md) | RAM record | VG-8020 | [user page](SGN.md) | — | — |
 | `INT` | [maths](../concepts/numbers.md) | RAM record | VG-8020 | [user page](INT.md) | — | — |

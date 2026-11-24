@@ -1,0 +1,8 @@
+=== BIN$: PASS
+=== HEX$: PASS
+=== OCT$: PASS
+=== STR$: PASS
+=== VAL: PASS
+
+PASS 5
+refcache: 0 hit, 10 miss, 10 stored

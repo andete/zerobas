@@ -17,5 +17,11 @@
       through it). Every rule holds on the VG-8020, every output is read; kstr_controls.py shows ten rival rules
       FALSE on the reference's cases. zerobas differs in 39 cases, filed: D-INSTREMPTY (INSTR with an empty
       string to find and a start past the end), D-CLOSESPACE (a space before `)` after INSTR's / STRING$'s
-      string argument). NEXT for the strings region: STR$, VAL, HEX$, OCT$, BIN$ (a number-to-string family:
-      the record needs the argument's exact value, ramrec.number has it); then the review passes on all nine.
+      string argument).
+      **Third unit (2026-11-24): STR$ / VAL / HEX$ / OCT$ / BIN$ at DRAFT 1** from probes/basic/spec/knum.py (571
+      cases a machine, scratchpad/KNM_run1.out; plan §6, "The third unit"): a typed argument's own bytes recorded
+      before the call, string results byte for byte. Every rule holds on the VG-8020, every output is read;
+      knum_controls.py shows 17 rival rules FALSE. STR$ / HEX$ / OCT$ / BIN$ agree in every case; VAL differs in
+      19, filed: D-VALWS (TAB / LF inside a number, a gap after `&`), D-VALEXP (the exponent byte's wrap and a
+      zero's digit bytes). The strings region's 14 keywords are all at DRAFT 1. NEXT: the review passes on the
+      fourteen (spec-method §6); a keyword probe in spec_live (plan §7.1); then the maths region (plan §2).
