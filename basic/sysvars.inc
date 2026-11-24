@@ -3814,6 +3814,7 @@ VCX_ROOM        equ     36      ; free ring bytes left in this window
 ; scratchpad/autorun_cell_probe.out.
 H_READ          equ     $FF07   ; prompt printed ("Ok" / ZB)
 H_STKE          equ     $FEDA   ; BASIC reset its stack (MSX2 TH hook list; D-HSTKE)
+H_RUNC          equ     $FECB   ; BASIC clears its program state: NEW / a typed line / RUN / the cold start (D-NMSHOST)
 H_MAIN          equ     $FF0C   ; about to read a line at command level
 H_TIMI          equ     $FD9F   ; timer-interrupt hook, 5-byte inter-slot call area
 ; --- BASIC-extension hooks the DISK ROM claims (D-MKHOOK) -------------------

@@ -88,3 +88,9 @@
       a disk ROM rebuilt (stack from STKTOP, strings from MEMSIZ / FRETOP, files from FILTAB); (d) move the private
       cells; (e) our own disk ROM claims its RAM through HIMEM the reference's way. Each step: the NMS 1200 trace + the
       full gates; the NODISK and DISK targets both.
+      ✅ ITEM 3 FIXED 2026-11-24: WHEN the VG-8020 calls H.RUNC (scratchpad/hrunc_when.py, AE_hrunc_when.out -- our own
+      counting handler in the hook): NEW +1, a typed program line +1, RUN +1; CLEAR / CLEAR n / MAXFILES / a direct
+      statement / a direct error 0 (unlike H.STKE: CLEAR and an error fire that one). zerobas: 0 everywhere. basic/
+      files.asm `hrunc` (shares hstke's register-saving body, `hook_call`) called from new_prog, store_line, the RUN
+      path and the cold start right after init_ext_roms. After: every row matches on NODISK and DISK. Unmeasured: LOAD
+      (new_prog serves its ASCII path).

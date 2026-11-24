@@ -460,6 +460,7 @@ df_notfound:
 ; early reset enters at new_prog_quiet -- its H.STKE comes after the banner.
 new_prog:
                 call    hstke
+                call    hrunc               ; D-NMSHOST: NEW (and LOAD's ASCII path -- LOAD itself unmeasured)
 new_prog_quiet:
                 xor     a
                 ld      (CONTVALID),a       ; NEW wipes the program -> no CONT resume
@@ -487,25 +488,37 @@ new_prog_quiet:
 ; Every register kept: a hook may clobber anything, and the sites sit
 ; mid-routine with live registers (the reference calls it as it resets the
 ; stack, where nothing is live -- zerobas unwinds differently).
+; D-NMSHOST (2026-11-24): `hrunc` calls H.RUNC ($FECB) the same way. The VG-8020 calls it on NEW, a typed
+; program line and RUN -- not on CLEAR, MAXFILES, a direct statement or a direct error (scratchpad/AE_hrunc_when.out,
+; our own counting handler in the hook) -- and once in its cold start after the cartridge scan: a stock disk ROM
+; (the NMS 1200) patches H.RUNC in its INIT and rebuilds BASIC's memory layout from there.
+hrunc:
+                push    hl
+                ld      hl,H_RUNC
+                jr      hook_call
 hstke:
+                push    hl
+                ld      hl,H_STKE
+hook_call:
                 push    af
                 push    bc
                 push    de
-                push    hl
                 push    ix
                 push    iy
-                call    H_STKE
+                call    hook_jp
                 pop     iy
                 pop     ix
-                pop     hl
                 pop     de
                 pop     bc
                 pop     af
+                pop     hl
                 ret
+hook_jp:        jp      (hl)
 ; --- store_line: the line STORE's resident marshalling shim (the lineedit tenant
 ; does the store / delete, relink and vars_reset; basic/program.asm's header) ---
 store_line:
                 call    hstke               ; D-HSTKE: a typed line, once
+                call    hrunc               ; D-NMSHOST: a typed line, once (AE_hrunc_when.out)
                 xor     a
                 ld      (CONTVALID),a       ; editing the program invalidates CONT
                 ld      (SL_NUM),bc
