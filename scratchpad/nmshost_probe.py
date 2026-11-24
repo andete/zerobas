@@ -78,6 +78,10 @@ proc sample {} {
   if {!$::seen_p1 && ($pc >> 14) == 1 && [slotof 1] eq $::env(CARTSLOT)} {
     set ::seen_p1 1
     puts $::log "P1 [t] first code run in page 1 from the cartridge's slot $::env(CARTSLOT) SP=[format %04X [reg sp]] IFF=[reg iff]"
+    # the system area's DATA cells as the INIT finds them: $F39A-$FD99 only (Joost 2026-11-24: yes) -- never the
+    # RAM-resident code at $F380-$F399 (RDPRIM / WRPRIM / CLPRIM) or the hooks from $FD9A up (§8.5)
+    set snap ""; for {set x 0xF39A} {$x <= 0xFD99} {incr x} { append snap [format %02X [peek $x]] }
+    puts $::log "SYSDATA $snap"
     # from here: every change of the executing page@slot, with SP, for 300 changes (page and slot only, no PC value)
     set ::trace_left [expr {[info exists ::env(NMSHOST_RING)] ? 0 : 300}]; set ::last_who ""
     set ::ring {}; set ::direct 0; set ::ring_on [info exists ::env(NMSHOST_RING)]

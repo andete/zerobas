@@ -1,0 +1,46 @@
+cell      name                ref                      zerobas
+$F3DC   1  CSRY                0F                       0A
+$F3EC   2  GFX_SN              C300                     0000
+$F3F5   1  GFX_CPHASE          FF                       00
+$F3F6   1  SCNCNT              01                       03
+$F663   1  FACTYP              03                       00
+$F66A   1  POOLSIZE            00                       C8
+$F66C   1  TXTCEIL             00                       AD
+$F67A   1  TEMPPOOL            1D                       00
+$F698   1  RVDESC              1D                       00
+$F69B   1  FRETOP              68                       AD
+$F6A5   1  DATASTATE           00                       03
+$F6B1   1  SAVSTK              9E                       00
+$F6C6   1  STREND              03                       00
+$F6C8   2  DATAPTR             0080                     0000
+$F6E8   1  PRGEND              00                       01
+$F74C   1  FOR_STK_END         E4                       00
+$F7F6   8  FAC                 00007AF600000000         0000000000000000
+$FBB2   1  LINTTB              18                       00
+$FC9E   1  JIFFY               BD                       82
+$FD09   1  SUBSLOT             00                       8B
+$FD0A   1  SUBSLOT_OK          00                       01
+
+31 differing byte(s) in cells zerobas does not name:
+  $F3EF-$F3EF  ref C3  zb 00
+  $F3F7-$F3F7  ref 01  zb D4
+  $F40F-$F40F  ref 3A  zb 00
+  $F41E-$F41E  ref 3A  zb 00
+  $F55D-$F55D  ref 2C  zb 00
+  $F5F5-$F5F5  ref 00  zb F6
+  $F66D-$F66D  ref 00  zb E7
+  $F672-$F675  ref 68F1A0F0  zb 000080F3
+  $F67B-$F67C  ref FD7E  zb 0000
+  $F699-$F69A  ref FD7E  zb 0000
+  $F69C-$F69C  ref F1  zb E7
+  $F6A8-$F6A8  ref 80  zb 00
+  $F6B2-$F6B2  ref F0  zb 00
+  $F6C7-$F6C7  ref 80  zb 00
+  $F6E9-$F6E9  ref 00  zb 80
+  $F74D-$F74D  ref F6  zb 00
+  $F753-$F753  ref 00  zb 56
+  $F860-$F863  ref 6AF177F1  zb 00000000
+  $FB20-$FB20  ref 00  zb 01
+  $FCA2-$FCA3  ref 43FF  zb 0000
+  $FCC4-$FCC4  ref 00  zb 80
+  $FCC8-$FCC8  ref 0F  zb 00

@@ -62,3 +62,13 @@
       DISK-ONLY). ⛔ NEXT, ASKED: diff the PUBLISHED DATA cells (by name; never $F380-$F399's RAM-resident code or the
       hooks -- a full $F380-$FFFF snapshot was refused by the permission check, §8.5) at the cartridge's INIT on both
       machines -> the system variables where zerobas diverges.
+      STEP 6 (Joost: yes; scratchpad/sysdata_diff.py, AE_nmshost_sysdata.out -- $F39A-$FD99 only, never the RAM code at
+      $F380-$F399 or the hooks): at the INIT the VG-8020 has MS-BASIC's memory layout already in place -- MEMSIZ
+      ($F672) $F168, STKTOP ($F674) $F0A0 (the boot stack: INIT's SP $F08E is just below), SAVSTK ($F6B1) $F09E, FILTAB
+      ($F860) $F16A / $F177, FRETOP and the string-pool cells set -- all relative to HIMEM $F380. zerobas has $0000 /
+      $F380 / $0000 / $0000 there. A disk ROM's MSX1 INIT reads these and REBUILDS BASIC's layout below the HIMEM it
+      lowers (the reference's phase 2: its writes to $F672-$F675 / $F6B1, the 512-B buffers, HIMEM -> $DF95). On
+      zerobas it computes from zeros and its writes land on zerobas's private RAM ($EF42 ...). HOST CONTRACT ITEM 2: at
+      an extension INIT, MEMSIZ / STKTOP / SAVSTK / FILTAB / FRETOP (and the stack itself) hold MS-BASIC's layout,
+      consistent with HIMEM. ⛔ DECISION FOR JOOST: zerobas keeping those published cells with the reference's
+      meaning is a design change in zerobas BASIC's memory model (its string heap / control pool / TXTCEIL).
