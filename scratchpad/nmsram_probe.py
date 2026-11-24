@@ -72,7 +72,7 @@ def main():
     tcl = probe_tmp.tmp("nmsram.tcl")
     open(tcl, "w").write(TCL)
     log = probe_tmp.tmp("nmsram_ref.log")
-    cmd = [openmsx_paths.find_openmsx_binary(), "-machine", "Philips_VG_8020", "-ext", "Philips_NMS_1200",
+    cmd = [openmsx_paths.find_openmsx_binary(), "-machine", os.environ.get("NMSRAM_MACHINE", "Philips_VG_8020"), "-ext", "Philips_NMS_1200",
            "-diska", dsk, "-script", tcl]
     subprocess.run(omsx_preflight.guarded(cmd), env=dict(os.environ, LOGF=log, CARTSLOT="1"),
                    stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, timeout=900)

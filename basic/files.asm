@@ -492,6 +492,34 @@ new_prog_quiet:
 ; program line and RUN -- not on CLEAR, MAXFILES, a direct statement or a direct error (scratchpad/AE_hrunc_when.out,
 ; our own counting handler in the hook) -- and once in its cold start after the cartridge scan: a stock disk ROM
 ; (the NMS 1200) patches H.RUNC in its INIT and rebuilds BASIC's memory layout from there.
+; --- layout_from_himem: MS-BASIC's memory layout below HIMEM (D-NMSHOST item 2) ----------------------------
+; The VG-8020 has it in place when a cartridge's INIT runs, and a stock disk ROM (the NMS 1200) reads it to rebuild
+; the layout under the HIMEM it lowers (through H.RUNC). The rule, measured at HIMEM $F380 and $DF95 alike
+; (scratchpad/AE_nmshost_sysdata.out and the end-of-run read): MEMSIZ = HIMEM - $218, FRETOP = MEMSIZ,
+; FILTAB = MEMSIZ + 2 and its next word MEMSIZ + $0F, STKTOP = MEMSIZ - 200, SAVSTK = STKTOP - 2.
+; Out: HL = STKTOP. Clobbers AF, DE.
+layout_from_himem:
+                ld      hl,(HIMEM)
+                ld      de,-$218
+                add     hl,de
+                ld      (MEMSIZ),hl
+                ld      (FRETOP),hl
+                inc     hl
+                inc     hl
+                ld      (FILTAB),hl
+                ld      de,$0D
+                add     hl,de
+                ld      (FILTAB+2),hl
+                ld      hl,(MEMSIZ)
+                ld      de,-200
+                add     hl,de
+                ld      (STKTOP),hl
+                dec     hl
+                dec     hl
+                ld      (SAVSTK),hl
+                inc     hl
+                inc     hl
+                ret
 hrunc:
                 push    hl
                 ld      hl,H_RUNC

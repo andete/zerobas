@@ -202,8 +202,22 @@ init:
                 ld      (KEYARG),a
                 call    sr_inl0             ; D-STUBINL: absent sub-ROM: the slots stay clear
                 db      low (SUBROM_ENTRY_BASE_P0 + 3*SUBROM_IDX_KEYSTR)
+                ; D-NMSHOST item 2: MS-BASIC's layout below HIMEM is in place when a cartridge's INIT runs, and the
+                ; scan runs on a stack at STKTOP, BELOW the RAM a disk ROM claims (the VG-8020: SP $F08E at the INIT).
+                ; `init` never returns, so dropping the boot stack loses nothing live.
+                call    layout_from_himem
+                ld      sp,hl
                 call    init_ext_roms       ; run the boot-scan INITs C-BIOS skips
                 call    hrunc               ; D-NMSHOST: the cold start's H.RUNC, after the scan as on the VG-8020
+                ; a disk ROM that lowered HIMEM rebuilt the layout through H.RUNC (the NMS 1200), or did not (ours):
+                ; STKTOP not below HIMEM any more -> rebuild it here. Either way the rest of the start-up runs on a
+                ; stack below what the disk ROM now owns (repl re-bases SP into the pool after that).
+                ld      hl,(STKTOP)
+                ld      de,(HIMEM)
+                or      a
+                sbc     hl,de
+                call    nc,layout_from_himem
+                ld      sp,(STKTOP)
                 ; (D-WSZERO S9 initialised the disk machine's FIELD table HERE --
                 ; `call fld_init_g`, the one point DISKSLOT_OK is known. D-FLDDESC,
                 ; 2026-10-17: there is no table; FIELD writes variables.)

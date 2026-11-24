@@ -3814,6 +3814,9 @@ VCX_ROOM        equ     36      ; free ring bytes left in this window
 ; scratchpad/autorun_cell_probe.out.
 H_READ          equ     $FF07   ; prompt printed ("Ok" / ZB)
 H_STKE          equ     $FEDA   ; BASIC reset its stack (MSX2 TH hook list; D-HSTKE)
+MEMSIZ          equ     $F672   ; MS-BASIC: top of string space = HIMEM - $218 at boot (D-NMSHOST, AE_nmshost_sysdata.out) (2)
+STKTOP          equ     $F674   ; MS-BASIC: top of BASIC's stack = MEMSIZ - 200 (D-NMSHOST) (2)
+FILTAB          equ     $F860   ; MS-BASIC: file-table pointer = MEMSIZ + 2; its next word MEMSIZ + $0F (D-NMSHOST) (4)
 H_RUNC          equ     $FECB   ; BASIC clears its program state: NEW / a typed line / RUN / the cold start (D-NMSHOST)
 H_MAIN          equ     $FF0C   ; about to read a line at command level
 H_TIMI          equ     $FD9F   ; timer-interrupt hook, 5-byte inter-slot call area

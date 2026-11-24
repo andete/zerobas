@@ -94,3 +94,12 @@
       files.asm `hrunc` (shares hstke's register-saving body, `hook_call`) called from new_prog, store_line, the RUN
       path and the cold start right after init_ext_roms. After: every row matches on NODISK and DISK. Unmeasured: LOAD
       (new_prog serves its ASCII path).
+      ITEM 2 (2026-11-24): the rule, measured at HIMEM $F380 (INIT) and $DF95 (after phase 2) alike: MEMSIZ = HIMEM -
+      $218, FRETOP = MEMSIZ (at boot), FILTAB = MEMSIZ + 2 and its next word MEMSIZ + $0F, STKTOP = MEMSIZ - 200,
+      SAVSTK = STKTOP - 2; TXTTAB / VARTAB / BOTTOM do not move. basic/files.asm `layout_from_himem`; `init` calls it
+      and puts SP at STKTOP BEFORE the scan, and AFTER the scan + H.RUNC rebuilds it if STKTOP is no longer below HIMEM
+      (our own disk ROM lowers HIMEM without H.RUNC) and runs the rest of the start-up on that stack (repl then re-bases
+      into the pool, D-SPMERGE). RESULT on NODISK + NMS 1200: the INIT byte-identical to the reference again (HIMEM
+      $DF95, DRVTBL, H.PHYD, H.DSKO, $F37D), NO restart, and the cartridge loads the BOOT SECTOR to $C000 at 5.13 s
+      (the reference 7.63 s; write footprint 4,218 vs 4,227 addresses) -- the DOS boot starts. NOT YET: no "Enter
+      date" on screen at 30 s; pages end RAM / RAM / slot 1 / RAM. NEXT: how far MSXDOS.SYS / COMMAND.COM get.

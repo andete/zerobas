@@ -145,6 +145,8 @@ after time """ + str(SECONDS) + r""" {
     append s " [format %04X $a]=$v"
   }
   puts $::log "CELLS$s"
+  set snap ""; for {set x 0xF39A} {$x <= 0xFD99} {incr x} { append snap [format %02X [peek $x]] }
+  puts $::log "SYSDATA_END $snap"
   puts $::log "PAGES [slotof 0] [slotof 1] [slotof 2] [slotof 3]"
   puts $::log "SCREEN"
   puts $::log [get_screen]
