@@ -49,13 +49,13 @@ Every keyword page, the region the spec loop takes it in, and how far its page h
 | `CVI` | [conversion](../concepts/numbers.md) | RAM record | CF-3300 | [DRAFT 1](CVI.md) | 7 | D-DISKFNTYPE |
 | `CVS` | [conversion](../concepts/numbers.md) | RAM record | CF-3300 | [DRAFT 1](CVS.md) | 7 | D-DISKFNTYPE, D-ZEROLET |
 | `CVD` | [conversion](../concepts/numbers.md) | RAM record | CF-3300 | [DRAFT 1](CVD.md) | 7 | D-DISKFNTYPE |
-| `AND` | [operators](../concepts/numbers.md) | RAM record | VG-8020 | [DRAFT 1](AND.md) | 4 | — |
-| `OR` | [operators](../concepts/numbers.md) | RAM record | VG-8020 | [DRAFT 1](OR.md) | 4 | — |
-| `XOR` | [operators](../concepts/numbers.md) | RAM record | VG-8020 | [DRAFT 1](XOR.md) | 4 | — |
-| `EQV` | [operators](../concepts/numbers.md) | RAM record | VG-8020 | [DRAFT 1](EQV.md) | 4 | — |
-| `IMP` | [operators](../concepts/numbers.md) | RAM record | VG-8020 | [DRAFT 1](IMP.md) | 4 | — |
-| `NOT` | [operators](../concepts/numbers.md) | RAM record | VG-8020 | [DRAFT 1](NOT.md) | 4 | D-MINUSNOT |
-| `MOD` | [operators](../concepts/numbers.md) | RAM record | VG-8020 | [DRAFT 1](MOD.md) | 4 | — |
+| `AND` | [operators](../concepts/numbers.md) | RAM record | VG-8020 | [DRAFT 1](AND.md) | 6 | — |
+| `OR` | [operators](../concepts/numbers.md) | RAM record | VG-8020 | [DRAFT 1](OR.md) | 6 | — |
+| `XOR` | [operators](../concepts/numbers.md) | RAM record | VG-8020 | [DRAFT 1](XOR.md) | 6 | — |
+| `EQV` | [operators](../concepts/numbers.md) | RAM record | VG-8020 | [DRAFT 1](EQV.md) | 6 | — |
+| `IMP` | [operators](../concepts/numbers.md) | RAM record | VG-8020 | [DRAFT 1](IMP.md) | 6 | — |
+| `NOT` | [operators](../concepts/numbers.md) | RAM record | VG-8020 | [DRAFT 1](NOT.md) | 6 | D-MINUSNOT |
+| `MOD` | [operators](../concepts/numbers.md) | RAM record | VG-8020 | [DRAFT 1](MOD.md) | 6 | — |
 | `LET` | [operators](../concepts/numbers.md) | RAM record | VG-8020 | [DRAFT 1](LET.md) | 5 | — |
 | `SWAP` | [operators](../concepts/numbers.md) | RAM record | VG-8020 | [DRAFT 1](SWAP.md) | 4 | D-SWAPNEW |
 | `GOTO` | [flow](../concepts/program-text.md) | RAM record + screen | VG-8020 | [user page](GOTO.md) | — | — |

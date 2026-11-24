@@ -118,7 +118,8 @@ def outcome(fn):
 
 # ---- the fixed statements: a small precedence parser ------------------------------------------------------------
 LEVELS = [("IMP",), ("EQV",), ("XOR",), ("OR",), ("AND",)]       # loosest first; NOT, comparisons, + -, MOD ... below
-TOK = re.compile(r'\s*(&H[0-9A-F]+|\d*\.\d+[!#%]?|\d+[!#%]?|"[^"]*"|AND|OR|XOR|EQV|IMP|NOT|MOD|[-+*/\\=<>()])')
+TOK = re.compile(r'\s*(&H[0-9A-F]+|(?:\d+\.?\d*|\.\d+)(?:[ED][-+]?\d+)?[!#%]?|"[^"]*"|AND|OR|XOR|EQV|IMP|NOT|MOD|'
+                 r'[-+*/\\^=<>()])')
 
 
 def literal(t):
@@ -129,7 +130,9 @@ def literal(t):
     if t[-1] in "!#%":
         return Fraction(K.text_value(t[:-1])), {"!": "S", "#": "D", "%": "I"}[t[-1]]
     v = Fraction(K.text_value(t))
-    return v, ("I" if "." not in t and -32768 <= v <= 32767 else "S")
+    if "D" in t:
+        return v, "D"
+    return v, ("I" if "." not in t and "E" not in t and -32768 <= v <= 32767 else "S")
 
 
 class Parser:
@@ -164,6 +167,8 @@ class Parser:
         v = self.level(n + 1)
         while self.peek() in LEVELS[n]:
             op = self.take()
+            if not getattr(self, "late", False):
+                to_int(v, self.how)      # the LEFT operand is made an integer before the right is read
             w = self.level(n + 1)
             v = Fraction(binop(op, v, w, self.how))
         return v
@@ -194,6 +199,8 @@ class Parser:
         v = self.idiv()
         while self.peek() == "MOD":
             self.take()
+            if not getattr(self, "late", False):
+                to_int(v, self.how)      # the LEFT operand is made an integer before the right is read
             v = Fraction(binop("MOD", v, self.idiv(), self.how))
         return v
 
@@ -221,9 +228,16 @@ class Parser:
         if t == "-":
             self.take()
             return -self.unary()
-        if t == "NOT":                        # NOT after a unary minus: `-NOT 0` is -(NOT 0)
+        if t == "NOT":                        # NOT after a unary minus or a binary operator: it takes in a comparison
             return self.not_()
-        return self.atom()
+        return self.power()
+
+    def power(self):
+        v = self.atom()
+        while self.peek() == "^":
+            self.take()
+            v = v ** int(self.unary())
+        return v
 
     def atom(self):
         t = self.take()
@@ -274,6 +288,15 @@ DESC = {"AND": "a bit is set where it is set in both", "OR": "where it is set in
                "truncation: .5, .9 -- is error 11 (Division by zero)"}
 
 
+RANGE_WHYS = ("a right operand below the range", "a double right operand above the range", "a huge right operand",
+              "Overflow against Division by zero", "Overflow against Division by zero (a fraction)",
+              "Overflow against Division by zero (doubles)", "two bad operands: a range and a string")
+
+
+def fixed(c):
+    return c.src in ("FX", "FY")
+
+
 def rules(op):
     s1, s2, s3 = "1. The value", "2. Precedence and forms", "3. The result stored"
     R = [
@@ -284,7 +307,8 @@ def rules(op):
         Rule(f"R-{op}-RANGE", s1, "An operand whose truncated value is outside -32768..32767 -- 32768, -32769, 65535, "
              "1E10, 1D20 -- is error 6 (Overflow), whichever side it is on" + (" (NOT has one)" if op == "NOT" else "")
              + (", before any Division by zero" if op == "MOD" else "") + ".",
-             lambda c: c.src in MX and want(c) == ("err", 6), lambda c: case_ok(c, want(c))),
+             lambda c: (c.src in MX and want(c) == ("err", 6)) or (c.src == "FY" and c.why in RANGE_WHYS),
+             lambda c: case_ok(c, want(c))),
     ]
     if op == "MOD":
         R.append(Rule("R-MOD-ZERO", s1, "A divisor that truncates to 0 -- 0, .5, -.5, .9, .99999999999999 -- is error 11 "
@@ -296,10 +320,13 @@ def rules(op):
              "(XOR and EQV cannot be told apart: every grouping of the two agrees). So NOT 1+2 is NOT 3 (-4), NOT 1<2 "
              "is 0, 7 MOD 4+2 is 5, -7 MOD 4 is -3, 7\\2 MOD 2 is 1; a minus may stand before NOT (-NOT 0 is 1). A "
              "literal's own type counts (&HFFFF the integer -1; 65535 a single: error 6).",
-             lambda c: c.src == "FX" and c.is_expr, lambda c: case_ok(c, want(c))),
-        Rule(f"R-{op}-ERRORS", s2, "A string on either side is error 13 (Type mismatch); nothing after the operator "
-             "(`1 AND`, `NOT` alone) is error 24 (Missing operand).",
-             lambda c: c.src == "FX" and not c.is_expr, lambda c: case_ok(c, want(c))),
+             lambda c: fixed(c) and c.is_expr and c.why not in RANGE_WHYS, lambda c: case_ok(c, want(c))),
+        Rule(f"R-{op}-ERRORS", s2, ("A string operand (`NOT \"A\"`) is error 13 (Type mismatch); `NOT` alone is error 24 "
+                                     "(Missing operand)." if op == "NOT" else
+             "A string on either side is error 13 (Type mismatch) -- unless the left operand is out of range: it is "
+             "made an integer as soon as the operator is met, so `70000 AND \"A\"` is error 6; nothing after the "
+             "operator is error 24 (Missing operand); an operator or `)` where an operand belongs is error 2."),
+             lambda c: fixed(c) and not c.is_expr and c.why not in RANGE_WHYS, lambda c: case_ok(c, want(c))),
         Rule(f"R-{op}-ASSIGN", s3, "`R=x " + op + " y` with R a double stores the integer result by its value; after "
              "an error R keeps its sentinel -12345. Read in every case.", lambda c: True, assigned),
     ]

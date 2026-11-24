@@ -46,8 +46,8 @@ def not_tight(c):
 
 
 def minus_not_syntax(c):
-    """a minus before NOT is a Syntax error -- zerobas's"""
-    if c.src == "FX" and c.expr.startswith("-NOT"):
+    """NOT after an operator (a minus, *, +) is a Syntax error -- zerobas's"""
+    if c.src in ("FX", "FY") and c.expr.replace(" ", "")[:1] in "-2" and "NOT" in c.expr and not c.expr.startswith("NOT"):
         return M.case_ok(c, ("err", 2))
     return M.case_ok(c, M.want(c))
 
@@ -106,7 +106,20 @@ CONTROLS["IMP"].append(("R-IMP-PREC", "IMP tighter than EQV", with_levels([("EQV
 CONTROLS["EQV"].append(("R-EQV-PREC", "EQV tighter than OR", with_levels([("IMP",), ("XOR",), ("OR",), ("EQV",), ("AND",)])))
 CONTROLS["XOR"].append(("R-XOR-PREC", "XOR tighter than AND", with_levels([("IMP",), ("EQV",), ("OR",), ("AND",), ("XOR",)])))
 CONTROLS["NOT"].append(("R-NOT-PREC", "NOT tighter than comparisons and arithmetic", not_tight))
-CONTROLS["NOT"].append(("R-NOT-PREC", "a minus before NOT a Syntax error -- zerobas's", minus_not_syntax))
+CONTROLS["NOT"].append(("R-NOT-PREC", "NOT after an operator a Syntax error -- zerobas's", minus_not_syntax))
+
+
+def late_left(c):
+    """the left operand made an integer only after the right one is read (a string on the right wins)"""
+    saved = getattr(M.Parser, "late", False)
+    M.Parser.late = True
+    try:
+        return M.case_ok(c, M.want(c))
+    finally:
+        M.Parser.late = saved
+
+
+CONTROLS["AND"].append(("R-AND-RANGE", "the right operand read before the left is converted", late_left))
 
 
 def main():

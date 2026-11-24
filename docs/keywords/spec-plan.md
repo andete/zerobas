@@ -379,6 +379,18 @@ machines shifted alike, so no difference showed it -- only the decoded lengths d
 loop is now behind `IF L>0`. spec-live re-types the D* groups on zerobas's DISK build.
 The conversion region is complete at DRAFT 1.
 
+### Goldfish pass 1 over the operators' first unit (2026-11-24)
+
+One reviewer ([REVIEW-m2-gOPS1.md](../../scratchpad/REVIEW-m2-gOPS1.md)), 17 items: real 15, minor 2 (worked values
+in the Details tables backed only by the example runs; the FX chains that do not separate, now said so). A new
+group, KOP FY (41), measured what the rules asserted beyond their cases: precedence rows that SEPARATE (`1<2 AND 1`,
+`1 EQV 2+3`, `1=1 IMP 1=0`, `6 OR 1 IMP 0` ...), MOD's own grouping and its place against `/` and `^`, Overflow
+before Division by zero, right operands out of range for every operator, a twenty-NOT chain -- all as the pages
+said. Two findings: the LEFT operand is made an integer as soon as the operator is met (`70000 AND "A"` is 6, not 13
+-- predicted wrong, 55%); and D-MINUSNOT is wider than `-NOT 0`: NOT after ANY operator (`2*NOT 0`, `2+NOT 0=0`)
+is a Syntax error on zerobas. NOT's summary, evidence and ERRORS text corrected (a one-operand operator); the open
+lists name DAC's other bytes as non-evidence and the error set's closure (nesting, structure errors).
+
 ### The operators region's second unit (2026-11-24): LET, SWAP
 
 One probe, [klet.py](../../probes/basic/spec/klet.py): each case its own line starting from `CLEAR`, the statement

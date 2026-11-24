@@ -62,8 +62,8 @@ OD_PAIRS = [("2.5", "1"), ("-2.5", "1"), ("2.7", "3"), ("-2.7", "3"), ("32767.99
             ("-32768.99999999", "1"), ("32768", "1"), ("-32769", "1"), ("65535", "1"), ("5.9", "2.9"),
             ("-5.9", "2.9"), ("7", ".99999999999999"), ("1D20", "1"), (".49999999999999", "-.5")]
 ARGS = {"OI": ("I", OI_PAIRS), "OS": ("S", OS_PAIRS), "OD": ("D", OD_PAIRS)}
-GAPS = {"OI": 6000.0, "OS": 6000.0, "OD": 6000.0, "FX": 2500.0}
-ORDER = ["OI", "OS", "OD", "FX"]
+GAPS = {"OI": 6000.0, "OS": 6000.0, "OD": 6000.0, "FX": 2500.0, "FY": 2500.0}
+ORDER = ["OI", "OS", "OD", "FX", "FY"]
 
 # FX: (op, expression or statement, what it separates, is it an expression (R= / USR forms))
 LOGIC = ["NOT", "AND", "OR", "XOR", "EQV", "IMP"]
@@ -104,6 +104,40 @@ for _o in ("OR", "XOR", "EQV", "IMP", "MOD"):           # each operator's own er
            (_o, f'"A" {_o} 1', "a string on the left", False),
            (_o, f"1 {_o}", "nothing after the operator", False)]
 
+# FY (goldfish pass 1, 2026-11-24, scratchpad/REVIEW-m2-gOPS1.md): rows that SEPARATE what FX could not -- the
+# arithmetic / comparison levels against each logical operator, OR against IMP once more, MOD's own grouping and its
+# place against / and ^, overflow against Division by zero, which error wins with two bad operands, out-of-range
+# RIGHT operands, NOT after a minus with a comparison and after a binary operator, a deep NOT chain, and operator
+# structure errors. (op, expression, what it separates, is it an expression)
+FY = [("AND/cmp", "1<2 AND 1", "a comparison against AND", True),
+      ("AND/arith", "1+2 AND 0", "+ against AND", True),
+      ("OR/cmp", "1=2 OR 3", "a comparison against OR", True),
+      ("XOR/arith", "1+2 XOR 3", "+ against XOR", True),
+      ("EQV/arith", "1 EQV 2+3", "+ against EQV", True),
+      ("IMP/cmp", "1=1 IMP 1=0", "comparisons against IMP", True),
+      ("OR/IMP", "6 OR 1 IMP 0", "OR against IMP, again", True),
+      ("MOD/self", "100 MOD 7 MOD 3", "MOD's own grouping", True),
+      ("MOD/div", "7 MOD 4/2", "/ against MOD", True),
+      ("MOD/pow", "2^3 MOD 3", "^ against MOD", True),
+      ("MOD/neg", "-32768 MOD 5", "unary minus against MOD at the range's edge", True),
+      ("MOD", "32768 MOD 0", "Overflow against Division by zero", True),
+      ("MOD", "1E10 MOD .5", "Overflow against Division by zero (a fraction)", True),
+      ("MOD", "-32769# MOD .9#", "Overflow against Division by zero (doubles)", True),
+      ("AND", '70000 AND "A"', "two bad operands: a range and a string", False),
+      ("AND", '"A" AND 70000', "two bad operands, the string first", False),
+      ("MOD", '"A" MOD 0', "a string against Division by zero", False),
+      ("NOT/cmp", "-NOT 0=1", "a minus, NOT and a comparison", True),
+      ("NOT/arith", "2*NOT 0", "NOT after *", True),
+      ("NOT/cmp", "2+NOT 0=0", "NOT after +, then a comparison", True),
+      ("NOT", "NOT NOT NOT NOT NOT NOT NOT NOT NOT NOT NOT NOT NOT NOT NOT NOT NOT NOT NOT NOT 7",
+       "twenty NOTs", True),
+      ("AND", "5 AND * 3", "an operator where an operand belongs", False),
+      ("AND", "1 AND )", "a closing parenthesis as the operand", False)]
+for _o in ("AND", "OR", "XOR", "EQV", "IMP", "MOD"):
+    FY += [(_o, f"1 {_o} -32769", "a right operand below the range", True),
+           (_o, f"1# {_o} 32768#", "a double right operand above the range", True),
+           (_o, f"1 {_o} 1D20", "a huge right operand", True)]
+
 RECORD = [
     "900 POKE A,E1:V=VARPTR(R):FOR K=0 TO 7:POKE A+17+K,PEEK(V+K):POKE A+27+K,PEEK(&HBF81+K):NEXT",
     "910 POKE A+25,E2:POKE A+26,PEEK(&HBF80):A=A+35:RETURN",
@@ -115,15 +149,15 @@ def program(group):
     """the typed lines (numbered program + RUN) and the case list [(id, meta)] in record order"""
     routine = [str(v) for v in kmath.ROUTINE]
     head = [kmath.head(), "20 FOR K=0 TO 17:READ X:POKE &HBF00+K,X:NEXT:DEFUSR=&HBF00"]
-    if group == "FX":
+    if group in ("FX", "FY"):
         lines = head + ["25 GOTO 2000",
                         f"880 E=0:R={R_SENT}:POKE &HBF80,255:FOR K=1 TO 16:POKE A+K,0:NEXT:RETURN"]
         cases = []
-        for i, (op, expr, why, is_expr) in enumerate(FX):
+        for i, (op, expr, why, is_expr) in enumerate(FX if group == "FX" else FY):
             n = 2000 + 2 * i
             lines.append(f"{n} GOSUB 880:R={expr}")
             lines.append(f"{n + 1} E1=E:E=0:" + (f"Q=USR({expr}):E2=E" if is_expr else "E2=0") + ":GOSUB 900")
-            cases.append((f"KOP FX {i}", dict(op=op, expr=expr, why=why, is_expr=is_expr, ty=None, x=None, y=None)))
+            cases.append((f"KOP {group} {i}", dict(op=op, expr=expr, why=why, is_expr=is_expr, ty=None, x=None, y=None)))
         lines += [f"{2000 + 2 * len(FX)} " + ramrec.TAIL] + RECORD + ramrec.data(1000, routine)
         _fits(group, cases)
         return lines + ["RUN"], cases
