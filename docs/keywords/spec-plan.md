@@ -219,6 +219,20 @@ One probe, five rules modules, five pages at DRAFT 1:
   double's exponent; VAL keeps 14 digits rounded half up, keeps 7+ digits through an `E` exponent, and `"1E-66"` is
   Overflow (the exponent wraps below 0).
 
+### Goldfish pass 1 over the strings region (2026-11-24)
+
+One fresh test-writer reviewer per probe family (scratchpad/REVIEW-m2-gkwslice.md, -gkwstr.md, -gkwnum.md; 74
+findings), each acted on by an isolated agent; the counts above are the units' FIRST runs, these are the current ones.
+**kslice.py:** +133 cases (MX: MID$'s position and count at the 16-bit edges, 88; FY: 45 statements with the source
+rebuilt and checked by content); its rival rules now live in kslice_controls.py (21, each false somewhere); no new
+divergence. **kstr.py:** a 30-byte record (the sources now checked by content), +30 cases, the STRN group split in
+two so no group's records reach $F380 (asserted -- docs/clean-room-audit.md 2026-11-24 near miss); 16 controls; no
+new divergence (a literal STRING$ fill shows D-CLOSESPACE too). **knum.py:** +60 cases, 631 on each machine; 31
+controls. The VAL page corrected: only the DIGIT COUNT wraps (192 ones are a zero that keeps its digits), an `E`
+exponent is added without wrapping ("1E-194" and "1E300" are Overflow). VAL's zerobas differences are now three items:
+D-VALWS (whitespace, incl. before `&`), D-VALEXP (the digit-count edges) and D-VALPCT (`"-32768%"` is Overflow here,
+-32768 on the reference).
+
 ## 7. Tooling: what exists, what is missing
 
 Exists and fits unchanged: `tools/spec_rules.py` (the checker is not BIOS-specific: a module, its cases, its rules,
