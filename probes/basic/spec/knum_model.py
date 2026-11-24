@@ -419,7 +419,8 @@ def rules(fn):
                  "No number at the start is 0, not an error: \"\", spaces only, \"ABC\", \".\", \"-\", \"+\", "
                  "\"E3\", \".E3\", \"$12\", and a second sign (\"--1\", \"+-1\", \"-+1\"). Zero is stored as 8 "
                  "zero bytes, \"-0\" included. Control characters other than TAB and LF are not skipped: CR, CHR$(0), "
-                 "CHR$(11), CHR$(12), CHR$(28), CHR$(31), CHR$(127) and CHR$(160) before the digits give 0.", V("NONE"), lambda c: outcome(c, m_val)),
+                 "CHR$(11), CHR$(12), CHR$(28), CHR$(31), CHR$(127) and CHR$(160) before the digits give 0.",
+                 V("NONE"), lambda c: outcome(c, m_val)),
             Rule("R-VAL-SUFFIX", sec,
                  "A type mark after the digits or the exponent ends the number and sets its precision: ! rounds "
                  "to 6 digits (\"1234567!\" is 1234570), # changes nothing, % cuts the value to a whole number "
