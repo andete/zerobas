@@ -7,7 +7,8 @@
       [SIN.md](../../docs/keywords/SIN.md), [COS.md](../../docs/keywords/COS.md), [TAN.md](../../docs/keywords/TAN.md).
       The reference turns x into p = x * 0.15915494309190 rounded to 14 digits and works on its fraction f (SIN) or on
       the fraction of r14(1/4 - p) (COS) -- one black-box rule that fits all 431 measured nonzero SIN / COS results within 2.1
-      units of the 14th digit (D-TANBIG adopted it for large angles). Where the reduced angle lands near a half or a
+      units of the 14th digit (D-TANBIG adopted it for large angles). Goldfish pass 1 (2026-11-24) pinned the
+      roundings: p half up, 1/4 - p half DOWN in size (COS(1.2E13) is the zero); 544 results within 1.95 units. Where the reduced angle lands near a half or a
       whole turn, the result is small and its leading digits ARE the reduction's last digits, and zerobas's differ:
       SIN(3.14159!) 2.6535897459098E-06 here, 2.6535897144938E-06 there; SIN(3.1416!), SIN(6.28318!), SIN(+-3.1415926535898#);
       COS(4.71239!) 1.0196155196152E-06 vs 1.0196154567834E-06, COS(4.7123889803847#) 1.5707963267949E-13 vs
