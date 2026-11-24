@@ -8,7 +8,7 @@ SPDX-License-Identifier: BSD-2-Clause
 > **Status (2026-11-24, D-NMSHOST):** measured with the Philips NMS 1200 and Sony HBD-F1 disk cartridges on the
 > Philips VG-8020 (the reference) and on zerobas without its own disk ROM (`C-BIOS_MSX1_EU_REPACK_NODISK`). Items 1-3
 > met: the NMS 1200's INIT ends on zerobas byte-identical to the reference, and with the HBD-F1 zerobas boots
-> MSX-DOS 1.03 to COMMAND.COM's date prompt as the VG-8020 does. Item 4 (the screen DOS starts on) found, not met.
+> MSX-DOS 1.03 to COMMAND.COM's date prompt as the VG-8020 does. Item 4 (the screen DOS starts on) met with a locale-driven pin.
 > Not covered: what follows the NMS 1200's date prompt (Disk BASIC, which calls MS-BASIC internals). This page is the
 > checklist C-BIOS will need once disk facilities are ported to it.
 
@@ -75,7 +75,7 @@ zerobas before and after; [hrunc_when.py](../../scratchpad/hrunc_when.py)).
 
 **zerobas:** `hrunc` ([basic/files.asm](../../basic/files.asm)) from NEW, a typed line, RUN and the cold start.
 
-## 4. The main ROM word at $7D2F is a routine the disk ROM calls from H.RUNC [M] -- not met yet
+## 4. The main ROM word at $7D2F is a routine the disk ROM calls from H.RUNC [M]
 
 In its H.RUNC handler the disk ROM reads two bytes from the main ROM (slot 0) at $7D2F-$7D30 with RDSLT and CALSLTs
 the word they make. MS-BASIC keeps a routine's address there: on the reference the call sets up the text screen --
@@ -118,9 +118,13 @@ The same routine on two manufacturers' ROMs and the same disk-ROM call site on t
 MSX-BASIC 1.0 location. No admissible document names it (docs/allowed-sources.md: the MSX Technical Data Book lists
 CALBAS and the hooks for disk-ROM writers, not $7D2F; the sources that would name it are disassemblies, forbidden).
 
-**zerobas:** not yet -- a fixed word at $7D2F changes the layout of main page 1 (zerobas BASIC's code is there). The
-word would point at zerobas's own start-up-screen routine (the one its cold start uses): the VG-8020's text screen
-on both builds (the CF-3300's SCREEN 1 is a presentation split, and those ship the VG-8020's value).
+**zerobas (met, 2026-11-24, Joost: "go ahead with the locale-driven pin for EU"):** main ROM $7D2F holds
+`STARTUP_SCREEN` ([basic/sysvars.inc](../../basic/sysvars.inc)) -- a locale choice: this EU build's start-up screen is
+INITXT with LINL40 = 37, a JP variant's would be INIT32. The word sits inside a loop of
+[basic/program.asm](../../basic/program.asm), stepped over as the operand of a `ld de,nn` (3 B, no pad), and
+`tools/pin_plan.py` checks it. After it, with the HBD-F1, every recorded field at DOS's entry equals the VG-8020's
+and the screen is the same line for line; the NMS 1200's date prompt stands alone on a cleared 40-column screen, as
+on the reference ([AE_pin7d2f_after.out](../../scratchpad/AE_pin7d2f_after.out)).
 
 ## What the disk ROM writes
 
@@ -133,12 +137,16 @@ ROM's.
 
 ## Open (not measured or not met)
 
-- The date format of the start-up prompt: D-M-Y on zerobas, M-D-Y on the reference -- the disk ROM reads it from the
-  main ROM's published machine-ID information.
-- The screen: the reference clears it before the prompt; zerobas does not -- item 4 (the $7D2F routine).
+- The date format of the start-up prompt: D-M-Y on zerobas, M-D-Y on the VG-8020 -- the disk ROM reads it from the
+  main ROM's published machine-ID information. A locale setting (C-BIOS EU's `LOCALE_DATE`); kept as C-BIOS has it
+  (Joost, 2026-11-24).
+- The screen before the NMS 1200's prompt: met by item 4.
 - After the date: the reference enters Disk BASIC (MS-BASIC internals) -- out of scope for a host without MS-BASIC.
-- MSX-DOS: the VG-8020 + NMS 1200 in openMSX runs the boot sector ($C01E) of three DOS disks and never reaches DOS
-  ($0100). With the Sony HBD-F1 the VG-8020 boots MSX-DOS 1.03 to COMMAND.COM's date prompt, and so does zerobas
+- MSX-DOS: the NMS 1200 in openMSX runs the boot sector ($C01E) of three DOS disks and never reaches DOS ($0100) --
+  on the VG-8020, the Goldstar FC-200 and the National CF-3000 alike, and in a plain primary slot as well as the
+  extension's secondary one ([AE_nms_dosboot.out](../../scratchpad/AE_nms_dosboot.out)); the only ROM image at hand is
+  the extension's version 6 (version 4 not available). So the NMS 1200 as emulated here boots no DOS on any host --
+  its cartridge / ROM / emulation, not the host. The Sony HBD-F1 is the working cartridge DOS reference. With the Sony HBD-F1 the VG-8020 boots MSX-DOS 1.03 to COMMAND.COM's date prompt, and so does zerobas
   without its disk ROM (2026-11-24) -- apart from the screen (item 4).
 - H.RUNC on LOAD: unmeasured (zerobas calls it through NEW's code on LOAD's ASCII path).
 - Other disk interfaces: the Sony HBD-F1 measured (items 1-4 hold); the Panasonic FS-FD1A does not start in this

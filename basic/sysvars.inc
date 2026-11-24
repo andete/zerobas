@@ -682,6 +682,15 @@ APOS_MARK       equ     $E6     ; "remark-quote" marker emitted after `'`'s REM 
 ; addresses to keep, so it assembles the code as it was before the pins.
 BASICINT_PINS   equ     G6_RESIDENT & G7_RESIDENT & G8_RESIDENT & I1_RESIDENT & TRAPS_T3 & TRAPS_T4 & CLEARPOOL
 
+; STARTUP_SCREEN -- the routine BASIC's start-up screen comes from, a LOCALE choice (D-NMSHOST step 14, Joost
+; 2026-11-24: "go ahead with the locale-driven pin for EU"). MSX1 disk ROMs read the word at main ROM $7D2F from
+; their H.RUNC handler and CALSLT it; on the reference it re-initialises BASIC's start-up screen -- text, LINLEN 37,
+; on the European / Korean machines (VG-8020, FC-200), SCREEN 1, LINLEN 29, on the Japanese ones (CF-2700 / CF-3000 /
+; CF-3300) -- MEASURED, docs/concepts/disk-rom-host.md item 4, scratchpad/AE_dosref_msx1.out. zerobas's own start-up
+; screen is INITXT with LINL40 = 37 (boot_wa, then show_title's INITXT): this EU build pins INITXT; a JP variant
+; would pin INIT32 ($006F).
+STARTUP_SCREEN  equ     INITXT
+
 ; --- Step A: byte-identical constant + operator tokens --------------------
 ; Captured byte-exact from the reference (spec-tokens-statements.md §3/§4,
 ; fidelity sweep). Numbers/operators are no longer kept verbatim: the tokeniser

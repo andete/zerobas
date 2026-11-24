@@ -114,6 +114,9 @@ PINS = [
     Pin(0x73AC, 8, bytes.fromhex("2AC2F62B2B22E8F6"), None,
         "D-BASICINT RUN entry: PRGEND := VARTAB - 2, then run_prog_top"),
     Pin(0x73E5, 3, "jp", "basicint_play", "D-AVTAK PLAY body: jp basicint_play (call pl_args, return)"),
+    # $7D2F: the word MSX1 disk ROMs CALSLT from H.RUNC -- the start-up screen; EU: INITXT $006C (D-NMSHOST step 14,
+    # basic/program.asm, skipped as the operand of a `ld de,nn`)
+    Pin(0x7D2F, 2, bytes.fromhex("6C00"), None, "D-NMSHOST start-up screen word: dw INITXT (EU locale)"),
 ]
 
 SRC = "basic/main.asm"

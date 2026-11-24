@@ -1,0 +1,23 @@
+D-NMSHOST step 15 (2026-11-24): after the $7D2F pin -- zerobas NODISK + Sony HBD-F1 + msxdos103-cmd111.dsk (state at $0100, screen), and
+the NMS 1200 with a non-boot disk (disk/test720.dsk) on the VG-8020 and zerobas NODISK. dosref_probe.py; no VRAM in this file.
+=== zerobas NODISK + HBD-F1
+HIT0100 8.695 page0=3 0 SCRMOD=0 OLDSCR=0 LINL40=37 LINL32=29 LINLEN=37 CRTCNT=24 CSRY=1 CSRX=1 R0=0 R1=240 R2=0 R4=1 R7=244 HIMEM=57236 CNSDFG=0
+HIT0100 9.366 page0=3 0 SCRMOD=0 OLDSCR=0 LINL40=37 LINL32=29 LINLEN=37 CRTCNT=24 CSRY=4 CSRX=1 R0=0 R1=240 R2=0 R4=1 R7=244 HIMEM=57236 CNSDFG=0
+=== SCREEN 20 s
+  |  MSX-DOS version 1.03                  
+  |  Copyright 1984 by Microsoft           
+  |  COMMAND version 1.11                  
+  |  Current date is Sun  1-01-1984        
+  |  Enter new date:                       
+hits0100 2
+
+=== Philips_VG_8020 + NMS 1200, test720.dsk
+=== SCREEN 20 s
+  |  Enter date (M-D-Y):                   
+hits0100 0
+
+=== C-BIOS_MSX1_EU_REPACK_NODISK + NMS 1200, test720.dsk
+=== SCREEN 20 s
+  |  Enter date (D-M-Y):                   
+hits0100 0
+

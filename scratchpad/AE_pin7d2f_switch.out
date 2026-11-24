@@ -1,0 +1,11 @@
+baseline (all switches on): assembles, postchecks OK (1)
+
+PASS  G6_RESIDENT equ 0 (basic)
+PASS  G7_RESIDENT equ 0 (basic)
+PASS  G8_RESIDENT equ 0 (basic)
+PASS  I1_RESIDENT equ 0 (basic)
+PASS  TRAPS_T3 equ 0 (basic)
+PASS  TRAPS_T4 equ 0 (basic)
+PASS  CLEARPOOL equ 0 (basic+sub)  [fperr_to_err[FPERR_MISSOP=11] = 24]
+
+SWITCHES: 7 of 7 assemble with the switch off

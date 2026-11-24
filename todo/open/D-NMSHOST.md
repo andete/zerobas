@@ -174,4 +174,19 @@
       names $7D2F (the Technical Data Book's disk-ROM interface lists CALBAS and the hooks only; disassemblies are
       forbidden). ⛔ STILL FOR JOOST: the pin, now pointing at zerobas's own start-up-screen routine (the VG-8020's
       text screen on both builds: a presentation split ships the VG-8020's value).
+      ✅ STEP 15 (2026-11-24; Joost: "go ahead with the locale-driven pin for EU"): $7D2F pinned to STARTUP_SCREEN
+      (basic/sysvars.inc: INITXT for this EU build, INIT32 for a JP one), stepped over by a `ld de,nn` inside
+      esn_scan_lp (basic/program.asm; DE dead there): 3 B of page 1, no pad; tools/pin_plan.py checks it (9/9 pins).
+      zerobas NODISK + HBD-F1: at $0100 every field equals the VG-8020's, the screen line for line (only the RAM slot
+      label differs: 3-0 here, 3 unexpanded there -- machine wiring); NMS 1200 + a non-boot disk: the date prompt alone
+      on a cleared 40-column screen on both (scratchpad/AE_pin7d2f_after.out). HOST CONTRACT ITEM 4 MET. Left: the date
+      order (a locale setting, kept: Joost); the NMS 1200 boots no DOS on the reference itself; Disk BASIC after its
+      prompt is out of scope. ⛔ ITEM'S REMAINING QUESTION FOR JOOST: close D-NMSHOST here (the NODISK host boots
+      MSX-DOS from a cartridge, contract items 1-4 met), or go on (another interface, LOAD's H.RUNC)?
+      STEP 16 (2026-11-24; Joost: "if the sony HBD-F1 works, there must be an issue with the NMS 1200", "I wonder if
+      that XML is wrong"): the NMS 1200 boots no MSX-DOS on the VG-8020, the Goldstar FC-200 or the National CF-3000,
+      nor in a plain PRIMARY slot (a private copy of the extension XML without <secondary>, slotmap checked) --
+      scratchpad/AE_nms_dosboot.out. The other dump in systemroms (Philips_NMS1200-27C128.ROM) is the same version 6;
+      the extension's version 4 is not available. So: not the host, not the secondary slot; the v6 ROM or openMSX's
+      emulation of the cartridge. A report for openMSX, or a v4 dump / real hardware, would settle it.
 

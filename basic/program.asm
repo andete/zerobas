@@ -3293,6 +3293,15 @@ esn_scan_lp:
                 rst    $10                ; past comma
                 call    is_lref
                 jr      nz,esn_nocf
+    IF BASICINT_PINS
+; 📌 $7D2F: the word an MSX1 disk ROM reads from main ROM and CALSLTs from its H.RUNC handler -- BASIC's start-up
+; screen (STARTUP_SCREEN, basic/sysvars.inc; D-NMSHOST step 14). It sits INSIDE this loop, skipped by a 1-byte
+; `ld de,nn` whose operand it is: DE is dead on both of eon_seek_nth's exits (see esn_notlineno), and the loop's
+; nearest routine boundary ($7D18, after esn_ok's ret) would have left a 23 B pad. 3 B, no pad.
+                ds      $7D2E - $, $00
+                db      $11                 ; ld de,STARTUP_SCREEN: steps over the pinned word
+                dw      STARTUP_SCREEN      ; $7D2F
+    ENDIF
                 inc     hl
                 inc     hl
                 inc     hl                  ; skip $0E,lo,hi

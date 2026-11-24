@@ -1,0 +1,15 @@
+D-NMSHOST step 16 (2026-11-24): does the NMS 1200 boot MSX-DOS anywhere? msxdos103-cmd111.dsk, 40 s; dosref_probe.py (screen + RAM $0100 only).
+=== nms_primary_vg
+=== SCREEN 10 s
+=== SCREEN 20 s
+hits0100 0
+=== nms_on_Goldstar_FC-200
+=== SCREEN 10 s
+=== SCREEN 20 s
+hits0100 0
+=== nms_on_National_CF-3000
+=== SCREEN 10 s
+=== SCREEN 20 s
+hits0100 0
+nms_primary_vg = the VG-8020 with a private copy of Philips_NMS_1200.xml whose <secondary> slot is removed (primary slot 1, slotmap checked).
+Philips_NMS1200-27C128.ROM in systemroms: sha1 f0e0447a0872a2f09d7b28d9599fdd183acb5cb2 = the extension's version 6, the ROM already used.
