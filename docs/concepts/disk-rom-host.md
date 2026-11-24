@@ -5,12 +5,12 @@ SPDX-License-Identifier: BSD-2-Clause
 
 # Hosting a stock disk ROM — what the main BIOS and BASIC owe a disk interface cartridge
 
-> **Status (2026-11-24, D-NMSHOST):** measured with the Philips NMS 1200 disk cartridge on the Philips VG-8020 (the
-> reference) and on zerobas without its own disk ROM (`C-BIOS_MSX1_EU_REPACK_NODISK`). Three contract items found and
-> met: the NMS 1200's INIT now ends on zerobas byte-identical to the reference, and with drive A empty both show the
-> disk ROM's start-up date prompt. Not yet: what follows the prompt (Disk BASIC, which calls MS-BASIC internals) and
-> an MSX-DOS boot (no reference boot found yet -- see Open). This page is the checklist C-BIOS will need once disk
-> facilities are ported to it.
+> **Status (2026-11-24, D-NMSHOST):** measured with the Philips NMS 1200 and Sony HBD-F1 disk cartridges on the
+> Philips VG-8020 (the reference) and on zerobas without its own disk ROM (`C-BIOS_MSX1_EU_REPACK_NODISK`). Items 1-3
+> met: the NMS 1200's INIT ends on zerobas byte-identical to the reference, and with the HBD-F1 zerobas boots
+> MSX-DOS 1.03 to COMMAND.COM's date prompt as the VG-8020 does. Item 4 (the screen DOS starts on) found, not met.
+> Not covered: what follows the NMS 1200's date prompt (Disk BASIC, which calls MS-BASIC internals). This page is the
+> checklist C-BIOS will need once disk facilities are ported to it.
 
 A disk interface on an MSX1 is a cartridge with its own ROM. At power-on the main BIOS finds it, calls its INIT, and
 from then on the disk ROM lives inside BASIC's memory and hooks. It was written against MS-BASIC, so it assumes
@@ -75,6 +75,33 @@ zerobas before and after; [hrunc_when.py](../../scratchpad/hrunc_when.py)).
 
 **zerobas:** `hrunc` ([basic/files.asm](../../basic/files.asm)) from NEW, a typed line, RUN and the cold start.
 
+## 4. The main ROM word at $7D2F is a routine the disk ROM calls from H.RUNC [M] -- not met yet
+
+In its H.RUNC handler the disk ROM reads two bytes from the main ROM (slot 0) at $7D2F-$7D30 with RDSLT and CALSLTs
+the word they make. MS-BASIC keeps a routine's address there: on the reference the call sets up the text screen --
+5 ms after H.RUNC is entered the VDP is in TEXT1, SCRMOD 0, LINLEN = LINL40 (37), the screen cleared, the cursor
+home -- before the disk ROM reads the boot sector. zerobas has its own code at $7D2F (the bytes $23 $23), so the disk
+ROM calls zerobas's $2323, the middle of an unrelated routine; it happens to return, and DOS then starts on C-BIOS's
+SCREEN 1 start-up text with 29 columns.
+
+Measured with the Sony HBD-F1 (the cartridge with which the VG-8020 does boot MSX-DOS 1.03 here) and the Philips
+NMS 1200. Experiment on a patched copy of zerobas's own ROM with $006C (INITXT, the published BIOS entry) at $7D2F:
+the cartridge calls $006C, and at MSX-DOS's entry ($0100) SCRMOD, LINLEN, LINL40 / LINL32, CRTCNT, the cursor, VDP R#0
+/ R#1 / R#2 / R#4 / R#7, HIMEM and the screen text are the reference's, row for row. With the NMS 1200 the patch gives
+the reference's TEXT1 screen too. The reference's word itself is never read (it is a ROM byte); only the effect of the
+call is matched.
+
+Evidence: [AE_dosref_ifaces.out](../../scratchpad/AE_dosref_ifaces.out) (the VG-8020 boots DOS with the HBD-F1, not
+with the NMS 1200), [AE_dosref_zb.out](../../scratchpad/AE_dosref_zb.out) (zerobas boots DOS with the HBD-F1),
+[AE_dosref_state.out](../../scratchpad/AE_dosref_state.out) (the state at $0100, both),
+[AE_dosref_allhooks.out](../../scratchpad/AE_dosref_allhooks.out) (no hook between H.RUNC and the TEXT1 switch),
+[AE_dosref_zbcalls.out](../../scratchpad/AE_dosref_zbcalls.out) (the RDSLTs of $7D2F / $7D30 and the CALSLT, zerobas's
+own addresses), [AE_dosref_patch.out](../../scratchpad/AE_dosref_patch.out) and
+[AE_dosref_nms_patch.out](../../scratchpad/AE_dosref_nms_patch.out) (the patched copy);
+[dosref_probe.py](../../scratchpad/dosref_probe.py).
+
+**zerobas:** not yet -- a fixed word at $7D2F changes the layout of main page 1 (zerobas BASIC's code is there).
+
 ## What the disk ROM writes
 
 Every RAM address the NMS 1200 writes on the reference from power-on, with the first write's time:
@@ -88,10 +115,11 @@ ROM's.
 
 - The date format of the start-up prompt: D-M-Y on zerobas, M-D-Y on the reference -- the disk ROM reads it from the
   main ROM's published machine-ID information.
-- The screen: the reference clears it before the prompt; zerobas does not (the prompt comes from the cold start's
-  H.RUNC, before zerobas's banner code clears the screen).
+- The screen: the reference clears it before the prompt; zerobas does not -- item 4 (the $7D2F routine).
 - After the date: the reference enters Disk BASIC (MS-BASIC internals) -- out of scope for a host without MS-BASIC.
-- MSX-DOS: on the VG-8020 + NMS 1200 in openMSX three DOS disks run their boot sector ($C01E) and never reach DOS
-  ($0100); no reference DOS boot to match yet.
+- MSX-DOS: the VG-8020 + NMS 1200 in openMSX runs the boot sector ($C01E) of three DOS disks and never reaches DOS
+  ($0100). With the Sony HBD-F1 the VG-8020 boots MSX-DOS 1.03 to COMMAND.COM's date prompt, and so does zerobas
+  without its disk ROM (2026-11-24) -- apart from the screen (item 4).
 - H.RUNC on LOAD: unmeasured (zerobas calls it through NEW's code on LOAD's ASCII path).
-- Other disk interfaces (Sony HBD-F1, Panasonic FS-FD1A): not measured; the items may be NMS 1200-specific.
+- Other disk interfaces: the Sony HBD-F1 measured (items 1-4 hold); the Panasonic FS-FD1A does not start in this
+  openMSX (no ROM).

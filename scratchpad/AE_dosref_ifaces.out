@@ -1,0 +1,26 @@
+### Philips_VG_8020 + Sony_HBD-F1, disk msxdos103-cmd111.dsk (737280 B), 40 s
+=== SCREEN 10 s
+HIT0100 10.968 page0=3 X
+HIT0100 11.637 page0=3 X
+=== SCREEN 20 s
+  |  MSX-DOS version 1.03                  
+  |  Copyright 1984 by Microsoft           
+  |  COMMAND version 1.11                  
+  |  Current date is Sun  1-01-1984        
+  |  Enter new date:                       
+=== SCREEN 40 s
+  |  MSX-DOS version 1.03                  
+  |  Copyright 1984 by Microsoft           
+  |  COMMAND version 1.11                  
+  |  Current date is Sun  1-01-1984        
+  |  Enter new date:                       
+hits0100 2
+
+### Philips_VG_8020 + Philips_NMS_1200, disk msxdos103-cmd111.dsk (737280 B), 40 s
+=== SCREEN 10 s
+=== SCREEN 20 s
+=== SCREEN 40 s
+hits0100 0
+
+### Philips_VG_8020 + Panasonic_FS-FD1A, disk msxdos103-cmd111.dsk (737280 B), 40 s
+<NO LOG>

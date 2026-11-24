@@ -134,3 +134,24 @@
       screen. So the disk ROM's H.RUNC handler takes another branch on zerobas -- on some state MS-BASIC has set by its
       cold start -- and MS-BASIC sets up the text screen right after H.RUNC, zerobas after its banner logic. Cosmetic;
       left open, tied to the Disk BASIC side.
+      ⚠️ STEP 11's reading is CORRECTED by step 12: the "branch" is a CALSLT into zerobas's ROM at the word the
+      cartridge reads from main ROM $7D2F -- not a missing screen call by MS-BASIC after H.RUNC.
+      STEP 12 (2026-11-24) -- A REFERENCE DOS BOOT, AND HOST CONTRACT ITEM 4 (scratchpad/dosref_probe.py, black box:
+      the screen, RAM $0100 as a breakpoint, hook-address entries, published cells, VDP registers; zerobas's OWN PC values
+      only). The VG-8020 + Sony HBD-F1 boots MSX-DOS 1.03 (msxdos103-cmd111.dsk) to COMMAND.COM's "Enter new date:";
+      with the NMS 1200 the same machine and disk never reach $0100 (AE_dosref_ifaces.out) -- the reference problem is
+      the NMS 1200 in this openMSX, not the VG-8020. zerobas NODISK + HBD-F1 BOOTS MSX-DOS 1.03 too (AE_dosref_zb.out),
+      HIMEM $DF94 as on the reference; one difference: the screen. At $0100 the reference is in TEXT1 (SCRMOD 0, LINLEN
+      37, R#1 $F0, R#7 $F4, cleared, cursor 1,1), zerobas in C-BIOS's SCREEN 1 start-up text (LINLEN 29)
+      (AE_dosref_state.out). On the reference the switch comes 5 ms after H.RUNC is entered with no hook in between
+      (AE_dosref_allhooks.out). On zerobas, in that window, the cartridge RDSLTs main ROM $7D2F and $7D30 and CALSLTs
+      the word, $2323 -- the middle of zerobas BASIC's esn_scan code (AE_dosref_zbcalls.out). A patched COPY of
+      zerobas's own ROM with $006C (INITXT) at $7D2F: the cartridge calls $006C and every field at $0100 matches the
+      reference (AE_dosref_patch.out); the NMS 1200 then also gives the reference's blank TEXT1 screen
+      (AE_dosref_nms_patch.out). HOST CONTRACT ITEM 4 (docs/concepts/disk-rom-host.md): the main ROM word at $7D2F is
+      a routine an MSX1 disk ROM calls from H.RUNC; on the reference its effect is the text screen. The CF-3300's stock
+      disk ROM reads the same two bytes (docs/TODO-done.md, 2026-10-02 trail).
+      ⛔ FOR JOOST (page-1 layout): pin a 2-byte word at $7D2F in main page 1 (today zerobas BASIC code) pointing to
+      INITXT ($006C) or to a zerobas routine with the same effect? Without it any MSX1 disk cartridge calls into the
+      middle of zerobas's code at $2323 (it survives today by luck).
+      Also open, a C-BIOS question: the date format byte (C-BIOS EU = D-M-Y; the VG-8020's disk prompt reads M-D-Y).

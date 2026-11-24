@@ -1,0 +1,38 @@
+### Philips_VG_8020 + Sony_HBD-F1, disk msxdos103-cmd111.dsk (737280 B), 12 s
+=== SCREEN 10 s
+HIT0100 10.968 page0=3 X SCRMOD=0 OLDSCR=0 LINL40=37 LINL32=29 LINLEN=37 CRTCNT=24 CSRY=1 CSRX=1 R0=0 R1=240 R2=0 R4=1 R7=244 HIMEM=57236 CNSDFG=0
+HIT0100 11.637 page0=3 X SCRMOD=0 OLDSCR=0 LINL40=37 LINL32=29 LINLEN=37 CRTCNT=24 CSRY=4 CSRX=1 R0=0 R1=240 R2=0 R4=1 R7=244 HIMEM=57236 CNSDFG=0
+=== SCREEN 12 s
+  |  MSX-DOS version 1.03                  
+  |  Copyright 1984 by Microsoft           
+  |  COMMAND version 1.11                  
+hits0100 2
+
+### C-BIOS_MSX1_EU_REPACK_NODISK + Sony_HBD-F1, disk msxdos103-cmd111.dsk (737280 B), 12 s
+HIT0100 8.469 page0=3 0 SCRMOD=1 OLDSCR=1 LINL40=37 LINL32=29 LINLEN=29 CRTCNT=24 CSRY=10 CSRX=1 R0=0 R1=224 R2=6 R4=0 R7=4 HIMEM=57236 CNSDFG=0
+HIT0100 9.139 page0=3 0 SCRMOD=1 OLDSCR=1 LINL40=37 LINL32=29 LINLEN=29 CRTCNT=24 CSRY=13 CSRX=1 R0=0 R1=224 R2=6 R4=0 R7=4 HIMEM=57236 CNSDFG=0
+=== SCREEN 10 s
+  |  C-BIOS 0.32   cbios.github.io 
+  |  Character set: US             
+  |  Interrupt frequency: 50Hz     
+  |  Keyboard type: US             
+  |  Init ROM in slot: 0           
+  |  MSX-DOS version 1.03          
+  |  Copyright 1984 by Microsoft   
+  |  COMMAND version 1.11          
+  |  Current date is Sun  1-01-198 
+  |  4                             
+=== SCREEN 12 s
+  |  C-BIOS 0.32   cbios.github.io 
+  |  Character set: US             
+  |  Interrupt frequency: 50Hz     
+  |  Keyboard type: US             
+  |  Init ROM in slot: 0           
+  |  MSX-DOS version 1.03          
+  |  Copyright 1984 by Microsoft   
+  |  COMMAND version 1.11          
+  |  Current date is Sun  1-01-198 
+  |  4                             
+  |  Enter new date:               
+hits0100 2
+
