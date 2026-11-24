@@ -209,7 +209,7 @@ init:
                 ld      sp,hl
                 call    init_ext_roms       ; run the boot-scan INITs C-BIOS skips
                 call    hrunc               ; D-NMSHOST: the cold start's H.RUNC, after the scan as on the VG-8020
-                ; a disk ROM that lowered HIMEM rebuilt the layout through H.RUNC (the NMS 1200), or did not (ours):
+                ; a disk ROM that lowered HIMEM rebuilt the layout through H.RUNC (the NMS 1200; ours since D-DISKROMHOST 2b), or did not:
                 ; STKTOP not below HIMEM any more -> rebuild it here. Either way the rest of the start-up runs on a
                 ; stack below what the disk ROM now owns (repl re-bases SP into the pool after that).
                 ld      hl,(STKTOP)

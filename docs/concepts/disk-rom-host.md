@@ -52,7 +52,7 @@ end-of-run read.
 
 **zerobas:** `layout_from_himem` ([basic/files.asm](../../basic/files.asm)) fills the cells by the rule; `init`
 ([basic/interp.asm](../../basic/interp.asm)) calls it and moves SP to STKTOP before the scan, and after the scan
-rebuilds them when HIMEM moved without the disk ROM doing so (zerobas's own disk ROM lowers HIMEM without H.RUNC).
+rebuilds them when HIMEM moved without the disk ROM doing so (zerobas's own disk ROM did that until D-DISKROMHOST step 2b; it now rebuilds them itself at each of its two claim steps, item 3).
 
 ## 3. BASIC calls H.RUNC ($FECB) [M]
 
@@ -82,6 +82,25 @@ back to five RETs, which is how the CF-3300 and the VG-8020 + HBD-F1 leave it, s
 RUN) find a RET. As a cartridge in the VG-8020 it boots MSX-DOS 1.03 to COMMAND.COM's date prompt from inside the cold
 start's H.RUNC call (before the change it did so from INIT, in the boot scan):
 [AE_diskhost_vg8020.out](../../scratchpad/AE_diskhost_vg8020.out), [diskhost_probe.py](../../scratchpad/diskhost_probe.py).
+
+**The claim, in two steps (D-DISKROMHOST step 2b, 2026-11-24) [M].** Both references lower HIMEM in their INIT to a
+first value and in their H.RUNC handler to the rest, and rewrite MS-BASIC's layout (item 2's rule: MEMSIZ, STKTOP,
+SAVSTK, FILTAB with its two table words, NULBUF; FRETOP is left to BASIC's next CLEAR) under each new HIMEM:
+
+| | INIT | at H.RUNC entry (SP) | after H.RUNC | at MSX-DOS's entry | BASIC after the date prompt |
+|---|---|---|---|---|---|
+| National CF-3300 | $F1BF, then $F195 | $F195 ($EEAF) | $DF93 (5 steps) | $DF93 | $DE77, FRE(0) 23430 |
+| VG-8020 + Sony HBD-F1 | $F1C0, then $F196 | $F196 ($EEB0) | $DF94 (5 steps) | $DF94 | $DE78, FRE(0) 23431 |
+| VG-8020 + zerobas, before | $DE77, no rebuild | $DE77 ($F09A) | -- | $DE77 | $DE77, FRE(0) 28815 |
+| VG-8020 + zerobas, after | $F195 + rebuild | $F195 ($F09A) | $DE77 + rebuild | $DE77 | $DE77, FRE(0) 23430 |
+
+The cartridge, not the host, moves SP: it is below the new STKTOP inside the INIT and in each H.RUNC step, and with
+our cartridge (which moves none) the VG-8020 enters H.RUNC at SP $F09A with STKTOP at $EEB5. Each reference also
+writes its work-area base ($F1BF / $F1C0) into SLTWRK for its own slot's page 1. Before its H.RUNC claim the stock
+ROM calls item 4's routine; zerobas's does too now, so MSX-DOS starts on the VG-8020 + zerobas cartridge in SCREEN 0
+with 37 columns and the VG-8020 + HBD-F1's VDP registers. On the zerobas DISK machine HIMEM, FRE(0), FRE(""),
+MEMSIZ, STKTOP and FILTAB still equal the CF-3300's ([AE_diskhost_fre.out](../../scratchpad/AE_diskhost_fre.out)).
+Evidence: [AE_diskhost2_ref.out](../../scratchpad/AE_diskhost2_ref.out), [diskhost2_ref.py](../../scratchpad/diskhost2_ref.py).
 
 ## 4. The main ROM word at $7D2F is a routine the disk ROM calls from H.RUNC [M]
 
@@ -133,6 +152,9 @@ INITXT with LINL40 = 37, a JP variant's would be INIT32. The word sits inside a 
 `tools/pin_plan.py` checks it. After it, with the HBD-F1, every recorded field at DOS's entry equals the VG-8020's
 and the screen is the same line for line; the NMS 1200's date prompt stands alone on a cleared 40-column screen, as
 on the reference ([AE_pin7d2f_after.out](../../scratchpad/AE_pin7d2f_after.out)).
+zerobas's own disk ROM calls the routine as well since D-DISKROMHOST step 2b (its H.RUNC handler: RDSLT of $7D2F /
+$7D30 in EXPTBL's slot, CALSLT there): it reads the word of whatever main ROM hosts it, so on the VG-8020 it calls
+the VG-8020's routine and on the zerobas DISK machine STARTUP_SCREEN (item 3's table).
 
 ## What the disk ROM writes
 
@@ -157,12 +179,8 @@ ROM's.
   its cartridge / ROM / emulation, not the host. The Sony HBD-F1 is the working cartridge DOS reference. With the Sony HBD-F1 the VG-8020 boots MSX-DOS 1.03 to COMMAND.COM's date prompt, and so does zerobas
   without its disk ROM (2026-11-24) -- apart from the screen (item 4).
 - H.RUNC on LOAD: unmeasured (zerobas calls it through NEW's code on LOAD's ASCII path).
-- The stock disk ROMs claim RAM in two steps: HIMEM at their H.RUNC entry is $F196 (VG-8020 + HBD-F1) / $F195
-  (CF-3300) -- the INIT's claim is the published disk work area only -- and the H.RUNC step lowers it to $DF94 / $DF93;
-  MS-BASIC's stack at that H.RUNC is below the INIT's claim (SP $EEB0 / $EEAF), so the layout was rebuilt under it.
-  zerobas's disk ROM claims all of it ($DE77) in INIT and rebuilds no layout: as a cartridge in the VG-8020 with no
-  DOS disk, BASIC keeps the layout of HIMEM $F380 (FRE(0) 28815, HIMEM $DE77), its string space and file blocks inside
-  the claim. Unchanged by D-DISKROMHOST step 2 (the same before), and not needed for the MSX-DOS boot
-  ([AE_diskhost_vg8020.out](../../scratchpad/AE_diskhost_vg8020.out)).
+- Met by zerobas's own disk ROM since D-DISKROMHOST step 2b, see "zerobas's own disk ROM" under item 3: the two-step
+  claim. Still not done there: the stock ROMs move their stack below each new STKTOP and record their work area in
+  SLTWRK; ours does neither ([AE_diskhost2_ref.out](../../scratchpad/AE_diskhost2_ref.out)).
 - Other disk interfaces: the Sony HBD-F1 measured (items 1-4 hold); the Panasonic FS-FD1A does not start in this
   openMSX (no ROM).

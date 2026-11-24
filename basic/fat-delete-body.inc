@@ -29,8 +29,7 @@
 fat_delete:
                 call    fat_mount
                 ret     c
-                ld      hl, DISK_FCB_NAME
-                call    fat_find            ; FAT_FIRSTCLUS + FWR_DIRSEC/FWR_DIROFF
+                call    ff_name            ; FAT_FIRSTCLUS + FWR_DIRSEC/FWR_DIROFF
                 ret     c                   ; not found
                 ; --- free the cluster chain from FAT_FIRSTCLUS ---
                 ld      hl, (FAT_FIRSTCLUS)
@@ -64,8 +63,7 @@ fdl_isdata:
                 ex      de, hl              ; DE = next
                 pop     hl                  ; HL = current cluster
                 push    de                  ; save next across the FAT write
-                ld      de, 0               ; free marker
-                call    fat_write_fat_entry ; FAT[current] = 0 in every FAT copy
+                call    fwfe_zero ; FAT[current] = 0 in every FAT copy  ; free marker
                 pop     hl                  ; HL = next cluster
                 jr      c, fdl_err
                 jr      fdl_free
@@ -75,8 +73,7 @@ fdl_done:
 fdl_marked:
                 ; --- mark the directory entry deleted ($E5) and write it back ---
                 ld      de, (FWR_DIRSEC)
-                ld      hl, FAT_DBUF
-                call    read_sector
+                call    rs_dbuf
                 ret     c
                 ld      hl, (FWR_DIROFF)
                 ld      de, FAT_DBUF

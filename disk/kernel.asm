@@ -248,8 +248,7 @@ fat_geom_read:
 ; rd_dbuf -- read logical sector DE into FAT_DBUF. 💰 D-DSKFMT carve 24 (2026-11-10):
 ; `ld hl,FAT_DBUF / call read_sector` stood at seven sites; this tail is the one.
 rd_dbuf:
-                ld      hl, FAT_DBUF
-                jp      read_sector
+                jp      rs_dbuf
 ; wr_sbuf -- write SECTOR_BUF to logical sector DE (carve 24: four sites).
 wr_sbuf:
                 ld      hl, SECTOR_BUF
@@ -760,8 +759,7 @@ setrnd:
 rd_fatsec:
                 ld      (FAT_FATSEC), hl
                 ex      de, hl
-                ld      hl, FAT_MBUF
-                jp      read_sector
+                jp      rs_mbuf
                 ds      $50D5 - $, $00  ; pad up to the pinned $50D5 kernel entry
 seldsk_drv:
                 jp      seldsk_drv_body ; -> free-tail: A = ($F347) drive count (M17)
@@ -2064,11 +2062,7 @@ hkc_dk:         inc     hl
                 ld      de,DISK_FCB_NAME
                 ld      b,11
 hkc_same:       ld      a,(de)              ; CASE-FOLDED (OPEN twice, 2026-10-28): the
-                call    toupper             ; names keep the typed case now, and
-                ld      c,a                 ; `COPY "a.txt" TO "A.TXT"` IS a self-copy --
-                ld      a,(hl)              ; byte-wise it would delete the source and
-                call    toupper             ; copy from its freed chain
-                cp      c
+                call    toupper_cmp
                 jr      nz,hkc_differ
                 inc     hl
                 inc     de
@@ -2178,8 +2172,7 @@ hkc_resolve:
                 ld      sp,hl               ; SP = the frame
                 ex      de,hl
                 ld      hl,COPY_SRC
-                ld      bc,11
-                ldir                        ; +0: the source pattern
+                call    ldir_11
                 ld      hl,DISK_FCB_NAME
                 ld      c,11
                 ldir                        ; +11: the destination pattern
@@ -2189,9 +2182,7 @@ hkc_resolve:
                 ld      (de),a              ; +23: nothing matched yet
 hkm_walk:       call    fat_dir_start       ; DIRSEC / DIRREM: the whole root
                 ld      c,0                 ; C = the slot index of HL's entry
-hkm_sec:        ld      hl,(FAT_DIRREM)
-                ld      a,h
-                or      l
+hkm_sec:        call    dirrem_z
                 jr      z,hkm_end           ; every root sector scanned
                 push    bc
                 ld      de,(FAT_DIRSEC)
@@ -2242,8 +2233,7 @@ hkm_hit:        ld      a,c                 ; SP = the frame again
                 ld      (hl),1              ; something matched
                 pop     hl
                 ld      de,COPY_SRC
-                ld      bc,11
-                ldir                        ; the entry's real name is the source
+                call    ldir_11
                 ld      hl,11
                 add     hl,sp
                 ld      de,DISK_FCB_NAME
@@ -2285,8 +2275,7 @@ close_read:
                 call    root_pos            ; DE = its sector, HL = its offset (carve 20)
                 push    hl
                 push    de
-                ld      hl, SECTOR_BUF
-                call    read_sector
+                call    rs_dbuf
                 pop     de
                 pop     hl
                 jr      c, cr_err
@@ -2380,8 +2369,7 @@ dout_open:
                 ld      (de), a             ; +0: the default drive
                 inc     de
                 ld      hl, DISK_FCB_NAME
-                ld      bc, 11
-                ldir                        ; +1..11: the name
+                call    ldir_11
                 ex      de, hl
                 ld      b, DOUT_DIROFF+2-12 ; +12..: zero
 dop_z:
@@ -2535,8 +2523,7 @@ df_first:
                 ret     nz                  ; not the first entry
                 inc     a
                 ld      (DISKOP_STATUS),a   ; at least one entry matched
-                ld      a,(DISKOP_OP)
-                cp      DISKOP_SEL_LFILES
+                call    op_lfiles
                 ret     z                   ; the printer keeps its own head rule
                 ld      a,(CSRX)
                 dec     a                   ; 0-based column
@@ -3076,6 +3063,20 @@ hfr_make:
                 jp      c, hfm_fail         ; first cluster and the size)
                 jp      hfm_ok              ; the entry's place, LOF, status 0
 
+; toupper_cmp -- D-DISKROMHOST step 2b: the run it replaces stood at 3 sites (fat-prim-body.inc, kernel.asm)
+toupper_cmp:
+                call    toupper             ; names keep the typed case now, and
+                ld      c,a                 ; `COPY "a.txt" TO "A.TXT"` IS a self-copy --
+                ld      a,(hl)              ; byte-wise it would delete the source and
+                call    toupper             ; copy from its freed chain
+                cp      c
+                ret
+; dirrem_z -- D-DISKROMHOST step 2b: the run it replaces stood at 5 sites (fat-prim-body.inc, kernel.asm)
+dirrem_z:
+                ld      hl,(FAT_DIRREM)
+                ld      a,h
+                or      l
+                ret
 ; hk_dget -- GET / PUT (H_DGET, $FE80). Main (basic/field.asm gp_common) has
 ; parsed `#n` and raised 5 / 59 / 52 / 58 / 61 itself, so the channel is OPEN
 ; and RANDOM.
@@ -4018,8 +4019,7 @@ frnd_update_size:
 ; rnd_rd -- FAT_MBUF := sector GP_PHYS. CF = the read failed.
 rnd_rd:
                 ld      de, (GP_PHYS)
-                ld      hl, FAT_MBUF
-                jp      read_sector
+                jp      rs_mbuf
 
 ; rnd_step -- the next pass of a straddling record: Z = the record is done; else
 ; GP_WITHIN := 0, GP_SEC += 1, NZ. CF = 0 either way.
@@ -4207,8 +4207,7 @@ wrblk_body:
                 jp      c, wrblk_ioerr
                 ; reseed our own DTA cell (M19 lesson: the kernel's real SETDTA only
                 ; ever touches DOS_DTAPTR, never BDOS_DTA).
-                ld      hl, (DOS_DTAPTR)
-                ld      (BDOS_DTA), hl
+                call    dta_from_dos
                 ; resolve RS := copy+14..15, 0 -> 128 (RECSIZE)
                 ld      a, (ix+14)
                 ld      e, a
@@ -4245,7 +4244,23 @@ wrblk_rs_ok:
                 ; fewer sector writes. Nothing here touches WBUF before the loop
                 ; (wrblk_off24's note).
                 ld      de, (WRBLK_RS)
-                call    wrblk_mul16         ; HL = (HL * RS) & $FFFF
+                ; (wrblk_mul16, its only call, inline since D-DISKROMHOST step 2b: 4 B)  ; HL = (HL * RS) & $FFFF
+; wrblk_mul16 -- HL := (HL * DE) & $FFFF, MSB-first shift-and-add. D-WRBLKRS: the
+; byte budget, WRBLK's documented `(HL*RS) & $FFFF`. Trashes A, BC, DE.
+                ld      b, h
+                ld      c, l                ; BC = the multiplicand
+                ld      hl, 0
+                ld      a, 16
+wm16_lp:
+                add     hl, hl
+                ex      de, hl
+                add     hl, hl              ; DE <<= 1, CY = its old MSB
+                ex      de, hl
+                jr      nc, wm16_no
+                add     hl, bc
+wm16_no:
+                dec     a
+                jr      nz, wm16_lp
                 ld      (WRBLK_CNT), hl
                 call    wrblk_off24         ; WRBLK_REC := (RR * RS) & $FFFFFF
                 xor     a
@@ -4484,9 +4499,7 @@ wroe_incluster:
                 sbc     hl, de
                 jr      c, wroe_need_extend ; cluster < 2 (free / empty file)
                 ld      hl, (FAT_CURCLUS)
-                ld      de, $0FF8
-                or      a
-                sbc     hl, de
+                call    hl_cmp_eoc
                 jr      nc, wroe_need_extend ; cluster >= $0FF8 = end-of-chain
                 jr      wroe_have_valid
 wroe_need_extend:
@@ -4560,24 +4573,6 @@ wmr_bit:
 wmr_next:
                 add     a, a                ; the next bit
                 jr      nz, wmr_bit
-                ret
-; wrblk_mul16 -- HL := (HL * DE) & $FFFF, MSB-first shift-and-add. D-WRBLKRS: the
-; byte budget, WRBLK's documented `(HL*RS) & $FFFF`. Trashes A, BC, DE.
-wrblk_mul16:
-                ld      b, h
-                ld      c, l                ; BC = the multiplicand
-                ld      hl, 0
-                ld      a, 16
-wm16_lp:
-                add     hl, hl
-                ex      de, hl
-                add     hl, hl              ; DE <<= 1, CY = its old MSB
-                ex      de, hl
-                jr      nc, wm16_no
-                add     hl, bc
-wm16_no:
-                dec     a
-                jr      nz, wm16_lp
                 ret
 ; wrzer_body -- BDOS $28 WRZER (D-WRZER, 2026-11-09): WRRND, and the records an
 ; EXTENSION adds read zero. Measured on the CF-3300 (probes/disk/wrzer.asm,
@@ -4739,8 +4734,7 @@ fw_q1:
                 ex      de, hl
                 ld      hl, 4
                 add     hl, sp
-                ld      bc, 11
-                ldir                        ; the new name into the entry
+                call    ldir_11
                 ld      de, (FAT_DIRSEC)
                 ld      hl, FAT_DBUF
                 call    write_sector
@@ -4884,9 +4878,7 @@ wshrink_walk:
                 ld      (WRBLK_KEEPCNT), de
                 call    fat_next_cluster
                 push    hl
-                ld      de, $0FF8
-                or      a
-                sbc     hl, de
+                call    hl_cmp_eoc
                 pop     hl
                 jr      nc, wshrink_atlast  ; chain shorter than expected -- stop defensively
                 jr      wshrink_walk
@@ -4912,17 +4904,14 @@ wshrink_freeloop:
                 or      l
                 jr      z, wshrink_freedone ; HL == 0 -> nothing to free
                 push    hl
-                ld      de, $0FF8
-                or      a
-                sbc     hl, de
+                call    hl_cmp_eoc
                 pop     hl
                 jr      nc, wshrink_freedone ; HL >= $0FF8 (EOC) -> nothing more to free
                 push    hl                  ; HL = cluster to free
                 call    fat_next_cluster    ; HL := its current link
                 ld      (WRBLK_NEXTCLUS), hl
                 pop     hl                  ; HL = the cluster to free (restored)
-                ld      de, 0
-                call    fat_write_fat_entry ; mark it free ($000)
+                call    fwfe_zero ; mark it free ($000)
                 jr      c, wshrink_ioerr
                 ld      hl, (WRBLK_NEXTCLUS)
                 jr      wshrink_freeloop
@@ -4962,8 +4951,7 @@ k47b2_body:
                 ; (M19 lesson: the kernel's real SETDTA only ever touches
                 ; DOS_DTAPTR, never our own mini-BDOS's BDOS_DTA cell -- do NOT
                 ; trust BDOS_DTA itself here, see k_47B2's original M21b note.)
-                ld      hl, (DOS_DTAPTR)
-                ld      (BDOS_DTA), hl
+                call    dta_from_dos
                 ld      (RDBLK_DST), hl
                 ; --- steps 6+7: POSITION FROM THE FCB (D-RDBLKSEEK, 2026-10-01) ------
                 ; 🔴 This was: re-mount (the boot sector), re-find (the root directory)
@@ -5010,11 +4998,8 @@ k47b2_xfer_byteloop:
                 jr      z, k47b2_xfer_recdone       ; whole record copied -> next record
                 call    k47b2_nextbyte      ; A = next byte / Cy=1 EOF-or-chain-end
                 jr      c, k47b2_xfer_eofcheck
-                call    dta_put             ; D-P1DOS: a page-1 DTA under MSX-DOS too
+                call    dta_put_cnt
                                             ; (scratchpad/p1dta_run.out)
-                ld      hl, (RDBLK_CNT)
-                dec     hl
-                ld      (RDBLK_CNT), hl
                 jr      k47b2_xfer_byteloop
 k47b2_xfer_eofcheck:
                 ; EOF (or chain-end, treated the same). Partial record (RDBLK_CNT <
@@ -5038,10 +5023,7 @@ k47b2_xfer_padloop:
                 ; R-BK-RDBLK, R-BK-ROUND2, R-BK-FOPENRS; XK4 9: 3 asked over 50 bytes, HL 1, A 1).
                 jr      z, k47b2_xfer_recdone
                 xor     a
-                call    dta_put             ; D-P1DOS: the zero pad goes the same way
-                ld      hl, (RDBLK_CNT)
-                dec     hl
-                ld      (RDBLK_CNT), hl
+                call    dta_put_cnt
                 jr      k47b2_xfer_padloop
 k47b2_xfer_recdone:
                 ld      hl, (RDBLK_DONE)
@@ -5722,45 +5704,21 @@ dsb_dos:
 ; may re-read the FAT through FWBUF -- exactly as the reference's raw buffer is
 ; volatile across directory work.
 install_basic_hooks:
-                ; 🏗️ D-FCBSHAPE S2 (2026-09-30): RESERVE THE DISK-ENGINE TABLE under
-                ; HIMEM, as the CF-3300's disk ROM lowers HIMEM over its own work
-                ; area at boot ($DE77 there -- scratchpad/clearmax_run.out). Main's
-                ; boot keeps a HIMEM already below TXTMAX, and every reader takes
-                ; min(HIMEM, TXTMAX), so the string pool, the channels and the
-                ; stack all sit under it from the first prompt.
-                ; 💰 D-ENGROW0 (2026-09-30): the table is indexed by channel number and
-                ; channels are 1..FCH_CEIL, so its row 0 is never touched -- reserve
-                ; rows 1..FCH_CEIL only. The base (DSK_ENGTAB) stays where it is, one
-                ; unreserved row below HIMEM, and the disk machine's boot FRE(0) is
-                ; 50 B higher (scratchpad/engrow0_run.out).
-                ; 🎯 D-DISKHIMEM (2026-10-19): HIMEM IS THE CF-3300'S $DE77, NOT A
-                ; FUNCTION OF TXTMAX. This was TXTMAX-FCH_CEIL*FCH_STATESZ, and when
-                ; D-WSZERO raised TXTMAX ($E000 -> $E36A) the disk machine's boot HIMEM
-                ; rose with it to $E07C: 517 B MORE free RAM than the CF-3300 in every
-                ; shape (scratchpad/diskfre_probe.py -> diskfre_run.out: boot, MAXFILES
-                ; 0 / 2, CLEAR 200, HIMEM). Joost's RAM priorities (2026-10-16): 2. the
-                ; disk machine has the SAME free RAM, 4. the same addresses -- $DE77
-                ; serves both. The engine table rows stay above it (asserted below);
-                ; the RAM between is reserved, as the reference's disk work area is.
-                ; D-BOOTKEYS CTRL RAM (Joost 2026-10-27: "Ctrl boot should behave same
-                ; as ref"): CTRL held at power-on is the CF-3300's one-drive boot, and
-                ; its HIMEM is $E48D -- a smaller work area, 1558 B more free RAM
-                ; (scratchpad/bootkeys_run.out). Read here, not from DRVCNT: set_ramad
-                ; seeds that cell AFTER this runs, and its region has no room.
-                ld      a, 6
-                call    $0141               ; SNSMAT row 6, bit 1 low = CTRL held
-                and     $02
-                ld      hl, DISK_HIMEM
-                jr      nz, ibh_him
-                ld      hl, CTRL_HIMEM
-ibh_him:
-                ld      (HIMEM), hl
-    IF DISK_HIMEM > TXTMAX-FCH_CEIL*FCH_STATESZ
-                db      DISK_HIMEM_ABOVE_THE_ENGINE_TABLE   ; rows 1..FCH_CEIL must stay reserved
-    ENDIF
-    IF CTRL_HIMEM > TXTMAX-FCH_CEIL*FCH_STATESZ
-                db      CTRL_HIMEM_ABOVE_THE_ENGINE_TABLE   ; the CTRL boot's too (disk/init.asm)
-    ENDIF
+                ; 🏗️ D-DISKROMHOST step 2b (2026-11-24, Joost: "do the two-step claim NOW, matching
+                ; the reference cartridges"): THE CLAIM IS IN TWO STEPS, AS THE STOCK DISK ROMS
+                ; MAKE IT, AND EACH STEP REBUILDS MS-BASIC'S LAYOUT UNDER THE NEW HIMEM
+                ; (layout_rebuild below). Measured black box (scratchpad/diskhost2_ref.py ->
+                ; AE_diskhost2_ref.out): the CF-3300's INIT lowers HIMEM $F380 -> $F195 (the
+                ; VG-8020 + HBD-F1's $F196), its H.RUNC handler to $DF93 (/ $DF94), and both
+                ; rewrite MEMSIZ / STKTOP / SAVSTK / FILTAB + its table / NULBUF by MS-BASIC's
+                ; rule at each step. This INIT step reserves our cells from INIT_HIMEM up
+                ; (DRVA_DPB $F195 is the lowest); hrunc_h makes the second, to the
+                ; CF-3300's $DE77 (D-DISKHIMEM; CTRL held: $E48D, D-BOOTKEYS), which keeps
+                ; the engine table rows 1..FCH_CEIL reserved (D-FCBSHAPE S2 / D-ENGROW0;
+                ; asserted there). Before: ONE step to $DE77 here and no rebuild, so an
+                ; MS-BASIC host kept the layout of HIMEM $F380 inside the claim.
+                ld      hl, INIT_HIMEM
+                call    layout_rebuild
                 ld      hl, FWBUF           ; D-DSKIO: publish the DSKI$/DSKO$ buffer at the
                 ld      (DSKBUF_PTR), hl    ; cell the MSX idiom PEEKs (docs/spec-basic-dskio.md)
                 xor     a                   ; D-DISKVE: no disk-error handler under BASIC --
@@ -5903,11 +5861,120 @@ hook_tab:
 ; INIT, which claims the hook again, and phase 2 then runs once more, as it ran in
 ; INIT before. Here in the corridor because the INIT region has 1 B left; it took
 ; fat_bufinit's 13 B, whose body is inline in init_p2 now (disk/init.asm).
+; 🏗️ STEP 2b (2026-11-24): before phase 2 it calls the main ROM's start-up-screen routine
+; and makes the second HIMEM claim, as the stock cartridges do in their H.RUNC handler.
 hrunc_h:
                 ld      hl, $C9C9           ; $FECB..$FECE; $FECF is the stub's own RET:
                 ld      (H_RUNC), hl        ; all five RET, as the CF-3300 and the
                 ld      (H_RUNC + 2), hl    ; VG-8020 + HBD-F1 leave the hook after it
-                jp      init_p2             ; (scratchpad/AE_diskhost_*.out, H.RUNC-all-RET)
+                                            ; (scratchpad/AE_diskhost_*.out, H.RUNC-all-RET)
+                ; --- host contract item 4: the routine whose address the HOST's main ROM keeps
+                ; at $7D2F (docs/concepts/disk-rom-host.md): read the word with RDSLT from the
+                ; main ROM's slot (EXPTBL) and CALSLT it there, as the HBD-F1 / NMS 1200 do
+                ; (scratchpad/AE_dosref_zbcalls.out). It sets up the machine's start-up screen
+                ; -- TEXT1 37 columns on the VG-8020 and on zerobas EU (STARTUP_SCREEN = INITXT,
+                ; basic/program.asm), SCREEN 1 on the Japanese machines -- before MSX-DOS starts.
+                ; Our code reads a byte of whatever main ROM hosts it; RDSLT keeps HL and IX.
+                ld      hl, STARTUP_WORD + 1
+                call    hr_rdmain           ; A = the high byte
+                ld      ixh, a
+                dec     hl
+                call    hr_rdmain           ; A = the low byte
+                ld      ixl, a
+                call    calbak              ; CALSLT in the main ROM's slot (disk/driver.asm)
+                ; --- the second claim: the CF-3300's $DE77; CTRL held at power-on, its one-drive
+                ; $E48D (D-BOOTKEYS; read here since step 2b, it was INIT's -- the key is still
+                ; down: the scan and this call are a few ms apart)
+                ld      a, 6
+                call    $0141               ; SNSMAT row 6, bit 1 low = CTRL held
+                and     $02
+                ld      hl, DISK_HIMEM
+                jr      nz, hrh_him
+                ld      hl, CTRL_HIMEM
+hrh_him:
+    IF DISK_HIMEM > TXTMAX-FCH_CEIL*FCH_STATESZ
+                db      DISK_HIMEM_ABOVE_THE_ENGINE_TABLE   ; rows 1..FCH_CEIL must stay reserved
+    ENDIF
+    IF CTRL_HIMEM > TXTMAX-FCH_CEIL*FCH_STATESZ
+                db      CTRL_HIMEM_ABOVE_THE_ENGINE_TABLE   ; the CTRL boot's too (disk/init.asm)
+    ENDIF
+                call    layout_rebuild
+                jp      init_p2
+; fat_wclus_x15 -- D-DISKROMHOST step 2b: the run it replaces stood at 2 sites (fat-prim-body.inc)
+fat_wclus_x15:
+                ld      hl, (FWR_CLUS)
+                ld      d, h
+                ld      e, l
+                srl     d
+                rr      e                   ; DE = cluster>>1
+                add     hl, de              ; HL = byte offset within the FAT
+                ld      a, h
+                ret
+; dta_put_cnt -- D-DISKROMHOST step 2b: the run it replaces stood at 2 sites (kernel.asm)
+dta_put_cnt:
+                call    dta_put             ; D-P1DOS: a page-1 DTA under MSX-DOS too
+                ld      hl, (RDBLK_CNT)
+                dec     hl
+                ld      (RDBLK_CNT), hl
+                ret
+; hl_cmp_eoc -- D-DISKROMHOST step 2b: the run it replaces stood at 4 sites (kernel.asm)
+hl_cmp_eoc:
+                ld      de, $0FF8
+                or      a
+                sbc     hl, de
+                ret
+; op_lfiles -- D-DISKROMHOST step 2b: the run it replaces stood at 5 sites (kernel.asm)
+op_lfiles:
+                ld      a,(DISKOP_OP)
+                cp      DISKOP_SEL_LFILES
+                ret
+hr_rdmain:
+                ld      a, (EXPTBL)         ; the main ROM's slot (MSX2 TH: EXPTBL's first byte)
+                jp      RDSLT
+
+; --- layout_rebuild: HIMEM := HL, and MS-BASIC's layout under it (D-DISKROMHOST step 2b; black-box oracle) ---
+; Cells: MSX2 TH work-area map. Own code; the values below are measured, no reference byte read.
+; The rule both references follow at each claim step (scratchpad/AE_diskhost2_ref.out; the
+; same rule docs/concepts/disk-rom-host.md item 2 records at HIMEM $F380 and $DF95): the file
+; area on top -- FCB #1 at HIMEM - 265, FCB #0 at HIMEM - $212, the pointer table FILTAB =
+; FCB #0 - 4 holding the two, NULBUF = FCB #0 + 9 -- then MEMSIZ = FILTAB - 2 (= HIMEM -
+; ((MAXFILES+1)*267 + 2)), STKTOP = MEMSIZ - 200, SAVSTK = STKTOP - 2; FRETOP is left alone,
+; as the references leave it (BASIC's next CLEAR sets it). MAXFILES 1 and 200 string bytes
+; are the values at both calls (INIT and the cold start's H.RUNC). On zerobas the main ROM
+; recomputes the same cells from HIMEM at its next clear_vars (D-BOOTCELLS), so this only
+; moves an MS-BASIC host's layout out of the claim. Clobbers AF? no: BC, DE, HL.
+layout_rebuild:
+                ld      (HIMEM), hl
+                ld      de, -265
+                add     hl, de              ; FCB #1
+                push    hl
+                add     hl, de              ; FCB #0 (HIMEM - $212)
+                push    hl
+                ld      bc, 9
+                add     hl, bc
+                ld      (NULBUF), hl        ; FCB #0 + 9
+                ld      de, -13
+                add     hl, de              ; FCB #0 - 4
+                ld      (FILTAB), hl
+                pop     de                  ; the table: FCB #0, FCB #1
+                ld      (hl), e
+                inc     hl
+                ld      (hl), d
+                inc     hl
+                pop     de
+                ld      (hl), e
+                inc     hl
+                ld      (hl), d             ; HL = FILTAB + 3
+                ld      de, -5
+                add     hl, de
+                ld      (MEMSIZ), hl        ; FILTAB - 2
+                ld      de, -200
+                add     hl, de
+                ld      (STKTOP), hl
+                dec     hl
+                dec     hl
+                ld      (SAVSTK), hl
+                ret
 
 ; 🏗️ D-FATENG Option 2 (Joost, 2026-09-18): ONE FAT12 ENGINE, ONE SOURCE, TWO
 ; ROMs -- the same file sub.rom assembles. disk/fat.asm keeps only the
@@ -6345,8 +6412,7 @@ hkn_a:
                 jr      c,hkn_io            ; no disk / bad BPB
                 call    hkk_open_check      ; CF=1: the OLD name is open
                 jr      c,hkn_open
-                ld      hl,DISK_FCB_NAME
-                call    fat_find            ; locate the OLD file: FWR_DIRSEC / DIROFF
+                call    ff_name            ; locate the OLD file: FWR_DIRSEC / DIROFF
                 jr      c,hkn_nf
                 ld      hl,(FN_RESUME)
                 call    fname_ev            ; NEW name -> STRSCR, FN_RESUME moved
@@ -6464,8 +6530,7 @@ hk_copy:
                                             ; RAISE (ERR 13) and NOT return -- see the ABI
                 ld      hl,DISK_FCB_NAME    ; stash the SOURCE, LOCAL now
                 ld      de,COPY_SRC         ; a main sysvar owned by COPY alone,
-                ld      bc,11               ; published by the generated ABI
-                ldir                        ; -> COPY_SRC, freeing the 8.3 buffer
+                call    ldir_11
                 ld      hl,(FN_RESUME)      ; the ldir clobbered HL
                 call    skip_sp             ; skip blanks before `TO` (carve 34)
 hkc_to:
@@ -6595,8 +6660,7 @@ auto_find:
                 ld      hl,hka_name
                 ld      de,DISK_FCB_NAME
                 push    de
-                ld      bc,11
-                ldir                        ; DISK_FCB_NAME = "AUTOEXECBAS"
+                call    ldir_11
                 pop     hl
                 jr      hk_srcfind
 ; The upcased 11-byte 8.3 dirent name, no padding needed: "AUTOEXEC" (8) + "BAS"
@@ -6700,9 +6764,7 @@ hkf_body:
                 jr      c,hkf_io
                 call    fat_dir_start       ; DIRSEC / DIRREM: the whole root
 df_secloop:
-                ld      hl,(FAT_DIRREM)
-                ld      a,h
-                or      l
+                call    dirrem_z
                 jr      z,df_end            ; scanned every root sector
                 ld      de,(FAT_DIRSEC)
                 call    rd_dbuf         ; LOCAL primitive body
@@ -6749,8 +6811,7 @@ df_end:
                 ; emitted -- on a no-match both machines print `File not found`,
                 ; send nothing, and leave the head parked for R-LP16 to flush.
                 ; Zeroing unconditionally fixes one arm and breaks the other.
-                ld      a,(DISKOP_OP)
-                cp      DISKOP_SEL_LFILES
+                call    op_lfiles
                 ret     nz                  ; SCREEN: leave the cursor put
                 ld      a,(DISKOP_STATUS)
                 dec     a                   ; 1 = at least one entry emitted
@@ -6770,8 +6831,7 @@ hkf_io:
 ; CSRX and LINLEN, the SCREEN cursor and the SCREEN width, so on the printer it
 ; would be reading an unrelated device.
 df_emit:
-                ld      a,(DISKOP_OP)
-                cp      DISKOP_SEL_LFILES
+                call    op_lfiles
                 jr      z,de_field
                 ld      a,(CSRX)
                 dec     a                   ; 0-based column (0 = line start)
@@ -6827,8 +6887,7 @@ de_ext:
                 ; BOTH sinks; only the CR/LF after it stays printer-only.
                 ld      a,' '
                 call    df_out
-                ld      a,(DISKOP_OP)
-                cp      DISKOP_SEL_LFILES
+                call    op_lfiles
                 jr      z,df_crlf           ; the printer: CR/LF after every entry
                 ; ✅ D-FILESNL (2026-10-09): THE SCREEN FORM ENDS A FULL ROW AT
                 ; ONCE. After a row with no room for another field (3 at WIDTH
@@ -6868,8 +6927,7 @@ df_out:
                 push    de
                 push    bc
                 ld      c,a                 ; C survives the DISKOP_OP load
-                ld      a,(DISKOP_OP)
-                cp      DISKOP_SEL_LFILES
+                call    op_lfiles
                 ld      a,c
                 jr      z,dfo_lpt
                 call    CHPUT
@@ -7028,8 +7086,7 @@ rh_flush:
                 ex      de, hl              ; DE = the held sector
                 ld      hl, 0
                 ld      (RND_HSEC), hl
-                ld      hl, FAT_MBUF
-                call    fatprim_write_sector
+                call    fws_mbuf
                 pop     de
                 pop     bc
                 ret
@@ -7487,8 +7544,7 @@ cr_chkdir:
                 ld      a, (hl)             ; the root index
                 call    root_pos            ; DE = its sector, HL = its offset
                 push    hl
-                ld      hl, SECTOR_BUF
-                call    read_sector
+                call    rs_dbuf
                 pop     hl
                 pop     de
                 ret     c
@@ -7940,8 +7996,7 @@ frg_eofchk:
 ; path, for every record (D-RRND256: it stopped at 255). Also seeds BDOS_DTA, as
 ; wrseq_rd did inline.
 srd_pos:
-                ld      hl, (DOS_DTAPTR)
-                ld      (BDOS_DTA), hl
+                call    dta_from_dos
                 ld      a, (ix+12)          ; EX
                 ld      h, a
                 ld      a, (ix+32)          ; CR (0..127: bit 7 clear)
@@ -8501,13 +8556,10 @@ dsm_shr2:
                 jp      c, ds_none          ; (defensive) offset beyond root
                 ld      (FAT_DIRREM), hl
 dsm_secloop:
-                ld      hl, (FAT_DIRREM)
-                ld      a, h
-                or      l
+                call    dirrem_z
                 jp      z, ds_none          ; scanned every remaining root sector
                 ld      de, (FAT_DIRSEC)
-                ld      hl, SECTOR_BUF
-                call    read_sector
+                call    rs_dbuf
                 jp      c, ds_none          ; FDC error -> exhausted (no entry)
                 ; start entry-in-sector = BDOS_SRCHIDX & 15
                 ld      a, (BDOS_SRCHIDX)
@@ -8593,8 +8645,7 @@ dsm_found:
                 inc     de                  ; DE = DTA+1
                 ; DTA[1..11] = entry[0..10] (name)
                 push    hl                  ; keep entry base
-                ld      bc, 11
-                ldir                        ; -> DTA[1..11]; HL=entry+11, DE=DTA+12
+                call    ldir_11
                 ; DTA[12] stays 0; DTA[13] = entry[11] (attr)
                 inc     de                  ; DE = DTA+13
                 ld      a, (hl)             ; entry[11] = attribute
@@ -8638,11 +8689,7 @@ ncw_loop:
                 cp      $3F                 ; '?' pattern byte matches anything
                 jr      z, ncw_next
                 ld      a, (de)
-                call    toupper
-                ld      c, a
-                ld      a, (hl)
-                call    toupper
-                cp      c
+                call    toupper_cmp
                 ret     nz                  ; mismatch -> Z clear
 ncw_next:
                 inc     hl                  ; 16-bit inc: leaves flags intact
@@ -8885,13 +8932,10 @@ fdel_free_loop:
                 push    hl                  ; stack: [cur cluster]
                 call    fat_next_cluster    ; HL := next link (cur was consumed as input)
                 ex      (sp), hl            ; stack: [next]; HL := cur
-                ld      de, 0               ; free = $000 (Microsoft FAT spec sec 3.2)
-                call    fat_write_fat_entry ; zero cur's entry in every on-disk FAT copy
+                call    fwfe_zero ; zero cur's entry in every on-disk FAT copy  ; free = $000 (Microsoft FAT spec sec 3.2)
                 jr      c, fdel_chain_ioerr
                 pop     hl                  ; HL := next
-                ld      de, $0FF8           ; >= $0FF8 = end-of-chain (fat_next_cluster's own convention)
-                or      a
-                sbc     hl, de
+                call    hl_cmp_eoc
                 jr      nc, fdel_relocate   ; next >= $0FF8 -> chain fully freed
                 add     hl, de              ; HL := next again (undo the probe subtraction)
                 jr      fdel_free_loop
@@ -9015,8 +9059,7 @@ rrnd_pos_hl:                                ; srd_pos: HL = the record
                 ; the size and clusters, from the whole RR, looked right. Held on the stack
                 ; across mount / find / open (all clobber the registers).
                 push    hl                  ; [rec]
-                ld      hl, (DOS_DTAPTR)
-                ld      (BDOS_DTA), hl      ; reseed our own DTA cell (M19 lesson:
+                call    dta_from_dos
                                             ; the kernel's real SETDTA only ever
                                             ; touches DOS_DTAPTR, never BDOS_DTA)
                 ; 🔴 D-RDRNDMULTI (2026-10-01): find THIS FCB's file first. fat_open

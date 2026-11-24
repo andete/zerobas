@@ -191,7 +191,18 @@ PROCNM          equ     $FD89   ; PUBLISHED: a CALL statement's name, 0-terminat
 STREND          equ     $F6C6   ; PUBLISHED: the arrays' end -- CALL FORMAT's work area starts here (D-DSKFMT)
 FRETOP          equ     $F69B   ; the string heap's low boundary -- the work area ends below it (D-DSKFMT)
                                 ; work area) -- D-FCBSHAPE S2 lowers it at init
-SUB_BUILD       equ     0       ; this is the DISK build, not the sub-ROM
+; D-DISKROMHOST step 2b: MS-BASIC's published layout cells, which a disk ROM rebuilds under each
+; HIMEM it claims (docs/concepts/disk-rom-host.md item 2; MSX2 TH work-area map)
+MEMSIZ          equ     $F672   ; PUBLISHED: top of string space
+STKTOP          equ     $F674   ; PUBLISHED: top of BASIC's stack
+SAVSTK          equ     $F6B1   ; PUBLISHED: BASIC's saved stack pointer
+FILTAB          equ     $F860   ; PUBLISHED: -> the file pointer table (its next word: NULBUF)
+NULBUF          equ     $F862   ; PUBLISHED: -> file #0's buffer
+RDSLT           equ     $000C   ; MSX BIOS: A = the byte at HL in slot A (MSX2 TH)
+STARTUP_WORD    equ     $7D2F   ; main ROM: the word naming the machine's start-up-screen routine (item 4)
+INIT_HIMEM      equ     $F195   ; INIT's (first) claim: the CF-3300's HIMEM at its H.RUNC entry,
+                                ; = DRVA_DPB, our lowest cell above it (scratchpad/AE_diskhost2_ref.out)
+SUB_BUILD      equ     0       ; this is the DISK build, not the sub-ROM
 
 FOPEN_SEL_AOPEN equ     $41     ; step 11 (D-MERGEPORT): open an ASCII program
                                 ; file and prime the sequential read -- `MERGE`

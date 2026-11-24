@@ -850,6 +850,16 @@ install_dos_env:
                 ld      bc, br5_end - br5_tmpl
                 ldir
                 jp      install_br6         ; ... and br6 (D-CALSLTP0)
+; ldir_11 -- D-DISKROMHOST step 2b: the run it replaces stood at 7 sites (kernel.asm)
+ldir_11:
+                ld      bc,11
+                ldir                        ; +0: the source pattern
+                ret
+; dta_from_dos -- D-DISKROMHOST step 2b: the run it replaces stood at 5 sites (fat.asm, kernel.asm)
+dta_from_dos:
+                ld      hl, (DOS_DTAPTR)
+                ld      (BDOS_DTA), hl
+                ret
 ; boot_rd -- ✂️ D-DISKCARVE3 (2026-11-14), here in front of the $7F7C pin for room: read drive A's boot sector (sector 0) to
 ; BOOT_LOAD ($C000) and test its signature; stood twice, in init.asm's boot_disk_go and in hk_system
 ; (disk/kernel.asm). Out: CF = the read failed; else Z = $EB or $E9 (A = that byte, NC,

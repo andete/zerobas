@@ -140,6 +140,13 @@ dc_map:
 ; reported it plus dc_fail/dc_map as 47 B of dead code in [sub]. With the label
 ; outside, the span carries BOTH `jp` edges and the graph stays honest on both
 ; sides.
+; 💰 D-DISKROMHOST step 2b (2026-11-24): the two buffers' own entries, in front -- `ld hl,<buf>`
+; + `call read_sector` stood at 15 sites (8 FAT_DBUF, 7 FAT_MBUF); they call / jump here now.
+rs_mbuf:
+                ld      hl, FAT_MBUF    ; the metadata buffer
+                jr      read_sector
+rs_dbuf:
+                ld      hl, FAT_DBUF    ; the data buffer; falls into read_sector
 read_sector:
                 call    rh_check        ; D-PUTCACHE: a held PUT sector -- served or
                                         ; written out first (disk/driver.asm)
@@ -170,6 +177,8 @@ read_sector_nh:                         ; D-LOADHOLD: past the check (frs_to's e
 ; collision there). Zero-byte rename either way (EQU never emits bytes).
 ; (fatprim_write_sector: disk.rom only since 2026-10-19, and the name still
 ; matters there -- disk/kernel.asm has a `write_sector` of its own.)
+fws_mbuf:                                    ; D-DISKROMHOST step 2b: the 3 sites' `ld      hl, FAT_MBUF`, in front
+                ld      hl, FAT_MBUF
 fatprim_write_sector:
                 ld      b, 1            ; one sector
                 ld      c, 0            ; 🔴 D-SIDEWRITE (2026-11-10): NOT a media ID, as read_sector's --
@@ -291,17 +300,16 @@ fat_mount_bad:
 ;   in:  HL = pointer to an 11-byte name field (8 name + 3 ext, space-padded)
 ;   out: Cy = 0 found  -> FAT_FIRSTCLUS, FAT_FILESIZE set; Cy = 1 not found / error
 ; Compare is case-insensitive; FAT directories store upper-case 8.3 names.
+ff_name:                                    ; D-DISKROMHOST step 2b: the 5 sites' `ld      hl, DISK_FCB_NAME`, in front
+                ld      hl, DISK_FCB_NAME
 fat_find:
                 ld      (FAT_NAMEPTR), hl
                 call    fat_dir_start       ; DIRSEC / DIRREM: the whole root
 ff_secloop:
-                ld      hl, (FAT_DIRREM)
-                ld      a, h
-                or      l
+                call    dirrem_z
                 jr      z, ff_notfound      ; scanned every root sector
                 ld      de, (FAT_DIRSEC)
-                ld      hl, FAT_DBUF
-                call    read_sector
+                call    rs_dbuf
                 ret     c                   ; propagate FDC error
                 ld      hl, FAT_DBUF
                 ld      b, 16               ; 512 / 32 entries per sector
@@ -320,8 +328,7 @@ ff_entloop:
                 pop     hl
                 and     $18                 ; volume-label | directory -> skip
                 jr      nz, ff_skip
-                ld      de, (FAT_NAMEPTR)
-                call    name_cmp
+                call    nc_ptr
                 jr      z, ff_found
 ff_skip:
                 pop     hl
@@ -373,17 +380,15 @@ ff_found:
 ; name_cmp — compare two 11-byte 8.3 name fields, case-insensitive.
 ;   in:  HL = directory entry name, DE = search name
 ;   out: Z set if equal; trashes A, BC, DE, HL
+nc_ptr:                                    ; D-DISKROMHOST step 2b: the 2 sites' `ld      de, (FAT_NAMEPTR)`, in front
+                ld      de, (FAT_NAMEPTR)
 name_cmp:
                 ld      b, 11
 nc_loop:
                 ld      a, (de)
                 cp      '?'                 ; '?' in the pattern (DE) matches ANY entry
                 jr      z, nc_wild          ; char (FILES/KILL wildcard; MSX FCB '?')
-                call    toupper
-                ld      c, a
-                ld      a, (hl)
-                call    toupper
-                cp      c
+                call    toupper_cmp
                 ret     nz
 nc_wild:
                 inc     hl                  ; 16-bit inc: leaves flags intact
@@ -509,8 +514,7 @@ fnc_straddle:
                 ld      hl, (FAT_FATSEC)
                 inc     hl
                 ex      de, hl
-                ld      hl, FAT_DBUF
-                call    read_sector
+                call    rs_dbuf
                 ld      a, (FAT_DBUF)
 fnc_combine:
                 ld      (FAT_B1), a
@@ -643,8 +647,7 @@ fat_read_fat_sector:
                                             ; sub ROM no longer assembles this body)
                 ld      (FAT_FATSEC), hl
                 ex      de, hl
-                ld      hl, FAT_MBUF
-                jp      read_sector
+                jp      rs_mbuf
 
 ; fat_alloc_cluster — find a free ($000) cluster, mark it EOC, sync all FATs.
 ;   out: Cy = 0 ok, HL = the allocated cluster number; Cy = 1 = disk full / error
@@ -770,8 +773,7 @@ fac_straddle:
                 ld      (FAT_FATSEC), hl
                 ld      (FAT_WRTMP2), hl
                 ex      de, hl
-                ld      hl, FAT_MBUF
-                call    read_sector
+                call    rs_mbuf
                 ld      a, (FAT_MBUF)
 fac_comb:
                 ; the 12-bit unpack is fnc_combine's (above), with the result in DE --
@@ -801,6 +803,8 @@ fac_comb:
 ; one FAT sector per allocated cluster (scratchpad/fdcseq_w1.out).
                 ; (disk.rom's copy sits in disk/fat.asm's $47C1 fill: this region,
                 ; pinned at $75A5, had no room for it -- the first build assembled EMPTY.)
+fwfe_zero:                                    ; D-DISKROMHOST step 2b: the 3 sites' `ld      de, 0`, in front
+                ld      de, 0
 fat_write_fat_entry:
                 ld      (FAT_WRTMP), de     ; save the value
                 push    hl                  ; save cluster
@@ -998,14 +1002,8 @@ fcf_loop:
                 sbc     hl, de              ; cluster - total
                 jp      nc, fcf_done        ; cluster >= total -> done
                 ; offset = cluster + cluster>>1 (= cluster * 3/2)
-                ld      hl, (FWR_CLUS)
-                ld      d, h
-                ld      e, l
-                srl     d
-                rr      e                   ; DE = cluster>>1
-                add     hl, de              ; HL = byte offset within the FAT
+                call    fat_wclus_x15
                 ; FAT sector = FAT_FATSTART + (offset>>9)
-                ld      a, h
                 srl     a                   ; A = offset>>9
                 ld      e, a
                 ld      d, 0
@@ -1019,17 +1017,10 @@ fcf_loop:
                 jr      z, fcf_have         ; already cached
                 ld      (FWR_FIRST), hl
                 ex      de, hl
-                ld      hl, FAT_DBUF
-                call    read_sector         ; cache this FAT sector
+                call    rs_dbuf              ; cache this FAT sector
 fcf_have:
                 ; byteidx = offset & 511
-                ld      hl, (FWR_CLUS)
-                ld      d, h
-                ld      e, l
-                srl     d
-                rr      e
-                add     hl, de              ; HL = offset
-                ld      a, h
+                call    fat_wclus_x15
                 and     1
                 ld      h, a                ; HL = byteidx (0..511)
                 ; byte0 = FAT_DBUF[byteidx]
@@ -1050,8 +1041,7 @@ fcf_have:
                 ld      hl, (FWR_FIRST)
                 inc     hl
                 ex      de, hl
-                ld      hl, FAT_MBUF
-                call    read_sector
+                call    rs_mbuf
                 ld      a, (FAT_MBUF)
                 jr      fcf_haveb1
 fcf_b1_same:
@@ -1194,13 +1184,10 @@ fat_dir_create:
                 ld      (FAT_NAMEPTR), hl
                 call    fat_dir_start       ; DIRSEC / DIRREM: the whole root
 fdcr_secloop:
-                ld      hl, (FAT_DIRREM)
-                ld      a, h
-                or      l
+                call    dirrem_z
                 jr      z, fdcr_full        ; no slot in any root sector
                 ld      de, (FAT_DIRSEC)
-                ld      hl, FAT_MBUF
-                call    read_sector
+                call    rs_mbuf
                 ret     c
                 ld      hl, FAT_MBUF
                 ld      b, 16               ; 16 entries per 512-byte sector
@@ -1213,8 +1200,7 @@ fdcr_entloop:
                 cp      $E5
                 jr      z, fdcr_useslot     ; $E5 deleted -> reusable slot
                 ; same-name existing entry? (truncate-in-place)
-                ld      de, (FAT_NAMEPTR)
-                call    name_cmp
+                call    nc_ptr
                 jr      z, fdcr_useslot
                 pop     hl
                 ld      de, 32
@@ -1260,8 +1246,7 @@ fdcr_zero:
                 ; write the dir sector back.
 fdir_wrback:                                ; (fat_dir_update's tail too: carve step 4)
                 ld      de, (FWR_DIRSEC)
-                ld      hl, FAT_MBUF
-                call    fatprim_write_sector
+                call    fws_mbuf
                 ret     c
                 or      a                   ; Cy = 0 success
                 ret
@@ -1304,8 +1289,7 @@ dir_stamp_date:
 ; (Microsoft FAT spec §3.4.)
 fat_dir_update:
                 ld      de, (FWR_DIRSEC)
-                ld      hl, FAT_MBUF
-                call    read_sector
+                call    rs_mbuf
                 ret     c
                 ; HL = &entry = FAT_MBUF + DIROFF
                 ld      hl, (FWR_DIROFF)

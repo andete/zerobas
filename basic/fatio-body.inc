@@ -35,8 +35,7 @@
 ; bytes-remaining counter from the true file size, and marks the sector buffer
 ; empty so the first fat_io_getbyte refills it.
 fat_io_find:
-                ld      hl, DISK_FCB_NAME
-                call    fat_find
+                call    ff_name
                 ret     c
                 call    fat_open
                 ; seed FREAD_LEFT = FAT_FILESIZE (4-byte LE).

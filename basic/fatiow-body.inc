@@ -83,12 +83,8 @@ fip_store:
                 ld      hl, (FWR_BUFLEN)
                 inc     hl
                 ld      (FWR_BUFLEN), hl
-                call    fwr_bytes_inc       ; FWR_BYTES += 1 (4-byte LE)
-                or      a                   ; Cy = 0 success
-                ret
-
-; fwr_bytes_inc — FWR_BYTES += 1, 4-byte little-endian increment.
-fwr_bytes_inc:
+                ; FWR_BYTES += 1, 4-byte little-endian (fwr_bytes_inc, its only call, inline
+                ; since D-DISKROMHOST step 2b: 4 B for the corridor)
                 ld      hl, FWR_BYTES
                 ld      a, (hl)
                 add     a, 1
@@ -105,6 +101,7 @@ fwr_bytes_inc:
                 ld      a, (hl)
                 adc     a, 0
                 ld      (hl), a
+                or      a                   ; Cy = 0 success
                 ret
 
 ; fat_io_close — finish a sequential-write file durably.

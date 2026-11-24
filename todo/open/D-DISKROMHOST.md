@@ -38,4 +38,42 @@
       at $0006 and $0039 against the CF-3300. Also open: the reference's TWO-STEP claim ($F195 in INIT, $DF93 in
       H.RUNC, with the layout rebuilt under each -- docs/concepts/disk-rom-host.md, Open) against zerobas's one-step
       $DE77 with no rebuild, which leaves an MS-BASIC host's layout inside the claim when no DOS disk boots.
+      ⛔ OPEN (Joost still deciding, 2026-11-24): the DOS-phase block below DISK_HIMEM -- GETWRK_AREA $DD0E and the
+      slot bridges from INT_H_HIRAM $DDAE -- options (a) / (b) above. Placement unchanged for now (the CF-3300's
+      addresses); measured at MSX-DOS's entry for the decision (scratchpad/AE_diskhost2_ref.out, DOS lines): the
+      word at $0006 ends $D606 on all four set-ups; $0038 jumps to $DDAE on the CF-3300 and on ours (both hosts),
+      to $DDA8 on the VG-8020 + HBD-F1; DRVTBL 02 87 (CF-3300, the DISK machine) / 02 01 (the VG-8020 with either
+      cartridge); SLTWRK holds the work-area base for the interface's page 1 on both references ($F1BF CF-3300 slot
+      3-1, $F1C0 HBD-F1 slot 1-0) and nothing on ours; HIMEM at DOS's entry $DF93 / $DF94 on the references, $DE77
+      on ours (the references' last step, to $DE77 / $DE78, comes only when Disk BASIC starts).
+      STEP 2b DONE (2026-11-24, isolated instance; Joost: "do the two-step claim NOW, matching the reference
+      cartridges" + call the $7D2F routine): MEASURED FIRST (scratchpad/diskhost2_ref.py -> AE_diskhost2_ref.out):
+      the CF-3300's INIT lowers HIMEM $F380 -> $F1BF -> $F195 (VG-8020 + HBD-F1: $F1C0 -> $F196), its H.RUNC handler
+      in five steps to $DF93 ($DF94), and every step rewrites MEMSIZ / STKTOP / SAVSTK / FILTAB + its two table words /
+      NULBUF by MS-BASIC's rule (MEMSIZ = HIMEM - $218, FILTAB = MEMSIZ + 2 -> [FCB #0 = HIMEM - $212, FCB #1 =
+      HIMEM - $109], NULBUF = FCB #0 + 9, STKTOP = MEMSIZ - 200, SAVSTK = STKTOP - 2); FRETOP is left for BASIC's
+      next CLEAR. WHO MOVES SP: the cartridge -- SP is below the new STKTOP inside the INIT and inside each H.RUNC
+      step, and the host calls H.RUNC on whatever stack the scan returned with (with our cartridge, which moves no
+      stack, the VG-8020 calls it at SP $F09A, STKTOP $EEB5) -- so zerobas's main ROM needs no change.
+      DONE: INIT claims INIT_HIMEM $F195 (the CF-3300's) and rebuilds the layout (disk/kernel.asm layout_rebuild);
+      hrunc_h calls the routine named by the HOST main ROM's word at $7D2F (RDSLT x2 + CALSLT, EXPTBL's slot), then
+      claims $DE77 (CTRL: $E48D, the SNSMAT test moved here from INIT) and rebuilds again, then phase 2.
+      RESULT: VG-8020 + our cartridge, no disk: HIMEM $DE77, MEMSIZ $DC5F, STKTOP $DB97, FILTAB $DC61 [DC65 DD6E],
+      NULBUF $DC6E, FRE(0) 23430 / FRE("") 200 -- the CF-3300's figures (was: the HIMEM-$F380 layout inside the
+      claim, FRE(0) 28815); with a DOS disk MSX-DOS starts on SCREEN 0, LINLEN 37, VDP R#0-R#7 00 F0 00 00 01 00 00
+      F4 -- the VG-8020 + HBD-F1's (was SCREEN 1 / 29). The DISK machine still equals the CF-3300 at BASIC's Ok
+      (scratchpad/AE_diskhost_fre.out, AFTER step 2b) and now starts MSX-DOS in TEXT1 37 columns (zerobas EU's
+      STARTUP_SCREEN; the CF-3300 is a Japanese machine, SCREEN 1 / 29, as expected).
+      BYTES: the new code took ~89 B in the $607B-$75A5 region; found by pre-entries (rs_dbuf / rs_mbuf in front of
+      read_sector, 15 sites; ff_name, fwfe_zero, fws_mbuf, nc_ptr), shared runs (fat_wclus_x15, dta_put_cnt,
+      hl_cmp_eoc, op_lfiles, ldir_11, dta_from_dos, toupper_cmp, dirrem_z) and wrblk_mul16 inline. disk.rom pads,
+      2026-11-24 (FDC window excluded): 80 B in 36 runs before, 115 B in 40 after (`make basic-reloc` for today's).
+      NOT DONE: the stock cartridges move their stack below each new STKTOP and set SLTWRK; ours does neither
+      (unchanged from before); HOOK_SLOT ($ED6A) lies below INIT's claim between INIT and H.RUNC.
+      GATES (isolated instance, 2026-11-24): 74 of 76 green. ⛔ RED, ASK JOOST: dosmode-acceptance (rows boot / date)
+      and bdos-acceptance (BDOSXC / BDOSXK / BDOSXB, the captures that copy LINLEN / CSRY / CSRX and the screen) --
+      both compare the DISK machine's MSX-DOS start screen with the CF-3300's SCREEN 1 / 29 columns, and the DISK
+      machine now starts DOS in zerobas EU's start-up screen (TEXT1, 37 columns, the VG-8020's) because the disk ROM
+      calls $7D2F. A presentational JP / EU split; the standing rule (style splits ship the VG-8020's value) would
+      re-reference those rows to the VG-8020 + HBD-F1 -- not done without a ruling.
 

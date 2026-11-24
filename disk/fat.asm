@@ -64,16 +64,14 @@ hk_openfind:
                 ei
                 call    dout_open
                 jr      c, hof_fail
-                ld      hl, DISK_FCB_NAME
-                jp      fat_find
+                jp      ff_name
 hof_fail:
                 pop     hl                  ; our return address
                 jp      hfm_fail
 ; (moved here from driver.asm by the D-DSKFMT defrag)
 wrseq_body:                                 ; $477D: BDOS $15 SEQWRITE
                 call    seq_load            ; D-SEQMIX2: this file's own state (driver.asm)
-                ld      hl, (DOS_DTAPTR)
-                ld      (BDOS_DTA), hl
+                call    dta_from_dos
                 ; Item 5 (spec-diskbasic-option-closure.md): the write-side twin of
                 ; the M33 read-branch FCB-position write-back. M33 advanced the
                 ; caller-visible FCB position (+32 CR / +12 EX / +28,29 cluster /
@@ -440,8 +438,7 @@ fwba_loop:
                 push    bc
                 push    hl
                 ex      de, hl              ; DE = target sector
-                ld      hl, FAT_MBUF
-                call    fatprim_write_sector
+                call    fws_mbuf
                 pop     hl
                 pop     bc
                 ret     c                   ; write error

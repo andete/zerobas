@@ -218,8 +218,7 @@ new_taken:
                 push    hl
                 ld      hl, (FWR_DIROFF)
                 push    hl
-                ld      hl, DISK_FCB_NAME
-                call    fat_find
+                call    ff_name
                 pop     hl
                 ld      (FWR_DIROFF), hl
                 pop     hl
