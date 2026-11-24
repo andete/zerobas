@@ -34,7 +34,6 @@ THE GROUPS:
     python3 probes/basic/spec/kslice.py [--group LR|MID|FX ...] [--out scratchpad/KSL_run1.out]
 (run through tools/agent_wt.py: it boots the VG-8020 and zerobas's NODISK machine)."""
 import os
-import re
 import sys
 from types import SimpleNamespace as NS
 
@@ -42,9 +41,11 @@ HERE = os.path.dirname(os.path.abspath(__file__))
 ROOT = os.path.dirname(os.path.dirname(HERE))
 ROOT = os.path.dirname(ROOT)
 sys.path.insert(0, os.path.join(ROOT, "probes", "lib"))
+sys.path.insert(0, HERE)
+import ramrec  # noqa: E402  (the shared RAM-record harness: frame, digest, run-file sections)
 
-REF, ZB = "Philips_VG_8020", "C-BIOS_MSX1_EU_REPACK_NODISK"
-BASE = 0xC000
+REF, ZB = ramrec.REF, ramrec.ZB
+BASE = ramrec.BASE
 REC = 11
 RUN = "KSL_run1.out"
 
@@ -109,21 +110,10 @@ RECORD = [
     "900 V=VARPTR(R$):GOSUB 950:POKE A,E:POKE A+1,RL:POKE A+2,FB:POKE A+3,LB",
     "910 POKE A+4,S-INT(S/256)*256:POKE A+5,INT(S/256):POKE A+6,W-INT(W/256)*256:POKE A+7,INT(W/256)",
     "920 V=VARPTR(S$):GOSUB 950:POKE A+8,RL:POKE A+9,S-INT(S/256)*256:POKE A+10,INT(S/256):A=A+11:RETURN",
-    "950 RL=PEEK(V):P=PEEK(V+1)+256*PEEK(V+2):S=0:W=0:FB=0:LB=0:IF RL=0 THEN RETURN",
-    "960 FB=PEEK(P):LB=PEEK(P+RL-1):FOR K=0 TO RL-1:X=PEEK(P+K):S=S+X:W=W+(K+1)*X:NEXT",
-    "970 W=W-INT(W/65536!)*65536!:RETURN",
-    "800 E=ERR:RESUME NEXT",
-]
-HEAD = "10 CLEAR 2000,&HC000:DEFDBL A-Z:DEFINT I-K:ON ERROR GOTO 800:POKE &HC000,0:A=&HC001"
-TAIL = "POKE A,&HC3:POKE &HC000,&H5A:END"
-
-
-def _data(n0, values):
-    """DATA lines from line n0, <= 8 values each"""
-    out = []
-    for i in range(0, len(values), 8):
-        out.append(f"{n0 + i // 8} DATA " + ",".join(values[i:i + 8]))
-    return out
+] + ramrec.STR_DIGEST + [ramrec.ERRLINE]
+HEAD = ramrec.head(2000)
+TAIL = ramrec.TAIL
+_data = ramrec.data
 
 
 def program(group):
@@ -172,28 +162,16 @@ GAPS = {"LR": 2000.0, "MID": 5000.0, "FX": 60.0}
 
 
 def measure(group):
-    import omsx_repl
     lines, cases = program(group)
-    size = 1 + REC * len(cases) + 1
-    out = {}
-    for who, machine in (("ref", REF), ("zb", ZB)):
-        cap = omsx_repl.run_cases(machine, [("direct", lines)], batch=False, reset=("", "SCREEN 0:WIDTH 40"),
-                                  step=1.0, run_gap=GAPS[group], capture=("mem_abs", [(BASE, size)]),
-                                  sentinel=(BASE, 0x5A), sentinel_capture=True)[0]
-        out[who] = cap
-    return lines, cases, out
+    return lines, cases, ramrec.measure(lines, len(cases), REC, GAPS[group])
 
 
 def decode(hexs, n):
-    if hexs is None:
-        return None, "no capture"
-    b = bytes.fromhex(hexs)
-    if len(b) < 2 + REC * n or b[0] != 0x5A or b[1 + REC * n] != 0xC3:
-        return None, f"incomplete (done flag {b[:1].hex()}, {len(b)} bytes, end byte " \
-                     f"{b[1 + REC * n]:02x})" if len(b) > 1 + REC * n else f"short ({len(b)} bytes)"
+    rs, why = ramrec.frame(hexs, n, REC)
+    if rs is None:
+        return None, why
     recs = []
-    for i in range(n):
-        r = b[1 + REC * i:1 + REC * (i + 1)]
+    for r in rs:
         recs.append(dict(e=r[0], rl=r[1], fb=r[2], lb=r[3], s=r[4] | r[5] << 8, w=r[6] | r[7] << 8, sl=r[8],
                          ss=r[9] | r[10] << 8))
     return recs, None
@@ -201,13 +179,10 @@ def decode(hexs, n):
 
 def load(group, run=RUN):
     """the cases of one group from the committed run file: {"ref": [...], "zb": [...]} (rules modules use this)"""
-    text = open(os.path.join(ROOT, "scratchpad", run)).read()
-    m = re.search(rf"^===== {group}\n  CAP ref : (\w+)\n  CAP zb  : (\w+)$", text, re.M)
-    if not m:
-        sys.exit(f"FAIL: {run} has no complete {group} section")
+    sec = ramrec.read_section(os.path.join(ROOT, "scratchpad", run), group)
     _, cases = program(group)
     out = {}
-    for who, h in (("ref", m.group(1)), ("zb", m.group(2))):
+    for who, h in sec.items():
         recs, why = decode(h, len(cases))
         if recs is None:
             sys.exit(f"FAIL: {run} {group} {who}: {why}")
@@ -228,9 +203,7 @@ def main(argv):
             recs, why = decode(cap[who], len(cases))
             if recs is None:
                 bad.append(f"{who}: {why}")
-        sec = (f"===== {g}\n  CAP ref : {cap['ref'] or 'NONE'}\n  CAP zb  : {cap['zb'] or 'NONE'}\n"
-               f"  ({len(cases)} cases; machines {REF} / {ZB}; {'; '.join(bad) or 'both complete'})\n")
-        text = re.sub(rf"^===== {g}\n.*?(?=^===== |\Z)", "", text, flags=re.M | re.S) + sec
+        text = ramrec.write_section(text, g, cap, len(cases), bad)
         print(f"{g}: {len(cases)} cases; {'; '.join(bad) or 'both complete'}", flush=True)
         if not bad:
             ref, zb = (decode(cap[w], len(cases))[0] for w in ("ref", "zb"))
