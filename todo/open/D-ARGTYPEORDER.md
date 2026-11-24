@@ -9,6 +9,9 @@
       `F(1/0,2)` raise its own error 11, on both machines), then the `)` is required, then the type is checked:
       `F("A"` and `F("A",2)` are error 2 there. zerobas raises 13 for both, for all five functions (10 cases: KMA FY
       1, 3, 8, 10, 15, 17, 22, 24, 29, 31). `F("A")` (closed) is 13 on both (KMA FX 0 ...).
+      RND too (D-KWSPEC's RND unit, 2026-11-24): `RND("A"` and `RND("A",2)` are 2 there, 13 here; `RND(1/0` is 11
+      on both (R-RND-CHECKS on [RND.md](../../docs/keywords/RND.md), KRN FX 12-14,
+      [`krnd.py`](../../probes/basic/spec/krnd.py)).
       Not measured for the other functions that share the argument reader (EXP ... ATN, CINT ...). Related, not the
       same: D-TMORDER (where an operator's type mismatch is raised), D-CLOSESPACE.
       ➡️ When picked up: `ev_mc_arg` in basic/expr.asm (the shared math-function argument reader) -- the type test

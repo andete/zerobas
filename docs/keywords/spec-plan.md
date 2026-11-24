@@ -236,7 +236,7 @@ D-VALWS (whitespace, incl. before `&`), D-VALEXP (the digit-count edges) and D-V
 ### The maths region's first unit (2026-11-24): ABS, SGN, INT, FIX, SQR
 
 One probe, five rules modules, five pages at DRAFT 1. The transcendentals (EXP, LOG, SIN, COS, TAN, ATN) were the
-second unit (below); RND is left for a later one (a seed / sequence harness of its own).
+second unit (below); RND the third, on a sequence harness of its own (below).
 
 - [probes/basic/spec/kmath.py](../../probes/basic/spec/kmath.py): 160 cases a keyword on each machine (19 integers,
   66 singles, 52 doubles, 23 fixed statements; 4 more fixed statements are LET evidence no page loads) in four groups
@@ -312,6 +312,37 @@ half DOWN in size (half up, half-even and truncation are each false), so its zer
 (also 1.2E13, 1.7E13), on zerobas too; LOG's bound is 9; EXP's Overflow for huge negative arguments begins between
 -75453 and -75460 (not -99999). D-TRANSZERO now includes one visible case (ATN of a POKEd signed-zero single prints
 "-." here, 0 on the reference); D-SINDIGITS: 17 SIN and 3 TAN results outside the tightened bound.
+
+### The maths region's third unit (2026-11-24): RND -- a sequence harness
+
+One probe, one rules module, RND.md at DRAFT 1; with it all twelve maths keywords are at DRAFT 1.
+
+- [probes/basic/spec/krnd.py](../../probes/basic/spec/krnd.py): 556 STEPS on each machine in eight groups (BOOT:
+  direct mode from power-on, before any program line; RUNR / GOTO / GOTO2: the state at a program's first line after
+  RUN, after GOTO, after a typed line; SQ1: positive and zero arguments of every type; SQ2: 46 reseeds; SQ3: 200
+  steps; FX: 61 fixed statements). Run file [scratchpad/KRN_run1.out](../../scratchpad/KRN_run1.out). **A record is
+  a step, not a case**: it holds the result (R's 8 bytes, or VALTYP and DAC through kmath's USR routine) AND the
+  generator's state after the step -- RNDX, `$F857..$F85E`, the published work-area cell (named by C-BIOS's source;
+  shown black-box to be the state: it steps on RND(1), stays on RND(0), is set by RND(-x) whatever came before).
+  A group whose records are typed in DIRECT mode (BOOT) cannot zero its record area first: a long first line delays
+  the typist and the next line is delivered mangled (the harness refused the first attempt); BOOT's records
+  therefore write only the fields they own, and its ARG / DAC bytes are not read.
+- [krnd_model.py](../../probes/basic/spec/krnd_model.py): the generator stated on the bytes -- S' = (A S + C) mod
+  10^14 with July's black-box constants, a reseed from the argument's 14 mantissa digits, the result S / 10^14
+  normalised -- and two prediction modes, so no rule replays the reference's output: one step from the state the
+  previous record read, and whole groups from power-on / CLEAR and the arguments alone (R-RND-CHAIN).
+  [krnd_controls.py](../../probes/basic/spec/krnd_controls.py) runs 20 rivals, each FALSE on some (each constant's
+  last digit, RND(0) stepping, a positive argument reseeding, the reseed from the VALUE, right-aligned integer
+  digits, right-to-left evaluation, an unnormalised result, RNDX holding the result, zerobas's three differences ...).
+- Result: every rule holds on the VG-8020 and every recorded output is read by a rule; the July constants predict
+  all 556 steps. zerobas agrees in every number and in RNDX, except: **D-RNDLINE** (TIER 1: typing a program line
+  resets the state on the reference -- as CLEAR -- and not here; 5 cases), **D-RNDZERO** (TIER 6: state 0's result is 8
+  zero bytes there, a zero with leftover digit bytes here; 6 cases), and `RND("A"` / `RND("A",2)` (13 here, 2
+  there: D-ARGTYPEORDER, now noted for RND).
+- Measured on both machines, now rules: `R$=RND(1)` steps the sequence before its Type mismatch; a single or double
+  whose exponent byte is `&H80` reseeds from its digit bytes (the sign BIT decides), one with exponent byte 0 is a
+  zero; `-1!/3` is a DOUBLE (so `RND(-1!/3)` is `RND(-1/3)`); two calls in one expression run left to right; CLS and
+  GOTO keep the state.
 
 ## 7. Tooling: what exists, what is missing
 

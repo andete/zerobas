@@ -10,7 +10,7 @@ SPDX-License-Identifier: BSD-2-Clause
 
 Every keyword page, the region the spec loop takes it in, and how far its page has become a SPECIFICATION: measured rules, each checked against the reference machine's cases ([the plan](spec-plan.md), [the method](../spec-method.md)). A page that is not yet a spec is a "user page": it says what the keyword does and was checked by its example, but its sentences are not yet executable rules. The reference is the Philips VG-8020; disk statements, the National CF-3300.
 
-**25 of 150 keyword pages are specs; 0 are FINAL.**
+**26 of 150 keyword pages are specs; 0 are FINAL.**
 
 | keyword | region | harness | reference | page | open (not measured) | differences (TODO items, from the page) |
 |---|---|---|---|---|---|---|
@@ -39,7 +39,7 @@ Every keyword page, the region the spec loop takes it in, and how far its page h
 | `COS` | [maths](../concepts/numbers.md) | RAM record | VG-8020 | [DRAFT 1](COS.md) | 8 | D-TRIGHALF, D-TRANSZERO |
 | `TAN` | [maths](../concepts/numbers.md) | RAM record | VG-8020 | [DRAFT 1](TAN.md) | 8 | D-TRIGHALF, D-SINDIGITS, D-TRANSZERO |
 | `ATN` | [maths](../concepts/numbers.md) | RAM record | VG-8020 | [DRAFT 1](ATN.md) | 7 | D-TRANSZERO, D-SQRZERO |
-| `RND` | [maths](../concepts/numbers.md) | RAM record | VG-8020 | [user page](RND.md) | — | — |
+| `RND` | [maths](../concepts/numbers.md) | RAM record | VG-8020 | [DRAFT 1](RND.md) | 8 | D-RNDLINE, D-RNDZERO, D-ARGTYPEORDER |
 | `CINT` | [conversion](../concepts/numbers.md) | RAM record | VG-8020 | [user page](CINT.md) | — | — |
 | `CSNG` | [conversion](../concepts/numbers.md) | RAM record | VG-8020 | [user page](CSNG.md) | — | — |
 | `CDBL` | [conversion](../concepts/numbers.md) | RAM record | VG-8020 | [user page](CDBL.md) | — | — |

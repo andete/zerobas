@@ -42,5 +42,14 @@
       near a half / whole turn zerobas keeps more of the angle: SIN(3.1415926535898#) differs in its leading
       digits), D-SINDIGITS (zerobas's sine up to 6.1 units off, the reference's 1.9), D-TRANSZERO (TIER 6, the zero
       results' digit bytes). LOG / ATN pages corrected (LOG's reference error 8.3 units, not 5; ATN's worst 2.7 on
-      both machines). NEXT: RND (a seed / sequence harness) to finish the maths region; the review passes on the
-      strings and maths pages (spec-method §6); a keyword probe in spec_live (plan §7.1).
+      both machines).
+      **Maths, third unit (2026-11-24): RND at DRAFT 1** from probes/basic/spec/krnd.py, a SEQUENCE harness (556 steps
+      a machine, scratchpad/KRN_run1.out; plan §6, "The maths region's third unit"): each record holds the step's
+      result AND the generator's state after it (RNDX, $F857, the published cell). The generator is a rule on the
+      bytes -- S' = (21132486540519 S + 14389820420821) mod 10^14, a reseed from the argument's 14 mantissa digits,
+      S0 = 40649651372358 -- predicting every step one at a time AND every group from power-on / CLEAR alone
+      (R-RND-CHAIN); krnd_controls.py shows 20 rivals FALSE. Every rule holds on the VG-8020, every output is read.
+      zerobas agrees in every number and in RNDX except: D-RNDLINE (TIER 1, a typed program line resets the state
+      there, not here), D-RNDZERO (TIER 6, state 0's result bytes), and RND("A" (D-ARGTYPEORDER, noted). The maths
+      region's 12 keywords are all at DRAFT 1. NEXT: the review passes on the strings and maths pages (spec-method
+      §6), RND's included; a keyword probe in spec_live (plan §7.1); then the conversion region (plan §2 row 3).
