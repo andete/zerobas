@@ -119,7 +119,8 @@ def main():
     tcl = probe_tmp.tmp("dosref.tcl")
     open(tcl, "w").write(TCL)
     log = probe_tmp.tmp("dosref.log")
-    cmd = [openmsx_paths.find_openmsx_binary(), "-machine", MACHINE, "-ext", EXT, "-diska", disk, "-script", tcl]
+    ext = [] if EXT == "none" else ["-ext", EXT]          # "none": the machine's own disk ROM (the CF-3300)
+    cmd = [openmsx_paths.find_openmsx_binary(), "-machine", MACHINE] + ext + ["-diska", disk, "-script", tcl]
     subprocess.run(omsx_preflight.guarded(cmd), env=dict(os.environ, LOGF=log), stdout=subprocess.DEVNULL if not os.environ.get("DOSREF_DEBUG") else None,
                    stderr=subprocess.DEVNULL if not os.environ.get("DOSREF_DEBUG") else None, timeout=240)
     print(f"### {MACHINE} + {EXT}, disk {os.path.basename(DISK)} ({os.path.getsize(DISK)} B), {SECONDS} s")

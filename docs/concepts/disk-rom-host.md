@@ -108,7 +108,19 @@ counters differ); both write VRAM 3,008 times -- the font and a cleared 40 x 24 
 name table and VDP registers. Differences: the glyphs (each machine's own font) and the order -- the reference loads
 VRAM with the display off before it reprograms R#2-R#6. The effect is INITXT's.
 
-**zerobas:** not yet -- a fixed word at $7D2F changes the layout of main page 1 (zerobas BASIC's code is there).
+**It is not INITXT: it is the machine's own start-up screen.** The same disk-ROM call on other MSX1 machines
+([AE_dosref_msx1.out](../../scratchpad/AE_dosref_msx1.out), the HBD-F1 + the same DOS disk; the CF-3300 with its own
+built-in disk ROM): the Goldstar FC-200 does exactly what the VG-8020 does (display off, 3,008 VRAM writes, then
+TEXT1; SCREEN 0, LINLEN 37 at DOS's entry); the National CF-2700, CF-3000 and CF-3300 do 2,944 writes and come back
+to Graphic 1 -- SCREEN 1, LINLEN 29 at DOS's entry. So the routine behind $7D2F re-initialises BASIC's start-up
+screen, whatever that is on the machine: text on the European and Korean machines, SCREEN 1 on the Japanese ones.
+The same routine on two manufacturers' ROMs and the same disk-ROM call site on three supports $7D2F being a fixed
+MSX-BASIC 1.0 location. No admissible document names it (docs/allowed-sources.md: the MSX Technical Data Book lists
+CALBAS and the hooks for disk-ROM writers, not $7D2F; the sources that would name it are disassemblies, forbidden).
+
+**zerobas:** not yet -- a fixed word at $7D2F changes the layout of main page 1 (zerobas BASIC's code is there). The
+word would point at zerobas's own start-up-screen routine (the one its cold start uses): the VG-8020's text screen
+on both builds (the CF-3300's SCREEN 1 is a presentation split, and those ship the VG-8020's value).
 
 ## What the disk ROM writes
 

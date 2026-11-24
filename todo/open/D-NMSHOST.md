@@ -166,3 +166,12 @@
       content). Order: the reference writes VRAM with the display off ($A0) before it reprograms R#2-R#6, 300 ms; INITXT
       reprograms first, 26 ms. CONCLUSION: the routine's observable effect is INITXT's; $006C reproduces it.
       ⛔ STILL FOR JOOST: the pin itself (page-1 layout).
+      STEP 14 (2026-11-24; Joost: "do 1 if we have the roms, and do 2 as well", "see how the CF3300 does it") -- THE
+      $7D2F ROUTINE IS THE MACHINE'S START-UP SCREEN, NOT INITXT (scratchpad/AE_dosref_msx1.out): the Goldstar FC-200
+      + HBD-F1 matches the VG-8020 exactly (3,008 VRAM writes, TEXT1, LINLEN 37 at $0100); the National CF-2700 /
+      CF-3000 + HBD-F1 and the CF-3300 with its own disk ROM do 2,944 writes and return to Graphic 1 (SCREEN 1,
+      LINLEN 29 at $0100). (CX5MII-128: did not start; CF-2700: stopped at its own date prompt.) No admissible source
+      names $7D2F (the Technical Data Book's disk-ROM interface lists CALBAS and the hooks only; disassemblies are
+      forbidden). ⛔ STILL FOR JOOST: the pin, now pointing at zerobas's own start-up-screen routine (the VG-8020's
+      text screen on both builds: a presentation split ships the VG-8020's value).
+
