@@ -379,6 +379,22 @@ machines shifted alike, so no difference showed it -- only the decoded lengths d
 loop is now behind `IF L>0`. spec-live re-types the D* groups on zerobas's DISK build.
 The conversion region is complete at DRAFT 1.
 
+### The operators region's second unit (2026-11-24): LET, SWAP
+
+One probe, [klet.py](../../probes/basic/spec/klet.py): each case its own line starting from `CLEAR`, the statement
+under test last, the next line reading ERR and up to two variables (a number's bytes, a string's length and first 7
+bytes); 57 cases; run file [scratchpad/KLT_run1.out](../../scratchpad/KLT_run1.out); model
+[klet_model.py](../../probes/basic/spec/klet_model.py) (stores by CINT's / CSNG's rules), controls
+[klet_controls.py](../../probes/basic/spec/klet_controls.py) (9 rivals, each FALSE on some case). Both pages at
+DRAFT 1; every rule holds on the VG-8020. New on SWAP's page: an operator after the second variable (`SWAP A,B+0`)
+exchanges FIRST and raises Syntax error after -- the page had it among the plain shape errors. One difference:
+[D-SWAPNEW](../../todo/open/D-SWAPNEW.md) (a failed SWAP with a new second variable leaves it holding the first's
+value here). **Two probe pitfalls, caught before any rule ran:** reading a plain name's TYPE from the byte before its
+VARPTR assumes MS-BASIC's variable-table layout (zerobas's differs, an array element has none) -- the cases now name
+each variable's type; and a variable created AFTER an array element's VARPTR was taken moves the arrays, so the
+address went stale (`Q$(0)` read as "" on both machines) -- the probe's own variables now exist before each case.
+The operators region is complete at DRAFT 1.
+
 ### Goldfish pass 1 over the conversion region (2026-11-24)
 
 Two reviewers, one per unit ([REVIEW-m2-gCONV1.md](../../scratchpad/REVIEW-m2-gCONV1.md),

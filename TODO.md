@@ -2796,6 +2796,7 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
 - [ ] **`MKI$`, `MKS$` AND `MKD$` WITHOUT A PARENTHESIS (`S$=MKI$`) ARE ERROR 24 (MISSING OPERAND) ON ZEROBAS, ERRO...** -> [D-MKNOPAREN](todo/open/D-MKNOPAREN.md) <!-- item:open/D-MKNOPAREN -->
 - [ ] **WITHOUT DISK BASIC, `MKI$("A")` / `MKS$("A")` / `MKD$("A")` AND `CVI(5)` / `CVS(5)` / `CVD(5)` ARE ERROR 13...** -> [D-DISKFNTYPE](todo/open/D-DISKFNTYPE.md) <!-- item:open/D-DISKFNTYPE -->
 - [ ] **`-NOT 0` IS A SYNTAX ERROR ON ZEROBAS; THE VG-8020 EVALUATES IT AS -(NOT 0) = 1 (D-MINUSNOT, found 2026-11-...** -> [D-MINUSNOT](todo/open/D-MINUSNOT.md) <!-- item:open/D-MINUSNOT -->
+- [ ] **`A=1:SWAP A,B` WITH NO `B` IS ERROR 5 ON BOTH MACHINES, BUT ZEROBAS HAS CREATED `B` HOLDING A'S VALUE (1);...** -> [D-SWAPNEW](todo/open/D-SWAPNEW.md) <!-- item:open/D-SWAPNEW -->
 - [ ] **`ABS("A"` (NO `)`) AND `ABS("A",2)` ARE A SYNTAX ERROR (2) ON THE VG-8020 AND A TYPE MISMATCH (13) HERE --...** -> [D-ARGTYPEORDER](todo/open/D-ARGTYPEORDER.md) <!-- item:open/D-ARGTYPEORDER -->
 - [ ] **AN EXPONENT-0 ZERO TIMES 3 (`FIX(.5!)3`) IS A DOUBLE ZERO WITH DIGIT BYTES 30 00 ... ON THE VG-8020, EIGHT...** -> [D-ZEROMUL](todo/open/D-ZEROMUL.md) <!-- item:open/D-ZEROMUL -->
 - [ ] **NEAR A HALF OR WHOLE TURN, ZEROBAS'S SIN / COS / TAN KEEP MORE OF THE ANGLE THAN THE VG-8020'S 14-DIGIT RED...** -> [D-TRIGHALF](todo/open/D-TRIGHALF.md) <!-- item:open/D-TRIGHALF -->

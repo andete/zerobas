@@ -1,0 +1,4 @@
+FX: 57 cases; both complete
+  2 cases differ: KLT FX 38, KLT FX 50
+wrote scratchpad/KLT_run1.out
+refcache: 0 hit, 2 miss, 2 stored
