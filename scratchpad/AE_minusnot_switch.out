@@ -1,0 +1,20 @@
+baseline (all switches on): assembles, postchecks OK (1)
+
+FAIL  G6_RESIDENT equ 0 (basic)
+        [basic] ERROR: Symbol 'ev_f_nonlet_far' is undefined  on line 713 of file basic/expr.asm
+FAIL  G7_RESIDENT equ 0 (basic)
+        [basic] ERROR: Symbol 'ev_f_nonlet_far' is undefined  on line 713 of file basic/expr.asm
+FAIL  G8_RESIDENT equ 0 (basic)
+        [basic] ERROR: Symbol 'ev_f_nonlet_far' is undefined  on line 713 of file basic/expr.asm
+FAIL  I1_RESIDENT equ 0 (basic)
+        [basic] ERROR: Symbol 'ev_f_nonlet_far' is undefined  on line 713 of file basic/expr.asm
+FAIL  TRAPS_T3 equ 0 (basic)
+        [basic] ERROR: Symbol 'ev_f_nonlet_far' is undefined  on line 713 of file basic/expr.asm
+FAIL  TRAPS_T4 equ 0 (basic)
+        [basic] ERROR: Symbol 'ev_f_nonlet_far' is undefined  on line 713 of file basic/expr.asm
+FAIL  CLEARPOOL equ 0 (basic+sub)
+        [basic] ERROR: Symbol 'ev_f_nonlet_far' is undefined  on line 713 of file basic/expr.asm
+
+SWITCHES: 0 of 7 assemble with the switch off
+FAIL: G6_RESIDENT, G7_RESIDENT, G8_RESIDENT, I1_RESIDENT, TRAPS_T3, TRAPS_T4, CLEARPOOL
+A switch that cannot be flipped is a switch that is not there. The usual cause is an ALWAYS-ASSEMBLED reference to a symbol that only exists under the switch (`X equ y`, a `jp`, a table entry); the fix is an ELSE arm, which costs the shipping build nothing because it is not assembled there.

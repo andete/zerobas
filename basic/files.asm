@@ -929,7 +929,6 @@ rlb_mark:                                   ; A = row (1-24): LINTTB[A] := $AF
 ; address and `jp $6CF3`, the reference's continuation, which then runs the rest
 ; of the statement exactly as a `ret` would (scratchpad/basicint_probe.out row
 ; `cont`). Ours is load_handoff's tail (basic/bload.asm lh_back). FIXED ADDRESS.
-    IF BASICINT_PINS
 ; --- ev_f_nonlet_far: a factor that is no letter, no literal token (D-MINUSNOT) --
 ; ev_f_nonlet's head, moved here, in front of the $6CF3 pin's pad, because the
 ; $4EF8 pin after ev_f leaves no room: `&` (D-AMPB) goes to evnl_amp as before;
@@ -964,6 +963,7 @@ evnf_rel:
                 push    hl                  ; [sentinel]
                 jp      cl_opnd_lo          ; NOT and a string comparison may begin it
 
+    IF BASICINT_PINS
                 ds      $6CF3 - $, $00
 basicint_6cf3:
                 jp      lh_back
