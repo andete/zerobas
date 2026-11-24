@@ -1,0 +1,217 @@
+D-NMSHOST step 1: DOS disk = private copy of test.dsk; 30 s emulated per machine
+===== ref: Philips_VG_8020 + Philips_NMS_1200 (cartridge slot 1 (a)) =====
+slot map:
+   slot 0:
+   0000: MSX BIOS with BASIC ROM
+   4000: MSX BIOS with BASIC ROM
+   8000: 
+   C000: 
+   slot 1 (slota):
+   0000: 
+   4000: Philips NMS 1200 diskROM/FDC
+   8000: 
+   C000: 
+   slot 2 (slotb):
+   0000: 
+   4000: 
+   8000: 
+   C000: 
+   slot 3:
+   0000: Main RAM
+   4000: Main RAM
+   8000: Main RAM
+   C000: Main RAM
+W 0.316139 H.STKE FEDA := FF by page0@0
+W 0.316145 H.STKE FEDA := 00 by page0@0
+W 0.316158 H.STKE FEDB := FF by page0@0
+W 0.316164 H.STKE FEDB := 00 by page0@0
+W 0.316177 H.STKE FEDC := 00 by page0@0
+W 0.316183 H.STKE FEDC := FF by page0@0
+W 0.316196 H.STKE FEDD := 00 by page0@0
+W 0.316202 H.STKE FEDD := FF by page0@0
+W 0.316215 H.STKE FEDE := FF by page0@0
+W 0.316221 H.STKE FEDE := 00 by page0@0
+W 0.316234 H.ISFL FEDF := FF by page0@0
+W 0.316240 H.ISFL FEDF := 00 by page0@0
+W 0.316253 H.ISFL FEE0 := 00 by page0@0
+W 0.316259 H.ISFL FEE0 := FF by page0@0
+W 0.316272 H.ISFL FEE1 := 00 by page0@0
+W 0.316278 H.ISFL FEE1 := FF by page0@0
+W 0.316291 H.ISFL FEE2 := FF by page0@0
+W 0.316297 H.ISFL FEE2 := 00 by page0@0
+W 0.316310 H.ISFL FEE3 := FF by page0@0
+W 0.316316 H.ISFL FEE3 := 00 by page0@0
+W 0.321408 H.DSKO FDEF := 00 by page0@0
+W 0.321414 H.DSKO FDEF := FF by page0@0
+W 0.321427 H.DSKO FDF0 := FF by page0@0
+W 0.321433 H.DSKO FDF0 := 00 by page0@0
+W 0.321446 H.DSKO FDF1 := FF by page0@0
+W 0.321452 H.DSKO FDF1 := 00 by page0@0
+W 0.321465 H.DSKO FDF2 := 00 by page0@0
+W 0.321471 H.DSKO FDF2 := FF by page0@0
+W 0.321484 H.DSKO FDF3 := 00 by page0@0
+W 0.321490 H.DSKO FDF3 := FF by page0@0
+W 0.323144 HIMEM FC4A := FF by page0@0
+W 0.323150 HIMEM FC4A := 00 by page0@0
+W 0.323163 HIMEM FC4B := FF by page0@0
+W 0.323169 HIMEM FC4B := 00 by page0@0
+W 0.327236 DRVTBL FB21 := FF by page0@0
+W 0.327242 DRVTBL FB21 := 00 by page0@0
+W 0.327255 DRVTBL FB22 := 00 by page0@0
+W 0.327261 DRVTBL FB22 := FF by page0@0
+W 0.327274 DRVTBL FB23 := 00 by page0@0
+W 0.327280 DRVTBL FB23 := FF by page0@0
+W 0.327293 DRVTBL FB24 := FF by page0@0
+W 0.327299 DRVTBL FB24 := 00 by page0@0
+W 0.327312 DRVTBL FB25 := FF by page0@0
+W 0.327318 DRVTBL FB25 := 00 by page0@0
+W 0.327331 DRVTBL FB26 := 00 by page0@0
+W 0.327337 DRVTBL FB26 := FF by page0@0
+W 0.327350 DRVTBL FB27 := 00 by page0@0
+W 0.327356 DRVTBL FB27 := FF by page0@0
+W 0.327369 DRVTBL FB28 := FF by page0@0
+W 0.327375 DRVTBL FB28 := 00 by page0@0
+W 0.366959 DISK_HIMSAV? F349 := FF by page0@0
+W 0.366965 DISK_HIMSAV? F349 := 00 by page0@0
+W 0.366978 DISK_HIMSAV? F34A := 00 by page0@0
+W 0.366984 DISK_HIMSAV? F34A := FF by page0@0
+W 0.631444 DRVTBL FB21 := 00 by page0@0
+W 0.631451 DRVTBL FB22 := 00 by page0@0
+W 0.631457 DRVTBL FB23 := 00 by page0@0
+W 0.631463 DRVTBL FB24 := 00 by page0@0
+W 0.631470 DRVTBL FB25 := 00 by page0@0
+W 0.631476 DRVTBL FB26 := 00 by page0@0
+W 0.631483 DRVTBL FB27 := 00 by page0@0
+W 0.631489 DRVTBL FB28 := 00 by page0@0
+W 0.633353 HIMEM FC4A := 00 by page0@0
+W 0.633359 HIMEM FC4B := 00 by page0@0
+W 0.636058 H.DSKO FDEF := 00 by page0@0
+W 0.636064 H.DSKO FDF0 := 00 by page0@0
+W 0.636071 H.DSKO FDF1 := 00 by page0@0
+W 0.636077 H.DSKO FDF2 := 00 by page0@0
+W 0.636083 H.DSKO FDF3 := 00 by page0@0
+W 0.637568 H.STKE FEDA := 00 by page0@0
+W 0.637574 H.STKE FEDB := 00 by page0@0
+W 0.637580 H.STKE FEDC := 00 by page0@0
+W 0.637587 H.STKE FEDD := 00 by page0@0
+W 0.637593 H.STKE FEDE := 00 by page0@0
+W 0.637600 H.ISFL FEDF := 00 by page0@0
+W 0.637606 H.ISFL FEE0 := 00 by page0@0
+W 0.637613 H.ISFL FEE1 := 00 by page0@0
+W 0.637619 H.ISFL FEE2 := 00 by page0@0
+W 0.637625 H.ISFL FEE3 := 00 by page0@0
+W 0.638885 H.PHYD FFA7 := 00 by page0@0
+W 0.638891 H.PHYD FFA8 := 00 by page0@0
+W 0.638898 H.PHYD FFA9 := 00 by page0@0
+W 0.638904 H.PHYD FFAA := 00 by page0@0
+W 0.638911 H.PHYD FFAB := 00 by page0@0
+W 0.638917 H.FORM FFAC := 00 by page0@0
+W 0.638923 H.FORM FFAD := 00 by page0@0
+W 0.638930 H.FORM FFAE := 00 by page0@0
+W 0.638936 H.FORM FFAF := 00 by page0@0
+W 0.638943 H.FORM FFB0 := 00 by page0@0
+W 0.639805 H.DSKO FDEF := C9 by page1@0
+W 0.639811 H.DSKO FDF0 := C9 by page1@0
+W 0.639817 H.DSKO FDF1 := C9 by page1@0
+W 0.639824 H.DSKO FDF2 := C9 by page1@0
+W 0.639830 H.DSKO FDF3 := C9 by page1@0
+W 0.641314 H.STKE FEDA := C9 by page1@0
+W 0.641321 H.STKE FEDB := C9 by page1@0
+W 0.641327 H.STKE FEDC := C9 by page1@0
+W 0.641334 H.STKE FEDD := C9 by page1@0
+W 0.641340 H.STKE FEDE := C9 by page1@0
+W 0.641347 H.ISFL FEDF := C9 by page1@0
+W 0.641353 H.ISFL FEE0 := C9 by page1@0
+W 0.641359 H.ISFL FEE1 := C9 by page1@0
+W 0.641366 H.ISFL FEE2 := C9 by page1@0
+W 0.641372 H.ISFL FEE3 := C9 by page1@0
+W 0.642632 H.PHYD FFA7 := C9 by page1@0
+W 0.642638 H.PHYD FFA8 := C9 by page1@0
+W 0.642645 H.PHYD FFA9 := C9 by page1@0
+W 0.642651 H.PHYD FFAA := C9 by page1@0
+W 0.642657 H.PHYD FFAB := C9 by page1@0
+W 0.642664 H.FORM FFAC := C9 by page1@0
+W 0.642670 H.FORM FFAD := C9 by page1@0
+W 0.642677 H.FORM FFAE := C9 by page1@0
+W 0.642683 H.FORM FFAF := C9 by page1@0
+W 0.642690 H.FORM FFB0 := C9 by page1@0
+W 0.642858 HIMEM FC4A := 80 by page1@0
+W 0.642858 HIMEM FC4B := F3 by page1@0
+W 4.952566 HIMEM FC4A := C1 by page1@1
+W 4.952566 HIMEM FC4B := F1 by page1@1
+W 4.958089 DISK_HIMSAV? F349 := 00 by page1@1
+W 4.958102 DISK_HIMSAV? F34A := 00 by page1@1
+W 4.958864 DRVTBL FB21 := 00 by page1@1
+W 4.958872 DRVTBL FB22 := 00 by page1@1
+W 4.958880 DRVTBL FB23 := 00 by page1@1
+W 4.958888 DRVTBL FB24 := 00 by page1@1
+W 4.958896 DRVTBL FB25 := 00 by page1@1
+W 4.958905 DRVTBL FB26 := 00 by page1@1
+W 4.958913 DRVTBL FB27 := 00 by page1@1
+W 4.958921 DRVTBL FB28 := 00 by page1@1
+W 5.742121 DRVTBL FB21 := 02 by page1@1
+W 5.742173 DRVTBL FB22 := 01 by page1@1
+W 5.742811 HIMEM FC4A := 97 by page1@1
+W 5.742811 HIMEM FC4B := F1 by page1@1
+W 5.748792 HIMEM FC4A := 97 by page1@1
+W 5.748792 HIMEM FC4B := EF by page1@1
+W 5.749189 HIMEM FC4A := 97 by page1@1
+W 5.749189 HIMEM FC4B := ED by page1@1
+W 5.749570 HIMEM FC4A := 97 by page1@1
+W 5.749570 HIMEM FC4B := EB by page1@1
+W 5.750417 HIMEM FC4A := 96 by page1@1
+W 5.750417 HIMEM FC4B := E5 by page1@1
+W 5.750566 DISK_HIMSAV? F349 := 96 by page1@1
+W 5.750566 DISK_HIMSAV? F34A := E5 by page1@1
+W 5.751216 HIMEM FC4A := 95 by page1@1
+W 5.751216 HIMEM FC4B := DF by page1@1
+W 5.751365 DISK_HIMSAV? F349 := 95 by page1@1
+W 5.751365 DISK_HIMSAV? F34A := DF by page1@1
+W 6.060138 H.DSKO FDEF := F7 by page1@1
+W 6.060147 H.DSKO FDF0 := 01 by page1@1
+W 6.060153 H.DSKO FDF1 := 96 by page1@1
+W 6.060158 H.DSKO FDF2 := 6B by page1@1
+W 6.060165 H.DSKO FDF3 := C9 by page1@1
+W 6.061640 H.PHYD FFA7 := F7 by page1@1
+W 6.061649 H.PHYD FFA8 := 01 by page1@1
+W 6.061654 H.PHYD FFA9 := 55 by page1@1
+W 6.061660 H.PHYD FFAA := 60 by page1@1
+W 6.061667 H.PHYD FFAB := C9 by page1@1
+W 6.061687 H.FORM FFAC := F7 by page1@1
+W 6.061696 H.FORM FFAD := 01 by page1@1
+W 6.061701 H.FORM FFAE := B0 by page1@1
+W 6.061706 H.FORM FFAF := 60 by page1@1
+W 6.061714 H.FORM FFB0 := C9 by page1@1
+END 30.000003
+CELLS FC4A=95DF FB21=0201000000000000 FFA7=F7015560C9 FEDA=C9C9C9C9C9 FDEF=F701966BC9 F37D=C331F3
+PAGES 3 3 1 3
+SCREEN
+disk sectors changed by the run: none
+
+Traceback (most recent call last):
+  File "/Users/joost/projects/zerobas/scratchpad/nmshost_probe.py", line 129, in <module>
+    main()
+    ~~~~^^
+  File "/Users/joost/projects/zerobas/scratchpad/nmshost_probe.py", line 125, in main
+    run(tag, m)
+    ~~~^^^^^^^^
+  File "/Users/joost/projects/zerobas/scratchpad/nmshost_probe.py", line 107, in run
+    subprocess.run(omsx_preflight.guarded(cmd), env=dict(os.environ, LOGF=log, CARTSLOT=str(cart)),
+    ~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+                   stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, timeout=600)
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/homebrew/Cellar/python@3.14/3.14.7/Frameworks/Python.framework/Versions/3.14/lib/python3.14/subprocess.py", line 557, in run
+    stdout, stderr = process.communicate(input, timeout=timeout)
+                     ~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/homebrew/Cellar/python@3.14/3.14.7/Frameworks/Python.framework/Versions/3.14/lib/python3.14/subprocess.py", line 1221, in communicate
+    stdout, stderr = self._communicate(input, endtime, timeout)
+                     ~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/homebrew/Cellar/python@3.14/3.14.7/Frameworks/Python.framework/Versions/3.14/lib/python3.14/subprocess.py", line 2179, in _communicate
+    self.wait(timeout=self._remaining_time(endtime))
+    ~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/homebrew/Cellar/python@3.14/3.14.7/Frameworks/Python.framework/Versions/3.14/lib/python3.14/subprocess.py", line 1279, in wait
+    return self._wait(timeout=timeout)
+           ~~~~~~~~~~^^^^^^^^^^^^^^^^^
+  File "/opt/homebrew/Cellar/python@3.14/3.14.7/Frameworks/Python.framework/Versions/3.14/lib/python3.14/subprocess.py", line 2076, in _wait
+    raise TimeoutExpired(self.args, timeout)
+subprocess.TimeoutExpired: Command '['/opt/homebrew/bin/openmsx', '-command', 'set save_settings_on_exit false', '-command', 'proc ::__zb_unarm {args} { if {[info exists ::openmsx::auto_run_bp]} { debug remove_bp $::openmsx::auto_run_bp; unset ::openmsx::auto_run_bp } }; catch {trace add execution cassetteplayer leave ::__zb_unarm}; ::__zb_unarm', '-machine', 'C-BIOS_MSX1_EU_REPACK_NODISK', '-ext', 'Philips_NMS_1200', '-diska', '/tmp/zerobas/zbprobe_41893__0k_stbu/nmshost_zb.dsk', '-script', '/tmp/zerobas/zbprobe_41893__0k_stbu/nmshost_zb.tcl']' timed out after 600 seconds

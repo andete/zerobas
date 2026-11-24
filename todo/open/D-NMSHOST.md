@@ -1,0 +1,28 @@
+- [ ] 🎯 **D-NMSHOST — ZEROBAS WITHOUT ITS DISK ROM HOSTS THE NMS 1200 CARTRIDGE AND BOOTS MSX-DOS (the host half of the disk contract)**
+      🎚️ TIER 1 — Joost 2026-11-24: preparing zerobas for disk ROM support in C-BIOS; "plain C-BIOS won't work, no need
+      to test that yet. We still need to port any kind of disk facilities to it." The host is zerobas's no-disk build
+      (C-BIOS_MSX1_EU_REPACK_NODISK = C-BIOS plus our fixes), the cartridge the Philips NMS 1200 (openMSX `-ext
+      Philips_NMS_1200`, a black box: run, never read), the reference the VG-8020 with the same cartridge.
+      🤖 **AUTONOMOUS** — black box: work-area RAM, hooks, slot state, VRAM, the disk image; never a ROM byte.
+      First look (2026-11-24, 25 s after power-on, no disk inserted): VG-8020 + NMS 1200 -> HIMEM $DF95, DRVTBL 2 drives,
+      H.PHYD patched ($F7), MSX-DOS's "Enter date" prompt; NODISK + NMS 1200 -> HIMEM $F380, DRVTBL 0, H.PHYD $C9: the
+      cartridge never sets itself up. (Plain C-BIOS MSX1 EU: the same.)
+      Plan: (1) a probe that traces the boot step by step on both machines -- INIT called, HIMEM lowered, DRVTBL filled,
+      hooks patched, boot sector read, MSXDOS.SYS loaded, the prompt -- against a private copy of the user's DOS disk
+      (never committed); the first step that differs is the first item; (2) fix each gap in zerobas's main BIOS until
+      the NODISK build boots MSX-DOS from the NMS 1200 as the VG-8020 does; (3) each fix recorded on a host-contract
+      page (what a disk ROM needs from the main BIOS) -- the patches for C-BIOS later. Out of scope: the NMS 1200's
+      Disk BASIC side (MS-BASIC internals), plain C-BIOS (until disk facilities are ported).
+      STEP 1 (2026-11-24, scratchpad/nmshost_probe.py; runs AE_nmshost_step1.out (ref, 30 s), AE_nmshost_step1_ref.out /
+      AE_nmshost_step1_zb.out (8 s / 4 s, with the page@slot trace)): zerobas DOES call the cartridge's INIT -- not
+      C-BIOS's scan but zerobas BASIC's own `init_ext_roms` (basic/initext.asm, islands.asm), late, from BASIC's
+      start-up -- at 2.65 s (the VG-8020's BIOS scan: 4.95 s). The INIT starts the same on both: HIMEM low byte := $C1,
+      $F349 := 0, DRVTBL zeroed, main-ROM calls with interrupts on. Then on zerobas the machine RESTARTS in a loop (the
+      main BIOS's start-up writes repeat ~97 times in 8 s) and never reaches the reference's second HIMEM step
+      ($DF97 / $DF95 at 5.74 s), the drive table, or the hooks (6.06 s). On BOTH machines the INIT makes inter-slot
+      calls (cartridge -> page-3 RAM -> page 1 of SLOT 0): on the VG-8020 that is the MS-BASIC ROM page, on zerobas
+      zerobas's own page-1 code. LEADING HYPOTHESIS (not yet proven): the NMS 1200's INIT calls fixed addresses in
+      the main ROM's page 1 that zerobas does not keep. NEXT: pin where the restart starts (the last page@slot
+      changes before the first repeated start-up write), and whether the page-1 calls go to a published BIOS entry or
+      not -- black box only (page@slot and SP, never PC values or ROM bytes); then decide the remedy with Joost (a
+      page-1 call table for disk ROMs, as the reference keeps, or a call-context change in init_ext_roms).
