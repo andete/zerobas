@@ -14,3 +14,30 @@
       (4) expected: JIFFY, SCNCNT, the expanded-RAM slot cells.
       ➡️ When picked up: FRETOP first (find the step that overwrites it); then move zerobas's own state out of the
       published cells (the RAM map, tools/ram_map.py), one cell group at a time, each with its gates.
+      MEASURED 2026-11-24 (typed PEEKs, VG-8020 vs zerobas NODISK; Joost: "yes, I think we need to fix those boot state
+      differences"): FRE("") and FRE(0) AGREE after `CLEAR 300,&HC000`, `MAXFILES=3` and `MAXFILES=0` (300 / 15531,
+      300 / 14997, 300 / 15798) -- zerobas reserves the right AMOUNT -- but its cells stay static (MEMSIZ $F168, STKTOP
+      $F0A0, FILTAB $F16A; FRETOP = HIMEM). The reference keeps them live: MEMSIZ = HIMEM - ((MAXFILES+1) * 267 + 2)
+      ($BDE8 / $BBD2 / $BEF3 for MAXFILES 1 / 3 / 0 under HIMEM $C000), STKTOP = MEMSIZ - the string space ($BCBC /
+      $BAA6 / $BDC7), FILTAB = MEMSIZ + 2, FRETOP = MEMSIZ (one reading $BDE9 = MEMSIZ + 1 right after CLEAR: to
+      re-check). And its strings sit between STKTOP and MEMSIZ, zerobas's from HIMEM down (inside the reference's file
+      area). THE FIX: the layout cells live through CLEAR / MAXFILES by that rule, the string heap's ceiling = MEMSIZ,
+      the stack top = STKTOP; FRE must not move (the regression check).
+      FILTAB's TABLE (measured, same run): MAXFILES+1 words at FILTAB, each pointing at a 265-byte file control block laid
+      out right after the table -- FCB i = FILTAB + 2 * (MAXFILES+1) + 265 * i (MAXFILES 1: $BDEA -> $BDEE, $BEF7;
+      MAXFILES 3: $BBD4 -> $BBDC, $BCE5, $BDEE, $BEF7; MAXFILES 0: $BEF5 -> $BEF7); 265 + the 2-byte entry = the 267 in
+      MEMSIZ's rule. zerobas's table reads $FFFF (its file engine keeps its own structures).
+      PLAN, a step at a time, each gated: (1) one layout routine for the CELLS -- MEMSIZ by MAXFILES, STKTOP = MEMSIZ -
+      the string space, FILTAB and its table's pointers -- run at boot, by CLEAR and by MAXFILES (generalising
+      basic/files.asm layout_from_himem, which hard-codes MAXFILES 1 and 200); FRE must not move; (2) the string heap's
+      ceiling = MEMSIZ, so FRETOP = MEMSIZ (heap_reset / strheap_ceiling / the GC); (3) the published cells zerobas
+      uses for its own state, one group at a time, out to its own RAM (the RAM map); (4) the FCBs themselves: whether
+      zerobas's file engine should keep its state in them is a design question -- ask Joost before.
+      THE ORDER (read from zerobas's own source, 2026-11-24): zerobas's file blocks are 267 B a channel, MAXFILES+1 of
+      them (sub/strheap.asm strheap_chantab, FCH_CTXSZ) -- the reference's 265-byte FCB + its 2-byte table entry -- but
+      they sit BELOW the string pool, and the pool sits under HIMEM: [blocks][strings]HIMEM, where the reference has
+      STKTOP[strings]MEMSIZ[FILTAB table + FCBs]HIMEM. Same pieces, same total (so FRE agrees), other order. So steps
+      (1) + (2) of the plan are ONE unit: swap the order (blocks between MEMSIZ and HIMEM, strings between STKTOP and
+      MEMSIZ: strheap_chantab / strheap_floor / strheap_ceiling, the file engine's block lookup, CLEAR / MAXFILES), then
+      write the cells and FILTAB's table by the measured rule. FRE and every file / string suite are the regression check.
+
