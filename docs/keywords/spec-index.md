@@ -54,7 +54,7 @@ Every keyword page, the region the spec loop takes it in, and how far its page h
 | `XOR` | [operators](../concepts/numbers.md) | RAM record | VG-8020 | [DRAFT 1](XOR.md) | 6 | — |
 | `EQV` | [operators](../concepts/numbers.md) | RAM record | VG-8020 | [DRAFT 1](EQV.md) | 6 | — |
 | `IMP` | [operators](../concepts/numbers.md) | RAM record | VG-8020 | [DRAFT 1](IMP.md) | 6 | — |
-| `NOT` | [operators](../concepts/numbers.md) | RAM record | VG-8020 | [DRAFT 1](NOT.md) | 6 | D-MINUSNOT |
+| `NOT` | [operators](../concepts/numbers.md) | RAM record | VG-8020 | [DRAFT 1](NOT.md) | 6 | — |
 | `MOD` | [operators](../concepts/numbers.md) | RAM record | VG-8020 | [DRAFT 1](MOD.md) | 6 | — |
 | `LET` | [operators](../concepts/numbers.md) | RAM record | VG-8020 | [DRAFT 1](LET.md) | 5 | — |
 | `SWAP` | [operators](../concepts/numbers.md) | RAM record | VG-8020 | [DRAFT 1](SWAP.md) | 4 | D-SWAPNEW |

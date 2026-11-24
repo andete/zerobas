@@ -1,0 +1,11 @@
+  live KOP_run1.out OS: 160 cases, 0.2 s
+  live KOP_run1.out FY: 41 cases, 0.0 s
+  live KOP_run1.out OD: 112 cases, 0.2 s
+  live KOP_run1.out FX: 87 cases, 0.2 s
+  live KOP_run1.out OI: 160 cases, 0.2 s
+  live KOP_run1.out: zerobas CHANGED since the committed run in FX, FY
+  REFRESHED scratchpad/KOP_run1.out
+FAIL docs/keywords/NOT.md: 5 rules, 0 failing on zerobas (live, 1 run file(s))
+     STALE PAGE R-NOT-PREC: the page lists it as a difference, but it holds on zerobas
+===== spec-live: DISAGREEMENT =====
+refcache: 5 hit, 0 miss, 5 of the hits were ZEROBAS readings

@@ -10,8 +10,8 @@ SPDX-License-Identifier: BSD-2-Clause
 > zerobas, by typed BASIC ([`kops.py`](../../probes/basic/spec/kops.py)); every rule is executable and
 > every recorded output is read by one. Goldfish pass 1 (2026-11-24) acted on ([the keyword plan](spec-plan.md)).
 >
-> **Status (2026-11-24):** level 3 — happy path ✗ (`-NOT 0`) · reasonable time ✓ · common
-> errors ✓ · RAM usage not yet proven · every error ✓. One difference, found by the spec probe (below).
+> **Status (2026-11-24):** level 3 — happy path ✓ · reasonable time ✓ · common
+> errors ✓ · RAM usage not yet proven · every error ✓. No known divergence (D-MINUSNOT fixed 2026-11-24).
 > Speed is deliberately left out of these docs until on-par speed is
 > established for every keyword.
 
@@ -19,7 +19,7 @@ SPDX-License-Identifier: BSD-2-Clause
 
 `NOT a` flips every bit of a number taken as a 16-bit integer, so `NOT a` is
 always `-a - 1`. Because true is −1 and false is 0, it also turns true into
-false and back: `IF NOT (A>5) THEN …`. zerobas gives the same results as the Philips VG-8020, except where NOT stands after another operator (below).
+false and back: `IF NOT (A>5) THEN …`. zerobas behaves like the Philips VG-8020 in every case measured, NOT after another operator included (fixed 2026-11-24).
 
 The operand rules and the precedence order are shared by all the logical
 operators and are described on the [`AND`](AND.md) page.
@@ -130,7 +130,7 @@ reference's cases: “operands rounded half away from zero (not truncated)” is
 
 | rule | cases | reference | zerobas |
 |---|---|---|---|
-| **R-NOT-PREC** In an expression the operators bind in this order, tightest first: `^`; unary minus; `*` `/`; `\`; MOD; `+` `-`; the comparisons; NOT; AND; OR; XOR; EQV; IMP -- each group left to right (XOR and EQV cannot be told apart: every grouping of the two agrees). So NOT 1+2 is NOT 3 (-4), NOT 1<2 is 0, 7 MOD 4+2 is 5, -7 MOD 4 is -3, 7\2 MOD 2 is 1; a minus may stand before NOT (-NOT 0 is 1). A literal's own type counts (&HFFFF the integer -1; 65535 a single: error 6). | 13 | ✓ | ✗ 4: KOP FX 53, KOP FY 17, KOP FY 18, KOP FY 19 |
+| **R-NOT-PREC** In an expression the operators bind in this order, tightest first: `^`; unary minus; `*` `/`; `\`; MOD; `+` `-`; the comparisons; NOT; AND; OR; XOR; EQV; IMP -- each group left to right (XOR and EQV cannot be told apart: every grouping of the two agrees). So NOT 1+2 is NOT 3 (-4), NOT 1<2 is 0, 7 MOD 4+2 is 5, -7 MOD 4 is -3, 7\2 MOD 2 is 1; a minus may stand before NOT (-NOT 0 is 1). A literal's own type counts (&HFFFF the integer -1; 65535 a single: error 6). | 13 | ✓ | ✓ |
 | **R-NOT-ERRORS** A string operand (`NOT "A"`) is error 13 (Type mismatch); `NOT` alone is error 24 (Missing operand). | 2 | ✓ | ✓ |
 
 #### 3. The result stored
@@ -143,7 +143,7 @@ reference's cases: “operands rounded half away from zero (not truncated)” is
 
 ## Differences from the reference
 
-- **`-NOT 0` (and NOT after any operator) is a Syntax error here; the VG-8020 gives 1** ([D-MINUSNOT](../../todo/open/D-MINUSNOT.md); rule R-NOT-PREC, KOP FX 53; and NOT after any operator -- `2*NOT 0`, `2+NOT 0=0`, `-NOT 0=1` -- KOP FY 17-19): zerobas accepts NOT only at the start of an operand.
+None known.
 
 The one rung not yet proven is **RAM usage**: `NOT` uses the same amount of free
 memory on both machines, but the VG-8020 writes some work-area cells that
@@ -163,6 +163,7 @@ zerobas does not.
 
 ## What we found, and how
 
+- **NOT after another operator was a Syntax error here** (fixed 2026-11-24, [D-MINUSNOT](../../todo/done/D-MINUSNOT.md)): `-NOT 0`, `2*NOT 0`, `2+NOT 0=0` and `-NOT 0=1` were refused, because zerobas took NOT only at the start of an operand of a logical operator. On the reference NOT, wherever it stands, takes in a whole comparison-level expression; now zerobas does too (`ev_f_nonlet_far`, [basic/files.asm](../../basic/files.asm)).
 - **The spec probe** (D-KWSPEC, 2026-11-24): every operand made an integer by CINT's rule (toward zero, -32768..32767 strictly: 65535 is Overflow, not -1), the result an integer, and the precedence the pages give, NOT below the comparisons and arithmetic -- each against a rival the controls refute. One difference: `-NOT 0` (D-MINUSNOT).
 - **Fractional operands** follow the VG-8020's truncate-or-`Overflow` rule
   since 2026-07-11 (`NOT 2.5` is −3, not −4):

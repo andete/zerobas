@@ -930,6 +930,40 @@ rlb_mark:                                   ; A = row (1-24): LINTTB[A] := $AF
 ; of the statement exactly as a `ret` would (scratchpad/basicint_probe.out row
 ; `cont`). Ours is load_handoff's tail (basic/bload.asm lh_back). FIXED ADDRESS.
     IF BASICINT_PINS
+; --- ev_f_nonlet_far: a factor that is no letter, no literal token (D-MINUSNOT) --
+; ev_f_nonlet's head, moved here, in front of the $6CF3 pin's pad, because the
+; $4EF8 pin after ev_f leaves no room: `&` (D-AMPB) goes to evnl_amp as before;
+; NOT is new; anything else returns to ev_f_nonlet's digit / missing-operand tail.
+ev_f_nonlet_far:
+                cp      '&'                 ; D-AMPB: `&B` stays TEXT in the line
+                jp      z,evnl_amp          ; (str-engine.asm, the LOW region)
+                cp      NOT_TOKEN
+                jp      nz,evnl_digits
+; NOT where an operand of another operator begins: `2*NOT 0`, `2+NOT 0=0`,
+; `-NOT 0=1`. The VG-8020 takes NOT there as at an expression's start -- over a
+; whole comparison-level expression -- and its result is the operand: -2, 2, 1
+; (MEASURED, scratchpad/KOP_run1.out FX 53, FY 17-19). At an expression's start
+; basic/expr.asm's cl_opnd_lo takes NOT and never gets here.
+                inc     ix                  ; past NOT
+                call    evnf_rel            ; DE / FAC = the comparison-level operand
+                ld      a,(FACTYP)
+                cp      2
+                call    nz,fac_to_int_strict_reset ; -> int16 (Overflow deferred), FACTYP 2
+                ld      a,e
+                cpl
+                ld      e,a
+                ld      a,d
+                cpl
+                ld      d,a                 ; DE = ~DE, NOT's own complement
+                ret
+
+; the climber's entry at the relational level (expr.asm's ev_logic / ev_e shape: the
+; caller's return address, THEN the sentinel, then the loop, which returns at it)
+evnf_rel:
+                ld      h,CL_REL-1          ; a relational and tighter join
+                push    hl                  ; [sentinel]
+                jp      cl_opnd_lo          ; NOT and a string comparison may begin it
+
                 ds      $6CF3 - $, $00
 basicint_6cf3:
                 jp      lh_back

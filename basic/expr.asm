@@ -710,8 +710,10 @@ ev_f_ifc:                                   ; deferred FPERR=3 "illegal function
 ; ⚠️ Integer digits only, wrapping at 16 bits: what a channel number needs. An
 ; ASCII `1.5` or `1E3` reads its leading digits and stops at the `.`/`E`.
 ev_f_nonlet:
-                cp      '&'                 ; D-AMPB: `&B` stays TEXT in the line
-                jp      z,evnl_amp          ; (str-engine.asm, the LOW region)
+                jp      ev_f_nonlet_far     ; `&` and NOT, beyond the $4EF8 pin (files.asm,
+                                            ; D-MINUSNOT: 2 B less in front of it than the
+                                            ; `cp '&' / jp z` it replaces)
+evnl_digits:
                 sub     '0'
                 cp      10
                 jr      nc,evnl_miss

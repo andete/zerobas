@@ -1,4 +1,4 @@
-- [ ] 🐛 **`-NOT 0` IS A SYNTAX ERROR ON ZEROBAS; THE VG-8020 EVALUATES IT AS -(NOT 0) = 1 (D-MINUSNOT, found 2026-11-24
+- [x] 🐛 **`-NOT 0` IS A SYNTAX ERROR ON ZEROBAS; THE VG-8020 EVALUATES IT AS -(NOT 0) = 1 (D-MINUSNOT, found 2026-11-24
       by D-KWSPEC's operators unit).**
       🎚️ TIER 1 — a valid expression refused (happy path), though rare in programs: re-tier if Joost prefers.
       🤖 **AUTONOMOUS** — measured by [`kops.py`](../../probes/basic/spec/kops.py) group FX ->
@@ -11,3 +11,8 @@
       Goldfish pass 1 (2026-11-24): WIDER -- NOT after ANY operator is refused here: `2*NOT 0` (-2 there), `2+NOT 0=0`
       (2 there), `-NOT 0=1` (1 there) are all error 2 here (KOP FY 17-19). On the reference NOT, wherever it stands,
       takes in a whole comparison-level expression. The acceptance grows to those rows.
+      ✅ FIXED 2026-11-24: ev_f_nonlet's head moved past the $4EF8 pin into basic/files.asm (`ev_f_nonlet_far`, in
+      front of the $6CF3 pin's pad): `&` as before, and NOT now takes a comparison-level operand (the climber
+      entered at CL_REL-1) and complements it with NOT's own int16 conversion. ROM: 0 B on the page-1 wall; the
+      $4EF8 pad 3 -> 5 B, the $6CF3 pad 325 -> 289 B (pin pads are free space). KOP FX 53, FY 17-19 now agree
+      (spec-live, scratchpad/AE_minusnot_live.out; run file refreshed).
