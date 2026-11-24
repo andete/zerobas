@@ -103,3 +103,13 @@
       $DF95, DRVTBL, H.PHYD, H.DSKO, $F37D), NO restart, and the cartridge loads the BOOT SECTOR to $C000 at 5.13 s
       (the reference 7.63 s; write footprint 4,218 vs 4,227 addresses) -- the DOS boot starts. NOT YET: no "Enter
       date" on screen at 30 s; pages end RAM / RAM / slot 1 / RAM. NEXT: how far MSXDOS.SYS / COMMAND.COM get.
+      (Pushed: 770e102da H.RUNC, 8550f5f73 the layout -- FULL gates green.)
+      STEP 9 (2026-11-24): the TARGET corrected. With drive A EMPTY the VG-8020 + NMS 1200 shows "Enter date (M-D-Y):"
+      and executes neither the boot-sector entry $C01E nor $0100 (RAM breakpoints): the prompt is the DISK ROM'S OWN
+      start-up dialogue (an MSX1 has no clock), not MSX-DOS. With the private DOS disk the reference loads the boot
+      sector and shows a blank TEXT1 screen at 60 s -- not a usable target. zerobas NODISK + NMS 1200, empty drive, after
+      items 2 + 3: "Enter date (D-M-Y):" at 6 / 10 / 25 s -- THE SAME DIALOGUE. Two differences left: (a) the date FORMAT
+      (D-M-Y vs M-D-Y: the disk ROM reads it from the main ROM's published machine-ID information, which C-BIOS's EU
+      build sets differently); (b) the screen is not cleared first (the reference's prompt stands alone; zerobas's lands
+      under C-BIOS's start-up text, because the prompt comes from the cold start's H.RUNC, before zerobas's show_title
+      clears the screen). NEXT: answer the prompt on both and compare what follows; then (b) and (a).

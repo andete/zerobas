@@ -139,6 +139,7 @@ proc tick {} { puts $::log "T [t]"; flush $::log; after time 1 tick }
 after time 1 tick
 after time """ + str(SECONDS) + r""" {
   puts $::log "END [t]"
+  if {[info exists ::ring] && [info exists ::env(NMSHOST_ZBPC)]} { puts $::log "RINGEND"; foreach l $::ring { puts $::log "  $l" } }
   set s ""
   foreach {a n} {0xFC4A 2 0xFB21 8 0xFFA7 5 0xFEDA 5 0xFDEF 5 0xF37D 3} {
     set v ""; for {set i 0} {$i < $n} {incr i} { append v [format %02X [peek [expr {$a + $i}]]] }
@@ -183,8 +184,8 @@ def run(tag, machine):
     keep = "/tmp/zerobas/nmshost_keep"            # survives probe_tmp's cleanup, so a timed-out run can be read
     os.makedirs(keep, exist_ok=True)
     log = os.path.join(keep, f"nmshost_{tag}.log")
-    cmd = [openmsx_paths.find_openmsx_binary(), "-machine", machine, "-ext", "Philips_NMS_1200", "-diska", dsk,
-           "-script", tcl]
+    cmd = [openmsx_paths.find_openmsx_binary(), "-machine", machine, "-ext", "Philips_NMS_1200"] + \
+        ([] if os.environ.get("NMSHOST_NODISK") else ["-diska", dsk]) + ["-script", tcl]
     extra = {"NMSHOST_ZBPC": "1"} if tag == "zb" else {}
     try:
         subprocess.run(omsx_preflight.guarded(cmd), env=dict(os.environ, LOGF=log, CARTSLOT=str(cart), **extra),
