@@ -475,8 +475,12 @@ EXPECT = {
     # §1.1 the period is exactly n frames; n=1 fires EVERY frame
     # A1 is per-machine and one-sided: 1 frame is the floor, and the slow build
     # sits above it because the handler, not the period, is the limit there.
+    # The floor allows the same one jiffy as _per(): J1 and J2 are read inside the
+    # handler, at a statement boundary after the fire, so each stamp can land one
+    # tick either side (D-BOOTCELLS moved zerobas's from 30 to 29 jiffies over 30
+    # fires, with FEWER fires in the window). A double fire per frame reads ~0.5.
     "A1_n1": {EQ: ["err"], PER: [("fires, and never faster than its period",
-                                  lambda r: r["period"] >= 1)]},
+                                  lambda r: r["period"] >= 1 - 1.0 / r["span"])]},
     "A2_n5": {PER: _per(5)},
     "A3_n10": {PER: _per(10)}, "A4_n20": {PER: _per(20)},
     # §1.2 the n domain IS the address domain -- an equality differential
