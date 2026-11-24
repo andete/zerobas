@@ -51,3 +51,14 @@
       and returns to `init` on the original stack (or init_ext_roms becomes a jump, not a call, with no frame above it);
       then re-trace; then the reference's phase 2 (the 512-B buffer allocations to $DF95 at 5.74 s, with an inter-slot
       call into page 1 of slot 0 -- the MS-BASIC page) is the next comparison.
+      STEP 5 (2026-11-24): PROTOTYPE A in an isolated instance (HIMEM := $DB00 and SP below it BEFORE the scan; not
+      committed) -> phase 1 runs exactly as on the reference (first claim $D941 = $DB00 - $1BF, the reference's
+      $F380 - $1BF); then the INIT writes $FF to zerobas's SCAN_* cells $EF42-$EF47, which it never writes on the
+      reference, and zerobas's scan ends up CALSLTing zerobas's OWN INIT ($4010) -> a restart loop. Joost: "a third
+      option: investigate why we still have RAM variables that diverge from reference". Measured (scratchpad/
+      nmsram_probe.py, AE_nmsram_ref.out): every RAM address the NMS 1200 writes on the VG-8020 from power-on to the DOS
+      boot -- its HIMEM claim, buffers, stack, the boot sector at $C000, and published system cells incl. $F672-$F675
+      (MEMSIZ / STKTOP) and $F6AB / $F6B1 it evidently also READS. 22 zerobas variables below $F380 overlap it (mostly
+      DISK-ONLY). ⛔ NEXT, ASKED: diff the PUBLISHED DATA cells (by name; never $F380-$F399's RAM-resident code or the
+      hooks -- a full $F380-$FFFF snapshot was refused by the permission check, §8.5) at the cartridge's INIT on both
+      machines -> the system variables where zerobas diverges.

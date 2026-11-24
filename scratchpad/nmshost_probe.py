@@ -36,7 +36,7 @@ CELLS = [
     (0xFC4A, 2, "HIMEM"), (0xF349, 2, "DISK_HIMSAV?"), (0xFB21, 8, "DRVTBL"),
     (0xFFA7, 5, "H.PHYD"), (0xFFAC, 5, "H.FORM"), (0xFEDA, 5, "H.STKE"), (0xFEDF, 5, "H.ISFL"),
     (0xFDEF, 5, "H.DSKO"), (0xF37D, 3, "BDOS $F37D"), (0x0005, 1, "page-0 $0005"),
-    (0xF2C0, 0x30, "STACK@F2C0-F2EF"),
+    (0xF2C0, 0x30, "STACK@F2C0-F2EF"), (0xEF42, 6, "SCANVARS"), (0xFCC1, 4, "EXPTBL"), (0xFCC5, 4, "SLTTBL"),
 ]
 
 TCL = r"""
@@ -56,6 +56,11 @@ proc on_write {name addr} {
     flush $::log; exit
   }
   if {[string match "STACK@*" $name] && (!$::seen_p1 || [who] ne "page1@$::env(CARTSLOT)")} { return }
+  if {$::seen_p1 && $name eq "HIMEM" && $::wp_last_address == 0xFC4B && [who] eq "page1@0" && [info exists ::ring] && [info exists ::env(NMSHOST_ZBPC)]} {
+    puts $::log "REINIT [t] zerobas's own page-1 code writes HIMEM again after the cartridge started -- the last 150 changes:"
+    foreach l $::ring { puts $::log "  $l" }
+    flush $::log; exit
+  }
   if {$name eq "DRVTBL" && $::wp_last_address == 0xFB23 && $::wp_last_value != 0 && [info exists ::ring] && [info exists ::env(NMSHOST_ZBPC)]} {
     puts $::log "SECOND [t] the cartridge writes \$FB23 (a second interface entry) -- the last 150 changes before it:"
     foreach l $::ring { puts $::log "  $l" }
