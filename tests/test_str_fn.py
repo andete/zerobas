@@ -278,7 +278,9 @@ def run():
     ck_num('INSTR("HELLO","X")  not found', num_expr('INSTR("HELLO","X")'), 0)
     ck_num('INSTR("HELLO","HELLO!")  needle longer', num_expr('INSTR("HELLO","HELLO!")'), 0)
     ck_num('INSTR("HELLO","")  empty needle -> p(=1)', num_expr('INSTR("HELLO","")'), 1)
-    ck_num('INSTR("","")  both empty -> 1', num_expr('INSTR("","")'), 1)
+    # D-INSTREMPTY (2026-11-24): the VG-8020 answers 0 here (KST_run1.out, R-INSTR-EMPTY): an empty needle
+    # answers p only when p <= LEN(a$); this row pinned zerobas's old min(p, LEN+1) rule.
+    ck_num('INSTR("","")  both empty -> 0', num_expr('INSTR("","")'), 0)
     ck_num('INSTR("","X")  empty haystack', num_expr('INSTR("","X")'), 0)
 
     print("# --- Group C: INSTR (3-arg form, explicit p) ---")
@@ -286,10 +288,12 @@ def run():
     ck_num('INSTR(4,"HELLO","L")  p mid, 2nd L', num_expr('INSTR(4,"HELLO","L")'), 4)
     ck_num('INSTR(5,"HELLO","L")  p past last L', num_expr('INSTR(5,"HELLO","L")'), 0)
     ck_num('INSTR(9,"HELLO","H")  p past end', num_expr('INSTR(9,"HELLO","H")'), 0)
-    ck_num('INSTR(6,"HELLO","")  empty needle, p at len+1',
-           num_expr('INSTR(6,"HELLO","")'), 6)
-    ck_num('INSTR(9,"HELLO","")  empty needle, p past len+1 clamps',
-           num_expr('INSTR(9,"HELLO","")'), 6)
+    # D-INSTREMPTY: p past LEN(a$) -> 0 on the VG-8020 (KST_run1.out); these two rows pinned the old rule
+    ck_num('INSTR(5,"HELLO","")  empty needle, p at len', num_expr('INSTR(5,"HELLO","")'), 5)
+    ck_num('INSTR(6,"HELLO","")  empty needle, p at len+1 -> 0',
+           num_expr('INSTR(6,"HELLO","")'), 0)
+    ck_num('INSTR(9,"HELLO","")  empty needle, p past len -> 0',
+           num_expr('INSTR(9,"HELLO","")'), 0)
     ck_num('INSTR(1,"HELLO","HELLO")  full match', num_expr('INSTR(1,"HELLO","HELLO")'), 1)
 
     print("# --- Group C: INSTR overlapping matches ---")
