@@ -72,3 +72,19 @@
       an extension INIT, MEMSIZ / STKTOP / SAVSTK / FILTAB / FRETOP (and the stack itself) hold MS-BASIC's layout,
       consistent with HIMEM. ⛔ DECISION FOR JOOST: zerobas keeping those published cells with the reference's
       meaning is a design change in zerobas BASIC's memory model (its string heap / control pool / TXTCEIL).
+      ✅ JOOST 2026-11-24: "We go for the best option. Try to match reference" -- zerobas's memory model matches the
+      reference's (published cells with MS-BASIC's meaning; no private zerobas state in RAM a disk ROM may claim).
+      STEP 7-8 (prototypes in an isolated instance, NOT committed): before the scan, the reference's layout (MEMSIZ
+      $F168, FRETOP $F168, FILTAB $F16A / $F177, SAVSTK $F09E, STKTOP $F0A0 and SP there) + ONE CALL TO H.RUNC ($FECB)
+      after the scan -> the NMS 1200's whole INIT runs as on the reference: phase 2 HIMEM $F197 -> $EF97 -> $ED97 ->
+      $EB97 -> $E596 -> $DF95, and HIMEM / DRVTBL / H.PHYD / H.DSKO / $F37D end BYTE-IDENTICAL to the VG-8020's. HOST
+      CONTRACT ITEM 3: MS-BASIC calls H.RUNC (the hook the disk ROM patches in phase 1, at $FECB) in its cold start --
+      zerobas never calls it (grep: no H.RUNC anywhere in basic/); phase 2 runs from there. Still NOT booted: zerobas
+      then runs on in RAM the disk ROM now owns ($DF95 up: the prototype's stack, zerobas's private variables), where
+      MS-BASIC moves to the layout the disk ROM rebuilt.
+      PLAN (the memory model): (a) inventory every zerobas cell below $F380 (tools/ram_map.py) -> published MS-BASIC
+      cell / dynamic below HIMEM / the disk ROM's own claimed area; (b) the boot layout and H.RUNC (D-HSTKE's way:
+      measure when MS-BASIC calls it -- NEW / RUN / CLEAR / cold start -- and match); (c) zerobas BASIC adopts the layout
+      a disk ROM rebuilt (stack from STKTOP, strings from MEMSIZ / FRETOP, files from FILTAB); (d) move the private
+      cells; (e) our own disk ROM claims its RAM through HIMEM the reference's way. Each step: the NMS 1200 trace + the
+      full gates; the NODISK and DISK targets both.
