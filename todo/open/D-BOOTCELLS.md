@@ -40,4 +40,18 @@
       (1) + (2) of the plan are ONE unit: swap the order (blocks between MEMSIZ and HIMEM, strings between STKTOP and
       MEMSIZ: strheap_chantab / strheap_floor / strheap_ceiling, the file engine's block lookup, CLEAR / MAXFILES), then
       write the cells and FILTAB's table by the measured rule. FRE and every file / string suite are the regression check.
+      THE DESIGN (2026-11-24, from sub/strheap.asm): the whole map is DERIVED from HIMEM (C = min(HIMEM, TXTCEIL)),
+      POOLSIZE and MAXF in three routines -- strheap_floor (C - POOLSIZE), strheap_chantab (floor - (MAXF+1) * 267),
+      strheap_varceil (= chantab, clamped to CSP) -- plus main ROM heap_reset (FRETOP := C) and layout_from_himem (the
+      cells, boot only). THE SWAP = new derivations: MEMSIZ = C - (MAXF+1) * 267 - 2; chantab = MEMSIZ + 2 (the blocks
+      fill [MEMSIZ+2, C)); the string pool [MEMSIZ - POOLSIZE, MEMSIZ), heap_reset FRETOP := MEMSIZ; varceil = the
+      pool's floor (= STKTOP); then the cells by the measured rule at boot / CLEAR / MAXFILES. ⚠️ 2 BYTES TO SETTLE BY
+      MEASUREMENT: zerobas's varceil today is $F0A2, the reference's STKTOP $F0A0, and FRE(0) agrees -- the swap must
+      keep FRE(0) (find what FRE(0) is computed from before moving varceil). FILTAB's table is NOT written in this
+      unit: its first 2 * (MAXF+1) bytes would overlap zerobas's block 0 (blocks are 267 B, the reference's FCBs 265 B
+      after the table) -- that is the FCB-structure question (plan step 4), for Joost.
+      ➡️ WHEN THE SWAP LANDS (Joost 2026-11-24): hand it to C-BIOS as an item in its private inbox -- the reference's
+      live layout rule (MEMSIZ / STKTOP / FILTAB / FRETOP / NULBUF through boot, CLEAR, MAXFILES), FILTAB's pointer table,
+      how zerobas reordered its memory with FRE unchanged, and the measured numbers as acceptance (C-BIOS's own BASIC
+      cartridge has CLEAR / MAXFILES too).
 

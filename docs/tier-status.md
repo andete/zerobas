@@ -548,7 +548,7 @@ A keyword's LEVEL is its highest UNBROKEN run of proven rungs from T1: `T1✓ T2
 | — | TIER 1 | 🤖 | Joost 2026-11-23: "we cannot assume that e.g. msx1 bios calls behave exactly the same on an msx2"; | T-4DE439 |
 | — | TIER 1 | 🤖 | Joost 2026-11-23: "if we're finished with the msx2 and msx2+ specs we could also spec the turbor | T-129414 |
 | — | TIER 1 | 🤖 | Joost 2026-11-23, third of "3, 2, 1". | T-E8A74C |
-| — | TIER 1 | ? | preparing disk support for C-BIOS (a host without BASIC): the DOS half must need nothing from zerobas | T-A6B8F3 |
+| — | TIER 1 | 🤖 | preparing disk support for C-BIOS (a host without BASIC): the DOS half must need nothing from zerobas | T-A6B8F3 |
 | — | TIER 1 | 🤖 | entry points (the disk-ROM entries are the BDOS / disk-BIOS focus's own subject; filed 2026-11-22). | T-A41327 |
 | — | TIER 1 | 🤖 | the measured keyword-completeness remainder, now an | T-D2A359 |
 | — | TIER 2 | 🤖 | reasonable time (the gate's own wall time; filed 2026-11-17 at Joost's request). | T-6EEBBC |

@@ -2,7 +2,8 @@
       (Joost 2026-11-24: "this is exactly what I had in mind").**
       🎚️ TIER 1 — preparing disk support for C-BIOS (a host without BASIC): the DOS half must need nothing from zerobas
       BASIC, and must follow the host contract (docs/concepts/disk-rom-host.md) as a stock disk ROM does.
-      🤖 **AUTONOMOUS** for the analysis; ⛔ ask Joost before step 2 (it changes the disk ROM's structure and RAM map).
+      🤖 **AUTONOMOUS** — step 1 done; step 2 (it changes the disk ROM's structure and RAM map) approved by Joost
+      2026-11-24.
       STEP 1 (2026-11-24, zerobas's own source; scripts inline in the session): of disk/basic-resident-abi.inc's 104
       imports, 10 are unused; of the rest, 32 are BASIC CODE (interp / expr / float-arith / vars / strvar / field /
       files / str-engine / traps / pdfcb-body) and 62 are RAM CELLS (sysvars.inc). EVERY code import is called from a
@@ -19,3 +20,6 @@
       from there, as a stock disk ROM does. ACCEPTANCE: zerobas's disk ROM, inserted as a cartridge into a VG-8020
       (real MS-BASIC host) in openMSX, boots MSX-DOS -- host-independent, so a C-BIOS host can take it.
       STEP 3: memory parity on the DISK build vs the CF-3300 (plain boot: FRE, the layout cells), after D-BOOTCELLS.
+      ✅ STEP 2 APPROVED (Joost 2026-11-24: "excellent news. Go ahead"). SEQUENCED after D-BOOTCELLS's swap (both touch
+      basic/interp.asm init's HIMEM / layout path), as an isolated-instance unit with its own FULL gate.
+
