@@ -1,0 +1,10 @@
+=== AND: PASS
+=== EQV: PASS
+=== IMP: PASS
+=== MOD: PASS
+=== NOT: PASS
+=== OR: PASS
+=== XOR: PASS
+
+PASS 7
+refcache: 0 hit, 14 miss, 14 stored

@@ -1,0 +1,10 @@
+OI: 160 cases; both complete
+  0 cases differ
+OS: 160 cases; both complete
+  0 cases differ
+OD: 112 cases; both complete
+  0 cases differ
+FX: 72 cases; both complete
+  1 cases differ: KOP FX 53
+wrote scratchpad/KOP_run1.out
+refcache: 0 hit, 8 miss, 8 stored

@@ -379,6 +379,20 @@ machines shifted alike, so no difference showed it -- only the decoded lengths d
 loop is now behind `IF L>0`. spec-live re-types the D* groups on zerobas's DISK build.
 The conversion region is complete at DRAFT 1.
 
+### The operators region's first unit (2026-11-24): AND, OR, XOR, EQV, IMP, NOT, MOD
+
+One probe, [kops.py](../../probes/basic/spec/kops.py) -- two operands READ into X / Y of each type, both recorded, a
+35-byte record -- over 20 integer, 20 single and 14 double pairs and 87 fixed expressions (precedence: every ordered
+pair of the two-operand logical operators, NOT against comparisons and arithmetic, MOD among `*` `+` `\`; literal
+types; each operator's error forms); run file [scratchpad/KOP_run1.out](../../scratchpad/KOP_run1.out); model
+[kops_model.py](../../probes/basic/spec/kops_model.py) (CINT's conversion, then 16-bit logic, and a small precedence
+parser for the fixed expressions), controls [kops_controls.py](../../probes/basic/spec/kops_controls.py) (31 rivals,
+each FALSE on some case). All seven pages at DRAFT 1; every rule holds on the VG-8020. Measured, and now stated:
+NOT binds below the comparisons and arithmetic (`NOT 1<2` is 0, `NOT 1+2` -4) -- NOT's page had it unmeasured;
+MOD sits between `\` and `+` -- MOD's page had it unmeasured. zerobas agrees in every case but one:
+[D-MINUSNOT](../../todo/open/D-MINUSNOT.md), `-NOT 0` a Syntax error here (1 there). LET and SWAP are the region's
+second unit.
+
 ### Goldfish pass 1 over RND (2026-11-24)
 
 One reviewer ([REVIEW-m2-gRND1.md](../../scratchpad/REVIEW-m2-gRND1.md)), 19 items, scored: **real 15**, known 1,

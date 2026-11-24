@@ -10,7 +10,7 @@ SPDX-License-Identifier: BSD-2-Clause
 
 Every keyword page, the region the spec loop takes it in, and how far its page has become a SPECIFICATION: measured rules, each checked against the reference machine's cases ([the plan](spec-plan.md), [the method](../spec-method.md)). A page that is not yet a spec is a "user page": it says what the keyword does and was checked by its example, but its sentences are not yet executable rules. The reference is the Philips VG-8020; disk statements, the National CF-3300.
 
-**35 of 150 keyword pages are specs; 0 are FINAL.**
+**42 of 150 keyword pages are specs; 0 are FINAL.**
 
 | keyword | region | harness | reference | page | open (not measured) | differences (TODO items, from the page) |
 |---|---|---|---|---|---|---|
@@ -49,13 +49,13 @@ Every keyword page, the region the spec loop takes it in, and how far its page h
 | `CVI` | [conversion](../concepts/numbers.md) | RAM record | CF-3300 | [DRAFT 1](CVI.md) | 5 | D-DISKFNTYPE |
 | `CVS` | [conversion](../concepts/numbers.md) | RAM record | CF-3300 | [DRAFT 1](CVS.md) | 5 | D-DISKFNTYPE, D-ZEROLET |
 | `CVD` | [conversion](../concepts/numbers.md) | RAM record | CF-3300 | [DRAFT 1](CVD.md) | 5 | D-DISKFNTYPE |
-| `AND` | [operators](../concepts/numbers.md) | RAM record | VG-8020 | [user page](AND.md) | — | — |
-| `OR` | [operators](../concepts/numbers.md) | RAM record | VG-8020 | [user page](OR.md) | — | — |
-| `XOR` | [operators](../concepts/numbers.md) | RAM record | VG-8020 | [user page](XOR.md) | — | — |
-| `EQV` | [operators](../concepts/numbers.md) | RAM record | VG-8020 | [user page](EQV.md) | — | — |
-| `IMP` | [operators](../concepts/numbers.md) | RAM record | VG-8020 | [user page](IMP.md) | — | — |
-| `NOT` | [operators](../concepts/numbers.md) | RAM record | VG-8020 | [user page](NOT.md) | — | — |
-| `MOD` | [operators](../concepts/numbers.md) | RAM record | VG-8020 | [user page](MOD.md) | — | — |
+| `AND` | [operators](../concepts/numbers.md) | RAM record | VG-8020 | [DRAFT 1](AND.md) | 4 | — |
+| `OR` | [operators](../concepts/numbers.md) | RAM record | VG-8020 | [DRAFT 1](OR.md) | 4 | — |
+| `XOR` | [operators](../concepts/numbers.md) | RAM record | VG-8020 | [DRAFT 1](XOR.md) | 4 | — |
+| `EQV` | [operators](../concepts/numbers.md) | RAM record | VG-8020 | [DRAFT 1](EQV.md) | 4 | — |
+| `IMP` | [operators](../concepts/numbers.md) | RAM record | VG-8020 | [DRAFT 1](IMP.md) | 4 | — |
+| `NOT` | [operators](../concepts/numbers.md) | RAM record | VG-8020 | [DRAFT 1](NOT.md) | 4 | D-MINUSNOT |
+| `MOD` | [operators](../concepts/numbers.md) | RAM record | VG-8020 | [DRAFT 1](MOD.md) | 4 | — |
 | `LET` | [operators](../concepts/numbers.md) | RAM record | VG-8020 | [user page](LET.md) | — | — |
 | `SWAP` | [operators](../concepts/numbers.md) | RAM record | VG-8020 | [user page](SWAP.md) | — | — |
 | `GOTO` | [flow](../concepts/program-text.md) | RAM record + screen | VG-8020 | [user page](GOTO.md) | — | — |
