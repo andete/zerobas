@@ -255,6 +255,21 @@ pass here (date, scope, commit, verdict) so a later session knows what was
 verified clean and at what point, rather than re-deriving it. A clean verdict is
 a load-bearing fact for the public-release gate.
 
+### 2026-11-24 — keywords (D-KWSPEC third unit), INCIDENT (self-caught) — a probe PEEKed reference ROM through an unassigned VARPTR — CONTAINED, nothing committed, cache purged
+
+An isolated agent's first run of `probes/basic/spec/knum.py` read `S$` through `VARPTR` in a group that never assigned
+it: `VARPTR` returned bytes that were not a string descriptor, and the record's digest PEEKed 197 bytes at a page-0
+address -- the VG-8020's ROM -- on both machines. The agent reports it never looked at the bytes; the run file was
+overwritten by a complete fresh run before committing.
+
+- **Containment:** the committed `scratchpad/KNM_run1.out` is the fresh run, from the fixed frame (`15 S$=""`,
+  knum.py). The run went through `omsx_repl.run_cases`, which the reference cache (`~/.cache/zerobas/refcache`, outside
+  the repo) wraps, so the faulty reading was stored there under a hashed key that cannot be told apart: every VG-8020
+  cache entry written during that agent's run (08:20-09:25, 101 entries) was deleted -- a cache, re-measured on demand.
+  The instance and its temp root were removed.
+- **Class:** a black-box probe can read ROM BY PROXY -- here through a pointer read from an uninitialised variable.
+- **Rule** (docs/keywords/spec-plan.md §1): every variable read through `VARPTR` is assigned first.
+
 ### 2026-11-23 — turbor (D-TRSPEC, PCMPLY), INCIDENT (self-caught) — reference ROM bytes seen in a probe's port log — CONTAINED, nothing committed
 
 An isolated agent measuring the turbo R `PCMPLY` ($0186) on the FS-A1GT / FS-A1ST pointed the call at a source in
