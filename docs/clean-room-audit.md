@@ -255,6 +255,15 @@ pass here (date, scope, commit, verdict) so a later session knows what was
 verified clean and at what point, rather than re-deriving it. A clean verdict is
 a load-bearing fact for the public-release gate.
 
+### 2026-11-24 — keywords (D-KWSPEC review fixes), NEAR MISS — a record area grew past $F380 — CONTAINED, cache purged
+
+While acting on the strings-page review an isolated agent grew `kstr.py`'s record from 22 to 30 bytes; one group's
+records then ran past $F380 into the system area, whose first bytes are the reference's RAM-resident inter-slot code
+($F380-$F399). The run was discarded; the group was split (STRN / STRN2) and the probe now ASSERTS that no group's
+records reach $F380 (kstr.py). Because a capture of that run may have reached the reserved area, every VG-8020
+reference-cache entry written since the agent started (10:20, 21 entries) was deleted. Rule (already in
+docs/keywords/spec-plan.md's spirit, now enforced in code): a record area ends below $F380.
+
 ### 2026-11-24 — keywords (D-KWSPEC third unit), INCIDENT (self-caught) — a probe PEEKed reference ROM through an unassigned VARPTR — CONTAINED, nothing committed, cache purged
 
 An isolated agent's first run of `probes/basic/spec/knum.py` read `S$` through `VARPTR` in a group that never assigned
