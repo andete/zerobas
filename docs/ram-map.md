@@ -34,7 +34,7 @@ names the other component's BUFFER this address falls within. That
 second one is the question a per-component map cannot answer.
 
 * **basic** — 70 declared addresses in this project's own workspace `$E000..$F37F` (69 with a machine-readable width), plus **459** in the MSX standard work area at or above `$F380`.
-* **disk** — 126 declared addresses in this project's own workspace `$E000..$F37F` (117 with a machine-readable width), plus **72** in the MSX standard work area at or above `$F380`.
+* **disk** — 126 declared addresses in this project's own workspace `$E000..$F37F` (117 with a machine-readable width), plus **77** in the MSX standard work area at or above `$F380`.
 
 ## This project's own workspace (`$E000..$F37F`)
 
@@ -214,7 +214,7 @@ second one is the question a per-component map cannot answer.
 | `$F09A` | 2 B | `disk` | `GP_RECLEN` | DISK-ONLY: active channel's record length (word), loaded per calc |  |
 | `$F09D` | 1 B | `basic` | `FILES_HASPAT` | DISK-ONLY: FILES: 1 = a filespec pattern is in DISK_FCB_NAME (1) |  |
 | `$F09D` | 1 B | `disk` | `FILES_HASPAT` | DISK-ONLY: FILES: 1 = a filespec pattern is in DISK_FCB_NAME (1) |  |
-| `$F195` | 18 B | `disk` | `DRVA_DPB` | drive-A DPB base (id byte + 18-byte DPB, §8.30) |  |
+| `$F195` | 18 B | `disk` | `DRVA_DPB/INIT_HIMEM` | INIT's (first) claim: the CF-3300's HIMEM at its H.RUNC entry, |  |
 | `$F1AA` |  | `disk` | `W50A9_RET_DE` | DE (= IX) on return: disk work-area pointer |  |
 | `$F1C9` |  | `disk` | `RES_PRINT` | resident $-string print routine the kernel CALLs (§8.28) |  |
 | `$F23D` | 2 B | `disk` | `DOS_DTAPTR` | disk work-area current-DTA cache (word, LE; M19) |  |
@@ -400,7 +400,9 @@ extents the standard already fixes would be noise, not rigour.
 | `$F66E` | 2 B | `basic` | `GFX_R` | radius (int16, >=0 -- resident guards G4-rneg) (2) |  |
 | `$F670` | 2 B | `basic` | `GFX_ASPS` | 8.8 minor scale S, round(minor_ratio*256); 256=no scale (2) |  |
 | `$F672` | 2 B | `basic` | `MEMSIZ` | MS-BASIC: top of string space = HIMEM - ((MAXF+1)*267 + 2), kept live (heap_cells, D-BOOTCELLS) (2) |  |
+| `$F672` |  | `disk` | `MEMSIZ` | PUBLISHED: top of string space |  |
 | `$F674` | 2 B | `basic` | `STKTOP` | MS-BASIC: top of BASIC's stack = MEMSIZ - POOLSIZE = the varceil, kept live (sh_ctl_reset, D-BOOTCELLS) (2) |  |
+| `$F674` |  | `disk` | `STKTOP` | PUBLISHED: top of BASIC's stack |  |
 | `$F676` |  | `basic` | `TXTTAB` | sysvar: pointer to the BASIC text base |  |
 | `$F676` |  | `disk` | `TXTTAB` | sysvar: pointer to the BASIC text base |  |
 | `$F678` | 2 B | `basic` | `TEMPPT` | PUBLISHED cursor: next free slot (2 B) |  |
@@ -424,6 +426,7 @@ extents the standard already fixes would be noise, not rigour.
 | `$F6AD` | 2 B | `basic` | `AU_INC/RN_INC/USRC_AFTER` | USR cache: cursor after `USR(...)` (2) |  |
 | `$F6AF` | 2 B | `basic` | `SAVTXT` | 2 B: the CURRENT statement's text pointer, |  |
 | `$F6B1` | 2 B | `basic` | `SAVSTK` | 2 B: SP anchor for the trap unwind. Written by |  |
+| `$F6B1` |  | `disk` | `SAVSTK` | PUBLISHED: BASIC's saved stack pointer |  |
 | `$F6B3` | 2 B | `basic` | `ERRLIN` | 2 B: last error's line number, or 65535 if it |  |
 | `$F6B5` | 2 B | `basic` | `DOT` | 2 B: the line `.` names. Cold value 0 (init). |  |
 | `$F6B7` | 2 B | `basic` | `ERRRESUME_TXT` | 2 B: ERRRESUME's old [2..3], the erroring statement's |  |
@@ -615,6 +618,8 @@ extents the standard already fixes would be noise, not rigour.
 | `$F858` | 7 B | `basic` | `RND_SEED` | packed BCD, MSD-first, 7 bytes ($F858..$F85E) |  |
 | `$F85F` | 1 B | `basic` | `MAXF` | = MAXFIL: current MAXFILES ceiling (0..FCH_CEIL); default 1 (1) |  |
 | `$F860` | 2 B | `basic` | `FILTAB` | MS-BASIC: file-table pointer = MEMSIZ + 2; its next word (NULBUF) FILTAB + 2*(MAXF+1) + 9, kept live (heap_cells, D-BOOTCELLS) (4) |  |
+| `$F860` | 2 B | `disk` | `FILTAB` | PUBLISHED: -> the file pointer table (its next word: NULBUF) |  |
+| `$F862` |  | `disk` | `NULBUF` | PUBLISHED: -> file #0's buffer |  |
 | `$F864` | 1 B | `basic` | `PRDEST` | PRINT destination: 0=screen, 1=file channel (1) |  |
 | `$F866` | 6 B | `basic` | `CAS_WANT/TSV_NAME` | tape save: 6-char filename buffer (space-padded), FILNAM $F866..$F86B |  |
 | `$F867` |  | `basic` | `SCAN_K` | SCANR's last SCREEN 2 run (2), FILNAM+1 $F867 as the VG-8020 keeps it (D-SCANLPAINT) |  |
