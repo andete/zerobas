@@ -344,6 +344,21 @@ One probe, one rules module, RND.md at DRAFT 1; with it all twelve maths keyword
   zero; `-1!/3` is a DOUBLE (so `RND(-1!/3)` is `RND(-1/3)`); two calls in one expression run left to right; CLS and
   GOTO keep the state.
 
+### The conversion region's first unit (2026-11-24): CINT, CSNG, CDBL
+
+One probe, [kconv.py](../../probes/basic/spec/kconv.py) -- kmath's frame, record and USR type readout, ktrans's
+program builder -- over 13 integers, 49 singles and 44 doubles chosen where rival conversions disagree, and 80 fixed
+statements; run file [scratchpad/KCV_run1.out](../../scratchpad/KCV_run1.out); model
+[kconv_model.py](../../probes/basic/spec/kconv_model.py), controls
+[kconv_controls.py](../../probes/basic/spec/kconv_controls.py) (11 rivals, each FALSE on some case). All three pages
+at DRAFT 1; every rule holds on the VG-8020 and every recorded output is read. Measured: CINT truncates toward zero
+and checks the range AFTER (32767.9 is 32767, 32768 Overflow); CSNG rounds a double half up on the 7th digit by
+magnitude, a carry reaching the exponent -- so `CSNG(9.999995D62)` is Overflow (the page had said CSNG has no range
+error: refuted); CDBL appends 8 zero digits to a single's 6. zerobas agrees on every value; its differences are
+D-ARGTYPEORDER (all three), [D-CSNGOVERUSR](../../todo/open/D-CSNGOVERUSR.md) and
+[D-CONVZERO](../../todo/open/D-CONVZERO.md) (both TIER 6). Next in the region: MKI$ / MKS$ / MKD$ and CVI / CVS /
+CVD (string results: a STR_DIGEST record).
+
 ### Goldfish pass 1 over RND (2026-11-24)
 
 One reviewer ([REVIEW-m2-gRND1.md](../../scratchpad/REVIEW-m2-gRND1.md)), 19 items, scored: **real 15**, known 1,

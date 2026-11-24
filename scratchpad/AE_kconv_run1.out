@@ -1,0 +1,10 @@
+CI: 52 cases; both complete
+  0 cases differ
+CS: 196 cases; both complete
+  0 cases differ
+CD: 176 cases; both complete
+  3 cases differ: KCV CD CSNG 9.999995D62, KCV CD CSNG -9.999995D62, KCV CD CSNG 9.9999999999999D62
+FX: 80 cases; both complete
+  10 cases differ: KCV FX 8, KCV FX 9, KCV FX 33, KCV FX 34, KCV FX 48, KCV FX 49, KCV FX 58, KCV FX 59, KCV FX 73, KCV FX 74
+wrote scratchpad/KCV_run1.out
+refcache: 0 hit, 8 miss, 8 stored
