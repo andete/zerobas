@@ -35,3 +35,19 @@
       (registers / RAM / VRAM, black box -- as the unpublished SCANR / SCANL were measured), given that the address was
       learnt from the cartridge's behaviour on zerobas (our own ROM's PC), never from the reference? If yes: measure
       each unpublished address the NMS 1200 calls, then the remedy (zerobas answering them) is a ROM-layout decision.
+      ✅ STEP 3 CORRECTS STEP 2 (2026-11-24): $2442 is zerobas's OWN RST $30 / CALLF return path (the NMS 1200 hooks
+      H.TIMI -- the motor timer -- so every interrupt runs RST $30 -> CLPRIM -> the cartridge -> $F392 -> $2442 -> back);
+      a call recorder on the VG-8020 never sees $2442 executed. The decision above is MOOT. THE REAL CAUSE, MEASURED:
+      the cartridge's INIT is entered on zerobas with SP = $F2DA (C-BIOS's boot stack, inherited by zerobas's `init`,
+      which never returns) where the VG-8020's boot scan has SP = $F08E; the INIT lowers HIMEM to $F1C1 and ZEROES its
+      new work area from $F2C0 up (1,798 writes into $F2C0-$F2EF alone) -- the caller's stack (CLPRIM's saved AF, the
+      scan's return addresses) -- so the return goes to junk and the machine restarts. HOST CONTRACT ITEM 1: an
+      extension ROM's INIT is entered with the stack BELOW the RAM a disk ROM claims (the reference: $F08E).
+      STEP 4 (experiment, isolated instance, NOT committed): `ld sp,$F0A0` before `call init_ext_roms` (basic/interp.asm)
+      -> the INIT now completes phase 1, fills DRVTBL 02 01 like the reference, returns, the scan continues -- but then
+      a return lands at the experimental `ld sp` itself and init_ext_roms RERUNS (SP $F09E), INIT runs again and
+      registers a second, third ... drive pair every ~0.7 s. A bare `ld sp` is too crude: a stale return address from
+      before the switch is still used. NEXT: a proper fix -- the scan runs on a stack of its own below the claimable RAM
+      and returns to `init` on the original stack (or init_ext_roms becomes a jump, not a call, with no frame above it);
+      then re-trace; then the reference's phase 2 (the 512-B buffer allocations to $DF95 at 5.74 s, with an inter-slot
+      call into page 1 of slot 0 -- the MS-BASIC page) is the next comparison.

@@ -36,6 +36,7 @@ CELLS = [
     (0xFC4A, 2, "HIMEM"), (0xF349, 2, "DISK_HIMSAV?"), (0xFB21, 8, "DRVTBL"),
     (0xFFA7, 5, "H.PHYD"), (0xFFAC, 5, "H.FORM"), (0xFEDA, 5, "H.STKE"), (0xFEDF, 5, "H.ISFL"),
     (0xFDEF, 5, "H.DSKO"), (0xF37D, 3, "BDOS $F37D"), (0x0005, 1, "page-0 $0005"),
+    (0xF2C0, 0x30, "STACK@F2C0-F2EF"),
 ]
 
 TCL = r"""
@@ -52,6 +53,12 @@ proc on_write {name addr} {
     puts $::log "RESTART [t] the start-up's H.STKE write is back (by page0@0) -- the last 80 page@slot changes:"
     foreach l $::ring { puts $::log "  $l" }
     puts $::log "DIRECT-COUNT $::direct"
+    flush $::log; exit
+  }
+  if {[string match "STACK@*" $name] && (!$::seen_p1 || [who] ne "page1@$::env(CARTSLOT)")} { return }
+  if {$name eq "DRVTBL" && $::wp_last_address == 0xFB23 && $::wp_last_value != 0 && [info exists ::ring] && [info exists ::env(NMSHOST_ZBPC)]} {
+    puts $::log "SECOND [t] the cartridge writes \$FB23 (a second interface entry) -- the last 150 changes before it:"
+    foreach l $::ring { puts $::log "  $l" }
     flush $::log; exit
   }
   incr ::nw
@@ -80,21 +87,43 @@ proc sample {} {
         }
         if {$::trace_left > 0} { puts $::log $line; incr ::trace_left -1 }
         if {$::ring_on} {
-          # a jump from page-3 RAM straight into page 1 of slot 0: not a published (page-0) BIOS entry
-          if {[string match "page3@*" $::last_who] && [string match "page1@0*" $w]} {
-            incr ::direct; puts $::log "D [t] RAM -> page1@0 (direct, #$::direct) SP=[format %04X [reg sp]]"
-            if {$::direct == 1} {
-              puts $::log "FIRSTJUMP [t] -- the last 80 page@slot changes before it:"
-              foreach l $::ring { puts $::log "  $l" }
-            }
+          # the restart: execution back at zerobas's $0000 (zerobas's own address, NMSHOST_ZBPC runs only)
+          if {[info exists ::env(NMSHOST_ZBPC)] && [reg pc] == 0 && [string match "page0@0" $w]} {
+            puts $::log "RESET [t] execution at \$0000 -- the last 150 changes before it, interrupt traffic left out:"
+            foreach l $::ring { puts $::log "  $l" }
+            flush $::log; exit
           }
-          lappend ::ring $line; if {[llength $::ring] > 80} { set ::ring [lrange $::ring 1 end] }
+          # interrupt traffic (the $0038 handler, H.KEYI / H.TIMI and their returns) is not kept in the ring
+          if {![regexp {at=(0038|FD9A|FD9F|17C8|17D4|FDA3)} $line]} {
+            lappend ::ring $line; if {[llength $::ring] > 150} { set ::ring [lrange $::ring 1 end] }
+          }
         }
         set ::last_who $w
       }
     }
   }
   if {!$::seen_p1} { after time 0.0005 sample }
+}
+proc regs {} { set r ""; foreach n {af bc de hl ix iy sp} { append r " [string toupper $n]=[format %04X [reg $n]]" }; return "$r IFF=[reg iff]" }
+proc ramsnap {} { set v {}; for {set a 0xF000} {$a <= 0xFFFF} {incr a} { lappend v [peek $a] }; return $v }
+# NMSHOST_CALLADDR (reference run): an unpublished main-ROM address the cartridge was seen to call on zerobas (learnt
+# from zerobas's own PC). At entry (page 0 in slot 0) and at the matching return: registers + the $F000-$FFFF work
+# area (RAM) -- inputs, outputs, and what the call changed. Never code bytes.
+set ::calls 0
+if {[info exists ::env(NMSHOST_CALLADDR)]} {
+  debug set_bp $::env(NMSHOST_CALLADDR) {[lindex [get_selected_slot 0] 0] == 0 && $::calls < 6} {
+    incr ::calls
+    set ::entry_sp [reg sp]; set ::entry_ram [ramsnap]
+    puts $::log "CALL#$::calls [t] enter $::env(NMSHOST_CALLADDR) (page 1 is [slotof 1])[regs]"
+    set ::retcond [debug set_condition {[reg sp] > $::entry_sp} {
+      puts $::log "RET#$::calls  [t] back in [who][regs]"
+      set now [ramsnap]; set d ""
+      for {set i 0} {$i < 4096} {incr i} { if {[lindex $now $i] != [lindex $::entry_ram $i]} { append d " [format %04X [expr {0xF000 + $i}]]:[format %02X [lindex $::entry_ram $i]]->[format %02X [lindex $now $i]]" } }
+      puts $::log "DIFF#$::calls$d"
+      flush $::log
+      debug remove_condition $::retcond
+    }]
+  }
 }
 after time 0.0005 sample
 proc tick {} { puts $::log "T [t]"; flush $::log; after time 1 tick }
