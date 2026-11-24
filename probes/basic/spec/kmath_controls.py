@@ -19,7 +19,7 @@ getcontext().prec = 80
 
 
 def mx(c):
-    return c.src != "FX"
+    return M.mx(c)          # the matrix groups MI / MS / MD (not FX, FY, FZ)
 
 
 def odd(c):
@@ -104,6 +104,38 @@ def sqr_negzero(ty, b):
     return M.m_sqr(ty, b)
 
 
+def order_err(rival):
+    """R-*-ORDER's rivals: "type" -- the argument's type checked before the `)` / `,` (zerobas's rule: 13);
+    "shape" -- the call's shape checked before the argument is evaluated (2 throughout)"""
+    def check(c):
+        code = M.ORDER_ERR[c.why]
+        if rival == "type" and '"A"' in c.stmt:
+            code = 13
+        if rival == "shape":
+            code = 2
+        return M.no_usr(c, code)
+    return check
+
+
+def zero_as_digits(c):
+    """an exponent-0 zero read as its digits: FIX(.5!) / INT(.5!) worth .5"""
+    return c.e1 == 0 and c.e2 == 0 and (c.vt, c.res) == M.zero_use(c.why, Fraction(1, 2))
+
+
+def target_rival(**kw):
+    return lambda c: M.target_is(c, M.target(c, **kw))
+
+
+def round_half_away(v):
+    return int((Decimal(v.numerator) / Decimal(v.denominator)).quantize(Decimal(1), rounding=ROUND_HALF_UP))
+
+
+def let_digits_kept(c):
+    """D-SQRZERO's zerobas: a zero root assigned to R leaves R's earlier digit bytes under exponent 0"""
+    before = bytes(8) if "R=0" in c.stmt else M.R_SENT
+    return c.e1 == 0 and c.rbytes == bytes([0]) + before[1:]
+
+
 def assign_zeroed(c):
     """zerobas's LET: a single whose exponent byte is 0 is stored in R as 8 zero bytes"""
     if c.vt == 255:
@@ -137,12 +169,33 @@ CONTROLS = [
     ("SQR", "R-SQR-NEAR", "the root truncated at 14 digits", mx, is_(sqr_digits(ROUND_DOWN))),
     ("SQR", "R-SQR-NEAR", "within 1 unit of the 14th digit (not 3)", lambda c: (mx(c) or c.why in M.FX_ARG) and M.want(c)[0] == "near",
      lambda c: M.outcome(c, M.want(c), bound=1)),
-    ("SQR", "R-SQR-EXACT", "a single argument gives a single result", lambda c: mx(c) and c.ty == "S",
-     lambda c: c.e1 == 0 and c.vt == 4),
+    ("SQR", "R-SQR-EXACT", "a single argument gives a single result (the cases with no error)",
+     lambda c: mx(c) and c.ty == "S" and M.want(c)[0] != "err", lambda c: c.e1 == 0 and c.vt == 4),
     ("SQR", "R-SQR-NEG", "80 10 00 00 a zero (the sign bit of an exponent-0 number ignored)", odd, is_(sqr_negzero)),
     ("FIX", "R-FIX-ASSIGN", "a single exponent-0 zero stored in R as 8 zero bytes -- zerobas's LET",
-     lambda c: True, assign_zeroed),
+     lambda c: c.fn == "FIX" and (M.mx(c) or c.src == "FX"), assign_zeroed),
+    # goldfish pass 1 (FY / FZ)
+    ("ABS", "R-ABS-ORDER", "the argument's type checked before the `)` (13) -- zerobas's rule",
+     lambda c: M.fy(c, "prec"), order_err("type")),
+    ("ABS", "R-ABS-ORDER", "the call's shape checked before the argument is evaluated (2)",
+     lambda c: M.fy(c, "prec"), order_err("shape")),
+    ("ABS", "R-ABS-NEST", "32 deep is error 50 (zerobas before D-SPMERGE)", lambda c: M.fy(c, "nest"),
+     lambda c: (c.e1 == 50) == (c.depth == 32)),
+    ("FIX", "R-FIX-ZEROUSE", "FIX(.5!) read as its digits, .5", lambda c: M.fy(c, "zero"), zero_as_digits),
+    ("INT", "R-INT-ZEROUSE", "INT(.5!) read as its digits, .5", lambda c: M.fy(c, "zero"), zero_as_digits),
+    ("FIX", "R-FIX-LET", "a single exponent-0 zero stored as zero bytes -- zerobas's LET", lambda c: c.fn == "LET",
+     lambda c: c.res == bytes(4) and c.rbytes == bytes(8)),
+    ("SQR", "R-SQR-LET", "R's earlier digit bytes kept under exponent 0 -- zerobas's SQR(0%)",
+     lambda c: c.fn == "LET", let_digits_kept),
+    ("SQR", "R-SQR-TARGET", "an integer target rounds (CINT-style) instead of truncating",
+     lambda c: M.fy(c, "target"), target_rival(to_int=round_half_away)),
+    ("INT", "R-INT-TARGET", "a single exponent-0 zero stored in T! as zero bytes -- zerobas's LET",
+     lambda c: M.fy(c, "target"), target_rival(zero_let=True)),
 ]
+CONTROLS += [(fn, f"R-{fn}-ORDER", "the argument's type checked before the `)` (13) -- zerobas's rule",
+              lambda c: M.fy(c, "prec"), order_err("type")) for fn in ("SGN", "INT", "FIX", "SQR")]
+CONTROLS += [(fn, f"R-{fn}-TARGET", "a single exponent-0 zero stored in T! as zero bytes -- zerobas's LET",
+              lambda c: M.fy(c, "target"), target_rival(zero_let=True)) for fn in ("ABS", "FIX")]
 
 
 def main():

@@ -10,6 +10,9 @@
       -1D-14 / -1D-64 / -.99999999999999, KMA FX 55 `INT(-2.5)`, KMA FX 68 a single 80 10 00 00). The values agree;
       `/`, PRINT and assignment to a double could not tell them apart in a scratch check (`INT(-1.5)/B!` printed
       -.66666666666667 on both).
+      Goldfish pass 1 (2026-11-24, group FZ): nested 16 and 32 deep, `INT(INT(...(-2.5)...))` is the double -3 on
+      the reference and the single -3 here (KMA FZ 4, 5; rule R-INT-NEST) -- the same difference, carried through.
+      Stored in a variable it is invisible: `T%=INT(-.5)` is -1 and `T!=INT(-1.5)` -2 on both (KMA FY 56, 60).
       ➡️ When picked up: `evmc_int` in basic/expr.asm (its "subtract 1 when a negative number lost a fraction" step, spec-basic-math-pack.md §9). The acceptance is
       R-INT-NEGFRAC and its control "the argument's own type -- zerobas's rule" in
       [`kmath_controls.py`](../../probes/basic/spec/kmath_controls.py) (FALSE on 24 of the reference's cases).

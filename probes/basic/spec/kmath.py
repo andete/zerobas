@@ -43,6 +43,11 @@ THE GROUPS (case ids "KMA <group> ..."): one per argument type, so no group's re
   MD    over the doubles MD_ARGS (N#)                      -> "KMA MD <fn> <text>"
   FX    fixed statements (types, missing / extra arguments, spaces, literals, nesting, non-canonical bytes;
         S$ = "12")                                         -> "KMA FX <i>"
+  FY    more fixed statements (goldfish pass 1, 2026-11-24): the order of the checks, the forms the pages quote,
+        an exponent-0 zero used, the result stored in T% / T!, and the LIT apparatus rows (each literal's own type)
+                                                           -> "KMA FY <i>"
+  FZ    each function nested 16 and 32 deep                -> "KMA FZ <i>"
+  (FY / FZ are defined at the end of this file; nothing above them changed, as ktrans.py reuses it.)
 
     python3 probes/basic/spec/kmath.py [GROUP ...] [--out scratchpad/KMA_run1.out]
 (run through tools/agent_wt.py: it boots the VG-8020 and zerobas's NODISK machine)."""
@@ -264,6 +269,88 @@ def main(argv):
             print(f"  {len(diff)} cases differ" + (": " + ", ".join(diff[:12]) if diff else ""), flush=True)
     print(f"wrote {os.path.relpath(path, ROOT)}")
     return 0
+
+
+
+# ===== FY / FZ: added by goldfish pass 1 (2026-11-24, scratchpad/REVIEW-m2-gkwmath1.md). Nothing above this line is
+# changed (ktrans.py reuses it). Both groups use the two-line frame with a shared prefix (880), as ktrans.py's FX: the
+# statement stays LAST on its line (RESUME NEXT after a syntax error goes to the next line).
+#   FY  per keyword: the order of the checks (the argument's own error or type against a missing `)` or an extra
+#       argument); the forms the pages quote (`PRINT F`, `F(1,2)`, `F(-1E38)`); for FIX and INT an exponent-0 zero
+#       used in arithmetic, a comparison, SGN and STR$; the result assigned to an INTEGER (T%) or SINGLE (T!)
+#       variable, read back through USR(T%) / USR(T!) (T holds -7 before, so an error is seen); and LIT apparatus
+#       rows: `R=<literal>` / `Q=USR(<literal>)` with no function, so each literal's own type is MEASURED.
+#   FZ  per keyword: the call nested 16 and 32 deep.
+# Case meta: fn, stmt, why, ustmt, kind ("prec" | "syntax" | "value" | "zero" | "target" | "lit" | "nest"), and per
+# kind `lit` (the innermost argument's text), `depth`, `target` ("%" / "!"), `inner` (the call's expression).
+T_SENT = -7
+FY, FZ = [], []
+for _f in FNS[1:]:
+    def _y(stmt, why, ustmt, kind, **x):
+        FY.append((_f, stmt, why, ustmt, kind, x))
+    _y(f"R={_f}(1/0", "the argument's own error, no closing parenthesis", None, "prec")
+    _y(f'R={_f}("A"', "a string argument, no closing parenthesis", None, "prec")
+    _y(f"R={_f}(1/0,2)", "the argument's own error, then an extra argument", None, "prec")
+    _y(f'R={_f}("A",2)', "a string argument, then an extra argument", None, "prec")
+    _y(f"PRINT {_f}", "PRINT and the name alone", None, "syntax")
+    _y(f"R={_f}(1,2)", "two arguments, as the pages write it", None, "syntax")
+    _y(f"R={_f}(-1E38)", "-1E38, as the pages write it", f"Q=USR({_f}(-1E38))", "value", lit="-1E38")
+    for _d in (16, 32):
+        _x = "1" if _f == "SQR" else "-2.5"
+        _e = f"{_f}(" * _d + _x + ")" * _d
+        FZ.append((_f, f"R={_e}", f"nested {_d} deep", f"Q=USR({_e})", "nest", dict(lit=_x, depth=_d)))
+# an exponent-0 zero (FIX(.5!) / INT(.5!) = 00 50 00 00) used as a number
+for _f in ("FIX", "INT"):
+    _z = f"{_f}(.5!)"
+    for _e, _w in ((f"{_z}+1", "+1"), (f"{_z}*3", "*3"), (f"-({_z}=0)", "=0"), (f"-({_z}>0)", ">0"),
+                   (f"-({_f}(-.5!)<0)" if _f == "FIX" else f"-({_z}<0)", "<0"), (f"SGN({_z})", "SGN"),
+                   (f"LEN(STR$({_z}))", "LEN(STR$)"), (f"ASC(MID$(STR$({_z}),2))", "STR$'s digit")):
+        FY.append((_f, f"R={_e}", f"an exponent-0 zero used: {_w}", f"Q=USR({_e})", "zero", dict(inner=_e)))
+# the result stored in an integer or a single variable
+for _f, _t, _a, _x in (("ABS", "%", "I", "&H8000"), ("ABS", "!", "I", "&H8000"), ("ABS", "!", "Z", "N!"),
+                       ("SGN", "%", "S", "-2.5"), ("SGN", "!", "S", "-2.5"),
+                       ("INT", "%", "S", "-.5"), ("INT", "%", "S", "-32768.5"), ("INT", "%", "S", ".5!"),
+                       ("INT", "!", "S", ".5!"), ("INT", "!", "S", "-1.5"),
+                       ("FIX", "%", "S", ".5!"), ("FIX", "!", "S", ".5!"), ("FIX", "%", "S", "-32768.5"),
+                       ("FIX", "%", "S", "32767.9"),
+                       ("SQR", "%", "I", "2"), ("SQR", "%", "I", "3"), ("SQR", "!", "I", "2"),
+                       ("SQR", "%", "S", "1E10"), ("SQR", "!", "I", "0")):
+    _pre = PRE0 if _a == "Z" else ""
+    FY.append((_f, f"{_pre}T{_t}={T_SENT}:T{_t}={_f}({_x})", f"stored in T{_t}: {_f}({_x})", f"Q=USR(T{_t})",
+               "target", dict(lit=_x, target=_t)))
+# apparatus: the literals' own types, measured (no function)
+for _x in ("2.5", "-2.5", "7", "7%", "2.5!", "2.5#", "&H8000", "-32768", "-0", "1/4", "2.25", "-1E38", ".5!",
+           "-.5!", "1E10", "32767.9", "-32768.5", "-1.5", "-.5", "1", "2", "3", "0"):
+    FY.append(("LIT", f"R={_x}", f"the literal {_x}", f"Q=USR({_x})", "lit", dict(lit=_x)))
+GAPS.update(FY=2500.0, FZ=2500.0)
+ORDER += ["FY", "FZ"]
+
+
+def _program_fyz(group):
+    routine = [str(x) for x in ROUTINE]
+    rows = FY if group == "FY" else FZ
+    lines = [head(), "20 FOR K=0 TO 17:READ X:POKE &HBF00+K,X:NEXT:DEFUSR=&HBF00", f'25 S$="{FX_S}":GOTO 2000',
+             f"880 E=0:R={R_SENT}:POKE &HBF80,255:FOR K=1 TO 8:POKE A+K,0:NEXT:RETURN"]
+    cases = []
+    for i, (fn, stmt, why, ustmt, kind, x) in enumerate(rows):
+        n = 2000 + 2 * i
+        lines.append(f"{n} GOSUB 880:{stmt}")
+        lines.append(f"{n + 1} E1=E:E=0:" + (f"{ustmt}:E2=E" if ustmt else "E2=0") + ":GOSUB 900")
+        assert all(len(t) <= 240 for t in lines[-2:]), lines[-2:]
+        cases.append((f"KMA {group} {i}", dict(fn=fn, stmt=stmt, why=why, ustmt=ustmt, ty=None, text=None,
+                                               kind=kind, **x)))
+    lines += [f"{2000 + 2 * len(rows)} " + ramrec.TAIL] + RECORD + ramrec.data(1000, routine)
+    _fits(group, cases)
+    return lines + ["RUN"], cases
+
+
+_program_mx = program
+
+
+def program(group):  # noqa: F811 -- FY / FZ added; the MI / MS / MD / FX programs are unchanged
+    if group in ("FY", "FZ"):
+        return _program_fyz(group)
+    return _program_mx(group)
 
 
 if __name__ == "__main__":

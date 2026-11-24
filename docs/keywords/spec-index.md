@@ -28,11 +28,11 @@ Every keyword page, the region the spec loop takes it in, and how far its page h
 | `HEX$` | [strings](../concepts/strings-and-string-space.md) | RAM record | VG-8020 | [DRAFT 1](HEX$.md) | 6 | — |
 | `OCT$` | [strings](../concepts/strings-and-string-space.md) | RAM record | VG-8020 | [DRAFT 1](OCT$.md) | 6 | — |
 | `BIN$` | [strings](../concepts/strings-and-string-space.md) | RAM record | VG-8020 | [DRAFT 1](BIN$.md) | 6 | — |
-| `ABS` | [maths](../concepts/numbers.md) | RAM record | VG-8020 | [DRAFT 1](ABS.md) | 5 | D-ABSINTEDGE, D-ZEROLET |
-| `SGN` | [maths](../concepts/numbers.md) | RAM record | VG-8020 | [DRAFT 1](SGN.md) | 5 | — |
-| `INT` | [maths](../concepts/numbers.md) | RAM record | VG-8020 | [DRAFT 1](INT.md) | 5 | D-INTNEGTYPE, D-ZEROLET |
-| `FIX` | [maths](../concepts/numbers.md) | RAM record | VG-8020 | [DRAFT 1](FIX.md) | 5 | D-ZEROLET |
-| `SQR` | [maths](../concepts/numbers.md) | RAM record | VG-8020 | [DRAFT 1](SQR.md) | 6 | D-SQRZERO |
+| `ABS` | [maths](../concepts/numbers.md) | RAM record | VG-8020 | [DRAFT 1](ABS.md) | 6 | D-ABSINTEDGE, D-ZEROLET, D-ARGTYPEORDER |
+| `SGN` | [maths](../concepts/numbers.md) | RAM record | VG-8020 | [DRAFT 1](SGN.md) | 6 | D-ARGTYPEORDER |
+| `INT` | [maths](../concepts/numbers.md) | RAM record | VG-8020 | [DRAFT 1](INT.md) | 7 | D-INTNEGTYPE, D-ZEROLET, D-ZEROMUL, D-ARGTYPEORDER |
+| `FIX` | [maths](../concepts/numbers.md) | RAM record | VG-8020 | [DRAFT 1](FIX.md) | 7 | D-ZEROLET, D-ZEROMUL, D-ARGTYPEORDER |
+| `SQR` | [maths](../concepts/numbers.md) | RAM record | VG-8020 | [DRAFT 1](SQR.md) | 8 | D-SQRZERO, D-ARGTYPEORDER |
 | `EXP` | [maths](../concepts/numbers.md) | RAM record | VG-8020 | [DRAFT 1](EXP.md) | 8 | D-EXPNEG, D-TRANSZERO |
 | `LOG` | [maths](../concepts/numbers.md) | RAM record | VG-8020 | [DRAFT 1](LOG.md) | 6 | — |
 | `SIN` | [maths](../concepts/numbers.md) | RAM record | VG-8020 | [DRAFT 1](SIN.md) | 7 | D-TRIGHALF, D-SINDIGITS, D-TRANSZERO |

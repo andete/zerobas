@@ -8,6 +8,8 @@
       the reference -- here the DOUBLE 32768 (KMA MI ABS -32768; KMA FX 16, `ABS(&H8000)`). The value is the same, so
       PRINT, `/` and assignment cannot tell them apart (a scratch check of `ABS(A%)/B!` printed the same on both);
       a USR routine reading VALTYP, or the precision of a later single-only step, can.
+      Goldfish pass 1 (2026-11-24, group FY): stored in a variable the difference vanishes -- `T%=ABS(&H8000)` is
+      Overflow (6) and `T!=ABS(&H8000)` the single 32768 on both machines (KMA FY 51, 52; rule R-ABS-TARGET).
       ➡️ When picked up: `evmc_abs` in basic/expr.asm (the -32768 path). The acceptance is R-ABS-INT and its control
       "ABS(-32768%) the DOUBLE 32768 -- zerobas's rule" in
       [`kmath_controls.py`](../../probes/basic/spec/kmath_controls.py) (FALSE on 1 of the reference's cases).

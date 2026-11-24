@@ -11,6 +11,10 @@
       LET's, not the functions': a POKEd single 00 10 00 00 assigned with `R=N!` (KMA FX 115) and `N!=FIX(.5!)`
       stored back into a SINGLE (KMA FX 116) differ the same way. A double result with exponent 0 (`FIX(.5#)`) is
       stored as it is on both.
+      Goldfish pass 1 (2026-11-24, group FY): stored in a SINGLE variable the same -- `T!=FIX(.5!)`,
+      `T!=INT(.5!)` and `T!=ABS(N!)` (N! the POKEd 00 10 00 00) keep the digit bytes in T! on the reference and are
+      00 00 00 00 here (KMA FY 62, 59, 53; rules R-FIX-TARGET, R-INT-TARGET, R-ABS-TARGET). The two LET rows are now
+      a rule of their own, R-FIX-LET (KMA FX 115, 116). Stored in an INTEGER (`T%=FIX(.5!)`) both give 0.
       ➡️ When picked up: the store path of LET (and the single -> double conversion), which on zerobas normalises an
       exponent-0 number to a clean zero. The acceptance: the three ASSIGN rules and the control "a single exponent-0
       zero stored in R as 8 zero bytes -- zerobas's LET" in

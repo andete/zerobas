@@ -6,13 +6,15 @@ SPDX-License-Identifier: BSD-2-Clause
 
 # `ABS` — the absolute value of a number
 
-> **Spec:** DRAFT 1 (2026-11-24) — 160 cases measured on the Philips VG-8020 (BASIC's reference) and on
+> **Spec:** DRAFT 1 (2026-11-24) — 172 cases measured on the Philips VG-8020 (BASIC's reference) and on
 > zerobas, by typed BASIC ([`kmath.py`](../../probes/basic/spec/kmath.py)); every rule is executable and
 > every recorded output is read by one. Not yet reviewed ([the keyword plan](spec-plan.md)).
+> Goldfish pass 1 (test writer) 2026-11-24: 11 findings, 9 measured (or checked on the run), 0 moved to open; 2 were wording.
 >
 > **Status (2026-10-09):** level 3 — happy path ✓ · reasonable time ✓ · common
-> errors ✓ · RAM usage not yet proven · every error ✓. Two differences
-> found by the spec probe, both invisible to PRINT (below).
+> errors ✓ · RAM usage not yet proven · every error ✓. Three differences
+> found by the spec probe: two invisible to PRINT, one the error code of a
+> malformed call (below).
 > Speed is deliberately left out of these docs until on-par speed is
 > established for every keyword.
 
@@ -20,8 +22,9 @@ SPDX-License-Identifier: BSD-2-Clause
 
 `ABS(x)` returns `x` without its sign: `ABS(-5)` is 5, `ABS(5)` is 5. It works
 on every numeric type and over the whole number range. zerobas gives the same
-value and the same errors as the Philips VG-8020 in every case we have measured;
-the result's type at one edge differs (below).
+value and the same errors as the Philips VG-8020 in every case we have measured,
+with two exceptions (below): the result's type at one edge, and the error of a
+call that is both unclosed and given a string.
 
 ## Syntax
 
@@ -41,13 +44,18 @@ One argument, always.
   double here (see *Differences*; the value is the same).
 - **Only the sign changes.** A single or double keeps every digit: `ABS` clears
   the sign bit and nothing else, from 1E-64 to 9.99999E62.
-- **No range errors.** `ABS(-1E38)` is fine on both machines; only the type and
-  the shape of the call can go wrong.
+- **No range errors.** `ABS(-1E38)` is the single 1E38 on both machines; only the
+  type and the shape of the call can go wrong. Stored in an integer variable,
+  `T%=ABS(&H8000)` is `Overflow` (error 6), as any 32768 would be.
 - **A space before the parenthesis is allowed**: `ABS (-7)` is 7.
 - **A string argument** (`ABS("A")`) is `Type mismatch` (error 13).
 - **No argument, two arguments, no parentheses or a missing `)`** —
-  `ABS()`, `ABS(1,2)`, `PRINT ABS`, `ABS(1` — are all `Syntax error`
+  `ABS()`, `ABS(1,2)`, `PRINT ABS`, `ABS(5` — are all `Syntax error`
   (error 2).
+- **The argument is worked out first, the `)` checked next, the type last.**
+  `ABS(1/0` (no `)`) is `Division by zero` (error 11), but `ABS("A"` and
+  `ABS("A",2)` are `Syntax error` on the VG-8020 -- and `Type mismatch` here
+  (see *Differences*).
 
 | you write | you get |
 |---|---|
@@ -116,13 +124,22 @@ loader refuses the run.
   `)`, no parenthesis; the literals `2.5`, `-2.5`, `7`, `7%`, `2.5!`, `2.5#`, `&H8000`, `-32768`, `-0`, `1/4`;
   spaces; `ABS(ABS(2.25))`; and a single `N!` assigned 1 whose exponent byte is then POKEd to 0 or `&H80`
   (digit bytes `10 00 00`).
+- **[KMA FY *i*]**, **[KMA FZ *i*]** (goldfish pass 1, 2026-11-24): more fixed statements, on a two-line frame
+  (`FY` and `FZ` in the probe): the order of the checks (`ABS(1/0`, `ABS("A"`, `ABS(1/0,2)`, `ABS("A",2)`); the
+  forms this page quotes (`PRINT ABS`, `ABS(1,2)`, `ABS(-1E38)`); the result stored in an integer `T%` or a single
+  `T!` (holding -7 before) and read back through `USR(T%)` / `USR(T!)`; and (FZ) `ABS` nested 16
+  and 32 deep. Two apparatus checks run before any rule, and the loader refuses the run if either fails: every
+  literal the FX / FY forms use, alone (`R=<literal>`, `Q=USR(<literal>)`, KMA FY 70-92), has the type and bytes the
+  FORMS rule gives it; and every matrix row's recorded argument is its `DATA` text's value in its type, on both
+  machines -- so the six rows of one text (the apparatus row and the five functions) saw the same argument, no
+  function changed its argument variable, and the two machines `READ` the text alike.
 
-**Controls** ([`kmath_controls.py`](../../probes/basic/spec/kmath_controls.py)): each is a rival rule run over the reference's cases: “ABS(-32768%) the DOUBLE 32768 -- zerobas's rule” is FALSE on 1 of the 19 cases it selects (e.g. KMA MI ABS -32768); “ABS(-32768%) error 6 (no integer 32768)” is FALSE on 1 of the 19 cases it selects (e.g. KMA MI ABS -32768); “an exponent-0 result made a canonical zero” is FALSE on 2 of the 2 cases it selects (e.g. KMA FX 21).
+**Controls** ([`kmath_controls.py`](../../probes/basic/spec/kmath_controls.py)): each is a rival rule run over the reference's cases: “ABS(-32768%) the DOUBLE 32768 -- zerobas's rule” is FALSE on 1 of the 19 cases it selects (e.g. KMA MI ABS -32768); “ABS(-32768%) error 6 (no integer 32768)” is FALSE on 1 of the 19 cases it selects (e.g. KMA MI ABS -32768); “an exponent-0 result made a canonical zero” is FALSE on 2 of 2 cases it selects (e.g. KMA FX 21); “the argument's type checked before the `)` (13) -- zerobas's rule” is FALSE on 2 of the 4 cases it selects (e.g. KMA FY 1); “the call's shape checked before the argument is evaluated (2)” is FALSE on 2 of the 4 cases it selects (e.g. KMA FY 0); “32 deep is error 50 (zerobas before D-SPMERGE)” is FALSE on 1 of the 2 cases it selects (e.g. KMA FZ 1); “a single exponent-0 zero stored in T! as zero bytes -- zerobas's LET” is FALSE on 1 of the 3 cases it selects (e.g. KMA FY 53).
 
 <!-- RULES BEGIN -->
 <!-- GENERATED by tools/spec_rules.py from probes/basic/spec/abs_rules.py -- do not edit; `python3 tools/spec_rules.py probes/basic/spec/abs_rules.py --write` -->
 
-**8 rules; 8 hold on the reference. Of the 800 recorded outputs (each case's error from `R=F(x)` and from `Q=USR(F(x))`, R's 8 bytes, the result's type as USR saw it and the result's own bytes): 800 read by a rule's check, 0 declared NOT evidence (below), 0 unread.**
+**11 rules; 11 hold on the reference. Of the 860 recorded outputs (each case's error from `R=F(x)` and from `Q=USR(F(x))`, R's 8 bytes, the result's type as USR saw it and the result's own bytes): 860 read by a rule's check, 0 declared NOT evidence (below), 0 unread.**
 
 #### 1. ABS(x)
 
@@ -133,9 +150,12 @@ loader refuses the run.
 | **R-ABS-ODD** Only the sign bit changes even on a non-canonical single: exponent byte 0 or &H80 with digit bytes 10 00 00 both give 00 10 00 00. | 2 | ✓ | ✓ |
 | **R-ABS-TYPE** A string as the argument (a literal or a variable) is error 13 (Type mismatch), and so is assigning the result to a string variable: the result is a number. | 3 | ✓ | ✓ |
 | **R-ABS-OWNERR** An argument that fails to compute raises its own error (1/0: error 11). | 1 | ✓ | ✓ |
-| **R-ABS-SYNTAX** No argument, a second argument, no closing parenthesis, or the name without a parenthesis is error 2 (Syntax error). | 4 | ✓ | ✓ |
-| **R-ABS-FORMS** Spaces before the parenthesis and around the argument are allowed, and a literal's own type is the argument's: 2.5 and -2.5 are singles, 7 an integer, 7% / 2.5! / 2.5# what they say, &H8000 the integer -32768, -32768 a single (a minus on the single 32768), -0 the integer 0, 1/4 a double; ABS of ABS(2.25) is ABS of that result. Each gives what the rules above say for that type and value. | 13 | ✓ | ✗ 1: KMA FX 16 |
-| **R-ABS-ASSIGN** `R=ABS(x)` with R a double stores the result's value -- a single's own 4 bytes then four zero bytes, its exponent byte and digit bytes as they are (so FIX(.5!)'s exponent-0 result keeps its digit bytes in R: 00 50 00 00 00 00 00 00) -- and an error stores nothing (R keeps its sentinel). Read in every case. | 160 | ✓ | ✗ 2: KMA FX 21, KMA FX 22 |
+| **R-ABS-SYNTAX** No argument, a second argument, no closing parenthesis, or the name without a parenthesis is error 2 (Syntax error); so are `PRINT ABS` and `ABS(1,2)`, the forms this page quotes. | 6 | ✓ | ✓ |
+| **R-ABS-ORDER** The argument is evaluated before the call's shape is checked, and its type after: ABS(1/0 (no `)`) and ABS(1/0,2) raise the argument's own error 11, but ABS("A" (no `)`) and ABS("A",2) are error 2 (Syntax error), not 13 -- the `)` is required before the string is refused. | 4 | ✓ | ✗ 2: KMA FY 1, KMA FY 3 |
+| **R-ABS-NEST** ABS nested 16 and 32 deep (ABS(ABS(...(-2.5)...))) gives what the rules above give applied that many times, with no error. | 2 | ✓ | ✓ |
+| **R-ABS-FORMS** Spaces before the parenthesis and around the argument are allowed, and a literal's own type is the argument's: 2.5 and -2.5 are singles, 7 an integer, 7% / 2.5! / 2.5# what they say, &H8000 the integer -32768, -32768 a single (a minus on the single 32768), -0 the integer 0, 1/4 a double; ABS of ABS(2.25) is ABS of that result. Each gives what the rules above say for that type and value; so does ABS(-1E38), a single. These types are MEASURED: each literal alone, `R=<literal>` / `Q=USR(<literal>)`, gives that type and value on both machines (KMA FY 70-92; the loader refuses a run where it does not). | 14 | ✓ | ✗ 1: KMA FX 16 |
+| **R-ABS-ASSIGN** `R=ABS(x)` with R a double stores the result's value -- an integer by its value, a single's own 4 bytes then four zero bytes, its exponent byte and digit bytes as they are (so ABS of the POKEd single 00 10 00 00 leaves R 00 10 00 00 00 00 00 00, KMA FX 21) -- and an error stores nothing (R keeps its sentinel). Read in every case that assigns R. | 169 | ✓ | ✗ 2: KMA FX 21, KMA FX 22 |
+| **R-ABS-TARGET** Stored in an INTEGER variable, ABS's result loses its fraction -- truncated, not rounded (SQR(3) stores 1) -- and a value outside -32768..32767 is error 6 (Overflow), the variable unchanged; stored in a SINGLE, a single keeps its own 4 bytes (an exponent-0 one its digit bytes too), an integer becomes its value, a double is cut to 6 digits (SQR(2): 1.41421). Read back through USR(T%) / USR(T!). | 3 | ✓ | ✗ 1: KMA FY 53 |
 
 <!-- RULES END -->
 
@@ -147,6 +167,10 @@ loader refuses the run.
 - **A single whose exponent byte is 0 but whose digit bytes are not is stored in a variable as zero bytes here**
   (rule R-ABS-ASSIGN, KMA FX 21, 22: `R=ABS(N!)` of the two POKEd singles) --
   [D-ZEROLET](../../todo/open/D-ZEROLET.md). It is the assignment's, not `ABS`'s: `ABS`'s own result agrees (R-ABS-ODD).
+  Stored in a single the same (rule R-ABS-TARGET, KMA FY 53 `T!=ABS(N!)`).
+- **`ABS("A"` (no `)`) and `ABS("A",2)` are error 13 here, error 2 on the VG-8020** (rule R-ABS-ORDER, KMA FY 1, 3)
+  -- [D-ARGTYPEORDER](../../todo/open/D-ARGTYPEORDER.md). The reference requires the `)` before it refuses the
+  string; the argument's own error (`ABS(1/0`, 11) wins on both.
 
 The one rung not yet proven is **RAM usage**: `ABS` uses the same amount of
 free memory on both machines, but the VG-8020 writes a few work-area cells
@@ -163,6 +187,9 @@ along the way that zerobas does not. Nothing a program can observe through
 - [A] An argument's own error was measured with one kind (`1/0`, error 11); that any error of the argument wins is assumed.
 - [A] Which work-area cells the call writes (the RAM-usage rung).
 - [A] Non-canonical bytes other than the two measured singles (exponent byte 0 or `&H80` with digit bytes `10 00 00`): a double, non-BCD digit nibbles, `&H80` with zero digit bytes.
+- [A] Stored in an INTEGER variable, a NEGATIVE result with a fraction: truncated toward zero or rounded down is not
+  separated (no such case; the conversion region, [CINT](CINT.md)). Stored in a SINGLE, a double that needs its 7th
+  digit rounded or cut is not separated either (`SQR(2)`'s 7th digit is 3).
 
 ## What we found, and how
 
@@ -182,7 +209,9 @@ along the way that zerobas does not. Nothing a program can observe through
   backwards. [fixpoint8000-msx1-sweep.md](../fixpoint8000-msx1-sweep.md).
 - **Deep nesting gave a nonsense error.** `ABS(ABS(…))` sixteen levels deep
   answered `FIELD overflow` (error 50), while both references go 32 deep
-  without trouble (fixed 2026-09-12, D-SPMERGE, which merged two stacks).
+  without trouble (fixed 2026-09-12, D-SPMERGE, which merged two stacks). The
+  spec probe now measures 16 and 32 deep on the VG-8020 and on zerobas (rule
+  R-ABS-NEST, KMA FZ 0, 1): no error, the same result.
 - **The space before the parenthesis was checked** (D-NUMSPACE, 2026-09-09):
   `ABS (-7)` was already accepted, as on both references
   ([`numspace_run.out`](../../scratchpad/numspace_run.out)).

@@ -10,6 +10,7 @@ type USR saw (2 / 4 / 8) and its own bytes, compared byte for byte; R's 8 bytes 
 double. SQR's last digit is the reference's own (docs/keywords/SQR.md: not reproducible from the printed digits), so
 its rule is a bound, not bytes."""
 import math
+from decimal import Context, Decimal
 import os
 import sys
 from fractions import Fraction
@@ -32,14 +33,53 @@ VT = {"I": 2, "S": 4, "D": 8}
 SQR_BOUND = 3                                           # units of the 14th digit (measured: -1.9 .. +2.5)
 
 
+# the LET rows of kmath's FX group (fn "LET") each page loads: FIX's the two exponent-0 singles assigned, SQR's
+# the two zero roots assigned after R=0 / R=-12345 (goldfish pass 1: they were measured but loaded by no page)
+LET_ROWS = {"FIX": ("a single with exponent byte 0, digit bytes 10 00 00, assigned",
+                    "FIX(.5!) stored in a single, then assigned"),
+            "SQR": ("SQR(0%) after R=0", "SQR(0!) after R=-12345")}
+MX = ("MI", "MS", "MD")
+
+
 def load(fn):
-    """this keyword's cases: the three matrix groups' and the fixed statements', the reference's and zerobas's"""
+    """this keyword's cases: the three matrix groups', the fixed statements' (FX, FY, FZ) and its LET rows, the
+    reference's and zerobas's -- after the apparatus checks (check_read, check_lit)"""
     out = {"ref": [], "zb": []}
     for g in kmath.ORDER:
         cs = kmath.load(g)
+        if g in MX:
+            check_read(cs, g)
+        if g == "FY":
+            check_lit(cs)
         for who in out:
-            out[who] += [c for c in cs[who] if c.fn == fn]
+            out[who] += [c for c in cs[who] if c.fn == fn or (c.fn == "LET" and c.why in LET_ROWS.get(fn, ()))]
     return out
+
+
+def text_value(t):
+    """the value a DATA / literal text stands for, exactly ("1D14" a double's exponent)"""
+    return Fraction(Decimal(t.replace("D", "E")))
+
+
+def check_read(cs, g):
+    """apparatus (goldfish pass 1): every row's recorded argument is the DATA text's value in the row's type, on
+    both machines -- so the six rows of one text (ID, ABS, SGN, INT, FIX, SQR) saw the same argument, no function
+    changed its argument variable, and the two machines READ the text alike. Exits otherwise."""
+    bad = [f"{who} {c.id}" for who in cs for c in cs[who]
+           if c.arg != enc(text_value(c.text), c.ty) + bytes(8 - NB[c.ty])]
+    if bad:
+        sys.exit(f"FAIL: {g}: the argument READ is not the DATA text's value: {', '.join(bad[:8])}")
+
+
+def check_lit(cs):
+    """apparatus (goldfish pass 1): FY's LIT rows (`R=<literal>`, `Q=USR(<literal>)`, no function) give each
+    literal's type and bytes as LIT says, on both machines -- the literal types FX_ARG and LIT use are MEASURED.
+    Exits otherwise."""
+    bad = [f"{who} {c.id}" for who in cs for c in cs[who] if c.fn == "LIT" and not (
+        c.e1 == 0 and c.e2 == 0 and c.vt == VT[LIT[c.lit][0]] and c.res == LIT[c.lit][1]
+        and c.rbytes == as_double(c.vt, c.res))]
+    if bad:
+        sys.exit(f"FAIL: FY: a literal's measured type / bytes are not LIT's: {', '.join(bad[:8])}")
 
 
 # --- numbers as bytes ---
@@ -194,18 +234,17 @@ MODELS = {"ABS": m_abs, "SGN": m_sgn, "INT": m_int, "FIX": m_fix, "SQR": m_sqr}
 
 
 def near(res, v, bound=SQR_BOUND):
-    """res (8 bytes) is within `bound` units of the 14th significant digit of sqrt(v)"""
+    """res (8 bytes) is within `bound` units of the 14th significant digit of sqrt(v) -- the unit sized from the
+    EXACT root's decade, not the result's (goldfish pass 1: a result that rounds up across a power of ten, as
+    SQR(.99999999999999#) -> 1, was otherwise judged with a unit ten times too large)"""
     x = value(res)
     if x <= 0:
         return False
-    # |x - sqrt(v)| < bound * ulp  <=>  checked with exact rationals around sqrt
+    # the exact root's decade: 10^(e-1) <= sqrt(v) < 10^e  <=>  10^(2e-2) <= v < 10^(2e)
     e = 0
-    a = x
-    while a >= 1:
-        a /= 10
+    while Fraction(10) ** (2 * e) <= v:
         e += 1
-    while a < Fraction(1, 10):
-        a *= 10
+    while Fraction(10) ** (2 * e - 2) > v:
         e -= 1
     ulp = Fraction(10) ** (e - 14)
     lo, hi = x - bound * ulp, x + bound * ulp
@@ -246,8 +285,16 @@ def argb(c):
 def want(c, model=None):
     """the model's outcome for a matrix case, or for a fixed statement's value form"""
     m = model or MODELS[c.fn]
-    if c.src != "FX":
+    if c.src in MX:
         return m(c.ty, argb(c))
+    if c.src in ("FY", "FZ"):
+        ty, b = LIT[c.lit]
+        for _ in range(getattr(c, "depth", None) or 1):
+            k = m(ty, b)
+            if k[0] != "num":
+                return k
+            ty, b = {2: "I", 4: "S", 8: "D"}[k[1]], k[2]
+        return k
     ty, b = FX_ARG[c.why]
     if c.why == "nested":
         k, vt, b = MODELS[c.fn](ty, b)
@@ -286,7 +333,109 @@ def fx_by(c, *whys):
 
 
 def mx(c):
-    return c.src != "FX"
+    return c.src in MX
+
+
+def fy(c, *kinds):
+    return c.src in ("FY", "FZ") and getattr(c, "kind", None) in kinds
+
+
+# --- goldfish pass 1 (FY / FZ): the literals measured, the order of the checks, an exponent-0 zero used, the
+#     result stored in T% / T! ---
+
+LIT = {
+    "2.5": ("S", enc(Fraction(5, 2), "S")), "-2.5": ("S", enc(Fraction(-5, 2), "S")), "7": ("I", enc(7, "I")),
+    "7%": ("I", enc(7, "I")), "2.5!": ("S", enc(Fraction(5, 2), "S")), "2.5#": ("D", enc(Fraction(5, 2), "D")),
+    "&H8000": ("I", enc(-32768, "I")), "-32768": ("S", enc(-32768, "S")), "-0": ("I", enc(0, "I")),
+    "1/4": ("D", enc(Fraction(1, 4), "D")), "2.25": ("S", enc(Fraction(9, 4), "S")),
+    "-1E38": ("S", enc(-10 ** 38, "S")), ".5!": ("S", enc(Fraction(1, 2), "S")),
+    "-.5!": ("S", enc(Fraction(-1, 2), "S")), "1E10": ("S", enc(10 ** 10, "S")),
+    "32767.9": ("S", enc(Fraction(327679, 10), "S")), "-32768.5": ("S", enc(Fraction(-65537, 2), "S")),
+    "-1.5": ("S", enc(Fraction(-3, 2), "S")), "-.5": ("S", enc(Fraction(-1, 2), "S")), "1": ("I", enc(1, "I")),
+    "2": ("I", enc(2, "I")), "3": ("I", enc(3, "I")), "0": ("I", enc(0, "I")),
+    "N!": ("S", bytes([0x00, 0x10, 0, 0])),          # the POKEd single (PRE0), not a literal: not a LIT row
+}
+# the order of the checks: the argument is evaluated (its own error wins), THEN the `)` / `,` is required, THEN the
+# argument's type is checked
+ORDER_ERR = {"the argument's own error, no closing parenthesis": 11, "a string argument, no closing parenthesis": 2,
+             "the argument's own error, then an extra argument": 11, "a string argument, then an extra argument": 2}
+FY_SYNTAX_WHYS = ("PRINT and the name alone", "two arguments, as the pages write it")
+
+
+def zero_use(why, z=Fraction(0)):
+    """what `R=<expr>` gives for FY's "an exponent-0 zero used" rows, the zero being worth z (0: the rule; a
+    control passes .5, the zero's digits read as a value). (vt, bytes)."""
+    w = why.split(": ", 1)[1]
+    if w == "+1":
+        return 8, enc(z + 1, "D")                       # measured a DOUBLE on both machines (open: why)
+    if w == "*3":
+        # value 0: exponent byte 0; the reference's digit bytes are 30 00 ..., the other operand's (one case)
+        return 8, (bytes([0, 0x30]) + bytes(6)) if z == 0 else enc(3 * z, "D")
+    if w == "=0":
+        return 2, enc(int(z == 0), "I")
+    if w == ">0":
+        return 2, enc(int(z > 0), "I")
+    if w == "<0":
+        return 2, enc(0, "I")                           # FIX(-.5!) / INT(.5!): the sign is dropped / positive
+    if w == "SGN":
+        return 2, enc((z > 0) - (z < 0), "I")
+    if w == "LEN(STR$)":
+        return 2, enc(2 if z == 0 else 3, "I")          # " 0" / " .5"
+    if w == "STR$'s digit":
+        return 2, enc(48 if z == 0 else 46, "I")        # "0" / "."
+    raise KeyError(why)
+
+
+T_SENT = {"%": enc(-7, "I"), "!": enc(-7, "S")}
+
+
+def target(c, to_int=lambda v: int(v), zero_let=False):
+    """what `T%=F(x)` / `T!=F(x)` leaves in T: ("err", code, T's sentinel) or ("num", vt, bytes). An integer
+    target takes the value with its fraction DROPPED (`to_int`: the rule's truncation; a control passes rounding),
+    Overflow (6) outside -32768..32767; a single target takes a single as its own 4 bytes (an exponent-0 one too;
+    `zero_let`: zerobas's 4 zero bytes, a control), an integer by value, a double shortened to 6 digits."""
+    k = MODELS[c.fn](*LIT[c.lit])
+    if k[0] == "err":
+        return "err", k[1], T_SENT[c.target]
+    if k[0] == "near":
+        ctx = Context(prec=40)
+        v = Fraction(ctx.divide(Decimal(k[1].numerator), Decimal(k[1].denominator)).sqrt(ctx))
+    else:
+        v = value(k[2])
+    if c.target == "%":
+        r = to_int(v)
+        if not -32768 <= r <= 32767:
+            return "err", 6, T_SENT["%"]
+        return "num", 2, enc(r, "I")
+    if k[0] == "num" and k[1] == 4:
+        return "num", 4, bytes(4) if zero_let and k[2][0] == 0 else k[2]
+    if k[0] == "num" and k[1] == 2:
+        return "num", 4, enc(v, "S")
+    if v == 0:
+        return "num", 4, bytes(4)
+    s1 = Fraction(Context(prec=6).divide(Decimal(v.numerator), Decimal(v.denominator)))
+    return "num", 4, enc(s1, "S")
+
+
+def target_is(c, t):
+    """the assignment raised t's error (or none), R was never touched, USR(T) ran and saw T's type and bytes"""
+    code = t[1] if t[0] == "err" else 0
+    vt, b = (2 if c.target == "%" else 4, t[2]) if t[0] == "err" else (t[1], t[2])
+    return c.e1 == code and c.rbytes == R_SENT and c.e2 == 0 and c.vt == vt and c.res == b
+
+
+def assigned(c):
+    """R holds what the case's result is when assigned to a double, or its sentinel after an error"""
+    return (c.rbytes == R_SENT) if c.vt == 255 else (c.res is not None and c.rbytes == as_double(c.vt, c.res))
+
+
+ASSIGN_EG = {
+    "ABS": "so ABS of the POKEd single 00 10 00 00 leaves R 00 10 00 00 00 00 00 00, KMA FX 21",
+    "SGN": "SGN's result is an integer, stored by its value: SGN(-2.5) leaves R the double -1",
+    "INT": "so INT(.5!)'s exponent-0 result keeps its digit bytes in R: 00 50 00 00 00 00 00 00",
+    "FIX": "so FIX(.5!)'s exponent-0 result keeps its digit bytes in R: 00 50 00 00 00 00 00 00",
+    "SQR": "SQR's result is always a double: R holds its 8 bytes",
+}
 
 
 def _common(fn, tag, sec):
@@ -299,20 +448,37 @@ def _common(fn, tag, sec):
              lambda c: fx_by(c, "the argument's own error"), lambda c: no_usr(c, 11)),
         Rule(f"R-{tag}-SYNTAX", sec,
              "No argument, a second argument, no closing parenthesis, or the name without a parenthesis is error 2 "
-             "(Syntax error).", lambda c: fx_by(c, *SYNTAX_WHYS), lambda c: no_usr(c, 2)),
+             "(Syntax error); so are `PRINT " + fn + "` and `" + fn + "(1,2)`, the forms this page quotes.",
+             lambda c: fx_by(c, *SYNTAX_WHYS) or (fy(c, "syntax")), lambda c: no_usr(c, 2)),
+        Rule(f"R-{tag}-ORDER", sec,
+             f"The argument is evaluated before the call's shape is checked, and its type after: {fn}(1/0 (no "
+             f"`)`) and {fn}(1/0,2) raise the argument's own error 11, but {fn}(\"A\" (no `)`) and {fn}(\"A\",2) are "
+             f"error 2 (Syntax error), not 13 -- the `)` is required before the string is refused.",
+             lambda c: fy(c, "prec"), lambda c: no_usr(c, ORDER_ERR[c.why])),
+        Rule(f"R-{tag}-NEST", sec,
+             f"{fn} nested 16 and 32 deep ({fn}({fn}(...(" + ("1" if fn == "SQR" else "-2.5") + ")...))) gives "
+             f"what the rules above give applied that many times, with no error.",
+             lambda c: fy(c, "nest"), lambda c: outcome(c, want(c)) and assigned(c)),
         Rule(f"R-{tag}-FORMS", sec,
              f"Spaces before the parenthesis and around the argument are allowed, and a literal's own type is the "
              f"argument's: 2.5 and -2.5 are singles, 7 an integer, 7% / 2.5! / 2.5# what they say, &H8000 the "
              f"integer -32768, -32768 a single (a minus on the single 32768), -0 the integer 0, 1/4 a double; "
              f"{fn} of {fn}(2.25) is {fn} of that result. Each gives what the rules above say for that type and "
-             f"value.", lambda c: fx_by(c, *FORM_WHYS), lambda c: outcome(c, want(c))),
+             f"value; so does {fn}(-1E38), a single. These types are MEASURED: each literal alone, `R=<literal>` / "
+             f"`Q=USR(<literal>)`, gives that type and value on both machines (KMA FY 70-92; the loader refuses a "
+             f"run where it does not).", lambda c: fx_by(c, *FORM_WHYS) or fy(c, "value"),
+             lambda c: outcome(c, want(c))),
         Rule(f"R-{tag}-ASSIGN", sec,
-             "`R=" + fn + "(x)` with R a double stores the result's value -- a single's own 4 bytes then four zero "
-             "bytes, its exponent byte and digit bytes as they are (so FIX(.5!)'s exponent-0 result keeps its digit "
-             "bytes in R: 00 50 00 00 00 00 00 00) -- and an error stores nothing (R keeps its sentinel). Read in "
-             "every case.", lambda c: True,
-             lambda c: (c.rbytes == R_SENT) if c.vt == 255 else (c.res is not None and
-                                                                  c.rbytes == as_double(c.vt, c.res))),
+             "`R=" + fn + "(x)` with R a double stores the result's value -- an integer by its value, a single's "
+             "own 4 bytes then four zero bytes, its exponent byte and digit bytes as they are (" + ASSIGN_EG[fn] +
+             ") -- and an error stores nothing (R keeps its sentinel). Read in every case that assigns R.",
+             lambda c: c.fn == fn and not fy(c, "target"), assigned),
+        Rule(f"R-{tag}-TARGET", sec,
+             f"Stored in an INTEGER variable, {fn}'s result loses its fraction -- truncated, not rounded (SQR(3) "
+             f"stores 1) -- and a value outside -32768..32767 is error 6 (Overflow), the variable unchanged; stored "
+             f"in a SINGLE, a single keeps its own 4 bytes (an exponent-0 one its digit bytes too), an integer "
+             f"becomes its value, a double is cut to 6 digits (SQR(2): 1.41421). Read back through USR(T%) / "
+             f"USR(T!).", lambda c: fy(c, "target"), lambda c: target_is(c, target(c))),
     ]
 
 
@@ -362,8 +528,8 @@ def rules(fn):
             Rule("R-FIX-SMALL", sec,
                  "Below 1 in size (zero included) the result is a zero of the argument's type whose exponent byte "
                  "is 0 -- the sign dropped -- and whose digit bytes are the argument's, unchanged: FIX(-.5!) is "
-                 "00 50 00 00, FIX(1D-64) 00 10 00 00 00 00 00 00. It reads as 0 everywhere (STR$ writes it \" 0\", "
-                 "STR$'s page).", lambda c: mx(c) and c.ty in "SD" and (c.arg[0] & 0x7F) <= 64, ok),
+                 "00 50 00 00, FIX(1D-64) 00 10 00 00 00 00 00 00. It is 0 to arithmetic, comparison, SGN and STR$ "
+                 "(R-FIX-ZEROUSE).", lambda c: mx(c) and c.ty in "SD" and (c.arg[0] & 0x7F) <= 64, ok),
             Rule("R-FIX-ODD", sec,
                  "The same on a non-canonical single: exponent byte 0 or &H80 with digit bytes 10 00 00 both give "
                  "00 10 00 00.", lambda c: fx_by(c, *ODD_WHYS), ok),
@@ -405,12 +571,39 @@ def rules(fn):
                  lambda c: (mx(c) or fx_by(c, *FX_ARG)) and want(c)[0] == "num" and want(c)[2][0] != 0, ok),
             Rule("R-SQR-NEAR", sec,
                  f"Otherwise the result is a double within {SQR_BOUND} units of the 14th significant digit of the "
-                 "exact root -- NOT always the correctly rounded root: SQR(2) is 1.4142135623730 (the exact root "
-                 "is 1.41421356237309505...), SQR(.4!) 2.4 units high, SQR(1234567890123.4#) 1.9 units low. The "
-                 "measured errors run from -1.9 to +2.5 units; their rule is the reference's own algorithm, which "
-                 "the printed digits do not reveal (the Differences below).",
+                 "exact root (the unit sized from the exact root's decade) -- NOT always the correctly rounded "
+                 "root: SQR(2) is 1.4142135623730 (the exact root is 1.41421356237309505...), SQR(.4!) 2.4 units "
+                 "high. The measured errors run from -1.9 units (SQR(1234567890123.4#)) to +2.5 (SQR(.999999!) and "
+                 "SQR(999999!)); their rule is the reference's own algorithm, which the printed digits do not "
+                 "reveal. A bound, not the reference's digits: any root within it passes, zerobas's correctly "
+                 "rounded one included (the Differences and Open below).",
                  lambda c: (mx(c) or fx_by(c, *FX_ARG)) and want(c)[0] == "near", ok),
         ]
     else:
         raise KeyError(fn)
+    if fn in ("FIX", "INT"):
+        out.append(Rule(f"R-{fn}-ZEROUSE", sec,
+                        f"The exponent-0 zero {fn}(.5!) returns (00 50 00 00) is 0 to arithmetic, comparison, SGN and "
+                        f"STR$: {fn}(.5!)+1 is 1 (a double), {fn}(.5!)=0 is true, >0 and <0 false"
+                        + (" (FIX(-.5!)<0 too: the sign is dropped)" if fn == "FIX" else "") +
+                        f", SGN gives 0, STR$ gives \" 0\". {fn}(.5!)*3 is a double whose exponent byte is 0 (the "
+                        f"value 0) and whose digit bytes are 30 00 00 00 00 00 00 -- the other operand's (one case).",
+                        lambda c: fy(c, "zero"),
+                        lambda c: c.e1 == 0 and c.e2 == 0 and (c.vt, c.res) == zero_use(c.why) and assigned(c)))
+    if fn == "FIX":
+        out.append(Rule("R-FIX-LET", sec,
+                        "The assignment, not FIX, decides what a variable keeps: the POKEd single 00 10 00 00 "
+                        "assigned to R (`R=N!`) leaves R 00 10 00 00 00 00 00 00, and `N!=FIX(N!)` with N! = .5 "
+                        "keeps 00 50 00 00 in the single N! and then in R.",
+                        lambda c: c.fn == "LET",
+                        lambda c: c.e1 == 0 and c.e2 == 0 and c.vt == 4 and c.res == (
+                            bytes([0, 0x10, 0, 0]) if "digit bytes 10" in c.why else bytes([0, 0x50, 0, 0]))
+                        and assigned(c)))
+    if fn == "SQR":
+        out.append(Rule("R-SQR-LET", sec,
+                        "A zero root assigned to R is 8 zero bytes whatever R held before: `R=0:R=SQR(0%)` and "
+                        "`R=-12345:R=SQR(0!)` both leave R 00 00 00 00 00 00 00 00.",
+                        lambda c: c.fn == "LET",
+                        lambda c: c.e1 == 0 and c.e2 == 0 and c.vt == 8 and c.res == bytes(8)
+                        and c.rbytes == bytes(8)))
     return out + _common(fn, tag, sec)
