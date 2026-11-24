@@ -33,7 +33,7 @@ other component's cell at the same address; the `inside` column
 names the other component's BUFFER this address falls within. That
 second one is the question a per-component map cannot answer.
 
-* **basic** — 70 declared addresses in this project's own workspace `$E000..$F37F` (69 with a machine-readable width), plus **456** in the MSX standard work area at or above `$F380`.
+* **basic** — 70 declared addresses in this project's own workspace `$E000..$F37F` (69 with a machine-readable width), plus **459** in the MSX standard work area at or above `$F380`.
 * **disk** — 126 declared addresses in this project's own workspace `$E000..$F37F` (117 with a machine-readable width), plus **71** in the MSX standard work area at or above `$F380`.
 
 ## This project's own workspace (`$E000..$F37F`)
@@ -399,6 +399,8 @@ extents the standard already fixes would be noise, not rigour.
 | `$F66C` | 2 B | `basic` | `TXTCEIL` | the text ceiling boot chose: TXTMAX or TXTMAX_NODISK (2 B) |  |
 | `$F66E` | 2 B | `basic` | `GFX_R` | radius (int16, >=0 -- resident guards G4-rneg) (2) |  |
 | `$F670` | 2 B | `basic` | `GFX_ASPS` | 8.8 minor scale S, round(minor_ratio*256); 256=no scale (2) |  |
+| `$F672` | 2 B | `basic` | `MEMSIZ` | MS-BASIC: top of string space = HIMEM - $218 at boot (D-NMSHOST, AE_nmshost_sysdata.out) (2) |  |
+| `$F674` | 2 B | `basic` | `STKTOP` | MS-BASIC: top of BASIC's stack = MEMSIZ - 200 (D-NMSHOST) (2) |  |
 | `$F676` |  | `basic` | `TXTTAB` | sysvar: pointer to the BASIC text base |  |
 | `$F676` |  | `disk` | `TXTTAB` | sysvar: pointer to the BASIC text base |  |
 | `$F678` | 2 B | `basic` | `TEMPPT` | PUBLISHED cursor: next free slot (2 B) |  |
@@ -612,6 +614,7 @@ extents the standard already fixes would be noise, not rigour.
 | `$F857` |  | `basic` | `RNDX` | PUBLISHED 8 B seed; byte 0 reads 00 (1) |  |
 | `$F858` | 7 B | `basic` | `RND_SEED` | packed BCD, MSD-first, 7 bytes ($F858..$F85E) |  |
 | `$F85F` | 1 B | `basic` | `MAXF` | = MAXFIL: current MAXFILES ceiling (0..FCH_CEIL); default 1 (1) |  |
+| `$F860` | 2 B | `basic` | `FILTAB` | MS-BASIC: file-table pointer = MEMSIZ + 2; its next word MEMSIZ + $0F (D-NMSHOST) (4) |  |
 | `$F864` | 1 B | `basic` | `PRDEST` | PRINT destination: 0=screen, 1=file channel (1) |  |
 | `$F866` | 6 B | `basic` | `CAS_WANT/TSV_NAME` | tape save: 6-char filename buffer (space-padded), FILNAM $F866..$F86B |  |
 | `$F867` |  | `basic` | `SCAN_K` | SCANR's last SCREEN 2 run (2), FILNAM+1 $F867 as the VG-8020 keeps it (D-SCANLPAINT) |  |

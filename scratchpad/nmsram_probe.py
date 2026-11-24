@@ -39,7 +39,19 @@ proc on_w {} {
   set a $::wp_last_address
   if {![dict exists $::seen $a]} { dict set ::seen $a [format %.6f [machine_info time]] }
 }
-debug set_watchpoint write_mem {0x8000 0xFFFF} {} on_w
+if {[info exists ::env(NMSRAM_LOW)]} {
+  # pages 0-1, counted only while RAM is mapped at the written address (a write to ROM changes nothing); any writer;
+  # recorded per 256-byte block: the first write's time
+  proc on_lw {} {
+    set a $::wp_last_address; set pg [expr {$a >> 14}]
+    if {[slotof $pg] ne $::env(RAMSLOT)} { return }
+    set b [expr {$a & 0xFF00}]
+    if {![dict exists $::seen $b]} { dict set ::seen $b [format %.6f [machine_info time]] }
+  }
+  debug set_watchpoint write_mem {0x0000 0x7FFF} {} on_lw
+} else {
+  debug set_watchpoint write_mem {0x8000 0xFFFF} {} on_w
+}
 after time """ + str(SECONDS) + r""" {
   set f [open $::env(LOGF) w]
   foreach a [lsort -integer [dict keys $::seen]] { puts $f "[format %04X $a] [dict get $::seen $a]" }
@@ -74,7 +86,7 @@ def main():
     log = probe_tmp.tmp("nmsram_ref.log")
     cmd = [openmsx_paths.find_openmsx_binary(), "-machine", os.environ.get("NMSRAM_MACHINE", "Philips_VG_8020"), "-ext", "Philips_NMS_1200",
            "-diska", dsk, "-script", tcl]
-    subprocess.run(omsx_preflight.guarded(cmd), env=dict(os.environ, LOGF=log, CARTSLOT="1"),
+    subprocess.run(omsx_preflight.guarded(cmd), env=dict(os.environ, LOGF=log, CARTSLOT="1", RAMSLOT=os.environ.get("NMSRAM_RAMSLOT", "3")),
                    stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, timeout=900)
     text = open(log).read()
     body, _, screen = text.partition("SCREEN\n")
