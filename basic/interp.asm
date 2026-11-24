@@ -267,8 +267,8 @@ bh_himem:
                 ; ceiling would count those bytes as strings -- and the collector
                 ; would walk them. (The disk build had the mild form all along: its
                 ; disk ROM lowers HIMEM after that reset.)
-                call    heap_reset
-                call    ctl_reset
+                call    ctl_reset           ; D-BOOTCELLS: FIRST -- it publishes STKTOP,
+                call    heap_reset          ; which heap_reset derives MEMSIZ from
                 call    brom_screen         ; D-BASICROM: a TEXT cartridge boots in
                                             ; SCREEN 1 / WIDTH 29 with NO header (NZ)
                 call    z,show_title        ; startup header lines

@@ -612,11 +612,12 @@ ssn_err:
 ; not fit"; letting the subtraction wrap would put the floor ABOVE the ceiling
 ; and hand out bodies over the top of RAM. Clobbers A,B,C,D,E,H,L.
 strheap_floor:
-                call    strheap_ceiling     ; HL = C = min(HIMEM,TXTMAX)
+                call    strheap_memsiz      ; HL = MEMSIZ, the pool's top (D-BOOTCELLS)
                 ld      de,(POOLSIZE)
                 or      a
                 sbc     hl,de
                 ret     nc
+svc_under:                                  ; (strheap_memsiz's under-run lands here too)
                 ld      hl,0                ; pool larger than the whole map
                 ret
 
@@ -646,11 +647,11 @@ strheap_ctllim:
                 ret
 
 ; --- strheap_varceil: -> HL = the VARIABLE/ARRAY region's ceiling (D-FCH §3.2)
-; `strheap_floor() - MAXF*FCH_CTXSZ`. The file-channel table is carved out of
-; the pool immediately BELOW the string pool's floor, so the map is
+; = strheap_floor() = STKTOP. 🔁 D-BOOTCELLS (2026-11-24): MS-BASIC's ORDER, the
+; channel table ABOVE the string pool (it was carved BELOW the pool's floor):
 ;
-;   [PRGEND+2 .. varceil) variables+arrays | [varceil .. floor) CHANNEL TABLE
-;   | [floor .. C) string pool
+;   [PRGEND+2 .. varceil) variables+arrays | [STKTOP .. MEMSIZ) string pool
+;   | 2 B | [MEMSIZ+2 = FILTAB .. C) FILTAB's table + FCB #0..#MAXF
 ;
 ; and `MAXFILES=n` costs n*FCH_CTXSZ of FRE(0) while leaving FRE("") alone —
 ; which is exactly what the CF-3300 does (characterization §2 the 267 B/channel
@@ -666,7 +667,8 @@ strheap_ctllim:
 ; rather than wrapping the ceiling above the pool.
 ; Clobbers A,B,C,D,E,H,L. Preserves IX/IY (both array callers rely on IY).
 strheap_varceil:
-                call    strheap_chantab     ; HL = the channel table's base
+                call    strheap_floor       ; HL = the pool's floor = STKTOP (D-BOOTCELLS:
+                                            ; the channel table is ABOVE the pool now)
 svc_ctl:
                 ; 🎯 D-CTLPOOL, THE SYMMETRIC HALF -- and it is one comparison.
                 ; Control frames descend from this same ceiling, so the variable
@@ -703,19 +705,23 @@ svc_ctl:
                 ex      de,hl               ; CSP is the lower of the two
                 ret
 
-; --- strheap_chantab: -> HL = the FILE-CHANNEL TABLE's base (D-CHANSWITCH) ---
-; `strheap_floor() - MAXF*FCH_CTXSZ`: varceil's own first half, WITHOUT the
-; D-CTLPOOL clamp to CSP. 🔴 sh_chan_addr (op 18) used to derive the block
-; address from strheap_varceil itself -- and with a FOR or GOSUB frame standing
-; the clamp returns CSP, so channel 1's block sat ON the newest control frame
-; and every channel switch (fch_save_active, 306 B) wrote over it. Measured,
-; not reasoned: two OUTPUT channels written in a FOR loop gave NO READING and
-; from a GOSUB `File not found`, where the CF-3300 writes both files
-; (scratchpad/chanloop_run8.out). The table does not move with the frames;
-; only the variable region's ceiling does.
-; Clobbers A,B,C,D,E,H,L.
-strheap_chantab:
-                call    strheap_floor       ; HL = the string pool's floor
+; --- strheap_memsiz: -> HL = MEMSIZ, the STRING POOL's top (D-BOOTCELLS) ---
+; MS-BASIC's order, measured on the VG-8020 (todo D-BOOTCELLS): top down, the
+; ceiling C = min(HIMEM,TXTCEIL), then the FILE AREA [MEMSIZ+2, C) -- FILTAB's
+; pointer table (2 B a channel, #0 included) and FCB #0 .. #MAXFILES, 267 B a
+; channel in all -- then the string pool [MEMSIZ - POOLSIZE, MEMSIZ), then the
+; variables. So MEMSIZ = C - (MAXF+1)*FCH_CTXSZ - 2 (the reference's
+; `HIMEM - ((MAXFILES+1)*267 + 2)`, $F168 at boot); FILTAB = MEMSIZ + 2; STKTOP =
+; the pool's floor (strheap_floor). Until D-BOOTCELLS zerobas had the same pieces
+; the other way up -- the pool under C and the channel blocks under the pool.
+; DERIVED, NEVER STORED, as strheap_floor's header argues; sh_ctl_reset PUBLISHES
+; the STKTOP cell and main's heap_reset the rest (MEMSIZ / FRETOP / FILTAB /
+; NULBUF) from it, at every clear_vars (boot, RUN, NEW, CLEAR, MAXFILES).
+; The clamp: a file area that does not fit under C answers 0 (svc_under), and
+; so does the floor under it -- every allocation then fails honestly.
+; Clobbers A,B,C,D,E,H,L. Preserves IX/IY.
+strheap_memsiz:
+                call    strheap_ceiling     ; HL = C
                 ld      a,(MAXF)
                 inc     a                   ; D-FCBSHAPE FCB #0 (2026-10-10): MAXFILES
                                             ; + 1 blocks -- the reference reserves #0
@@ -723,13 +729,12 @@ strheap_chantab:
                                             ; (scratchpad/fcb0_run.out)
                 ld      b,a
                 ld      de,-FCH_CTXSZ       ; 267 a channel (D-FCBSHAPE S1)
-svc_sub_lp:
+smz_lp:
                 add     hl,de               ; CF set iff no borrow (HL >= block)
                 jr      nc,svc_under
-                djnz    svc_sub_lp
-                ret
-svc_under:
-                ld      hl,0                ; the table does not fit under the pool
+                djnz    smz_lp
+                dec     hl
+                dec     hl                  ; the 2 B between MEMSIZ and FILTAB
                 ret
 
 ; --- heap_alloc: A=len(0..255) -> CF set+HL=body ptr / CF clear=OOM --------
@@ -910,7 +915,7 @@ strheap_gc:
                 ld      hl,(FRETOP)
                 ld      (ix+0),l
                 ld      (ix+1),h            ; OLD_FRETOP
-                call    strheap_ceiling     ; HL = C
+                call    strheap_memsiz      ; HL = C, the pool's top: MEMSIZ (D-BOOTCELLS)
                 ld      (ix+2),l
                 ld      (ix+3),h            ; CEIL = C
                 ld      (ix+8),l
@@ -2115,9 +2120,14 @@ sfg_ok:
 ; would only make FRE(0) slow. sh_free_gap needs it because its answer is
 ; FRETOP, which garbage does move.
 ;
-; The `+2` is heap_alloc's old sentinel rule, kept HERE where it still belongs:
-; ARYEND addresses the LIVE 2-byte $0000 array terminator, so the first byte the
-; region does not already own is ARYEND+2.
+; 🔁 D-BOOTCELLS (2026-11-24): `varceil - ARYEND`, NOT `- (ARYEND+2)` any more.
+; The `+2` was heap_alloc's old sentinel rule (ARYEND addresses the LIVE 2-byte
+; $0000 terminator). It went when the ceiling did: the string pool took MS-BASIC's
+; place under MEMSIZ, which puts the varceil ON the reference's STKTOP ($F0A0 at
+; boot) -- 2 B BELOW where it sat ($F0A2), the 2 B MS-BASIC leaves between MEMSIZ
+; and FILTAB. FRE(0) is a reading of the VG-8020's (28815 at boot; 15531 / 14997 /
+; 15798 after CLEAR 300,&HC000 / MAXFILES=3 / =0), not a byte count of zerobas's
+; own map, so the accounting absorbs the 2 B and every reading stays put.
 ;
 ; ⚠️ D-FCH §3.2: the ceiling here is now strheap_varceil, NOT strheap_floor —
 ; the file-channel table sits between them, so `MAXFILES=n` shows up in FRE(0)
@@ -2125,13 +2135,11 @@ sfg_ok:
 ; §2 vs §5). This is the routine that makes the ladder visible.
 sh_free_vars:
                 call    strheap_aryend      ; HL = ARYEND (the $0000 terminator)
-                inc     hl
-                inc     hl                  ; HL = ARYEND+2 (past the live sentinel)
                 push    hl
                 call    strheap_varceil     ; HL = the variable ceiling (clobbers D,E)
-                pop     de                  ; DE = ARYEND+2
+                pop     de                  ; DE = ARYEND (D-BOOTCELLS: not +2, below)
                 or      a
-                sbc     hl,de               ; HL = floor - (ARYEND+2)
+                sbc     hl,de               ; HL = varceil - ARYEND
                 jr      nc,sfg_have         ; SH_PTR = the gap, SH_ERR = 0
                 jr      sfg_zero            ; region already at/over the floor -> 0
 
@@ -2168,6 +2176,8 @@ sh_ctl_reset:
                 ld      hl,0
                 ld      (FNSP),hl
                 call    strheap_varceil     ; HL = the pool top (= reference STKTOP)
+                ld      (STKTOP),hl         ; D-BOOTCELLS: published here; heap_reset
+                                            ; (main) derives MEMSIZ etc. from it
                 ld      (CTLTOP),hl
                 ld      (CSP),hl
                 ld      (GSP),hl
@@ -2178,8 +2188,8 @@ sh_ctl_reset:
                 jr      sfg_ok              ; SH_ERR = 0
 
 ; --- sh_chan_addr: op=18 handler -- the DYNAMIC file-channel block address ---
-; SH_LEN = channel 1..MAXF -> SH_PTR = strheap_varceil() + (ch-1)*FCH_CTXSZ,
-; i.e. the base of that channel's context block inside the carved table.
+; SH_LEN = channel 0..MAXF -> SH_PTR = FCB #ch = MEMSIZ + 2 + 2*(MAXF+1) + ch*FCH_BLKSZ
+; (D-BOOTCELLS: the MS-BASIC address, FILTAB's table below the blocks).
 ; SH_ERR = 0 always (the caller has already range-checked the channel through
 ; fch_valid; an out-of-range one would simply address past the table).
 ;
@@ -2190,9 +2200,10 @@ sh_ctl_reset:
 ; (strheap_varceil, via strheap_floor/strheap_ceiling) was already sub-ROM, so
 ; keeping the caller resident would have bought nothing and cost real bytes.
 sh_chan_addr:
-                call    strheap_chantab     ; HL = the table base -- NOT varceil, whose
-                                            ; CSP clamp moved it onto the control
-                                            ; frames (D-CHANSWITCH)
+                call    strheap_memsiz      ; HL = MEMSIZ: the table base is MEMSIZ+2
+                                            ; (D-BOOTCELLS). NOT varceil, whose CSP
+                                            ; clamp moved it onto the control frames
+                                            ; (D-CHANSWITCH)
                 ; D-FCBSHAPE FCB #0 + geometry (2026-10-10): the reference's order,
                 ; bottom up -- FILTAB's pointer table (2 B a channel, #0 included),
                 ; then FCB #0, #1 .. #MAXFILES -- so VARPTR(#n) moves 265 (not 267)
@@ -2200,7 +2211,8 @@ sh_chan_addr:
                 ; table's bytes stay reserved: nothing here writes FILTAB.
                 ld      a,(MAXF)
                 inc     a
-                add     a,a                 ; the pointer table's size
+                inc     a                   ; + 1: the 2 B from MEMSIZ to FILTAB
+                add     a,a                 ; the pointer table's size (+ those 2)
                 ld      e,a
                 ld      d,0
                 add     hl,de               ; HL = FCB #0

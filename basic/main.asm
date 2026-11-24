@@ -477,6 +477,33 @@ sc_flip:
                 pop     af
                 ret
 
+    IF CLEARPOOL
+; heap_cells: FRETOP := MEMSIZ, and MS-BASIC's published layout cells (D-BOOTCELLS, todo/open/D-BOOTCELLS.md).
+; The order is MS-BASIC's, measured on the VG-8020: the file area [MEMSIZ+2, C) above the string pool
+; [STKTOP, MEMSIZ), the variables below. STKTOP is what sh_ctl_reset published (the sub ROM's strheap_floor,
+; ctl_reset runs first at every clear_vars), so MEMSIZ = STKTOP + POOLSIZE (= the sub ROM's strheap_memsiz),
+; FILTAB = MEMSIZ + 2, its next word (NULBUF) = FCB #0 + 9 = FILTAB + 2*(MAXF+1) + 9. heap_reset's body;
+; here because the low region's pins leave no room in front of them. Clobbers A,B,C,H,L.
+heap_cells:
+                ld      hl,(STKTOP)
+                ld      bc,(POOLSIZE)
+                add     hl,bc
+                ld      (MEMSIZ),hl
+                ld      (FRETOP),hl         ; the empty pool's top
+                inc     hl
+                inc     hl
+                ld      (FILTAB),hl
+                ld      a,(MAXF)
+                inc     a
+                add     a,a
+                add     a,9
+                ld      c,a
+                ld      b,0
+                add     hl,bc
+                ld      (FILTAB+2),hl       ; NULBUF ($F862)
+                ret
+    ENDIF
+
 ; low-region overflow guard: the low-region tenants must not reach the $4000 header.
 ; If they do, the `ds` below would be negative (pasmo warns + emits nothing, a silent
 ; corruption), so assert first — an overrun references an undefined symbol -> clean

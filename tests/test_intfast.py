@@ -493,6 +493,14 @@ class Runner:
         for cell in ("CTLTOP", "CSP", "GSP", "FSP", "TSP"):
             m.poke_w(m.addr(cell), POOL_TOP)
         m.poke_w(m.addr("CTLLIM"), POOL_FLOOR)
+        # D-BOOTCELLS: the trapped sh_ctl_reset also PUBLISHES STKTOP (the string pool's
+        # floor), which heap_reset reads -- model it, or the pool sits at 0 on this image.
+        if "heap_cells" in m.sym:
+            mem, w = m.mem, lambda a: m.mem[a] | m.mem[a + 1] << 8
+            ceil = w(m.addr("HIMEM")) or w(m.addr("TXTCEIL"))
+            ceil = min(ceil, w(m.addr("TXTCEIL")))
+            top = ceil - (mem[m.addr("MAXF")] + 1) * 267 - 2 - w(m.addr("POOLSIZE"))
+            m.poke_w(m.addr("STKTOP"), max(top, 0))
 
     def w(self, a):
         return self.m.mem[a] | self.m.mem[a + 1] << 8

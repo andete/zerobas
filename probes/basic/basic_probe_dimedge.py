@@ -16,14 +16,16 @@ DIM and a line store may reach, VG-8020 vs zerobas.
             ("fits from 110" stood here until then; it was stale.)
   eval-pP-K deepexpr-acceptance's flat `B=1` / `PRINT"[";E;A(X);"]"` after an edge
             DIM (8-byte elements), phase P (`:` pads): FITTED or REFUSED. Pins
-            STK_EVAL_RESERVE (115) to the byte from both sides (D-EVALSLOPE).
+            STK_EVAL_RESERVE (113 since D-BOOTCELLS, was 115) to the byte from both sides (D-EVALSLOPE).
   store-n   after `CLEAR 300,TXTTAB+1000` and `99 REM Z`, is `20 REM` + n B
             stored (LIST)? The VG-8020 stores n=13 and refuses n=14.
 
-The reserves are basic/sysvars.inc's STK_EDGE_RESERVE (DIM, a new scalar: 131 --
+The reserves are basic/sysvars.inc's STK_EDGE_RESERVE (DIM, a new scalar: 129 since D-BOOTCELLS, 131 before --
 116 was the floor zerobas's own unguarded stack sets, measured by
 scratchpad/lowpoint_probe.py and scratchpad/edgesafe_probe.py) and
-STK_STORE_RESERVE (the line store: 141, the reference's edge to the byte). The
+STK_STORE_RESERVE (the line store: 135 since D-BOOTCELLS, 141 before -- the reference's edge
+to the byte; D-BOOTCELLS moved the pool top 2 B down and every reserve with it, same absolute edges, and
+STK_ALLOC_RESERVE 88 -> 86, which is what binds the dim-K rows). The
 DIM edge differed by ~30 B until D-FREPLUS14 (2026-10-17): that gap was FRE(0)'s
 (zerobas read it against the pool top, the reference against the live SP). With
 FRE(0) on the reference's depth the edge sat 15 B past the reference's, and

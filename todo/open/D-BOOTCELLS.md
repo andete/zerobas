@@ -55,3 +55,14 @@
       how zerobas reordered its memory with FRE unchanged, and the measured numbers as acceptance (C-BIOS's own BASIC
       cartridge has CLEAR / MAXFILES too).
 
+      ✅ STEPS (1)+(2) DONE 2026-11-24: the order is MS-BASIC's. sub/strheap.asm strheap_memsiz = min(HIMEM,TXTCEIL)
+      - (MAXF+1)*267 - 2; the pool is [MEMSIZ - POOLSIZE, MEMSIZ) and the GC compacts against MEMSIZ; the channel
+      blocks sit at FILTAB = MEMSIZ + 2 (table 2*(MAXF+1) B, then FCB #0..); varceil = STKTOP. sh_ctl_reset publishes
+      STKTOP, main's heap_cells (basic/main.asm, past the low region's pins) MEMSIZ / FRETOP / FILTAB / NULBUF from it at
+      every clear_vars (boot, RUN, NEW, CLEAR, MAXFILES). Boot / CLEAR 300,&HC000 / MAXFILES=3 / MAXFILES=0: MEMSIZ,
+      STKTOP, FRETOP, FILTAB, NULBUF and SAVSTK equal the VG-8020's, FRE("") / FRE(0) unchanged. The pool top fell 2 B
+      (the MEMSIZ..FILTAB gap), so sh_free_vars counts varceil - ARYEND and the four reserves moved 2 B to keep every
+      edge absolute: STK_EDGE 131->129, STK_STORE 141->135 (also re-based off FCB #0 onto STKTOP), STK_EVAL 115->113,
+      STK_ALLOC 88->86 (dimedge 14/14). STILL OPEN: (a) the VG-8020's FRETOP reads MEMSIZ + 1 after `CLEAR n,addr`
+      (not after `CLEAR n` or MAXFILES; re-checked, reproducible) -- zerobas reads MEMSIZ; (b) FILTAB's pointer TABLE
+      contents (its bytes are reserved, still unwritten); (c) plan steps (3) and (4).

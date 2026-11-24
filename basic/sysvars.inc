@@ -3823,9 +3823,9 @@ VCX_ROOM        equ     36      ; free ring bytes left in this window
 ; scratchpad/autorun_cell_probe.out.
 H_READ          equ     $FF07   ; prompt printed ("Ok" / ZB)
 H_STKE          equ     $FEDA   ; BASIC reset its stack (MSX2 TH hook list; D-HSTKE)
-MEMSIZ          equ     $F672   ; MS-BASIC: top of string space = HIMEM - $218 at boot (D-NMSHOST, AE_nmshost_sysdata.out) (2)
-STKTOP          equ     $F674   ; MS-BASIC: top of BASIC's stack = MEMSIZ - 200 (D-NMSHOST) (2)
-FILTAB          equ     $F860   ; MS-BASIC: file-table pointer = MEMSIZ + 2; its next word MEMSIZ + $0F (D-NMSHOST) (4)
+MEMSIZ          equ     $F672   ; MS-BASIC: top of string space = HIMEM - ((MAXF+1)*267 + 2), kept live (heap_cells, D-BOOTCELLS) (2)
+STKTOP          equ     $F674   ; MS-BASIC: top of BASIC's stack = MEMSIZ - POOLSIZE = the varceil, kept live (sh_ctl_reset, D-BOOTCELLS) (2)
+FILTAB          equ     $F860   ; MS-BASIC: file-table pointer = MEMSIZ + 2; its next word (NULBUF) FILTAB + 2*(MAXF+1) + 9, kept live (heap_cells, D-BOOTCELLS) (4)
 H_RUNC          equ     $FECB   ; BASIC clears its program state: NEW / a typed line / RUN / the cold start (D-NMSHOST)
 H_MAIN          equ     $FF0C   ; about to read a line at command level
 H_TIMI          equ     $FD9F   ; timer-interrupt hook, 5-byte inter-slot call area
@@ -4083,6 +4083,9 @@ PLAY_MORE       equ     $FE     ; AUDIO_STATUS: a voice's ring is full -- main w
 ; charges 267 B/channel out of its own FRE(0) pool (characterization §2/§4/§5):
 ;
 ;   channel table base = min(HIMEM,TXTMAX) - POOLSIZE - MAXF*FCH_CTXSZ
+; 🔁 D-BOOTCELLS (2026-11-24): NO LONGER -- the table is MS-BASIC's file area now,
+; ABOVE the pool: base = FILTAB = MEMSIZ + 2 = min(HIMEM,TXTCEIL) - (MAXF+1)*267
+; (sub/strheap.asm strheap_memsiz); the paragraph above is the former layout.
 ;
 ; DERIVED, NEVER STORED — the same S-CLP-2 discipline strheap_floor uses, and
 ; for the same reason: the arithmetic lives sub-side (sub/strheap.asm
@@ -4489,7 +4492,11 @@ CSP             equ     $F712   ; the pool's allocation frontier, descending (2)
 ; more lenient (deepctl_phase_r115.out, edgeprint_phase_r115.out, edgestr_phase_r115.out). GATED to
 ; the byte: dimedge-acceptance rows eval-p4-* / eval-p5-* (114 and 116 each redden one).
 ; The safety floor (76 B below any passing test + 8, above) is well inside it.
-STK_EVAL_RESERVE equ   115    ; see stk_guard; checked by stackcorrupt's leaf rows
+; 🔁 D-BOOTCELLS (2026-11-24): 115 -> 113, THE SAME ABSOLUTE EDGE. The pool top
+; (CTLTOP = STKTOP) moved 2 B down when the string pool took MS-BASIC's place under
+; MEMSIZ, and the machine stack with it (SAVSTK now reads STKTOP - 2, the VG-8020's
+; own value); at 115 dimedge's eval-p4-127 refused where the VG-8020 fits.
+STK_EVAL_RESERVE equ   113    ; see stk_guard; checked by stackcorrupt's leaf rows
 ; D-STACKFLOOR: a FRAME push (ctl_alloc, DEF FN's fn_frame) keeps MORE than DIM
 ; does, because a program whose GOSUB/FOR recursion ran out of memory goes on
 ; evaluating expressions WITH EVERY FRAME STILL STANDING (a trapped Out of memory,
@@ -4541,7 +4548,11 @@ CTL_STACK_MARGIN equ    256    ; MEASURED: ctllim-acceptance is green at this si
 ; K, 15 to the byte: 132 left the odd-parity edge 2 K high, dimedge_scan_132o.out).
 ; 131 puts the edge on the reference's at both parities (dimedge_scan_131e.out /
 ; _131o.out), and keeps 39 B over the editor's 92.
-STK_EDGE_RESERVE equ    131
+; 🔁 D-BOOTCELLS (2026-11-24): 131 -> 129, THE SAME ABSOLUTE EDGE. The varceil
+; (the pool top this reserve is taken from) moved 2 B down onto the VG-8020's STKTOP
+; when the string pool took MS-BASIC's place under MEMSIZ, and FRE(0) did not move
+; (sh_free_vars absorbs the 2 B): 129 keeps this ceiling where it was.
+STK_EDGE_RESERVE equ    129
 ; --- STK_ALLOC_RESERVE: an allocation's own stack, under the LIVE SP (D-DEEPEXPR)
 ; 2026-10-20 (docs/spec-basic-deepexpr-guard.md §4.5). STK_EDGE_RESERVE is right
 ; at statement level, where SP is within it of the pool top; MID-EXPRESSION SP can
@@ -4573,7 +4584,12 @@ STK_EDGE_RESERVE equ    131
 ; the statement-level edges did not move: dimedge-acceptance 10/10 and the four
 ; D-EDGEONERR shapes SAME (allocres88_edgeonerr.out) -- there the static ceiling
 ; still binds. 88 also covers the tenant's own stack (24, above) with room over.
-STK_ALLOC_RESERVE equ   88
+; 🔁 D-BOOTCELLS (2026-11-24): 88 -> 86, THE SAME ABSOLUTE EDGE. The machine stack
+; sits 2 B lower since the pool top moved onto the VG-8020's STKTOP (SAVSTK reads
+; STKTOP - 2 now, the reference's value). MEASURED: at 88 dimedge's dim-109 refused
+; and the edge read K=117 (one 8-byte element) -- THIS ceiling, not the static one,
+; binds that top-level DIM (scratchpad scan, 86: 108 refused / 109 fitted).
+STK_ALLOC_RESERVE equ   86
 ; --- STK_STORE_RESERVE: what the LINE STORE leaves (D-DIMRESERVE S3) ----------
 ; Measured to the REFERENCE's own edge, which is safe because it is above
 ; STK_EDGE_RESERVE: after lnblank's crf shrink (`CLEAR 300,TXTTAB+1000`, then
@@ -4583,7 +4599,11 @@ STK_ALLOC_RESERVE equ   88
 ; block, 4 B above CTLTOP, less it), so 141 is the reference's edge to the byte
 ; (142 refused n=13 -- scratchpad/storeedge_after.out; storeedge_s3.out is 141).
 ; With 116 zerobas stored the 32-byte line both references refuse.
-STK_STORE_RESERVE equ   141
+; 🔁 D-BOOTCELLS (2026-11-24): 141 -> 135, THE SAME ABSOLUTE EDGE. The channel
+; blocks moved ABOVE the string pool (MS-BASIC's order), so channel 0's block is
+; no bound any more: SL_CEIL is STKTOP less this reserve, and STKTOP (= CTLTOP)
+; sits 2 B below the old CTLTOP. Old edge CTLTOP_old + 4 - 141 = STKTOP - 135.
+STK_STORE_RESERVE equ   135
 CTLTOP          equ     $F714   ; the pool's TOP = strheap_varceil(), cached (2)
 TSP             equ     $F716   ; newest trap SERVICE record; valid iff TRAPSVC != 0 (2)
 CTLLIM          equ     $F718   ; the pool's collision FLOOR = ARYEND+2 (2). Written (2 B)

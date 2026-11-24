@@ -135,11 +135,11 @@ dl_lnok:
                 ; silent corruption, pinned by scratchpad/prgend_overrun.py at
                 ; 225 B past the pool floor on a `CLEAR 300,TXTTAB+1000` fixture.
                 ;
-                ; CHANNEL 1'S BLOCK BASE **IS** strheap_varceil(): min(HIMEM,
-                ; TXTMAX) - POOLSIZE - MAXF*FCH_CTXSZ is exactly what
-                ; fch_ctx_addr(1) returns, DERIVED on every call rather than
-                ; stored, so `CLEAR ,himem` falls out and no new sub-ROM op is
-                ; needed.
+                ; 🔁 D-BOOTCELLS (2026-11-24): the bound is STKTOP (= strheap_varceil()
+                ; at rest), published by sh_ctl_reset at every clear_vars. It was
+                ; channel 0's block, which sat just above the varceil until the
+                ; channel table moved ABOVE the string pool (MS-BASIC's order).
+                ; (The `fch_ctx_addr` paragraphs below describe that former bound.)
                 ;
                 ; 🔴 THE `push hl` IS NOT OPTIONAL AND ITS ABSENCE COST A WHOLE
                 ; BUILD-AND-REVERT CYCLE. HL here is tokenise's SOURCE CURSOR
@@ -165,10 +165,10 @@ dl_lnok:
                 ; 🔴 GUARDED, because `make switch-build-check` BUILDS CLEARPOOL=0
                 ; on every run and sh_chan_addr does not exist there.
                 push    hl                  ; tokenise's source cursor
-                xor     a                   ; D-FCBSHAPE FCB #0: channel 0 is the LOWEST
-                call    fch_ctx_addr        ; block now, 2*(MAXF+1) B above the table
-                                            ; base; the edge reserve below keeps the
-                                            ; text clear of the table as well
+                ld      hl,(STKTOP)         ; D-BOOTCELLS: the variable ceiling, which
+                                            ; clear_vars (sh_ctl_reset) publishes --
+                                            ; the channel blocks sit ABOVE the pool now,
+                                            ; so FCB #0 is no bound any more
                 ; 🔴 AND THE STORE MUST LEAVE THE STACK ITS RESERVE (D-SPMERGE §9).
                 ; `strheap_varceil()` is ALSO the pool's top, and since cut 2 the
                 ; machine stack descends from there. Growing the program text pushes

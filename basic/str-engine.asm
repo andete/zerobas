@@ -392,7 +392,9 @@ raise_now:
 ; ===========================================================================
 
 ; --- heap_reset: reset the string heap + temp-descriptor stack to EMPTY -----
-; FRETOP := C = min(HIMEM,TXTMAX); TEMPTOP := TEMPBASE. Called by clear_vars
+; FRETOP := MEMSIZ (D-BOOTCELLS: heap_cells, basic/main.asm, which also publishes
+; MEMSIZ / FILTAB / NULBUF from the STKTOP sh_ctl_reset wrote; CLEARPOOL=0 keeps
+; FRETOP := C = min(HIMEM,TXTMAX)); TEMPTOP := TEMPBASE. Called by clear_vars
 ; (vars.asm) at init/NEW/RUN/CLEAR — the single "variables wiped" hook (§2/§6).
 ; D-CLP: this routine deliberately does NOT derive the pool boundary. S-CLP-2
 ; first had it store POOLBASE here, on the reasoning "RAM is not the scarce
@@ -412,6 +414,11 @@ raise_now:
 ; delivered, to a form the language does not have.
 ; Clobbers A,B,C,H,L (unchanged).
 heap_reset:
+    IF CLEARPOOL
+                call    heap_cells          ; D-BOOTCELLS: FRETOP := MEMSIZ, and the
+                                            ; published layout cells (basic/main.asm,
+                                            ; past the low region's pins: no room here)
+    ELSE
                 ld      hl,(HIMEM)
                 ld      a,h
                 or      l
@@ -426,6 +433,7 @@ hr_txtmax:
                 ld      hl,(TXTCEIL)
 hr_have:
                 ld      (FRETOP),hl         ; HL = C, the ceiling
+    ENDIF
                 ld      hl,TEMPPOOL         ; empty pool: TEMPPT at its base
                 ld      (TEMPPT),hl
                 ret

@@ -497,6 +497,9 @@ new_prog_quiet:
 ; the layout under the HIMEM it lowers (through H.RUNC). The rule, measured at HIMEM $F380 and $DF95 alike
 ; (scratchpad/AE_nmshost_sysdata.out and the end-of-run read): MEMSIZ = HIMEM - $218, FRETOP = MEMSIZ,
 ; FILTAB = MEMSIZ + 2 and its next word MEMSIZ + $0F, STKTOP = MEMSIZ - 200, SAVSTK = STKTOP - 2.
+; D-BOOTCELLS: this is the COLD START's fallback only (MAXFILES 1, string space 200 are the boot values); from the
+; first clear_vars on, sh_ctl_reset (STKTOP) and heap_cells (MEMSIZ / FRETOP / FILTAB / NULBUF) keep the cells by
+; the general rule, through CLEAR and MAXFILES.
 ; Out: HL = STKTOP. Clobbers AF, DE.
 layout_from_himem:
                 ld      hl,(HIMEM)
@@ -1604,10 +1607,10 @@ ifc_zero:
 
 ; fch_ctx_addr — HL = base of channel A's context block (A = 1..FCH_CEIL).
 ;
-; D-FCH §3.2 (repack): the table is no longer AT a fixed address. It is carved
-; out of the pool at MAXFILES time, immediately below the string pool's floor
-; (basic/sysvars.inc §D-FCH), so the base is
-;   min(HIMEM,TXTMAX) - POOLSIZE - MAXF*FCH_CTXSZ
+; D-FCH §3.2 (repack): the table is no longer AT a fixed address. 🔁 D-BOOTCELLS
+; (2026-11-24): it is MS-BASIC's file area, ABOVE the string pool: FILTAB = MEMSIZ
+; + 2, MEMSIZ = min(HIMEM,TXTCEIL) - (MAXF+1)*FCH_CTXSZ - 2, and FCB #A =
+;   FILTAB + 2*(MAXF+1) + A*FCH_BLKSZ
 ; and this routine asks the string-heap tenant for it (op 18, sh_chan_addr).
 ;
 ; ⚠️ SITED SUB-SIDE FOR THE S-FCH-1 REASON, MEASURED NOT GUESSED: the callee

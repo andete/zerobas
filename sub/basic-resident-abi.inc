@@ -22,7 +22,7 @@ widen_uint_to equ 03B93H
 flt_to_int16 equ 032B9H
 vars_reset equ 03D68H
 penderr_set equ 02C57H
-flt_fmt equ 031F4H
+flt_fmt equ 031DFH
 rl_vpeek equ 00B9AH
 rl_vpoke equ 00BA5H
 rl_vaddr equ 00BB2H
@@ -64,7 +64,7 @@ p0_fname_expr equ 06D25H   ; main's fname_expr
 p0_dev_cmp equ 06CF6H   ; main's dev_cmp
 p0_nodisk_dev equ 02C3AH   ; main's nodisk_dev
 p0_pdfcb_resume equ 06D1EH   ; main's pdfcb_resume
-p0_skipsp_test equ 02D09H   ; main's skipsp_test
+p0_skipsp_test equ 02CF4H   ; main's skipsp_test
 p0_upcase equ 04243H   ; main's upcase
 p0_eval equ 04A94H   ; main's eval
 p0_eval_byte_arg equ 044B9H   ; main's eval_byte_arg
@@ -97,7 +97,7 @@ p0_list_all equ 06201H   ; main's list_all
 p0_cas_ascii_finish equ 068C5H   ; main's cas_ascii_finish
 p0_cas_capture_name equ 0674FH   ; main's cas_capture_name
 p0_cas_name_cut equ 03F2DH   ; main's cas_name_cut
-p0_req_comma equ 031ECH   ; main's req_comma
+p0_req_comma equ 031D7H   ; main's req_comma
 p0_check_expr_errors equ 04381H   ; main's check_expr_errors
 p0_key_drain equ 05AFDH   ; main's key_drain
 p0_req_operand equ 0413CH   ; main's req_operand
@@ -109,11 +109,11 @@ p0_cas_ascii_load equ 067B7H   ; main's cas_ascii_load
 p0_load_commit_prog equ 06797H   ; main's load_commit_prog
 p0_dpl_err equ 0682FH   ; main's dpl_err
 p0_dpl_oom equ 06841H   ; main's dpl_oom
-p0_print_msg equ 07642H   ; main's print_msg
+p0_print_msg equ 07641H   ; main's print_msg
 p0_err_verify equ 067AAH   ; main's err_verify
-p0_exa_loop equ 076BEH   ; main's exa_loop
+p0_exa_loop equ 076BDH   ; main's exa_loop
 p0_le_call_op equ 06EADH   ; main's le_call_op
 p0_print_string equ 04528H   ; main's print_string
 p0_list_num equ 0623BH   ; main's list_num
-p0_print_in_hl equ 07618H   ; main's print_in_hl
+p0_print_in_hl equ 07617H   ; main's print_in_hl
 p0_rn_undefined equ 001B8H   ; main's rn_undefined
