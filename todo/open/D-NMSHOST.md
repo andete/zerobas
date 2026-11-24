@@ -113,3 +113,13 @@
       build sets differently); (b) the screen is not cleared first (the reference's prompt stands alone; zerobas's lands
       under C-BIOS's start-up text, because the prompt comes from the cold start's H.RUNC, before zerobas's show_title
       clears the screen). NEXT: answer the prompt on both and compare what follows; then (b) and (a).
+      STEP 10 (2026-11-24): after the date is typed the reference shows MS-BASIC's banner + "Disk BASIC version 1.0" + Ok;
+      zerobas loops "in 2523" -- the NMS 1200 continues into its Disk BASIC set-up, which calls MS-BASIC internals (OUT
+      OF SCOPE, as filed). The MSX-DOS target: on the VG-8020 + NMS 1200 in openMSX THREE DOS disks (the private
+      test.dsk, elite.dsk 360 KB with only MSXDOS.SYS + COMMAND.COM, msxdos103-cmd111.dsk) all run the boot sector
+      (RAM breakpoint $C01E hit) and NEVER reach MSX-DOS ($0100 not hit; a blank TEXT1 screen at 40-60 s), though the
+      machine has 64 KB of RAM in slot 3. So the reference itself does not boot MSX-DOS from these disks here. Probe
+      lesson: the RAM breakpoints first recorded a bogus hit at time 0 (reset) as the only hit -- hits in the first
+      second are now ignored; the printed time was taken at definition, not at the hit.
+      ⛔ FOR JOOST: is a VG-8020 + NMS 1200 known to boot MSX-DOS 1 (another disk, another setting, another MSX1 host
+      with the NMS 1200)? Without a reference that boots DOS the step after the date prompt has nothing to match.
