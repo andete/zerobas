@@ -300,6 +300,19 @@ One probe, six rules modules, six pages at DRAFT 1:
   neither's); below 1E-64 EXP returns a zero that keeps e^x's digits, then Overflow down to 1E-129, then 0 down to
   x = -65536, then Overflow again from -99999.
 
+### Goldfish pass 1 over the maths region (2026-11-24)
+
+Two fresh test-writer reviewers (scratchpad/REVIEW-m2-gkwmath1.md, -gkwmath2.md; 46 findings), each acted on by an
+isolated agent; the figures in the two unit sections above are the units' FIRST runs, these supersede them.
+**kmath.py:** +103 cases (FY 93, FZ 10); each literal's type and each argument's bytes against its DATA text are checked
+before any rule; measured order-of-checks rules on all five pages; two new items (D-ARGTYPEORDER: `F("A"` is 2 on the
+reference, 13 here; D-ZEROMUL: `INT(.5!)*3` keeps digit bytes there). **ktrans.py:** +117 cases (TS3 46, TD3 18, FY 53).
+Corrected: SIN's bound is 2 units (p rounded half UP to 14 digits; flushed to 0 below 6.28318E-64); COS rounds 1/4 - p
+half DOWN in size (half up, half-even and truncation are each false), so its zero and TAN's Overflow begin at 7E12
+(also 1.2E13, 1.7E13), on zerobas too; LOG's bound is 9; EXP's Overflow for huge negative arguments begins between
+-75453 and -75460 (not -99999). D-TRANSZERO now includes one visible case (ATN of a POKEd signed-zero single prints
+"-." here, 0 on the reference); D-SINDIGITS: 17 SIN and 3 TAN results outside the tightened bound.
+
 ## 7. Tooling: what exists, what is missing
 
 Exists and fits unchanged: `tools/spec_rules.py` (the checker is not BIOS-specific: a module, its cases, its rules,
