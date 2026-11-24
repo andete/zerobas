@@ -102,7 +102,7 @@ def _pack(neg, eb, digits14):
 def _digits(c):
     """(negative, significant digits, E) of a single / double argument: the value is .d1d2... x 10^E; None for 0"""
     b = c.arg[:knum.TYPES[c.ty][1]]
-    if b[0] & 0x7F == 0:
+    if b[0] == 0 or not any(b[1:]):       # exponent byte 0: a zero whatever the digit bytes (80: not a zero, FX)
         return None
     ds = "".join(f"{x:02x}" for x in b[1:]).rstrip("0")
     return bool(b[0] & 0x80), ds, (b[0] & 0x7F) - 64
@@ -177,11 +177,14 @@ def m_radix(c, high="wrap"):
 
 # --- VAL ---
 
-def m_val_bytes(s, ws=WS, amp_gap=True, wrap=True, keep_digits=True, nd=14, half="up"):
+def m_val_bytes(s, ws=WS, amp_gap=True, wrap=True, keep_digits=True, nd=14, half="up", wrap_e=False, guard=False,
+                pct_first=False):
     """VAL(s) -> ("err", code) | ("num", 8 bytes). The keyword arguments are the page's rule; the controls alter
-    them: `ws` the characters skipped, `amp_gap` whitespace allowed between & and its letter, `wrap` the exponent
-    kept in 8 bits (else any exponent past the range overflows), `keep_digits` the digits kept behind an exponent of
-    0, `nd` / `half` the rounding."""
+    them: `ws` the characters skipped, `amp_gap` whitespace allowed between & and its letter, `wrap` the digit
+    count's exponent kept in 8 bits (else any exponent past the range overflows), `wrap_e` the E exponent added
+    inside those 8 bits too (measured: it is not), `keep_digits` the digits kept behind an exponent of 0, `nd` /
+    `half` the rounding ("up": the magnitude half up; "even", "trunc", "ceil": half toward +infinity), `guard` a
+    16th digit kept and rounded first, `pct_first` %'s range tested before truncation."""
     i, n = 0, len(s)
     while i < n and s[i] in ws:
         i += 1
@@ -228,7 +231,7 @@ def m_val_bytes(s, ws=WS, amp_gap=True, wrap=True, keep_digits=True, nd=14, half
             else:
                 e -= 1
             j += 1
-    suffix = None
+    suffix, ex = None, 0
     if j < m and t[j] in b"%!#":
         suffix = t[j]
     elif j < m and t[j] in b"EeDd":
@@ -241,19 +244,36 @@ def m_val_bytes(s, ws=WS, amp_gap=True, wrap=True, keep_digits=True, nd=14, half
         while dig(j):
             x = x * 10 + t[j] - 48
             j += 1
-        e += es * x
+        ex = es * x
         if j < m and t[j] in b"%!#":
             suffix = t[j]
     if not ds:
         return "num", bytes(8)
     if suffix == ord("%"):
-        v = math.trunc(Fraction(int("".join(map(str, ds))), 10 ** len(ds)) * Fraction(10) ** e)
-        v = -v if neg else v
+        x = Fraction(int("".join(map(str, ds))), 10 ** len(ds)) * Fraction(10) ** (e + ex)
+        x = -x if neg else x
+        if pct_first and not -32768 <= x < 32768:
+            return "err", 6
+        v = math.trunc(x)
         return ("err", 6) if v < -32768 or v > 32767 else ("num", encode(v))
     if suffix == ord("!"):
         nd = 6
+    if guard and len(ds) > nd + 1:
+        g = ds[:nd + 1]
+        if ds[nd + 1] >= 5:
+            k = nd
+            while k >= 0 and g[k] == 9:
+                g[k] = 0
+                k -= 1
+            if k < 0:
+                g = [1] + g[:-1]
+                e += 1
+            else:
+                g[k] += 1
+        ds = g
     if len(ds) > nd:
-        up = ds[nd] > 5 or (ds[nd] == 5 and (half == "up" or any(ds[nd + 1:]) or ds[nd - 1] % 2))
+        up = ds[nd] > 5 or (ds[nd] == 5 and (half == "up" or any(ds[nd + 1:]) or
+                                             (ds[nd - 1] % 2 if half == "even" else not neg)))
         if half == "trunc":
             up = False
         ds = ds[:nd]
@@ -267,9 +287,10 @@ def m_val_bytes(s, ws=WS, amp_gap=True, wrap=True, keep_digits=True, nd=14, half
                 e += 1
             else:
                 ds[k] += 1
-    eb = 64 + e
+    eb = 64 + e + (ex if wrap_e else 0)
     if wrap:
         eb %= 256
+    eb += 0 if wrap_e else ex
     if eb & 0x80 or eb < 0 or eb > 127:
         return "err", 6
     digits = "".join(map(str, ds)).ljust(14, "0")[:14]
@@ -318,10 +339,14 @@ FX_WANT = {
     "R=VAL(MID$(S$,2,2))": ("num", encode(23)), "R=VAL(RIGHT$(S$,2))": ("num", encode(45)),
     "R=VAL(S$+T$)": ("num", encode(Fraction("123456.5"))), "R=VAL(T$+S$)": ("num", encode(Fraction("6.512345"))),
     'R=VAL("&HFF")': ("num", encode(255)), 'R=VAL("")': ("num", bytes(8)),
+    "R$=STR$(1#/3)": _s(b" .33333333333333"), 'R$="<"+BIN$(5)+">"': _s(b"<101>"),
+    "BIN(1)=7:R=BIN(1)": ("num", encode(7)),
 }
 for _f, _d in (("HEX$", b"FF"), ("OCT$", b"377"), ("BIN$", b"11111111")):
     for _st in ("(255)", " (255)", "( 255 )", "(255 )", "(&HFF)", "(255%)"):
         FX_WANT[f"R$={_f}{_st}"] = _s(_d)
+for _f, _d in (("HEX$", b"FFFF"), ("OCT$", b"177777"), ("BIN$", b"1" * 16)):
+    FX_WANT[f"R$={_f}(&HFFFF)"] = _s(_d)
 
 
 def fx_want(c):
@@ -379,19 +404,31 @@ def rules(fn):
                  lambda c: outcome(c, m_str)),
             Rule("R-STR-ZERO", sec,
                  "Zero is \" 0\" in every type -- also a single whose exponent byte is 0 but whose digit bytes are "
-                 "not (READ left 1E-65 that way on the reference: KNM SN S 1E-65).",
-                 lambda c: M(c) and c.ty in ("S", "D") and str_e(c) is None, lambda c: outcome(c, m_str)),
+                 "not: 00 10 00 00 is \" 0\" (READ left 1E-65 that way on the reference, KNM SN S 1E-65; POKEd "
+                 "into an assigned N! on both machines, KNM FX 90).",
+                 lambda c: (M(c) and c.ty in ("S", "D") and str_e(c) is None) or
+                 fx_by(c, "a single with exponent byte 0, digit bytes 10 00 00"),
+                 lambda c: outcome(c, m_str) if c.src == "SN" else str_result(c, b" 0")),
+            Rule("R-STR-SIGNZERO", sec,
+                 "Only an exponent byte of exactly 0 is a zero: with the sign bit set (byte 80) the number is "
+                 "read as negative, exponent 0, its digit bytes kept -- 80 10 00 00 is written \"-1E-65\" "
+                 "(KNM FX 91).", lambda c: fx_by(c, "a single with exponent byte 80, digit bytes 10 00 00"),
+                 lambda c: str_result(c, b"-1E-65")),
+            Rule("R-STR-NOSPACE", sec,
+                 "With string space full (filled until FRE(\"\") is 0) STR$(5) is error 14 (Out of string space) "
+                 "and assigns nothing.", lambda c: fx_by(c, "string space full"), lambda c: error_is(c, 14)),
         ] + _common("STR", sec, ("a string as the argument", "a string variable as the argument",
                                  "the result is a string"), ("the argument's own error",), SYNTAX_WHYS,
                     ("plain", "a negative number", "a space before the parenthesis", "spaces around the argument",
                      "a space before the closing parenthesis", "a space after the parenthesis", "a hex argument",
                      "a hex argument past 32767", "an integer literal", "a double literal", "minus zero",
-                     "an expression", "the result in a concatenation"),
+                     "an expression", "the result in a concatenation", "a computed double"),
                     "A string as the argument is error 13 (Type mismatch), and so is assigning the result to a "
                     "numeric variable: the result is a string.", OWN_TEXT, SYNTAX_TEXT,
                     "Spaces before the parenthesis, after it and before the closing parenthesis are allowed; &HFF "
                     "is \" 255\" and &HFFFF \"-1\" (a hex literal is a signed integer); -0 is \" 0\"; 1/4 is "
-                    "\" .25\"; the result is an ordinary string (STR$(5)+\"X\" is \" 5X\").")
+                    "\" .25\"; 1#/3 is \" .33333333333333\"; the result is an ordinary string (STR$(5)+\"X\" is "
+                    "\" 5X\").")
     if fn == "VAL":
         sec = "1. VAL(a$)"
 
@@ -401,9 +438,11 @@ def rules(fn):
             Rule("R-VAL-NUMBER", sec,
                  "A string that starts with a decimal number: an optional + or -, digits, an optional point and more "
                  "digits, an optional exponent (E, D, e or d, an optional sign, digits). The value keeps 14 "
-                 "significant digits, rounded half up at the 15th (\"123456789012345\" is 1.2345678901235E+14, "
-                 "\"999999999999995\" 1E+15, \"12345678901234.5\" 12345678901235); 7 to 14 digits are kept even "
-                 "with an E exponent (\"1.23456789E3\" is 1234.56789). Leading zeros do not count.",
+                 "significant digits, rounded once, the magnitude half up at the 15th (\"123456789012345\" is "
+                 "1.2345678901235E+14, \"-123456789012345\" -1.2345678901235E+14, \"999999999999995\" 1E+15, "
+                 "\"12345678901234.5\" 12345678901235); a 16th digit plays no part (\"1234567890123449\" is "
+                 "1.2345678901234E+15); 7 to 14 digits are kept even with an E exponent (\"1.23456789E3\" is "
+                 "1234.56789). Leading zeros do not count.",
                  V("NUMBER"), lambda c: outcome(c, m_val)),
             Rule("R-VAL-SPACE", sec,
                  "Spaces, TAB (CHR$(9)) and LF (CHR$(10)) are skipped everywhere in a decimal number: before it, "
@@ -423,28 +462,35 @@ def rules(fn):
                  V("NONE"), lambda c: outcome(c, m_val)),
             Rule("R-VAL-SUFFIX", sec,
                  "A type mark after the digits or the exponent ends the number and sets its precision: ! rounds "
-                 "to 6 digits (\"1234567!\" is 1234570), # changes nothing, % cuts the value to a whole number "
-                 "(\"1.5%\" is 1) and is error 6 (Overflow) past 32767 (\"40000%\"). Nothing after the mark is "
+                 "to 6 digits, half up (\"1234567!\" is 1234570, \"1234565!\" 1234570, \"1234575!\" "
+                 "1234580), # changes nothing, % cuts the value toward zero to a whole number and THEN tests "
+                 "-32768..32767 (\"1.5%\" 1, \"-1.5%\" -1, \"32767.9%\" 32767, \"-32768%\" and \"-32768.5%\" "
+                 "-32768; \"32768%\", \"-32769%\" and \"40000%\" error 6, Overflow). Nothing after the mark is "
                  "read (\"12%3\" is 12, \"1.5!E3\" 1.5).", V("SUFFIX"), lambda c: outcome(c, m_val)),
             Rule("R-VAL-RANGE", sec,
-                 "The decimal exponent is kept in 8 bits, 64 + E for .d1d2... x 10^E: from 1 to 127 the number "
-                 "is in range; when it reaches 128 to 255 the result is error 6 (Overflow) -- \"1E63\", \"1E99\", "
-                 "64 to 129 digits, and also \"1E-66\" and a point followed by 70 zeros, which wrap below 0 to 255 "
-                 "and down; at exactly 0 (\"1E-65\", \"5E-65\") the value is 0 but its digits stay in the "
-                 "mantissa bytes (00 10 00 ... for \"1E-65\"); and past 255 it wraps back into range: 200 ones are "
-                 "1.1111111111111E-57, 255 ones .011111111111111.", V("RANGE"), lambda c: outcome(c, m_val)),
+                 "The exponent byte is 64 + E for .d1d2... x 10^E. The part of E that the digits and the point "
+                 "make is counted in 8 bits: 64 to 191 digits give 128 to 255, error 6 (Overflow); 192 ones give "
+                 "exactly 0, 193 ones 1.1111111111111E-63, 200 ones 1.1111111111111E-57, 255 ones "
+                 ".011111111111111 (the count wrapped past 255); a point followed by 70 zeros wraps below 0 to 250, "
+                 "Overflow. An E (or D) exponent is added to that WITHOUT wrapping: past 127 or below 0 is Overflow "
+                 "(\"1E63\", \"1E99\", \"1E300\", \"1E-66\", \"1E-194\", \"1E-200\"). From 1 to 127 the "
+                 "number is in range; at exactly 0 (\"1E-65\", \"5E-65\", 192 ones, a point, 64 zeros and a 1) the "
+                 "value is 0 but its digits stay in the mantissa bytes (00 10 00 ... for \"1E-65\").",
+                 V("RANGE"), lambda c: outcome(c, m_val)),
             Rule("R-VAL-PREFIX", sec,
-                 "&H, &O and &B (either case, and with spaces, TABs or LFs allowed between & and the letter, never "
-                 "after it) read hexadecimal, octal or binary digits up to the first that does not belong; the "
+                 "&H, &O and &B (either case; spaces, TABs and LFs are skipped before & -- CHR$(9)+\"&HFF\" is 255 "
+                 "-- and between & and the letter, never after it) read hexadecimal, octal or binary digits up to "
+                 "the first that does not belong; the "
                  "value is a 16-bit pattern taken as signed (\"&HFFFF\" is -1, \"&H8000\" -32768, \"&H0000FFFF\" "
                  "-1); a pattern past 16 bits is error 6 (Overflow); no digit is 0 (\"&HZZ\", \"&O9\", \"&H "
-                 "10\"); & followed by any other letter, a digit or nothing is error 2 (Syntax error). A sign "
+                 "10\"); & followed by any other letter, a digit, nothing, or only spaces / TABs (\"& \") is error 2 "
+                 "(Syntax error). A sign "
                  "before & is not a number (\"-&H10\" is 0).", V("PREFIX"), lambda c: outcome(c, m_val)),
             Rule("R-VAL-END", sec,
-                 "VAL reads its own string only: in the cases where the byte that follows a$ in memory is a digit, "
-                 "a point or a letter that could continue the number, the result is still a$'s own.",
-                 lambda c: c.src == "VL" and c.s and c.arg[0] in b"0123456789.EeDdHh",
-                 lambda c: outcome(c, m_val)),
+                 "VAL reads its own string only: in every case where reading on into the byte that follows a$ in "
+                 "memory would give another outcome, the outcome is NOT that one (whatever the other rules say "
+                 "about it).", lambda c: c.src == "VL" and c.s and m_val_bytes(c.s) != m_val_bytes(c.s + c.arg[:1]),
+                 lambda c: not outcome(c, lambda c: m_val_bytes(c.s + c.arg[:1]))),
         ] + _common("VAL", sec, ("a number as the argument", "the result is a number"),
                     ("the argument's own error",), SYNTAX_WHYS,
                     ("plain", "a space before the parenthesis", "spaces around the argument",
@@ -459,6 +505,9 @@ def rules(fn):
                     "argument may be a literal in the program text, a LEFT$ / MID$ / RIGHT$ of a longer string "
                     "(VAL(LEFT$(\"12345\",2)) is 12: the rest of the longer string is not read) or a "
                     "concatenation (\"12345\"+\"6.5\" is 123456.5, \"6.5\"+\"12345\" 6.512345).") + [
+            Rule("R-VAL-ARGERR", sec,
+                 "An error inside a string argument is that error, not VAL's own: VAL(MID$(S$,0)) is error 5.",
+                 lambda c: fx_by(c, "an error inside a string argument"), lambda c: error_is(c, 5)),
             Rule("R-VAL-LITERAL", sec,
                  "Inside a literal string the rules are the same: VAL(\"1E99\") is error 6, VAL(\"&\") error 2.",
                  lambda c: fx_by(c, "an overflowing literal string", "a bare & in a literal string"),
@@ -475,8 +524,9 @@ def rules(fn):
             Rule(f"R-{tag}-LOW", sec,
                  f"From -32768 to below 32768 the number is truncated toward zero and its 16-bit pattern (two's "
                  f"complement for a negative number) is written in {base_word}, without leading zeros, \"0\" for 0: "
-                 f"-1 and -1.5 give {ex[0]}, -.9 and .9 give \"0\", 32767.9 the pattern of 32767. -32768.5 is "
-                 f"-32768: the truncation comes before the range test.",
+                 f"-1 and -1.5 give {ex[0]}, -.9 and .9 give \"0\", 32767.9 the pattern of 32767. -32768.5 and "
+                 f"-32768.9 are -32768 (in a single and a double): the truncation comes before the range test, "
+                 f"and nothing rounds.",
                  lambda c: M(c) and c.fn == fn and radix_arg(knum.argval(c))[0] == 0 and knum.argval(c) < 32768,
                  lambda c: outcome(c, m_radix)),
             Rule(f"R-{tag}-HIGH", sec,
@@ -493,13 +543,22 @@ def rules(fn):
         ] + _common(tag, sec, ("a string as the argument", "a string variable as the argument",
                                "the result is a string"), ("the argument's own error",), SYNTAX_WHYS,
                     ("plain", "a space before the parenthesis", "spaces around the argument",
-                     "a space before the closing parenthesis", "a hex argument", "an integer literal"),
+                     "a space before the closing parenthesis", "a hex argument", "an integer literal",
+                     "a negative hex literal", "the result in a concatenation"),
                     "A string as the argument is error 13 (Type mismatch), and so is assigning the result to a "
                     "numeric variable: the result is a string.", OWN_TEXT, SYNTAX_TEXT,
                     "Spaces before the parenthesis, around the argument and before the closing parenthesis are "
                     "allowed; a hex or integer literal is a number like any other (255, &HFF and 255% give the "
-                    "same).") + [
+                    f"same; &HFFFF is -1, so it gives {ex[0]})" + ("; the result is an ordinary string: "
+                                                                  "\"<\"+BIN$(5)+\">\" is \"<101>\"."
+                                                                  if fn == "BIN$" else ".")) + [
             Rule(f"R-{tag}-LITERAL", sec, f"A literal out of range is the same error 6: {fn}(70000).",
                  lambda c: fx_by(c, "an overflowing literal"), lambda c: error_is(c, 6)),
-        ]
+            Rule(f"R-{tag}-NOSPACE", sec,
+                 f"With string space full (filled until FRE(\"\") is 0) {fn}(255) is error 14 (Out of string "
+                 f"space) and assigns nothing.", lambda c: fx_by(c, "string space full"), lambda c: error_is(c, 14)),
+        ] + ([Rule("R-BIN-NAME", sec,
+                   "BIN without $ is an ordinary array name: BIN(1)=7 then BIN(1) gives 7.",
+                   lambda c: fx_by(c, "BIN without $ as an array name"), lambda c: outcome(c, fx_want))]
+             if fn == "BIN$" else [])
     raise KeyError(fn)

@@ -23,8 +23,8 @@ Every keyword page, the region the spec loop takes it in, and how far its page h
 | `INSTR` | [strings](../concepts/strings-and-string-space.md) | RAM record | VG-8020 | [DRAFT 1](INSTR.md) | 8 | D-INSTREMPTY, D-CLOSESPACE |
 | `SPACE$` | [strings](../concepts/strings-and-string-space.md) | RAM record | VG-8020 | [DRAFT 1](SPACE$.md) | 8 | — |
 | `STRING$` | [strings](../concepts/strings-and-string-space.md) | RAM record | VG-8020 | [DRAFT 1](STRING$.md) | 8 | D-CLOSESPACE |
-| `STR$` | [strings](../concepts/strings-and-string-space.md) | RAM record | VG-8020 | [DRAFT 1](STR$.md) | 6 | — |
-| `VAL` | [strings](../concepts/strings-and-string-space.md) | RAM record | VG-8020 | [DRAFT 1](VAL.md) | 7 | D-VALWS, D-VALEXP |
+| `STR$` | [strings](../concepts/strings-and-string-space.md) | RAM record | VG-8020 | [DRAFT 1](STR$.md) | 7 | — |
+| `VAL` | [strings](../concepts/strings-and-string-space.md) | RAM record | VG-8020 | [DRAFT 1](VAL.md) | 8 | D-VALWS, D-VALEXP, D-VALPCT |
 | `HEX$` | [strings](../concepts/strings-and-string-space.md) | RAM record | VG-8020 | [DRAFT 1](HEX$.md) | 6 | — |
 | `OCT$` | [strings](../concepts/strings-and-string-space.md) | RAM record | VG-8020 | [DRAFT 1](OCT$.md) | 6 | — |
 | `BIN$` | [strings](../concepts/strings-and-string-space.md) | RAM record | VG-8020 | [DRAFT 1](BIN$.md) | 6 | — |

@@ -66,19 +66,20 @@ SN_SGL = ["0", "1", "-1", ".5", "-.5", "1.5", "-1.5", "10", "100", "1000", "1000
           ".123456", ".0123456", ".00123456", ".1", ".01", ".02", ".012", ".001", ".0012", ".0001", "1E-5",
           "1.5E-5", "-1E-5", "-.01", "-.001", "1E-10", "1E5", "1E6", "1E7", "-1E6", "-999999", "1E10", "1.5E10",
           "1E37", "1E62", "9.99999E62", "1E-62", "1E-63", "1E-64", "1E-65", "1E13", "1E14", "1.5E13", "1.23456E13",
-          "1.23456E14", "-1E13", "-1E14", ".0099", ".00999999", "99999.9"]
+          "1.23456E14", "-1E13", "-1E14", ".0099", ".00999999", "99999.9", "1E9"]
 SN_DBL = ["0", "1", "-1", ".5", "1.5", "-1.5", "32768", "-32769", "1234567", "1234567.8", "1E6", "1E7",
           "12345678901234", "99999999999999", "100000000000000", "123456789012345", "1E13", "1E14", "1E15",
           "1E16", "-12345678901234", ".1", ".01", ".001", ".0012345678901234", ".012345678901234",
           ".12345678901234", ".33333333333333", "1.2345678901234", "1D-5", "-1D-5", "1D-10", "1D62", "1D-64",
           "9.9999999999999D62", "123456.7", "1234567890.12", "1.5D13", "1.2345678901234D13", ".0099", "1D-2",
           "9.9999999999999D-3", "12345678901.234", "-1D14"]
-RX_INT = ["-32768", "-32767", "-1", "0", "1", "255", "256", "32767"]
-RX_SGL = ["-32769", "-32768.5", "-.9", "1.5", "-1.5", "32767.9", "65535.9", "65536"]
+RX_INT = ["-32768", "-32767", "-1", "0", "1", "255", "256", "32767", "2", "5", "511"]
+RX_SGL = ["-32769", "-32768.5", "-.9", "1.5", "-1.5", "32767.9", "65535.9", "65536", "-32768.9", "32768.5",
+          "65534.5", "65535.5"]
 RX_DBL = ["-1E10", "-70000", "-65536", "-32769", "-32768.5", "-32768", "-32767.9", "-32767", "-5.7", "-1.5", "-1",
           "-.9", "-.5", "-.1", "0", ".1", ".5", ".9", "1", "1.5", "2.5", "5.7", "7", "8", "15", "16", "255", "256",
           "4095", "4096", "32767", "32767.5", "32767.9", "32768", "32768.5", "40000", "65534.5", "65535", "65535.5",
-          "65535.9", "65536", "70000", "1E10"]
+          "65535.9", "65536", "70000", "1E10", "-32768.9"]
 RX_FNS = ["HEX$", "OCT$", "BIN$"]
 
 
@@ -108,7 +109,14 @@ def _vl():
          b"1E\t3", b"&\tH10", b"&\nH10", b"&  H10", b"& O17", b"& B101", b"&H\t10",
          b"1" * 63, b"1" * 64, b"1" * 65, b"1" * 128, b"1" * 129, b"1" * 200,
          b"." + b"0" * 62 + b"1", b"." + b"0" * 63 + b"1", b"." + b"0" * 64 + b"1", b"5E-65", b"9.9E-65",
-         b"12345678901234.5", b"12345678901234.4"]
+         b"12345678901234.5", b"12345678901234.4",
+         # added after goldfish pass 1 (2026-11-24): where the digit-count overflow ends, the % range at both ends
+         # and with a fraction, ! at the half, TAB / LF before &, & then a gap then the end, a 16th (guard) digit,
+         # a negative 15-digit number, an E exponent that wraps, an exponent of three digits
+         b"1" * 130, b"1" * 191, b"1" * 192, b"1" * 193,
+         b"32767%", b"32768%", b"-32768%", b"-32769%", b"32767.9%", b"-32768.5%", b"-1.5%",
+         b"1234565!", b"1234575!", b"\t&HFF", b"\n&HFF", b"& ", b"&\t",
+         b"1234567890123449", b"-123456789012345", b"1E-194", b"1E-200", b"1E300"]
     return s
 
 
@@ -117,7 +125,7 @@ GROUPS = {
     "SN": [("STR$", t, x) for t, xs in (("I", SN_INT), ("S", SN_SGL), ("D", SN_DBL)) for x in xs],
     "RX": [(f, t, x) for t, xs in (("I", RX_INT), ("S", RX_SGL), ("D", RX_DBL)) for x in xs for f in RX_FNS],
 }
-GAPS = {"SN": 3000.0, "RX": 3000.0, "VL": 4000.0, "FX": 600.0}
+GAPS = {"SN": 3000.0, "RX": 3500.0, "VL": 5000.0, "FX": 900.0}
 
 FX = [
     # (the keyword, the statement, what it separates); S$ = "12345", T$ = "6.5"
@@ -185,6 +193,28 @@ for _f in RX_FNS:
         (_f, f"R$={_f}(70000)", "an overflowing literal"),
         (_f, f"R={_f}(255)", "the result is a string"),
     ]
+FX += [
+    # added after goldfish pass 1 (2026-11-24). "string space full": line 400 fills string space with W$() until
+    # FRE("") is 0 (E = 99 if it cannot), the call runs, ERASE W$ frees it again (RESUME NEXT lands on the ERASE).
+    # The exponent-0 singles: N! is ASSIGNED (1 -> 41 10 00 00), then its exponent byte is POKEd (spec-plan §1).
+    ("STR$", "N!=1:V=VARPTR(N!):POKE V,0:R$=STR$(N!)", "a single with exponent byte 0, digit bytes 10 00 00"),
+    ("STR$", "N!=1:V=VARPTR(N!):POKE V,128:R$=STR$(N!)", "a single with exponent byte 80, digit bytes 10 00 00"),
+    ("STR$", "R$=STR$(1#/3)", "a computed double"),
+    ("STR$", "GOSUB 400:R$=STR$(5):ERASE W$", "string space full"),
+    ("VAL", "R=VAL(MID$(S$,0))", "an error inside a string argument"),
+]
+for _f in RX_FNS:
+    FX += [
+        (_f, "GOSUB 400:R$=" + _f + "(255):ERASE W$", "string space full"),
+        (_f, f"R$={_f}(&HFFFF)", "a negative hex literal"),
+    ]
+FX += [
+    ("BIN$", 'R$="<"+BIN$(5)+">"', "the result in a concatenation"),
+    ("BIN$", "BIN(1)=7:R=BIN(1)", "BIN without $ as an array name"),
+]
+FILL = ['400 DIM W$(20):FOR L=0 TO 20:F=FRE(""):IF F>255 THEN W$(L)=SPACE$(255) ELSE W$(L)=SPACE$(F):L=20',
+        '410 NEXT L:IF E OR FRE("")>0 THEN E=99',
+        "420 RETURN"]
 FX_S, FX_T = b"12345", b"6.5"
 
 RECORD = [
@@ -205,7 +235,7 @@ def program(group):
             lines.append(f"{2000 + 2 * i} E=0:R$=CHR$(250):R={R_SENT}:FOR K=1 TO 8:POKE A+K,0:NEXT:{stmt}")
             lines.append(f"{2001 + 2 * i} GOSUB 900")
             cases.append((f"KNM FX {i}", dict(fn=fn, stmt=stmt, why=why, s=FX_S, t=FX_T, ty=None, text=None)))
-        lines += [f"{2000 + 2 * len(FX)} " + ramrec.TAIL] + kstr.BUILD + RECORD
+        lines += [f"{2000 + 2 * len(FX)} " + ramrec.TAIL] + kstr.BUILD + FILL + RECORD
         lines += ramrec.data(1000, kstr.spec_values(FX_S) + kstr.spec_values(FX_T))
         return lines + ["RUN"], cases
     if group == "VL":

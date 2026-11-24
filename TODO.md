@@ -2788,6 +2788,7 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
 - [ ] **D-MSX1ON2 — THE MSX1 BIOS CALLS ON THE MSX2 / MSX2+ REFERENCES: SAME CASES, NOT ASSUMED THE SAME ANSWERS** -> [D-MSX1ON2](todo/open/D-MSX1ON2.md) <!-- item:open/D-MSX1ON2 -->
 - [ ] **D-TRSPEC — ELEPHANT / GOLDFISH SPEC PAGES FOR THE MSX TURBO R BIOS CALLS** -> [D-TRSPEC](todo/open/D-TRSPEC.md) <!-- item:open/D-TRSPEC -->
 - [ ] **D-KWSPEC — ELEPHANT / GOLDFISH SPEC PAGES FOR THE BASIC KEYWORDS** -> [D-KWSPEC](todo/open/D-KWSPEC.md) <!-- item:open/D-KWSPEC -->
+- [ ] **`VAL("-32768%")` IS `Overflow` HERE AND -32768 ON THE VG-8020: zerobas TESTS `%`'S RANGE ON THE MAGNITUDE (...** -> [D-VALPCT](todo/open/D-VALPCT.md) <!-- item:open/D-VALPCT -->
 - [ ] **`INSTR` WITH AN EMPTY STRING TO FIND, AND A START PAST THE END: 0 ON THE VG-8020, `LEN(a$)+1` (OR THE START...** -> [D-INSTREMPTY](todo/open/D-INSTREMPTY.md) <!-- item:open/D-INSTREMPTY -->
 - [ ] **A SPACE BEFORE THE CLOSING PARENTHESIS AFTER `INSTR`'S / `STRING$`'S STRING ARGUMENT IS A SYNTAX ERROR (D-C...** -> [D-CLOSESPACE](todo/open/D-CLOSESPACE.md) <!-- item:open/D-CLOSESPACE -->
 - [ ] **`VAL` STOPS AT A TAB OR A LINE FEED INSIDE A NUMBER, AND REJECTS A GAP AFTER `&`: THE VG-8020 SKIPS BOTH (D...** -> [D-VALWS](todo/open/D-VALWS.md) <!-- item:open/D-VALWS -->

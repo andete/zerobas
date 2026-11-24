@@ -6,13 +6,16 @@ SPDX-License-Identifier: BSD-2-Clause
 
 # `STR$` — a number as text
 
-> **Spec:** DRAFT 1 (2026-11-24) — 142 cases measured on the Philips VG-8020 (BASIC's reference) and on
+> **Spec:** DRAFT 1 (2026-11-24) — 147 cases measured on the Philips VG-8020 (BASIC's reference) and on
 > zerobas, by typed BASIC ([`knum.py`](../../probes/basic/spec/knum.py)); every rule is executable and
 > every recorded output is read by one. Not yet reviewed ([the keyword plan](spec-plan.md)).
+> Goldfish pass 1 (test writer) 2026-11-24: 6 findings, 4 measured, 1 moved to open.
 >
 > **Status (2026-10-09):** level 3 — happy path ✓ · reasonable time ✓ · common
 > errors ✓ · RAM usage not yet proven · every error ✓. No known divergence: the
-> spec probe (2026-11-24) found zerobas agreeing in every case.
+> spec probe (2026-11-24) found zerobas's `STR$` agreeing in every case. (`READ`
+> stores 1E-65 differently on the two machines -- the argument of KNM SN S 1E-65 --
+> but that is `READ`'s, not `STR$`'s: both byte images give `" 0"`.)
 > Speed is deliberately left out of these docs until on-par speed is
 > established for every keyword.
 
@@ -48,9 +51,14 @@ One argument, always.
   letter is `E` for a double too, always with a sign and two digits.
 - **Every stored digit is written**, and no more: up to 6 for a single, 14
   for a double (`STR$(1#/3)` is `" .33333333333333"`).
+- **Only the stored bytes count.** A single whose exponent byte is 0 is
+  `" 0"` whatever its digit bytes; with the sign bit set as well (byte `&H80`)
+  it is not a zero: `&H80 &H10 0 0` is written `"-1E-65"` (on both machines;
+  only a `POKE` makes such a number).
 - **A string argument** (`STR$("A")`) is `Type mismatch` (error 13).
 - **No argument, or two** (`STR$()`, `STR$(1,1)`), is `Syntax error`
   (error 2).
+- **With string space full** it is `Out of string space` (error 14).
 
 | you write | you get |
 |---|---|
@@ -62,9 +70,10 @@ One argument, always.
 | `STR$(.001)`, `STR$(1E14)` | `" 1E-03"`, `" 1E+14"` |
 | `STR$("A")` | error 13, `Type mismatch` |
 | `STR$()`, `STR$(1,1)` | error 2, `Syntax error` |
+| `STR$(5)` with string space full | error 14, `Out of string space` |
 
-The whole set of errors `STR$` can raise is {2, 13}, the same on both
-machines.
+The errors measured are {2, 13, 14}, plus the argument's own (`STR$(1/0)`:
+11), the same on both machines.
 
 ## Example
 
@@ -116,30 +125,34 @@ its first 24 bytes and the sum of all its bytes; a numeric result as its variabl
 byte for byte. A numeric argument is `READ` into a variable of the case's own type (`N%`, `N!` or `N#`) and that
 variable's own bytes are recorded before the call: the rules work from the exact value the function was given, not
 from the `DATA` text.
-- **[KNM SN *t* *n*]**: `R$=STR$(N%)`, `STR$(N!)` or `STR$(N#)` for *t* = I, S, D, with *n* the `DATA` text. Integers: 0, 1, -1, 5, -34, 9, 10, 99, 100, 255, 32767, -32767, -32768. Singles: 0, 1, -1, .5, -.5, 1.5, -1.5, 10, 100, 1000, 10000, 32767, 32768, 65535, 99999, 100000, 999999, 1000000, 1100000, 1200000, 1234567, 123456, 12345.6, 1234.56, .123456, .0123456, .00123456, .1, .01, .02, .012, .001, .0012, .0001, 1E-5, 1.5E-5, -1E-5, -.01, -.001, 1E-10, 1E5, 1E6, 1E7, -1E6, -999999, 1E10, 1.5E10, 1E37, 1E62, 9.99999E62, 1E-62, 1E-63, 1E-64, 1E-65, 1E13, 1E14, 1.5E13, 1.23456E13, 1.23456E14, -1E13, -1E14, .0099, .00999999, 99999.9. Doubles: 0, 1, -1, .5, 1.5, -1.5, 32768, -32769, 1234567, 1234567.8, 1E6, 1E7, 12345678901234, 99999999999999, 100000000000000, 123456789012345, 1E13, 1E14, 1E15, 1E16, -12345678901234, .1, .01, .001, .0012345678901234, .012345678901234, .12345678901234, .33333333333333, 1.2345678901234, 1D-5, -1D-5, 1D-10, 1D62, 1D-64, 9.9999999999999D62, 123456.7, 1234567890.12, 1.5D13, 1.2345678901234D13, .0099, 1D-2, 9.9999999999999D-3, 12345678901.234, -1D14. Both sides of the full / exponent boundary at .01 and 10^14 in both types, 6 and 14 significant digits, a stored digit count below the type's, and the ends of the exponent range.
+- **[KNM SN *t* *n*]**: `R$=STR$(N%)`, `STR$(N!)` or `STR$(N#)` for *t* = I, S, D, with *n* the `DATA` text. Integers: 0, 1, -1, 5, -34, 9, 10, 99, 100, 255, 32767, -32767, -32768. Singles: 0, 1, -1, .5, -.5, 1.5, -1.5, 10, 100, 1000, 10000, 32767, 32768, 65535, 99999, 100000, 999999, 1000000, 1100000, 1200000, 1234567, 123456, 12345.6, 1234.56, .123456, .0123456, .00123456, .1, .01, .02, .012, .001, .0012, .0001, 1E-5, 1.5E-5, -1E-5, -.01, -.001, 1E-10, 1E5, 1E6, 1E7, -1E6, -999999, 1E10, 1.5E10, 1E37, 1E62, 9.99999E62, 1E-62, 1E-63, 1E-64, 1E-65, 1E13, 1E14, 1.5E13, 1.23456E13, 1.23456E14, -1E13, -1E14, .0099, .00999999, 99999.9, 1E9. Doubles: 0, 1, -1, .5, 1.5, -1.5, 32768, -32769, 1234567, 1234567.8, 1E6, 1E7, 12345678901234, 99999999999999, 100000000000000, 123456789012345, 1E13, 1E14, 1E15, 1E16, -12345678901234, .1, .01, .001, .0012345678901234, .012345678901234, .12345678901234, .33333333333333, 1.2345678901234, 1D-5, -1D-5, 1D-10, 1D62, 1D-64, 9.9999999999999D62, 123456.7, 1234567890.12, 1.5D13, 1.2345678901234D13, .0099, 1D-2, 9.9999999999999D-3, 12345678901.234, -1D14. Both sides of the full / exponent boundary at .01 and 10^14 in both types, 6 and 14 significant digits, a stored digit count below the type's, and the ends of the exponent range.
 - **[KNM FX *i*]**: a fixed statement, `S$` = `"12345"`, `T$` = `"6.5"` (both in string space); the list, with what
-  each one separates, is `FX` in the probe.
+  each one separates, is `FX` in the probe. Added by goldfish pass 1: KNM FX 90 / 91, an assigned `N!` whose
+  exponent byte is then POKEd to 0 / `&H80` (digit bytes `10 00 00`); KNM FX 92, `STR$(1#/3)`; KNM FX 93, `STR$(5)`
+  after line 400 has filled string space with `W$()` until `FRE("")` is 0.
 
-**Controls** ([`knum_controls.py`](../../probes/basic/spec/knum_controls.py)): PRINT's trailing space kept is FALSE on all 121 matrix cases; no leading space for a non-negative number on 101; numbers written in full only up to a single's 6 digits on 25; written in full down to .001 on 10; `D` as a double's exponent letter on 16 of the 44 doubles.
+**Controls** ([`knum_controls.py`](../../probes/basic/spec/knum_controls.py)): PRINT's trailing space kept is FALSE on all 122 matrix cases; no leading space for a non-negative number on 102; numbers written in full only up to a single's 6 digits on 26; written in full down to .001 on 10; `D` as a double's exponent letter on 16 of the 44 doubles. An exponent byte of 0 written as its digits (`" 1E-65"`) is FALSE on both of R-STR-ZERO's non-canonical cases; byte `&H80` taken as a zero on KNM FX 91; `STR$` succeeding with string space full on KNM FX 93.
 
 <!-- RULES BEGIN -->
 <!-- GENERATED by tools/spec_rules.py from probes/basic/spec/str_s_rules.py -- do not edit; `python3 tools/spec_rules.py probes/basic/spec/str_s_rules.py --write` -->
 
-**9 rules; 9 hold on the reference. Of the 994 recorded outputs (each case's error, the string result's length, first 24 bytes and byte sum, the numeric result's 8 bytes, the source string's length and sum): 994 read by a rule's check, 0 declared NOT evidence (below), 0 unread.**
+**11 rules; 11 hold on the reference. Of the 1029 recorded outputs (each case's error, the string result's length, first 24 bytes and byte sum, the numeric result's 8 bytes, the source string's length and sum): 1029 read by a rule's check, 0 declared NOT evidence (below), 0 unread.**
 
 #### 1. STR$(n)
 
 | rule | cases | reference | zerobas |
 |---|---|---|---|
 | **R-STR-INT** An integer (a % variable) is written as its decimal digits, with "-" in front of a negative number and a space in front of any other; nothing after the last digit (0, 9, 10, 32767, -32768). | 13 | ✓ | ✓ |
-| **R-STR-FIXED** A single or double n = .d1d2...dk x 10^E (k its significant digits, trailing zeros dropped) with E from -1 to 14 is written in full: a space or "-", then the digits with the decimal point in place -- zeros added up to the point when the number is whole (1E13! is " 10000000000000", 14 digits, though a single holds 6), no 0 before a leading point (" .5", " .0123456"), no point after a whole number. Every stored digit is written: 6 at most for a single, 14 for a double. | 69 | ✓ | ✓ |
+| **R-STR-FIXED** A single or double n = .d1d2...dk x 10^E (k its significant digits, trailing zeros dropped) with E from -1 to 14 is written in full: a space or "-", then the digits with the decimal point in place -- zeros added up to the point when the number is whole (1E13! is " 10000000000000", 14 digits, though a single holds 6), no 0 before a leading point (" .5", " .0123456"), no point after a whole number. Every stored digit is written: 6 at most for a single, 14 for a double. | 70 | ✓ | ✓ |
 | **R-STR-EXP** Outside that range (n below .01 or 10^14 and up, in size) it is written d1.d2...dkE+xx or E-xx: one digit before the point, the point only when more digits follow, then E -- for a double too, never D -- a sign and two digits (" 1E-03", " 1.23456E-03", " 1E+14", " 9.9999999999999E+62", " 1E-64"). | 36 | ✓ | ✓ |
-| **R-STR-ZERO** Zero is " 0" in every type -- also a single whose exponent byte is 0 but whose digit bytes are not (READ left 1E-65 that way on the reference: KNM SN S 1E-65). | 3 | ✓ | ✓ |
+| **R-STR-ZERO** Zero is " 0" in every type -- also a single whose exponent byte is 0 but whose digit bytes are not: 00 10 00 00 is " 0" (READ left 1E-65 that way on the reference, KNM SN S 1E-65; POKEd into an assigned N! on both machines, KNM FX 90). | 4 | ✓ | ✓ |
+| **R-STR-SIGNZERO** Only an exponent byte of exactly 0 is a zero: with the sign bit set (byte 80) the number is read as negative, exponent 0, its digit bytes kept -- 80 10 00 00 is written "-1E-65" (KNM FX 91). | 1 | ✓ | ✓ |
+| **R-STR-NOSPACE** With string space full (filled until FRE("") is 0) STR$(5) is error 14 (Out of string space) and assigns nothing. | 1 | ✓ | ✓ |
 | **R-STR-TYPE** A string as the argument is error 13 (Type mismatch), and so is assigning the result to a numeric variable: the result is a string. | 3 | ✓ | ✓ |
 | **R-STR-OWNERR** An argument that fails to compute raises its own error (1/0: error 11). | 1 | ✓ | ✓ |
 | **R-STR-SYNTAX** No argument, a second argument, no closing parenthesis, or the name without a parenthesis is error 2 (Syntax error). | 4 | ✓ | ✓ |
-| **R-STR-FORMS** Spaces before the parenthesis, after it and before the closing parenthesis are allowed; &HFF is " 255" and &HFFFF "-1" (a hex literal is a signed integer); -0 is " 0"; 1/4 is " .25"; the result is an ordinary string (STR$(5)+"X" is " 5X"). | 13 | ✓ | ✓ |
-| **R-STR-KEEP** The string variable S$ is left as it was, in every case, error or not (read back after every case). | 142 | ✓ | ✓ |
+| **R-STR-FORMS** Spaces before the parenthesis, after it and before the closing parenthesis are allowed; &HFF is " 255" and &HFFFF "-1" (a hex literal is a signed integer); -0 is " 0"; 1/4 is " .25"; 1#/3 is " .33333333333333"; the result is an ordinary string (STR$(5)+"X" is " 5X"). | 14 | ✓ | ✓ |
+| **R-STR-KEEP** The string variable S$ is left as it was, in every case, error or not (read back after every case). | 147 | ✓ | ✓ |
 
 <!-- RULES END -->
 
@@ -161,7 +174,8 @@ program can observe through `FRE` differs. No keyword has this rung yet.
 - [A] Direct mode: every case ran inside a program.
 - [A] An argument's own error was measured with one kind (`1/0`, error 11); that any error of the argument wins is assumed.
 - [A] Which work-area cells the call writes (the RAM-usage rung, [`kwram_full.out`](../../scratchpad/kwram_full.out)).
-- [A] Negative zero and other non-canonical bytes in a double argument (one single with an exponent byte of 0 and digit bytes, from READ, is measured).
+- [A] Non-canonical bytes in a double argument, and in a single other than the two measured (exponent byte 0 or `&H80` with digit bytes `10 00 00`): non-BCD digit nibbles, `&H80` with zero digit bytes.
+- [A] Error 16 (`String formula too complex`): one `STR$` call does not reach it; a deep string expression around it is not measured.
 - [A] Whether STR$ of a single ever writes a 7th digit: every single measured holds at most 6 stored digits.
 
 ## What we found, and how

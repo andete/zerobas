@@ -28,6 +28,10 @@ def vl(c):
     return c.src == "VL"
 
 
+def fx(*whys):
+    return lambda c: M.fx_by(c, *whys)
+
+
 def radix_with(argf):
     def f(c):
         e, u = argf(knum.argval(c))
@@ -66,10 +70,36 @@ CONTROLS = [
      lambda c: M.m_val(c, amp_gap=False)),
     ("VAL", "R-VAL-RANGE", "any exponent outside 1..127 an overflow, no wrap -- zerobas's rule", vl,
      lambda c: M.m_val(c, wrap=False)),
-    ("VAL", "R-VAL-RANGE", "an exponent of 0 stored as a clean zero -- zerobas's rule after an E", vl,
+    ("VAL", "R-VAL-RANGE", "an exponent of 0 always a clean zero (zerobas: after E / a point, not after D)", vl,
      lambda c: M.m_val(c, keep_digits=False)),
+    ("VAL", "R-VAL-RANGE", "the E exponent added inside the 8 bits too (wraps)", vl, lambda c: M.m_val(c, wrap_e=True)),
     ("VAL", "R-VAL-NUMBER", "rounding half to even at the 15th digit", vl, lambda c: M.m_val(c, half="even")),
     ("VAL", "R-VAL-NUMBER", "truncation at the 15th digit", vl, lambda c: M.m_val(c, half="trunc")),
+    ("VAL", "R-VAL-NUMBER", "a 16th (guard) digit kept, rounded twice", vl, lambda c: M.m_val(c, guard=True)),
+    ("VAL", "R-VAL-NUMBER", "rounding half toward +infinity (not the magnitude half up)", vl,
+     lambda c: M.m_val(c, half="ceil")),
+    ("VAL", "R-VAL-SUFFIX", "%'s range tested before truncation", vl, lambda c: M.m_val(c, pct_first=True)),
+    ("VAL", "R-VAL-SUFFIX", "% an overflow from a magnitude of 32768 (-32768% too) -- zerobas's rule", vl,
+     lambda c: ("err", 6) if b"%" in c.s and M.m_val(c) == ("num", M.encode(-32768)) else M.m_val(c)),
+    ("VAL", "R-VAL-END", "VAL reads on into the byte after its string", lambda c: vl(c) and c.s and
+     M.m_val_bytes(c.s) != M.m_val_bytes(c.s + c.arg[:1]), lambda c: M.m_val_bytes(c.s + c.arg[:1])),
+    ("VAL", "R-VAL-ARGERR", "VAL's own error 13 for any bad string argument", fx("an error inside a string argument"),
+     lambda c: ("err", 13)),
+    ("STR$", "R-STR-ZERO", "an exponent byte 0 with digit bytes written as the digits at 10^-65",
+     lambda c: fx("a single with exponent byte 0, digit bytes 10 00 00")(c) or (sn(c) and c.id == "KNM SN S 1E-65"),
+     lambda c: ("str", b" 1E-65")),
+    ("STR$", "R-STR-SIGNZERO", "an exponent byte 80 taken as zero (the sign bit ignored)",
+     fx("a single with exponent byte 80, digit bytes 10 00 00"), lambda c: ("str", b" 0")),
+    ("STR$", "R-STR-NOSPACE", "the result made without string space (no error)", fx("string space full"),
+     lambda c: ("str", b" 5")),
+    ("HEX$", "R-HEX-NOSPACE", "the result made without string space (no error)", fx("string space full"),
+     lambda c: ("str", b"FF")),
+    ("OCT$", "R-OCT-NOSPACE", "the result made without string space (no error)", fx("string space full"),
+     lambda c: ("str", b"377")),
+    ("BIN$", "R-BIN-NOSPACE", "the result made without string space (no error)", fx("string space full"),
+     lambda c: ("str", b"11111111")),
+    ("BIN$", "R-BIN-NAME", "BIN( read as BIN$'s keyword: a syntax error", fx("BIN without $ as an array name"),
+     lambda c: ("err", 2)),
     ("VAL", "R-VAL-NUMBER", "6 digits (a single) unless more than 6 are typed without an exponent", vl,
      lambda c: M.m_val(c, nd=6) if any(x in c.s for x in b"EeDd") and not any(x in c.s for x in b"#&")
      else M.m_val(c)),
