@@ -14,15 +14,15 @@ Every keyword page, the region the spec loop takes it in, and how far its page h
 
 | keyword | region | harness | reference | page | open (not measured) | differences (TODO items, from the page) |
 |---|---|---|---|---|---|---|
-| `LEN` | [strings](../concepts/strings-and-string-space.md) | RAM record | VG-8020 | [DRAFT 1](LEN.md) | 6 | — |
+| `LEN` | [strings](../concepts/strings-and-string-space.md) | RAM record | VG-8020 | [DRAFT 1](LEN.md) | 7 | — |
 | `LEFT$` | [strings](../concepts/strings-and-string-space.md) | RAM record | VG-8020 | [DRAFT 1](LEFT$.md) | 9 | — |
 | `RIGHT$` | [strings](../concepts/strings-and-string-space.md) | RAM record | VG-8020 | [DRAFT 1](RIGHT$.md) | 9 | — |
 | `MID$` | [strings](../concepts/strings-and-string-space.md) | RAM record | VG-8020 | [DRAFT 1](MID$.md) | 11 | — |
-| `ASC` | [strings](../concepts/strings-and-string-space.md) | RAM record | VG-8020 | [DRAFT 1](ASC.md) | 5 | — |
-| `CHR$` | [strings](../concepts/strings-and-string-space.md) | RAM record | VG-8020 | [DRAFT 1](CHR$.md) | 6 | — |
-| `INSTR` | [strings](../concepts/strings-and-string-space.md) | RAM record | VG-8020 | [DRAFT 1](INSTR.md) | 7 | D-INSTREMPTY, D-CLOSESPACE |
-| `SPACE$` | [strings](../concepts/strings-and-string-space.md) | RAM record | VG-8020 | [DRAFT 1](SPACE$.md) | 7 | — |
-| `STRING$` | [strings](../concepts/strings-and-string-space.md) | RAM record | VG-8020 | [DRAFT 1](STRING$.md) | 7 | D-CLOSESPACE |
+| `ASC` | [strings](../concepts/strings-and-string-space.md) | RAM record | VG-8020 | [DRAFT 1](ASC.md) | 6 | — |
+| `CHR$` | [strings](../concepts/strings-and-string-space.md) | RAM record | VG-8020 | [DRAFT 1](CHR$.md) | 7 | — |
+| `INSTR` | [strings](../concepts/strings-and-string-space.md) | RAM record | VG-8020 | [DRAFT 1](INSTR.md) | 8 | D-INSTREMPTY, D-CLOSESPACE |
+| `SPACE$` | [strings](../concepts/strings-and-string-space.md) | RAM record | VG-8020 | [DRAFT 1](SPACE$.md) | 8 | — |
+| `STRING$` | [strings](../concepts/strings-and-string-space.md) | RAM record | VG-8020 | [DRAFT 1](STRING$.md) | 8 | D-CLOSESPACE |
 | `STR$` | [strings](../concepts/strings-and-string-space.md) | RAM record | VG-8020 | [DRAFT 1](STR$.md) | 6 | — |
 | `VAL` | [strings](../concepts/strings-and-string-space.md) | RAM record | VG-8020 | [DRAFT 1](VAL.md) | 7 | D-VALWS, D-VALEXP |
 | `HEX$` | [strings](../concepts/strings-and-string-space.md) | RAM record | VG-8020 | [DRAFT 1](HEX$.md) | 6 | — |

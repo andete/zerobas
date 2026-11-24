@@ -78,8 +78,35 @@ def instr_start0(c):
     return M.m_instr(c)
 
 
+def string_fill_first(c):
+    """STRING$ with the second argument evaluated before the count's type is checked"""
+    if c.src == "FX" and "1/0" in c.stmt:
+        return "err", 11
+    return "err", 13
+
+
+def instr_range_first(c):
+    """INSTR's start range-tested BEFORE truncation (-32768.5 is 6; 32767.9 is 6)"""
+    from decimal import Decimal
+    from fractions import Fraction
+    v = Fraction(Decimal(c.stmt[len("R=INSTR("):].split(",")[0]))
+    if v < -32768 or v > 32767:
+        return "err", 6
+    return "err", M.start_arg(v)[0]
+
+
+def room_fixed(c):
+    """the room rule B: a fixed limit of CLEAR 200 - 1 = 199 characters, whatever else is in the string space"""
+    return 199
+
+
+def kept_reversed(c):
+    """the sources left REVERSED (same length and sum): the rival the length-and-sum check could not see"""
+    return M.kept(type("C", (), dict(vars(c), s=c.s[::-1], t=c.t[::-1]))())
+
+
 CONTROLS = [
-    # (keyword, rule it shadows, what it alters, select, altered model)
+    # (keyword, rule it shadows, what it alters, select, altered model[, check: case -> bool, default outcome])
     ("LEN", "R-LEN-VALUE", "a length that stops at CHR$(0)", M.M,
      lambda c: ("num", c.s.index(0) if 0 in c.s else len(c.s))),
     ("ASC", "R-ASC-VALUE", "the LAST character's code", lambda c: M.M(c) and c.s, lambda c: ("num", c.s[-1])),
@@ -97,17 +124,31 @@ CONTROLS = [
      lambda c: M.M(c) and not c.t, lambda c: M.m_instr(c, "lenplus1")),
     ("INSTR", "R-INSTR-FIND", "the search starting one past the start", lambda c: M.M(c) and c.t, instr_from0),
     ("INSTR", "R-INSTR-START", "start 0 allowed (as 1)", lambda c: M.M(c), instr_start0),
+    # goldfish pass 1 (2026-11-24)
+    ("INSTR", "R-INSTR-START", "the start range-tested before truncation", lambda c: M.fx_has(c, "a start of "),
+     instr_range_first),
+    ("STRING$", "R-STRING-TYPEORDER", "the fill evaluated before the count's type",
+     lambda c: M.fx_by(c, "the count's type before the fill's own error"), string_fill_first),
+    ("SPACE$", "R-SPACE-ROOM", "a fixed limit of 199 whatever else is in the string space", lambda c: c.src == "FR",
+     None, lambda c: M.fr_fits(c, room_fixed)),
+    ("STRING$", "R-STRING-ROOM", "a fixed limit of 199 whatever else is in the string space",
+     lambda c: c.src == "FR", None, lambda c: M.fr_fits(c, room_fixed)),
+    ("CHR$", "R-CHR-ROOM", "a one-character result needs no room", lambda c: c.src == "FR", None,
+     lambda c: M.fr_fits(c, lambda c: c.k + 1)),
+    ("STRING$", "R-STRING-KEEP", "the sources left reversed (same length and sum)", lambda c: len(c.s) > 1, None,
+     kept_reversed),
 ]
 
 
 def main():
     bad = 0
     cache = {}
-    for fn, rule, what, sel, model in CONTROLS:
+    for fn, rule, what, sel, model, *chk in CONTROLS:
         if fn not in cache:
             cache[fn] = M.load(fn)["ref"]
         cs = [c for c in cache[fn] if sel(c)]
-        false = [c.id for c in cs if not M.outcome(c, model)]
+        check = chk[0] if chk else (lambda c: M.outcome(c, model))
+        false = [c.id for c in cs if not check(c)]
         print(f"{fn:8} {rule:24} {what:62} FALSE on {len(false):4} of {len(cs)}"
               + (f"  e.g. {false[0]}" if false else "  <- NO CASE SEPARATES IT"))
         bad += not false

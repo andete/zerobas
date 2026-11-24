@@ -22,21 +22,27 @@ THE SETUP SEPARATES (spec-method §3a):
   * INSTR's haystacks repeat their bytes ("ABCABC", "AAAAA", 254 x "A" + "B"), so "the first match", "a later match"
     and "the match at or after the start" give different positions; the long ones cross 128 and reach 255.
 
-THE RECORD (22 bytes per case, from $C001):
+THE RECORD (30 bytes per case, from $C001):
   0 E      ERR after the case (0: none)
   1 RL, 2 FB, 3 LB, 4-5 RS, 6-7 RW    R$ (the string result): length, first / last byte, sum, sum of k * byte k
-  8-15 R   R's 8 bytes (the numeric result)
-  16 SL, 17-18 SS                     S$ after the case: length, sum
-  19 TL, 20-21 TS                     T$ after the case: length, sum
+  8-15 R   R's 8 bytes (the numeric result; in FR, FRE("") just before the statement)
+  16 SL, 17-18 SS, 19 SF, 20 SB, 21-22 SW   S$ after the case: length, sum, first / last byte, sum of k * byte k
+  23 TL, 24-25 TS, 26 TF, 27 TB, 28-29 TW   T$ after the case: the same
+  (until 2026-11-24 the record was 22 bytes and kept only S$'s / T$'s length and sum: a keyword that reordered
+  the source's bytes would have passed the KEEP rules; goldfish pass 1)
 
 THE GROUPS (case ids "KST <group> ..."):
   SRC   LEN(S$), ASC(S$): S$ of length 0, 1, 2, 3, 127, 128, 129, 254, 255, first byte 0 / 1 / 65 / 128 / 255, then
         CHR$(p) at position p
   NUM   CHR$(N), SPACE$(N): N in NUMS
-  STRN  STRING$(N,C): N in NUMS, C in CODES
+  STRN, STRN2  STRING$(N,C): N in NUMS, C in CODES (the first 9 codes, the other 8; split so the records stay
+        below $F380 -- case ids are "KST STRN ..." in both)
   STRS  STRING$(N,S$): N in NUMS, S$ in five fill strings ("" included)
   INS1..INS4  INSTR([N,]S$,T$): haystacks x needles x starts (one start "absent": the two-argument form)
   OS    SPACE$(N), STRING$(N,65) after CLEAR 200: where string space runs out
+  OSD   the same with NO CLEAR: the string space a program starts with
+  FR    fixed statements after CLEAR 200, each with exactly k bytes of string space left free (a filler X$ of
+        FRE("")-k spaces; R records FRE("") just before the statement): what a result needs room for
   FX    fixed statements (types, missing / extra arguments, spaces, nesting, the order of the checks; S$ = "ABCDE",
         T$ = "CD", both in string space)
 
@@ -53,7 +59,7 @@ ROOT = os.path.dirname(os.path.dirname(os.path.dirname(HERE)))
 sys.path.insert(0, HERE)
 import ramrec  # noqa: E402
 
-REC = 22
+REC = 30
 RUN = "KST_run1.out"
 ABSENT = "-99999"
 R_SENT = -12345
@@ -89,8 +95,11 @@ def _groups():
                     fns=[("LEN", ["R=LEN(S$):RETURN"]), ("ASC", ["R=ASC(S$):RETURN"])])
     g["NUM"] = dict(clear=2000, pairs=[("", b"", "", b"")], ns=NUMS, cs=["0"],
                     fns=[("CHR$", ["R$=CHR$(N):RETURN"]), ("SPACE$", ["R$=SPACE$(N):RETURN"])])
-    g["STRN"] = dict(clear=2000, pairs=[("", b"", "", b"")], ns=NUMS, cs=CODES,
+    # two groups since the record grew to 30 bytes: 476 records would run past $F380 into the work area
+    g["STRN"] = dict(clear=2000, pairs=[("", b"", "", b"")], ns=NUMS, cs=CODES[:9],
                      fns=[("STRING$", ["R$=STRING$(N,C):RETURN"])])
+    g["STRN2"] = dict(clear=2000, pairs=[("", b"", "", b"")], ns=NUMS, cs=CODES[9:],
+                      fns=[("STRING$", ["R$=STRING$(N,C):RETURN"])])
     g["STRS"] = dict(clear=2000, pairs=[(nm, s, "", b"") for nm, s in FILLS.items()], ns=NUMS, cs=["0"],
                      fns=[("STRING$", ["R$=STRING$(N,S$):RETURN"])])
     st = [ABSENT if s is None else s for s in STARTS]
@@ -102,6 +111,8 @@ def _groups():
                      fns=[INSTR_FN])
     g["INS4"] = dict(clear=2000, pairs=[(h, HAY[h], t, NEEDLES[t]) for h in ("A254B", "A128BC")
                                         for t in NEEDLES_LONG], ns=st, cs=["0"], fns=[INSTR_FN])
+    g["OSD"] = dict(clear=None, pairs=[("", b"", "", b"")], ns=["198", "199", "200"], cs=["0"],
+                    fns=[("SPACE$", ["R$=SPACE$(N):RETURN"]), ("STRING$", ["R$=STRING$(N,65):RETURN"])])
     g["OS"] = dict(clear=200, pairs=[("", b"", "", b"")],
                    ns=["150", "190", "195", "196", "197", "198", "199", "200", "201", "255"], cs=["0"],
                    fns=[("SPACE$", ["R$=SPACE$(N):RETURN"]), ("STRING$", ["R$=STRING$(N,65):RETURN"])])
@@ -109,8 +120,8 @@ def _groups():
 
 
 GROUPS = _groups()
-GAPS = {"SRC": 3000.0, "NUM": 600.0, "STRN": 4000.0, "STRS": 3000.0, "INS1": 3000.0, "INS2": 3000.0,
-        "INS3": 3000.0, "INS4": 6000.0, "OS": 600.0, "FX": 300.0}
+GAPS = {"SRC": 3000.0, "NUM": 600.0, "STRN": 4000.0, "STRN2": 4000.0, "STRS": 3000.0, "INS1": 3000.0, "INS2": 3000.0,
+        "INS3": 3000.0, "INS4": 6000.0, "OS": 600.0, "OSD": 600.0, "FR": 300.0, "FX": 300.0}
 
 FX = [
     # (the keyword, the statement, what it separates); S$ = "ABCDE", T$ = "CD"
@@ -230,6 +241,36 @@ FX = [
     ("STRING$", "R$=STRING$(2 ,S$)", "a space before the comma, a string fill"),
     ("INSTR", 'R=INSTR("ABCDE","CD" )', "a space before the closing parenthesis, a literal"),
     ("STRING$", "R$=STRING$(2,S$ )", "a space before the closing parenthesis, a string fill"),
+    # goldfish pass 1 (2026-11-24): appended, so every earlier index is unchanged
+    ("STRING$", 'R$=STRING$(2,"AB")', "a literal fill (in the program text)"),
+    ("STRING$", 'R$=STRING$(2,"AB" )', "a space before the closing parenthesis, a literal fill"),
+    ("STRING$", 'R$=STRING$(2, "AB")', "a space before the literal fill"),
+    ("STRING$", 'R$=STRING$("A",1/0)', "the count's type before the fill's own error"),
+    ("STRING$", 'R$=STRING$(2,5+"A")', "the fill's type with a valid count"),
+    ("INSTR", "R=INSTR(1,1/0,T$)", "the second argument's own error, a start"),
+    ("INSTR", "R=INSTR(-32768.5,S$,T$)", "a start of -32768.5"),
+    ("INSTR", "R=INSTR(-32768,S$,T$)", "a start of -32768"),
+    ("INSTR", "R=INSTR(-32767,S$,T$)", "a start of -32767"),
+    ("INSTR", "R=INSTR(32767,S$,T$)", "a start of 32767"),
+    ("INSTR", "R=INSTR(32767.9,S$,T$)", "a start of 32767.9"),
+    ("CHR$", "R$=CHR$( 65)", "a space after the parenthesis"),
+    ("SPACE$", "R$=SPACE$( 3)", "a space after the parenthesis"),
+    ("SPACE$", "R$=SPACE$(3.9!)", "a single argument"),
+]
+
+FR = [
+    # (the keyword, k: bytes of string space left free, the statement); S$ = "ABCDE", R$ holds CHR$(250)
+    ("CHR$", 0, "R$=CHR$(65)"),
+    ("CHR$", 1, "R$=CHR$(65)"),
+    ("SPACE$", 0, "R$=SPACE$(0)"),
+    ("SPACE$", 5, "R$=SPACE$(5)"),
+    ("SPACE$", 5, "R$=SPACE$(6)"),
+    ("STRING$", 5, "R$=STRING$(5,65)"),
+    ("STRING$", 5, "R$=STRING$(6,65)"),
+    ("STRING$", 5, 'R$=STRING$(5,"A")'),
+    ("STRING$", 5, 'R$=STRING$(6,"A")'),
+    ("STRING$", 5, "R$=STRING$(5,S$)"),
+    ("STRING$", 5, "R$=STRING$(6,S$)"),
 ]
 FX_S, FX_T = b"ABCDE", b"CD"
 
@@ -237,9 +278,12 @@ RECORD = [
     "900 V=VARPTR(R$):GOSUB 950:POKE A,E:POKE A+1,RL:POKE A+2,FB:POKE A+3,LB",
     "910 POKE A+4,S-INT(S/256)*256:POKE A+5,INT(S/256):POKE A+6,W-INT(W/256)*256:POKE A+7,INT(W/256)",
     "920 V=VARPTR(R):FOR K=0 TO 7:POKE A+8+K,PEEK(V+K):NEXT",
-    "930 V=VARPTR(S$):GOSUB 950:POKE A+16,RL:POKE A+17,S-INT(S/256)*256:POKE A+18,INT(S/256)",
-    "940 V=VARPTR(T$):GOSUB 950:POKE A+19,RL:POKE A+20,S-INT(S/256)*256:POKE A+21,INT(S/256):A=A+22:RETURN",
-] + ramrec.STR_DIGEST + [ramrec.ERRLINE]
+    "930 V=VARPTR(S$):GOSUB 950:B=A+16:GOSUB 980",
+    "940 V=VARPTR(T$):GOSUB 950:B=A+23:GOSUB 980:A=A+30:RETURN",
+] + ramrec.STR_DIGEST + [
+    "980 POKE B,RL:POKE B+1,S-INT(S/256)*256:POKE B+2,INT(S/256):POKE B+3,FB:POKE B+4,LB:"
+    "POKE B+5,W-INT(W/256)*256:POKE B+6,INT(W/256):RETURN",
+    ramrec.ERRLINE]
 # a string from DATA: IR runs of (count IC, byte IB); IB < 0 is "the position" (1-based). Built in string space.
 BUILD = [
     "300 READ IR:Q$=\"\":IP=0:IF IR>0 THEN FOR I=1 TO IR:READ IC,IB:FOR J=1 TO IC:IP=IP+1:"
@@ -286,6 +330,20 @@ def num(text):
 
 def program(group):
     """the typed lines (numbered program + RUN) and the case list [(id, meta)] in record order"""
+    if group == "FR":
+        # the filler leaves exactly k bytes free; R = FRE("") then (+1000 * ERR if the filler itself failed); the
+        # statement runs alone on the next line, and X$ is emptied again before the record
+        lines = [ramrec.head(200), "20 GOSUB 300:S$=Q$:GOSUB 300:T$=Q$:X$=\"\":GOTO 2000"]
+        cases = []
+        for i, (fn, k, stmt) in enumerate(FR):
+            b = 2000 + 3 * i
+            lines.append(f"{b} E=0:R$=CHR$(250):X$=\"\":X$=SPACE$(FRE(\"\")-{k}):R=FRE(\"\")+1000*E")
+            lines.append(f"{b + 1} E=0:{stmt}")
+            lines.append(f"{b + 2} X$=\"\":GOSUB 900")
+            cases.append((f"KST FR {i}", dict(fn=fn, stmt=stmt, k=k, s=FX_S, t=FX_T)))
+        lines += [f"{2000 + 3 * len(FR)} " + ramrec.TAIL] + BUILD + RECORD
+        lines += ramrec.data(1000, spec_values(FX_S) + spec_values(FX_T))
+        return lines + ["RUN"], cases
     if group == "FX":
         # each statement on a line of its own, the record on the next: RESUME NEXT after any error in the statement
         # (an unclosed parenthesis included) lands on the record, never inside the statement's own text
@@ -324,9 +382,9 @@ def program(group):
                 for fn, _b in G["fns"]:
                     if group == "SRC":
                         cid = f"KST SRC {fn} {sn}"
-                    elif group in ("NUM", "OS"):
+                    elif group in ("NUM", "OS", "OSD"):
                         cid = f"KST {group} {fn} N{nt}"
-                    elif group == "STRN":
+                    elif group in ("STRN", "STRN2"):
                         cid = f"KST STRN N{nt} C{ct}"
                     elif group == "STRS":
                         cid = f"KST STRS N{nt} F{sn}"
@@ -334,6 +392,7 @@ def program(group):
                         cid = f"KST {group} H{sn} T{tn} P{'-' if nt == ABSENT else nt}"
                     cases.append((cid, dict(fn=fn, s=s, t=t, sname=sn, tname=tn, n=num(nt),
                                             ntext=None if nt == ABSENT else nt, c=num(ct), ctext=ct)))
+    assert 1 + REC * len(cases) + 1 <= 0xF380 - ramrec.BASE, f"{group}: the records run past $F380"
     return lines + ["RUN"], cases
 
 
@@ -348,11 +407,15 @@ def decode(hexs, n):
         except ValueError:
             rv = None
         out.append(dict(e=r[0], rl=r[1], fb=r[2], lb=r[3], rs=r[4] | r[5] << 8, rw=r[6] | r[7] << 8, r=rv,
-                        sl=r[16], ss=r[17] | r[18] << 8, tl=r[19], ts=r[20] | r[21] << 8))
+                        sl=r[16], ss=r[17] | r[18] << 8, sf=r[19], sb=r[20], sw=r[21] | r[22] << 8,
+                        tl=r[23], ts=r[24] | r[25] << 8, tf=r[26], tb=r[27], tw=r[28] | r[29] << 8))
     return out, None
 
 
-ORDER = ["SRC", "NUM", "STRN", "STRS", "INS1", "INS2", "INS3", "INS4", "OS", "FX"]
+ORDER = ["SRC", "NUM", "STRN", "STRN2", "STRS", "INS1", "INS2", "INS3", "INS4", "OS", "OSD", "FR", "FX"]
+
+
+SRC_OF = {"STRN2": "STRN"}      # a group split for room only: its cases are the first part's kind
 
 
 def load(group, run=RUN):
@@ -364,7 +427,7 @@ def load(group, run=RUN):
         recs, why = decode(h, len(cases))
         if recs is None:
             sys.exit(f"FAIL: {run} {group} {who}: {why}")
-        out[who] = [NS(src=group, id=cid, **meta, **r) for (cid, meta), r in zip(cases, recs)]
+        out[who] = [NS(src=SRC_OF.get(group, group), id=cid, **meta, **r) for (cid, meta), r in zip(cases, recs)]
     return out
 
 

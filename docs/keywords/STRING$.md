@@ -6,15 +6,17 @@ SPDX-License-Identifier: BSD-2-Clause
 
 # `STRING$` — a character repeated a number of times
 
-> **Spec:** DRAFT 1 (2026-11-24) — 650 cases measured on the Philips VG-8020 (BASIC's reference) and on
+> **Spec:** DRAFT 1 (2026-11-24) — 664 cases measured on the Philips VG-8020 (BASIC's reference) and on
 > zerobas, by typed BASIC ([`kstr.py`](../../probes/basic/spec/kstr.py)); every rule is executable and
 > every recorded output is read by one. Not yet reviewed ([the keyword plan](spec-plan.md)).
+>
+> **Goldfish pass 1 (test writer) 2026-11-24:** 14 findings, 8 measured, 1 moved to open.
 >
 > **Status (2026-10-09):** level 3 — happy path ✓ · reasonable time ✓ · common
 > errors ✓ · RAM usage not yet proven · every error ✓. An empty fill string
 > is `Illegal function call` as on the VG-8020 (since 2026-10-27). One
 > divergence found on 2026-11-24 by the spec probe (a space before the closing
-> parenthesis after a string fill): see Differences.
+> parenthesis after a string fill, a variable or a literal): see Differences.
 > Speed is deliberately left out of these docs until on-par speed is
 > established for every keyword.
 
@@ -43,20 +45,25 @@ Which form you wrote is decided by the type of the second argument.
 - **The count must be 0 to 255**, and so must a character code. Outside
   −32768 to 32767 either one is `Overflow` (error 6); otherwise out of range
   it is `Illegal function call` (error 5). There is no silent clamp.
-- **A long result needs string space.** In the string space a program starts
-  with, `STRING$(255,"A")` is `Out of string space` (error 14) on both
-  machines (after `CLEAR 200`, with one short string already there, 199
-  characters fit and 200 do not, on both); after `CLEAR 600` it is 255
-  characters.
+- **A long result needs string space.** The string space a program starts
+  with is the same 200 bytes as after `CLEAR 200`: `STRING$(255,"A")` is
+  `Out of string space` (error 14), and with one short string already there
+  199 characters fit and 200 do not — on both machines, with or without
+  `CLEAR 200`. What counts is the space left beside every other string, the
+  variable's old value included until the result is assigned: with exactly 5
+  bytes free, `STRING$(5,65)`, `STRING$(5,"A")` and `STRING$(5,S$)` fit and
+  the same with 6 is error 14. After `CLEAR 600` it is 255 characters.
 - **A string as the count** (`STRING$("A","A")`) is `Type mismatch`
   (error 13).
 - **A missing or extra argument** (`STRING$(2)`, `STRING$()`,
   `STRING$(2,"A","A")`) is `Syntax error` (error 2).
 - **Spaces are allowed** before the parenthesis, after it, before the comma
   and after it, and before the closing parenthesis: `STRING$ (2,65)`,
-  `STRING$(2, "AB")` and `STRING$(2,"AB" )` are all `"AA"`.
+  `STRING$(2, "AB")` and `STRING$(2,"AB" )` are all `"AA"` on the VG-8020
+  (zerobas: the last is a `Syntax error`, see Differences).
 - **The count is checked first**, before the fill is even evaluated:
-  `STRING$(-1,1/0)` is error 5, not 11. With a valid count, a bad code is an
+  `STRING$(-1,1/0)` is error 5, not 11, and a string as the count is
+  `Type mismatch` before the fill is looked at: `STRING$("A",1/0)` is 13. With a valid count, a bad code is an
   error even when the count is 0 (`STRING$(0,256)` is error 5), and so is an
   empty fill string (`STRING$(0,"")`).
 
@@ -73,7 +80,9 @@ Which form you wrote is decided by the type of the second argument.
 
 The set of errors the T6 enumeration measured for `STRING$` is {2, 5, 13},
 and each has a matching case; the `Overflow` above comes from the separate
-range measurements and agrees too.
+range measurements and agrees too. Beyond it the probe measured 14 (`Out of string space`, R-STRING-ROOM), which
+the enumeration does not reach because it runs with room to spare, and an argument's own error (`1/0`:
+11, R-STRING-OWNERR), which belongs to the expression, not to `STRING$`.
 
 ## Example
 
@@ -119,19 +128,22 @@ day's build). Before every case the string result variable `R$` holds `CHR$(250)
 variable is seen. A string result is read through `VARPTR` and `PEEK`, never through a string function: its length,
 first and last byte, the sum of its bytes and the sum of (position x byte); a numeric result as its variable's own
 8 bytes (a double), decoded exactly. The source strings `S$` and `T$` are built byte by byte in string space and
-read back after every case.
-- **[KST STRN N*n* C*c*]**: `R$=STRING$(N,C)`, *n* in the 28 counts -1E10, -70000, -32769, -32768.5, -32768, -32767, -1, -.9, -.1, 0, .1, .9, 1, 1.5, 2, 3, 4, 5, 6, 254, 255, 255.9, 256, 32767, 32767.9, 32768, 70000, 1E10, and *c* in the 17 codes -1E10, -32769, -32768.5, -32768, -1, -.9, 0, .9, 1, 65, 65.9, 255, 255.9, 256, 32767.9, 32768, 70000: every pair, so which of the two is checked first is seen.
+read back after every case the same way as a string result: length, first and last byte, both sums (until goldfish
+pass 1 the length and the sum only, which a keyword that reordered a source's bytes would have passed).
+- **[KST STRN N*n* C*c*]**: `R$=STRING$(N,C)`, *n* in the 28 counts -1E10, -70000, -32769, -32768.5, -32768, -32767, -1, -.9, -.1, 0, .1, .9, 1, 1.5, 2, 3, 4, 5, 6, 254, 255, 255.9, 256, 32767, 32767.9, 32768, 70000, 1E10, and *c* in the 17 codes -1E10, -32769, -32768.5, -32768, -1, -.9, 0, .9, 1, 65, 65.9, 255, 255.9, 256, 32767.9, 32768, 70000: every pair, so which of the two is checked first is seen (run as two groups, STRN and STRN2, the codes split 9 / 8, so the records fit below the work area; the case ids are the same).
 - **[KST STRS N*n* F*f*]**: `R$=STRING$(N,S$)`, the same 28 counts, `S$` one of five fill strings: "" (E), `CHR$(0)` (Z0), `CHR$(7)+CHR$(8)+CHR$(9)` (P789), `CHR$(255)+CHR$(1)+CHR$(2)` (P255) and a 255-character string `CHR$(1)` ... `CHR$(255)` (L255).
 - **[KST OS STRING$ N*n*]**: `R$=STRING$(N,65)` after `CLEAR 200`, *n* 150, 190, 195 to 201, 255.
+- **[KST OSD STRING$ N*n*]**: the same with no `CLEAR` at all (the string space a program starts with), *n* 198 to 200.
+- **[KST FR *i*]**: a fixed statement after `CLEAR 200` with exactly *k* bytes of string space left free: a filler `X$` of `FRE("")`-*k* spaces is made first, `R` records `FRE("")` just before the statement (the check requires it to be *k*), `R$` holds its one-character `CHR$(250)`, `S$` = `"ABCDE"`; the list is `FR` in the probe.
 - **[KST FX *i*]**: a fixed statement, `S$` = `"ABCDE"`, `T$` = `"CD"` (both in string space); the list, with what
   each one separates, is `FX` in the probe.
 
-**Controls** ([`kstr_controls.py`](../../probes/basic/spec/kstr_controls.py)): the code checked before the count is FALSE on 58 of the 476 count x code cases; an empty fill allowed when the count is 0 on 5 of the 140 fill-string cases.
+**Controls** ([`kstr_controls.py`](../../probes/basic/spec/kstr_controls.py)): the code checked before the count is FALSE on 58 of the 476 count x code cases; an empty fill allowed when the count is 0 on 5 of the 140 fill-string cases; the fill evaluated before the count's type on the 1 case that separates them (KST FX 118); a fixed limit of 199 characters whatever else is in the string space on 3 of the 6 FR cases; the sources left reversed (same length and sum) on all 119 cases with a source longer than one character.
 
 <!-- RULES BEGIN -->
 <!-- GENERATED by tools/spec_rules.py from probes/basic/spec/string_s_rules.py -- do not edit; `python3 tools/spec_rules.py probes/basic/spec/string_s_rules.py --write` -->
 
-**12 rules; 12 hold on the reference. Of the 7150 recorded outputs (each case's error, the string result's length, first and last byte and two checksums, the numeric result's 8 bytes, the two source strings' lengths and sums): 7150 read by a rule's check, 0 declared NOT evidence (below), 0 unread.**
+**13 rules; 13 hold on the reference. Of the 11288 recorded outputs (each case's error, the string result's length, first and last byte and two checksums, the numeric result's 8 bytes (in FR: FRE("") before the statement), the two source strings' length, first and last byte and two checksums): 11288 read by a rule's check, 0 declared NOT evidence (below), 0 unread.**
 
 #### 1. STRING$(n, code) and STRING$(n, a$)
 
@@ -143,20 +155,22 @@ read back after every case.
 | **R-STRING-CODERANGE** With a valid count, the code is checked the same way: error 6 outside -32768 to 32767, else 5 outside 0 to 255 -- also when the count is 0, which needs no character. | 135 | ✓ | ✓ |
 | **R-STRING-EMPTY** With a valid count, an empty fill string is error 5 (Illegal function call) -- also when the count is 0. | 15 | ✓ | ✓ |
 | **R-STRING-ORDER** The count is checked before the second argument is even evaluated, and before the closing parenthesis is looked for: STRING$(-1,1/0), STRING$(-1,5+"A") and STRING$(-1,"A" (unclosed) are all error 5. | 3 | ✓ | ✓ |
-| **R-STRING-ROOM** A result needs string space for all its characters: after CLEAR 200, with R$'s one-character previous value the only other string, a result of 199 characters fits and one of 200 or more is error 14 (Out of string space), nothing assigned. | 10 | ✓ | ✓ |
+| **R-STRING-TYPEORDER** A string as the count is error 13 before the second argument is evaluated: STRING$("A",1/0) is 13, not 11. With a valid count, a fill that fails on its own type (STRING$(2,5+"A")) is 13 too. | 2 | ✓ | ✓ |
+| **R-STRING-ROOM** A result needs string space for all its characters, and the variable's old value still holds its own until the result is assigned. After CLEAR 200, and in the string space a program starts with (no CLEAR: the same 200 bytes), with R$'s one-character old value the only other string, a result of 199 characters fits and one of 200 or more is error 14 (Out of string space), nothing assigned. With exactly k bytes free (FRE("") just before, other strings in the space) a result of up to k characters fits and a longer one is error 14: at k = 5, STRING$(5, fill) fits and STRING$(6, fill) is 14, the fill a code, a literal or a string variable. | 19 | ✓ | ✓ |
 | **R-STRING-TYPE** A string as the count is error 13 (Type mismatch), checked before the code's range (STRING$("A",256) is 13); assigning the result to a numeric variable is 13 too. | 4 | ✓ | ✓ |
 | **R-STRING-OWNERR** An argument that fails to compute raises its own error (1/0 as the count or the code: error 11). | 2 | ✓ | ✓ |
 | **R-STRING-SYNTAX** No fill, no argument, a third argument, or no closing parenthesis (after an empty fill) is error 2 (Syntax error): the parenthesis is checked before the empty fill. | 5 | ✓ | ✓ |
-| **R-STRING-FORMS** Spaces before the parenthesis, around the arguments, and before or after a string fill are allowed; an integer count and a hex code are numbers like any other; the fill may be a string expression (T$+S$: T$'s first character). | 10 | ✓ | ✗ 1: KST FX 114 |
-| **R-STRING-KEEP** The source strings are left as they were, in every case, error or not (S$ and T$ read back after every case). | 650 | ✓ | ✓ |
+| **R-STRING-FORMS** Spaces before the parenthesis, around the arguments, and before or after a string fill (a variable or a literal in the program text) are allowed; an integer count and a hex code are numbers like any other; the fill may be a literal (STRING$(2,"AB") is "AA") or a string expression (T$+S$: T$'s first character). | 13 | ✓ | ✗ 2: KST FX 114, KST FX 116 |
+| **R-STRING-KEEP** The source strings are left as they were, in every case, error or not (S$ and T$ read back after every case: length, first and last byte, the sum and the sum of position x byte). | 664 | ✓ | ✓ |
 
 <!-- RULES END -->
 
 ## Differences from the reference
 
 - **A space before the closing parenthesis after a string fill** (rule
-  R-STRING-FORMS, case KST FX 114; [D-CLOSESPACE](../../todo/open/D-CLOSESPACE.md)).
-  `STRING$(2,S$ )` is `"AA"` on the VG-8020 and `Syntax error` (error 2) here.
+  R-STRING-FORMS, cases KST FX 114 and 116; [D-CLOSESPACE](../../todo/open/D-CLOSESPACE.md)).
+  `STRING$(2,S$ )` and `STRING$(2,"AB" )` are `"AA"` on the VG-8020 and `Syntax error` (error 2) here: after a
+  string variable and after a literal alike.
   After a code (`STRING$( 2 , 65 )`) the space is accepted by both.
 
 The rung not yet proven is **RAM usage**: `STRING$` changes free memory
@@ -172,7 +186,9 @@ differs ([`kwram_full.out`](../../scratchpad/kwram_full.out)).
 - [A] Direct mode: every case ran inside a program.
 - [A] An argument's own error was measured with one kind (`1/0`, error 11); that any error of the argument wins is assumed.
 - [A] Which work-area cells the call writes (the RAM-usage rung, [`kwram_full.out`](../../scratchpad/kwram_full.out)).
-- [A] String space at other `CLEAR` sizes: the room rule is measured at one setup.
+- [A] String space at other `CLEAR` sizes than 200 (and the default, which is 200): the room rule is measured there,
+  and at 0 and 5 bytes free beside other strings (FR).
+- [A] The sources kept (R-STRING-KEEP) are compared by their digest -- length, first and last byte, the sum and the sum of position x byte -- not byte for byte, and not by where they lie: a string's address is not kept by BASIC itself (garbage collection moves strings), so it is not a rule.
 - [A] Only five fill strings were measured (their later bytes all differ from the first).
 - [A] "After `CLEAR 600` it is 255 characters" (the details) rests on D-SPCLAMP's measurement
   ([spec-basic-spclamp.md](../spec-basic-spclamp.md)); here 255 characters fit after `CLEAR 2000`.

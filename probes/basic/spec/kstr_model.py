@@ -17,16 +17,17 @@ import kstr  # noqa: E402
 import ramrec  # noqa: E402
 from spec_rules import Rule  # noqa: E402
 
-FIELDS = ["e", "rl", "fb", "lb", "rs", "rw", "r", "sl", "ss", "tl", "ts"]
+FIELDS = ["e", "rl", "fb", "lb", "rs", "rw", "r", "sl", "ss", "sf", "sb", "sw", "tl", "ts", "tf", "tb", "tw"]
 OUTPUTS = {g: FIELDS for g in kstr.ORDER}
 OUTPUTS_DESC = ("each case's error, the string result's length, first and last byte and two checksums, the numeric "
-                "result's 8 bytes, the two source strings' lengths and sums")
+                "result's 8 bytes (in FR: FRE(\"\") before the statement), the two source strings' length, first and last "
+                "byte and two checksums")
 SENT_S = bytes([250])            # R$ before every case
 SENT_N = kstr.R_SENT             # R before every case
 S, T = kstr.FX_S, kstr.FX_T      # the fixed expressions' S$ and T$
 
-GROUPS_OF = {"LEN": ["SRC"], "ASC": ["SRC"], "CHR$": ["NUM"], "SPACE$": ["NUM", "OS"], "STRING$": ["STRN", "STRS", "OS"],
-             "INSTR": ["INS1", "INS2", "INS3", "INS4"]}
+GROUPS_OF = {"LEN": ["SRC"], "ASC": ["SRC"], "CHR$": ["NUM", "FR"], "SPACE$": ["NUM", "OS", "OSD", "FR"],
+             "STRING$": ["STRN", "STRN2", "STRS", "OS", "OSD", "FR"], "INSTR": ["INS1", "INS2", "INS3", "INS4"]}
 
 
 def load(fn):
@@ -67,8 +68,10 @@ def outcome(c, model):
 
 
 def kept(c):
-    """S$ and T$ are left as they were"""
-    return (c.sl, c.ss, c.tl, c.ts) == (len(c.s), sum(c.s) & 0xFFFF, len(c.t), sum(c.t) & 0xFFFF)
+    """S$ and T$ are left as they were: length, first and last byte, sum and weighted sum (goldfish pass 1: the
+    length and sum alone let a reordering pass)"""
+    return ((c.sl, c.sf, c.sb, c.ss, c.sw) == ramrec.digest(c.s)
+            and (c.tl, c.tf, c.tb, c.ts, c.tw) == ramrec.digest(c.t))
 
 
 # --- the models ---
@@ -155,6 +158,8 @@ FX_WANT = {
     "R$=STRING$ (2,65)": ("str", b"AA"), "R$=STRING$( 2 , 65 )": ("str", b"AA"), "R$=STRING$(2, S$)": ("str", b"AA"),
     "R$=STRING$( 2,S$)": ("str", b"AA"), "R$=STRING$(2 ,S$)": ("str", b"AA"), "R$=STRING$(2,S$ )": ("str", b"AA"),
     "R$=STRING$(2%,&H41)": ("str", b"AA"), "R$=STRING$(2,T$+S$)": ("str", T[:1] * 2),
+    'R$=STRING$(2,"AB")': ("str", b"AA"), 'R$=STRING$(2,"AB" )': ("str", b"AA"), 'R$=STRING$(2, "AB")': ("str", b"AA"),
+    "R$=CHR$( 65)": ("str", b"A"), "R$=SPACE$( 3)": ("str", b"   "), "R$=SPACE$(3.9!)": ("str", b"   "),
     "R=INSTR(S$,T$)": ("num", S.find(T) + 1), "R=INSTR(2,S$,T$)": ("num", S.find(T, 1) + 1),
     "R=INSTR (S$,T$)": ("num", 3), "R=INSTR( S$ , T$ )": ("num", 3), "R=INSTR( 2 , S$ , T$ )": ("num", 3),
     "R=INSTR( S$,T$)": ("num", 3), "R=INSTR(S$ ,T$)": ("num", 3), "R=INSTR(S$, T$)": ("num", 3),
@@ -164,6 +169,24 @@ FX_WANT = {
     'R=INSTR("ABCDE","CD" )': ("num", 3), "R=INSTR(2%,S$,T$)": ("num", 3), "R=INSTR(&H2,S$,T$)": ("num", 3),
     'R=INSTR("ABCDE","CD")': ("num", 3), "R=INSTR(7,S$+S$,T$)": ("num", (S + S).find(T, 6) + 1),
 }
+
+
+# the FR group: the result each statement gives when it fits (kstr.FR; S$ = "ABCDE")
+FR_WANT = {"R$=CHR$(65)": b"A", "R$=SPACE$(0)": b"", "R$=SPACE$(5)": b" " * 5, "R$=SPACE$(6)": b" " * 6,
+           "R$=STRING$(5,65)": b"A" * 5, "R$=STRING$(6,65)": b"A" * 6, 'R$=STRING$(5,"A")': b"A" * 5,
+           'R$=STRING$(6,"A")': b"A" * 6, "R$=STRING$(5,S$)": b"A" * 5, "R$=STRING$(6,S$)": b"A" * 6}
+
+
+def fr_fits(c, limit=None):
+    """FR: R recorded FRE("") = k just before the statement (the filler worked); the result fits when its length is
+    at most k (limit(c), a rival, in place of k), else error 14 and nothing assigned"""
+    want = FR_WANT[c.stmt]
+    room = c.r if limit is None else limit(c)
+    if c.r != c.k:
+        return False
+    if len(want) <= room:
+        return c.e == 0 and _rstr(c) == ramrec.digest(want)
+    return c.e == 14 and _rstr(c) == ramrec.digest(SENT_S)
 
 
 def fx_want(c):
@@ -193,7 +216,8 @@ def _common(tag, section, kind, whys_type, whys_own, whys_syntax, forms_text, wh
              lambda c: outcome(c, fx_want)),
         Rule(f"R-{tag}-KEEP", section,
              "The source strings are left as they were, in every case, error or not (S$ and T$ read back after "
-             "every case).", lambda c: True, kept),
+             "every case: length, first and last byte, the sum and the sum of position x byte).",
+             lambda c: True, kept),
     ]
 
 
@@ -264,14 +288,20 @@ def rules(fn):
         ]
         if fn == "SPACE$":
             out.append(_room("SPACE", sec))
+        else:
+            out.append(Rule("R-CHR-ROOM", sec,
+                            "The one-character result needs one byte of string space: with FRE(\"\") 0 (the "
+                            "string space filled, R$'s one-character old value still in it) CHR$(65) is error 14 "
+                            "(Out of string space), nothing assigned; with 1 byte free it fits.",
+                            lambda c: c.src == "FR", fr_fits))
         return out + _common(tag, sec, "str",
                              ("a string as the argument", "the result is a string"),
                              ("the argument's own error",),
                              ("no argument", "an extra argument", "no closing parenthesis"),
-                             f"Spaces before the parenthesis and around the argument are allowed, and so are an "
-                             f"integer, a hex and a single argument: each gives what {fn}("
+                             f"Spaces before the parenthesis, after it and around the argument are allowed, and so "
+                             f"are an integer, a hex and a single argument: each gives what {fn}("
                              f"{'65' if fn == 'CHR$' else '3'}) gives"
-                             + (" (65.9! is truncated to 65)." if fn == "CHR$" else "."),
+                             + (" (65.9! is truncated to 65)." if fn == "CHR$" else " (3.9! is truncated to 3)."),
                              SPACES + ("plain", "an integer argument", "a hex argument", "a single argument"),
                              "An argument that fails to compute raises its own error (1/0: error 11).",
                              "No argument, a second argument, or no closing parenthesis is error 2 (Syntax error).",
@@ -309,6 +339,12 @@ def rules(fn):
                  lambda c: fx_by(c, "the count's range before the fill's own error",
                                  "the count's range before the fill's type", "no closing parenthesis after a bad count"),
                  lambda c: error_is(c, 5)),
+            Rule("R-STRING-TYPEORDER", sec,
+                 "A string as the count is error 13 before the second argument is evaluated: STRING$(\"A\",1/0) is "
+                 "13, not 11. With a valid count, a fill that fails on its own type (STRING$(2,5+\"A\")) is 13 "
+                 "too.",
+                 lambda c: fx_by(c, "the count's type before the fill's own error", "the fill's type with a valid count"),
+                 lambda c: error_is(c, 13)),
             _room("STRING", sec),
         ] + _common("STRING", sec, "str",
                     ("a string as the count", "a string as the count, a code", "the count's type before the code's range",
@@ -316,13 +352,15 @@ def rules(fn):
                     ("the count's own error", "the code's own error"),
                     ("no fill", "no argument", "an extra argument", "an extra argument, a code",
                      "no closing parenthesis after an empty fill"),
-                    "Spaces before the parenthesis, around the arguments, and before or after a string fill are "
-                    "allowed; an integer count and a hex code are numbers like any other; the fill may be a string "
+                    "Spaces before the parenthesis, around the arguments, and before or after a string fill (a "
+                    "variable or a literal in the program text) are allowed; an integer count and a hex code are "
+                    "numbers like any other; the fill may be a literal (STRING$(2,\"AB\") is \"AA\") or a string "
                     "expression (T$+S$: T$'s first character).",
                     ("plain, a code", "plain, a string", "a space before the parenthesis", "spaces around the arguments",
                      "a space before the string fill", "an integer count, a hex code", "an expression as the fill",
                      "a space after the parenthesis, a string fill", "a space before the comma, a string fill",
-                     "a space before the closing parenthesis, a string fill"),
+                     "a space before the closing parenthesis, a string fill", "a literal fill (in the program text)",
+                     "a space before the closing parenthesis, a literal fill", "a space before the literal fill"),
                     "An argument that fails to compute raises its own error (1/0 as the count or the code: error 11).",
                     "No fill, no argument, a third argument, or no closing parenthesis (after an empty fill) is error 2 "
                     "(Syntax error): the parenthesis is checked before the empty fill.",
@@ -346,8 +384,10 @@ def rules(fn):
             Rule("R-INSTR-START", sec,
                  "The start is truncated toward zero; below -32768 or above 32767 it is error 6, otherwise outside 1 "
                  "to 255 error 5, whatever the strings are (an empty b$ included). Start 0 is an error; start 255 "
-                 "is not, at any length.",
-                 lambda c: M(c) and c.n is not None and start_arg(c.n)[0] != 0, lambda c: outcome(c, m_instr)),
+                 "is not, at any length. The boundary is exact and the truncation comes first: -32769 and 32768 are "
+                 "6, while -32768.5, -32768, -32767, 32767 and 32767.9 are 5.",
+                 lambda c: (M(c) and c.n is not None and start_arg(c.n)[0] != 0) or fx_has(c, "a start of "),
+                 lambda c: outcome(c, m_instr) if M(c) else error_is(c, _fx_start_err(c))),
             Rule("R-INSTR-ORDER", sec,
                  "The start is checked before anything after it: a bad start wins over a number as either string, "
                  "over a third argument that fails to compute, and over a missing argument (INSTR(0,S$,5), "
@@ -357,7 +397,8 @@ def rules(fn):
         ] + _common("INSTR", sec, "num",
                     ("a number as the string to find", "a number as the string to search",
                      "a number as the string to find, a start", "the result is a number"),
-                    ("the start's own error", "the second argument's own error", "the third argument's own error"),
+                    ("the start's own error", "the second argument's own error", "the third argument's own error",
+                     "the second argument's own error, a start"),
                     ("a string as the start", "one string", "a start and one string", "a start only", "no argument",
                      "an extra argument", "an extra argument, a start", "no closing parenthesis"),
                     "Spaces are allowed before the parenthesis, after it, before and after every comma, and before "
@@ -376,11 +417,23 @@ def rules(fn):
     raise KeyError(fn)
 
 
+def _fx_start_err(c):
+    """the error the model gives for an FX row's literal start ("R=INSTR(<start>,S$,T$)")"""
+    from decimal import Decimal
+    from fractions import Fraction
+    return start_arg(Fraction(Decimal(c.stmt[len("R=INSTR("):].split(",")[0])))[0]
+
+
 def _room(tag, sec):
+    fill = ("at k = 5, STRING$(5, fill) fits and STRING$(6, fill) is 14, the fill a code, a literal or a string "
+            "variable" if tag == "STRING" else "at k = 5, SPACE$(5) fits and SPACE$(6) is 14; at k = 0 SPACE$(0) fits")
     return Rule(f"R-{tag}-ROOM", sec,
-                "A result needs string space for all its characters: after CLEAR 200, with R$'s one-character "
-                "previous value the only other string, a result of 199 characters fits and one of 200 or more is "
-                "error 14 (Out of string space), nothing assigned.",
-                lambda c: c.src == "OS",
-                lambda c: (error_is(c, 14) if c.n >= 200 else
-                           str_result(c, (b" " if c.fn == "SPACE$" else b"A") * int(c.n))))
+                "A result needs string space for all its characters, and the variable's old value still holds its "
+                "own until the result is assigned. After CLEAR 200, and in the string space a program starts with "
+                "(no CLEAR: the same 200 bytes), with R$'s one-character old value the only other string, a result "
+                "of 199 characters fits and one of 200 or more is error 14 (Out of string space), nothing assigned. "
+                "With exactly k bytes free (FRE(\"\") just before, other strings in the space) a result of up to k "
+                f"characters fits and a longer one is error 14: {fill}.",
+                lambda c: c.src in ("OS", "OSD", "FR"),
+                lambda c: fr_fits(c) if c.src == "FR" else
+                (error_is(c, 14) if c.n >= 200 else str_result(c, (b" " if c.fn == "SPACE$" else b"A") * int(c.n))))

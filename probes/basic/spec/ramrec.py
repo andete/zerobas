@@ -47,6 +47,10 @@ TAIL = "POKE A,&HC3:POKE &HC000,&H5A:END"
 
 
 def head(clear=2000):
+    """clear=None: no CLEAR at all -- the string space a program starts with (the record area is then unreserved
+    free RAM between the variables and the stack; kstr's OSD group)"""
+    if clear is None:
+        return "10 DEFDBL A-Z:DEFINT I-K:ON ERROR GOTO 800:POKE &HC000,0:A=&HC001"
     return f"10 CLEAR {clear},&HC000:DEFDBL A-Z:DEFINT I-K:ON ERROR GOTO 800:POKE &HC000,0:A=&HC001"
 
 
