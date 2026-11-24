@@ -34,7 +34,7 @@ names the other component's BUFFER this address falls within. That
 second one is the question a per-component map cannot answer.
 
 * **basic** — 70 declared addresses in this project's own workspace `$E000..$F37F` (69 with a machine-readable width), plus **459** in the MSX standard work area at or above `$F380`.
-* **disk** — 126 declared addresses in this project's own workspace `$E000..$F37F` (117 with a machine-readable width), plus **71** in the MSX standard work area at or above `$F380`.
+* **disk** — 126 declared addresses in this project's own workspace `$E000..$F37F` (117 with a machine-readable width), plus **72** in the MSX standard work area at or above `$F380`.
 
 ## This project's own workspace (`$E000..$F37F`)
 
@@ -772,6 +772,7 @@ extents the standard already fixes would be noise, not rigour.
 | `$FE8A` |  | `basic` | `H_CHIN` | S10.C: an INPUT channel's byte / EOF / numeric item; S10.E: LOF / LOC (disk.rom hk_chin) |  |
 | `$FE8A` |  | `disk` | `H_CHIN` | S10.C: an INPUT channel's byte / EOF / numeric item; S10.E: LOF / LOC |  |
 | `$FECB` |  | `basic` | `H_RUNC` | BASIC clears its program state: NEW / a typed line / RUN / the cold start (D-NMSHOST) |  |
+| `$FECB` |  | `disk` | `H_RUNC` | BASIC clears its program state (NEW / a typed line / RUN / the cold start): |  |
 | `$FEDA` |  | `basic` | `H_STKE` | BASIC reset its stack (MSX2 TH hook list; D-HSTKE) |  |
 | `$FEE4` |  | `basic` | `H_OUTD` | published hook OUTDO calls first (MSX2 TH hook table) |  |
 | `$FEFD` |  | `basic` | `H_ERRP` | error-print hook (D-DISKERR): the errmsg tenant offers a code it |  |
