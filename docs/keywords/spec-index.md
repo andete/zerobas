@@ -10,7 +10,7 @@ SPDX-License-Identifier: BSD-2-Clause
 
 Every keyword page, the region the spec loop takes it in, and how far its page has become a SPECIFICATION: measured rules, each checked against the reference machine's cases ([the plan](spec-plan.md), [the method](../spec-method.md)). A page that is not yet a spec is a "user page": it says what the keyword does and was checked by its example, but its sentences are not yet executable rules. The reference is the Philips VG-8020; disk statements, the National CF-3300.
 
-**19 of 150 keyword pages are specs; 0 are FINAL.**
+**25 of 150 keyword pages are specs; 0 are FINAL.**
 
 | keyword | region | harness | reference | page | open (not measured) | differences (TODO items, from the page) |
 |---|---|---|---|---|---|---|
@@ -33,12 +33,12 @@ Every keyword page, the region the spec loop takes it in, and how far its page h
 | `INT` | [maths](../concepts/numbers.md) | RAM record | VG-8020 | [DRAFT 1](INT.md) | 5 | D-INTNEGTYPE, D-ZEROLET |
 | `FIX` | [maths](../concepts/numbers.md) | RAM record | VG-8020 | [DRAFT 1](FIX.md) | 5 | D-ZEROLET |
 | `SQR` | [maths](../concepts/numbers.md) | RAM record | VG-8020 | [DRAFT 1](SQR.md) | 6 | D-SQRZERO |
-| `EXP` | [maths](../concepts/numbers.md) | RAM record | VG-8020 | [user page](EXP.md) | — | D-EXPNEG |
-| `LOG` | [maths](../concepts/numbers.md) | RAM record | VG-8020 | [user page](LOG.md) | — | — |
-| `SIN` | [maths](../concepts/numbers.md) | RAM record | VG-8020 | [user page](SIN.md) | — | D-TANBIG |
-| `COS` | [maths](../concepts/numbers.md) | RAM record | VG-8020 | [user page](COS.md) | — | D-TANBIG |
-| `TAN` | [maths](../concepts/numbers.md) | RAM record | VG-8020 | [user page](TAN.md) | — | D-TANBIG |
-| `ATN` | [maths](../concepts/numbers.md) | RAM record | VG-8020 | [user page](ATN.md) | — | — |
+| `EXP` | [maths](../concepts/numbers.md) | RAM record | VG-8020 | [DRAFT 1](EXP.md) | 8 | D-EXPNEG, D-TRANSZERO |
+| `LOG` | [maths](../concepts/numbers.md) | RAM record | VG-8020 | [DRAFT 1](LOG.md) | 6 | — |
+| `SIN` | [maths](../concepts/numbers.md) | RAM record | VG-8020 | [DRAFT 1](SIN.md) | 7 | D-TRIGHALF, D-SINDIGITS, D-TRANSZERO |
+| `COS` | [maths](../concepts/numbers.md) | RAM record | VG-8020 | [DRAFT 1](COS.md) | 7 | D-TRIGHALF, D-TRANSZERO |
+| `TAN` | [maths](../concepts/numbers.md) | RAM record | VG-8020 | [DRAFT 1](TAN.md) | 7 | D-TRIGHALF, D-SINDIGITS, D-TRANSZERO |
+| `ATN` | [maths](../concepts/numbers.md) | RAM record | VG-8020 | [DRAFT 1](ATN.md) | 6 | D-TRANSZERO, D-SQRZERO |
 | `RND` | [maths](../concepts/numbers.md) | RAM record | VG-8020 | [user page](RND.md) | — | — |
 | `CINT` | [conversion](../concepts/numbers.md) | RAM record | VG-8020 | [user page](CINT.md) | — | — |
 | `CSNG` | [conversion](../concepts/numbers.md) | RAM record | VG-8020 | [user page](CSNG.md) | — | — |

@@ -32,7 +32,15 @@
       there), D-INTNEGTYPE (INT of a negative fraction: integer -1 / a double there, the argument's type here),
       D-ZEROLET (an exponent-0 single with digit bytes stored as zeros here), D-SQRZERO (SQR(0%) keeps leftover
       digit bytes here). SQR's known last-digit difference re-measured: the reference is within 3 units of the
-      14th digit, not "one unit low" (page corrected). NEXT: the transcendentals EXP / LOG / SIN / COS / TAN / ATN
-      as the maths region's second unit (bounds, like R-SQR-NEAR, over a wider matrix per function), then RND (a
-      seed / sequence harness); the review passes on the strings and maths pages (spec-method §6); a keyword probe
-      in spec_live (plan §7.1).
+      14th digit, not "one unit low" (page corrected).
+      **Maths, second unit (2026-11-24): EXP / LOG / SIN / COS / TAN / ATN at DRAFT 1** from
+      probes/basic/spec/ktrans.py (255 cases a keyword on each machine, scratchpad/KTR_run1.out; plan §6, "The maths
+      region's second unit"), kmath's frame unchanged. The rules are BOUNDS against exact targets (ktrans_model.py,
+      60+ digits), each the reference's measured worst rounded up; the trig reduction (p = x * 0.15915494309190 in
+      14 digits; COS from r14(1/4 - p)) is now a rule fitting all 431 nonzero SIN / COS results. Every rule holds on
+      the VG-8020, every output is read; ktrans_controls.py shows 27 rival rules FALSE. Filed: D-TRIGHALF (TIER 1,
+      near a half / whole turn zerobas keeps more of the angle: SIN(3.1415926535898#) differs in its leading
+      digits), D-SINDIGITS (zerobas's sine up to 6.1 units off, the reference's 1.9), D-TRANSZERO (TIER 6, the zero
+      results' digit bytes). LOG / ATN pages corrected (LOG's reference error 8.3 units, not 5; ATN's worst 2.7 on
+      both machines). NEXT: RND (a seed / sequence harness) to finish the maths region; the review passes on the
+      strings and maths pages (spec-method §6); a keyword probe in spec_live (plan §7.1).

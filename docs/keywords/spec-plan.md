@@ -235,9 +235,8 @@ D-VALWS (whitespace, incl. before `&`), D-VALEXP (the digit-count edges) and D-V
 
 ### The maths region's first unit (2026-11-24): ABS, SGN, INT, FIX, SQR
 
-One probe, five rules modules, five pages at DRAFT 1. The transcendentals (EXP, LOG, SIN, COS, TAN, ATN) and RND are
-LEFT FOR LATER UNITS: their last digits are the reference's own algorithm, so their rules are bounds that need a wider
-matrix per function (and RND a seed / sequence harness of its own).
+One probe, five rules modules, five pages at DRAFT 1. The transcendentals (EXP, LOG, SIN, COS, TAN, ATN) were the
+second unit (below); RND is left for a later one (a seed / sequence harness of its own).
 
 - [probes/basic/spec/kmath.py](../../probes/basic/spec/kmath.py): 160 cases a keyword on each machine (19 integers,
   66 singles, 52 doubles, 23 fixed statements; 4 more fixed statements are LET evidence no page loads) in four groups
@@ -264,6 +263,42 @@ matrix per function (and RND a seed / sequence harness of its own).
   always a double; a literal `2.5` is a single, `7` an integer, `-32768` a single, `1/4` a double; FIX and INT of a
   number below 1 return a zero that keeps the argument's digit bytes (exponent byte 0, the sign dropped); SGN and
   SQR see `80 10 00 00` (sign bit, exponent 0) as negative.
+
+### The maths region's second unit (2026-11-24): EXP, LOG, SIN, COS, TAN, ATN
+
+One probe, six rules modules, six pages at DRAFT 1:
+
+- [probes/basic/spec/ktrans.py](../../probes/basic/spec/ktrans.py): 1,762 cases on each machine (255 a keyword, plus 232 apparatus rows) in six
+  groups (TI: 33 integers; TS1 / TS2: 56 + 53 singles; TD1 / TD2: 51 + 39 doubles; FX: 23 fixed statements a
+  keyword), on kmath's frame unchanged -- the argument's own bytes, `R=F(N)`'s 8 bytes, and the result's TYPE and
+  bytes through the probe's USR routine, checked per argument by the `ID` apparatus row. Run file
+  [scratchpad/KTR_run1.out](../../scratchpad/KTR_run1.out). The arguments sit at the special points, at +-x for the
+  symmetry rules, across the whole range of each type, at EXP's overflow and underflow edges, at LOG's domain edge,
+  and at the angle reduction's landmarks (multiples of pi/4 in 14 digits, 1E10 ... 9.99999E62).
+- [ktrans_model.py](../../probes/basic/spec/ktrans_model.py) holds the exact mathematics (Decimal, 60+ digits), the
+  models and the rule builders; `exp_rules.py`, `log_rules.py`, `sin_rules.py`, `cos_rules.py`, `tan_rules.py`,
+  `atn_rules.py` are the pages' modules. **A transcendental's rule is a BOUND**: a double within B units of the 14th
+  significant digit of an exact target, B the reference's measured worst rounded up (EXP 3 / 500 / 40,000 by range,
+  LOG 10, SIN / COS 2.5, TAN 6, ATN 3). [ktrans_controls.py](../../probes/basic/spec/ktrans_controls.py) runs 27
+  rival rules over the reference's cases; each is FALSE on some (every bound tightened, the true sin / cos / tan in
+  place of the reduced one, three rival reductions, zerobas's zeros and band, correct rounding everywhere, a single
+  result for a single argument).
+- **The trig reduction is now a rule** (inferred from the outside, as D-TANBIG did for large angles): p = x *
+  0.15915494309190 in 14 digits; SIN is the sine of 2 pi frac(p), COS of 2 pi frac(r14(1/4 - p)); TAN errs (6) exactly
+  where COS's reduced angle is a whole or half turn. It fits all 431 nonzero SIN / COS results within 2.1 units.
+- Result: every rule holds on the VG-8020 and every recorded output is read by a rule. LOG agrees in every case
+  (within its bound). Three new items: **D-TRIGHALF** (TIER 1: near a half or whole turn zerobas keeps more of the
+  angle than the 14-digit reduction -- SIN(3.1415926535898#) -1.5707963267949E-13 here, -1.2566370614359E-13 there;
+  16 cases over SIN / COS / TAN), **D-SINDIGITS** (zerobas's sine up to 6.1 units off the reduced target, the
+  reference's worst 1.9; 8 cases over SIN / TAN), **D-TRANSZERO** (TIER 6: the zero results' digit bytes -- the reference's SIN /
+  COS / TAN zero carries 2 pi's digits 00 62 83 18 53 07 17 96; EXP's tiny and flushed zeros; ATN of a signed zero;
+  integer-zero leftovers in R as D-SQRZERO). EXP's Overflow band and huge negatives (17 cases) are the deliberate
+  §12.9 difference, already standing.
+- Measured on both machines, now rules (the pages said otherwise or nothing): all six always return a DOUBLE; EXP(0)
+  and COS(0) are exactly 1, LOG(1) exactly 0; SIN, TAN and ATN are odd and COS even, byte for byte; LOG's reference
+  error is up to 8.3 units (the page said 5); ATN's worst is 2.7 units on BOTH machines (the page's 2-unit target is
+  neither's); below 1E-64 EXP returns a zero that keeps e^x's digits, then Overflow down to 1E-129, then 0 down to
+  x = -65536, then Overflow again from -99999.
 
 ## 7. Tooling: what exists, what is missing
 
