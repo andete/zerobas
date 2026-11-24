@@ -125,3 +125,12 @@
       with the NMS 1200)? Without a reference that boots DOS the step after the date prompt has nothing to match.
       HOST-CONTRACT PAGE: docs/concepts/disk-rom-host.md (2026-11-24) -- items 1-3 with their evidence, the disk ROM's
       write map, and the open list (date format, screen clear, DOS).
+      STEP 11 (2026-11-24) -- the screen clear: both machines are in SCREEN 1 (SCRMOD 1) before the cold start's H.RUNC.
+      On the VG-8020 the H.RUNC call (5.747 s) returns quickly and MS-BASIC's own cold-start screen set-up follows
+      (port $99: R#1 := $A0 ... R#1 := $F0 TEXT1, by page-0 slot-0 code on the new stack $DC9B-$DCA3 under the rebuilt
+      STKTOP); the disk ROM's prompt comes later, after it re-enters (it patches its other hooks at 6.06 s). On zerobas
+      the disk ROM stays INSIDE H.RUNC and prompts from there ~2.4 s later (its calls into zerobas: RDSLT / CALSLT /
+      WRSLT / PHYDIO / CHPUT / CHGET only, plus returns -- no screen call), before zerobas's show_title sets up the
+      screen. So the disk ROM's H.RUNC handler takes another branch on zerobas -- on some state MS-BASIC has set by its
+      cold start -- and MS-BASIC sets up the text screen right after H.RUNC, zerobas after its banner logic. Cosmetic;
+      left open, tied to the Disk BASIC side.
