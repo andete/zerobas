@@ -188,7 +188,7 @@ R-SQR-ASSIGN reads every case that assigns R. The counts therefore add to more t
   after `R=-12345`, `R=SQR(N%)` with N% = 0 leaves R as 00 12 34 50 00 00 00 00 and `R=SQR(-0)` 00 13 40 50 00 00 00 00
   (exponent 0, so the value is 0) where the reference stores 8 zero bytes --
   [D-SQRZERO](../../todo/open/D-SQRZERO.md). The digits are not simply R's earlier ones (FX 110's are not); after
-  `R=0`, and for `SQR(0!)`, the two agree (rule R-SQR-LET, KMA FX 117, 118), and so does `T!=SQR(0)` (KMA FY 69).
+  `R=0`, and for `SQR(0!)`, the two agree (R-SQR-LET holds, KMA FX 117, 118), and so does `T!=SQR(0)` (KMA FY 69).
 - **`SQR("A"` (no `)`) and `SQR("A",2)` are error 13 here, error 2 on the VG-8020** (rule R-SQR-ORDER, KMA FY 29, 31)
   -- [D-ARGTYPEORDER](../../todo/open/D-ARGTYPEORDER.md).
 

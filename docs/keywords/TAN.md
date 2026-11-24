@@ -174,7 +174,9 @@ type and bytes on both machines, or the loader refuses the run.
 - **The zeros' bytes** ([D-TRANSZERO](../../todo/open/D-TRANSZERO.md)): the reference's zero result carries 2 pi's
   digits, 00 62 83 18 53 07 17 96, zerobas's 8 zero bytes (rule R-TAN-ZERO); measured invisible to `PRINT`, `=0` and
   `+1` (R-TAN-USE), but `TAN(1E13)*1E10`, `-TAN(1E13)` and `Z!=TAN(1E13)` keep the reference's digit bytes there
-  (KTR FY 20-22; zerobas's give its own zeros).
+  (KTR FY 20-22; zerobas's give its own zeros). The same zeros come from `TAN(-0)` (rule R-TAN-FORMS, KTR FX 110)
+  and from a single POKEd to exponent byte 0 or &H80 with digit bytes left in it (rule R-TAN-ODDBYTES, KTR FX 113,
+  114, FY 49, 50).
 - **The quotient's rounding.** zerobas divides its sine by its cosine correctly rounded; the VG-8020's quotient is
   within 2.8 units of its own SIN(x) / COS(x), not always the rounded one (R-TAN-OWN holds on both; a control shows
   "correctly rounded" is false on 99 of the reference's 249 cases). `TAN(1000)` is 1.4703241557953 there and

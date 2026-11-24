@@ -1,0 +1,99 @@
+  live KMA_run1.out MI: 114 cases, 1.7 s
+  live KMA_run1.out MD: 312 cases, 2.5 s
+  live KMA_run1.out MS: 396 cases, 2.6 s
+  live KST_run1.out OSD: 6 cases, 0.7 s
+  live KMA_run1.out FZ: 10 cases, 0.9 s
+  live KMA_run1.out FY: 93 cases, 2.1 s
+  live KST_run1.out FR: 11 cases, 0.8 s
+  live KMA_run1.out FX: 119 cases, 4.6 s
+  live KST_run1.out NUM: 56 cases, 0.9 s
+  live KST_run1.out OS: 20 cases, 1.2 s
+  live KST_run1.out STRN: 252 cases, 2.4 s
+  live KST_run1.out SRC: 82 cases, 3.9 s
+  live KST_run1.out STRS: 140 cases, 3.6 s
+  live KST_run1.out STRN2: 224 cases, 2.1 s
+  live KST_run1.out INS2: 273 cases, 6.3 s
+  live KST_run1.out INS3: 273 cases, 6.7 s
+  live KST_run1.out INS1: 273 cases, 7.4 s
+  live KST_run1.out FX: 129 cases, 8.5 s
+  live KTR_run1.out TI: 231 cases, 2.0 s
+  live KTR_run1.out TS1: 392 cases, 2.9 s
+  live KTR_run1.out TD1: 357 cases, 2.6 s
+  live KTR_run1.out TD2: 273 cases, 2.2 s
+  live KTR_run1.out TD3: 126 cases, 1.3 s
+  live KTR_run1.out TS2: 371 cases, 2.5 s
+  live KTR_run1.out FX: 138 cases, 3.4 s
+  live KTR_run1.out FY: 53 cases, 4.4 s
+  live KNM_run1.out SN: 122 cases, 3.6 s
+  live KTR_run1.out TS3: 322 cases, 4.3 s
+  live KNM_run1.out RX: 201 cases, 2.2 s
+  live KSL_run1.out FX: 44 cases, 1.1 s
+  live KNM_run1.out FX: 103 cases, 3.5 s
+  live KNM_run1.out VL: 205 cases, 4.9 s
+  live KST_run1.out INS4: 336 cases, 16.6 s
+  live KSL_run1.out LR: 280 cases, 4.3 s
+  live KRN_run1.out BOOT: 17 cases, 0.0 s
+  live KRN_run1.out RUNR: 5 cases, 0.0 s
+  live KRN_run1.out GOTO: 5 cases, 0.0 s
+  live KRN_run1.out GOTO2: 5 cases, 0.0 s
+  live KRN_run1.out SQ1: 68 cases, 0.0 s
+  live KRN_run1.out SQ2: 185 cases, 0.0 s
+  live KRN_run1.out SQ3: 210 cases, 0.0 s
+  live KRN_run1.out FX: 61 cases, 0.0 s
+  live KSL_run1.out MX: 88 cases, 4.4 s
+  live KSL_run1.out FY: 45 cases, 3.6 s
+  live KSL_run1.out MID: 900 cases, 10.5 s
+  live KMA_run1.out: zerobas as committed
+  live KST_run1.out: zerobas as committed
+  live KTR_run1.out: zerobas as committed
+  live KNM_run1.out: zerobas as committed
+  live KSL_run1.out: zerobas as committed
+  live KRN_run1.out: zerobas as committed
+FAIL docs/keywords/ABS.md: 11 rules, 5 failing on zerobas (live, 1 run file(s))
+     STALE PAGE R-ABS-ODD: the page lists it as a difference, but it holds on zerobas
+OK   docs/keywords/ASC.md: 7 rules, 0 failing on zerobas (live, 1 run file(s))
+FAIL docs/keywords/ATN.md: 11 rules, 4 failing on zerobas (live, 1 run file(s))
+     REGRESSION R-ATN-ODDBYTES: fails on zerobas (KTR FX 137, KTR FY 52) but the page lists no difference for it
+     STALE PAGE R-ATN-NEAR: the page lists it as a difference, but it holds on zerobas
+OK   docs/keywords/BIN$.md: 11 rules, 0 failing on zerobas (live, 1 run file(s))
+OK   docs/keywords/CHR$.md: 9 rules, 0 failing on zerobas (live, 1 run file(s))
+OK   docs/keywords/COS.md: 12 rules, 3 failing on zerobas (live, 1 run file(s))
+FAIL docs/keywords/EXP.md: 17 rules, 6 failing on zerobas (live, 1 run file(s))
+     STALE PAGE R-EXP-SMALL: the page lists it as a difference, but it holds on zerobas
+     STALE PAGE R-EXP-USE: the page lists it as a difference, but it holds on zerobas
+FAIL docs/keywords/FIX.md: 14 rules, 5 failing on zerobas (live, 1 run file(s))
+     STALE PAGE R-FIX-ODD: the page lists it as a difference, but it holds on zerobas
+     STALE PAGE R-FIX-SMALL: the page lists it as a difference, but it holds on zerobas
+OK   docs/keywords/HEX$.md: 10 rules, 0 failing on zerobas (live, 1 run file(s))
+OK   docs/keywords/INSTR.md: 9 rules, 0 failing on zerobas (live, 1 run file(s))
+FAIL docs/keywords/INT.md: 13 rules, 8 failing on zerobas (live, 1 run file(s))
+     STALE PAGE R-INT-DOWN: the page lists it as a difference, but it holds on zerobas
+OK   docs/keywords/LEFT$.md: 12 rules, 0 failing on zerobas (live, 1 run file(s))
+OK   docs/keywords/LEN.md: 6 rules, 0 failing on zerobas (live, 1 run file(s))
+FAIL docs/keywords/LOG.md: 10 rules, 0 failing on zerobas (live, 1 run file(s))
+     STALE PAGE R-LOG-NEAR: the page lists it as a difference, but it holds on zerobas
+OK   docs/keywords/MID$.md: 14 rules, 0 failing on zerobas (live, 1 run file(s))
+OK   docs/keywords/OCT$.md: 10 rules, 0 failing on zerobas (live, 1 run file(s))
+OK   docs/keywords/RIGHT$.md: 12 rules, 0 failing on zerobas (live, 1 run file(s))
+FAIL docs/keywords/RND.md: 18 rules, 8 failing on zerobas (live, 1 run file(s))
+     REGRESSION R-RND-ASSIGN: fails on zerobas (KRN SQ2 121, KRN FX 54, KRN FX 56, KRN FX 57) but the page lists no difference for it
+     REGRESSION R-RND-CHAIN: fails on zerobas (KRN SQ2 121, KRN FX 13, KRN FX 14, KRN FX 54) but the page lists no difference for it
+OK   docs/keywords/SGN.md: 10 rules, 1 failing on zerobas (live, 1 run file(s))
+FAIL docs/keywords/SIN.md: 11 rules, 5 failing on zerobas (live, 1 run file(s))
+     REGRESSION R-SIN-FORMS: fails on zerobas (KTR FX 64) but the page lists no difference for it
+     REGRESSION R-SIN-ODDBYTES: fails on zerobas (KTR FX 67, KTR FX 68, KTR FY 45, KTR FY 46) but the page lists no difference for it
+OK   docs/keywords/SPACE$.md: 9 rules, 0 failing on zerobas (live, 1 run file(s))
+FAIL docs/keywords/SQR.md: 13 rules, 2 failing on zerobas (live, 1 run file(s))
+     STALE PAGE R-SQR-LET: the page lists it as a difference, but it holds on zerobas
+     STALE PAGE R-SQR-NEAR: the page lists it as a difference, but it holds on zerobas
+OK   docs/keywords/STR$.md: 11 rules, 0 failing on zerobas (live, 1 run file(s))
+OK   docs/keywords/STRING$.md: 13 rules, 0 failing on zerobas (live, 1 run file(s))
+FAIL docs/keywords/TAN.md: 13 rules, 4 failing on zerobas (live, 1 run file(s))
+     REGRESSION R-TAN-FORMS: fails on zerobas (KTR FX 110) but the page lists no difference for it
+     REGRESSION R-TAN-ODDBYTES: fails on zerobas (KTR FX 113, KTR FX 114, KTR FY 49, KTR FY 50) but the page lists no difference for it
+     STALE PAGE R-TAN-OWN: the page lists it as a difference, but it holds on zerobas
+     STALE PAGE R-TAN-USE: the page lists it as a difference, but it holds on zerobas
+FAIL docs/keywords/VAL.md: 15 rules, 4 failing on zerobas (live, 1 run file(s))
+     STALE PAGE R-VAL-END: the page lists it as a difference, but it holds on zerobas
+===== spec-live: DISAGREEMENT =====
+refcache: 8 hit, 37 miss, 8 of the hits were ZEROBAS readings, 37 stored

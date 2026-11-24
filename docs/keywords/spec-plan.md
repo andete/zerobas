@@ -352,11 +352,16 @@ example check); `tools/kwforms.py` and `tools/kwerrset.py` (the authored FORMS a
 keyword form, which say how many forms and errors a page's matrix must reach).
 
 Missing:
-1. **A keyword page as a gate** (spec-method §8). `tools/spec_live.py` re-runs a BIOS page's probes on zerobas only,
-   but it finds them through the `.asm` probe named in a run file's header and runs them with `biosl_run.py`. A
-   keyword probe needs a zerobas-only mode (`kslice.py` measures both machines today) and a run-file header that
-   names it; then spec_live can dispatch on the probe kind. Until then the pilot's pages are checked against their
-   committed run only (`spec-rules-check`), and a later zerobas change is not caught by them.
+1. ~~A keyword page as a gate~~ **built 2026-11-24:** `tools/spec_live.py` re-types each group of a keyword run file
+   on zerobas only (the probe whose `RUN = "..."` names the file; `ramrec.measure` with zerobas alone), replaces
+   its `CAP zb  :` line, and evaluates the page's rules on that live copy; `make spec-live` runs the BIOS and the
+   keyword pages together (`--keywords` for these alone; ~140 s of boots, 4 at a time). The first run
+   ([AE_kwlive1.out](../../scratchpad/AE_kwlive1.out)): every group's capture as committed; 11 of 26 pages'
+   Differences lists did not match their failing rules -- rules cited as context counted, failing rules not cited.
+   **The convention since:** in "Differences from the reference" a rule zerobas FAILS is cited as `rule R-X-Y` /
+   `rules R-X-Y, R-X-Z` (shortened after the first, `rules R-RND-VALUE, -SEED`), or anywhere inside a parenthesis
+   that opens with "rule(s)"; a rule named as context ("its own result agrees (R-ABS-ODD)", "R-SQR-LET holds") has
+   no "rule" before it. spec-live requires the cited set to equal the failing set, as for the BIOS pages' tables.
 2. ~~A shared RAM-record library~~ **built 2026-11-24:** [ramrec.py](../../probes/basic/spec/ramrec.py) -- the
    frame line, the error line, the string-digest subroutine, `measure` (both machines, sentinel capture), `frame`
    (refuses a capture without the done flag and the end byte), `digest`, the run file's sections. kslice uses it;

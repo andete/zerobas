@@ -133,7 +133,8 @@ def git(*args):
 # and a STATIC plan ran it for every TODO / docs commit. It reads the spec pages (their Differences tables), the
 # rules modules and probes, the committed run files and its own tools -- a STATIC change to none of them cannot
 # move it (a ROM change is never STATIC). So a STATIC plan leaves it out unless one of these changed.
-SPEC_LIVE_DIRS = ("docs/bios/", "docs/bdos/", "docs/disk/", "probes/bios/", "tools/spec_")
+SPEC_LIVE_DIRS = ("docs/bios/", "docs/bdos/", "docs/disk/", "probes/bios/", "tools/spec_", "docs/keywords/",
+                  "probes/basic/spec/")   # the keyword pages too since D-KWSPEC (2026-11-24)
 
 
 def spec_live_inputs(changed):
@@ -499,7 +500,8 @@ def selftest():
     arm("P-SPECLIVE NEGATIVE: a spec page, a rules module, a run file or its tool does",
         all(spec_live_inputs([f]) for f in ("docs/disk/DSKIO.md", "docs/bdos/CONIN.md", "docs/bios/CHPUT.md",
                                              "probes/bios/spec/xbcon_rules.py", "scratchpad/XBCON1_run1.out",
-                                             "tools/spec_rules.py", "tools/spec_live.py")))
+                                             "tools/spec_rules.py", "tools/spec_live.py",
+                                             "docs/keywords/RND.md", "probes/basic/spec/krnd.py")))
     arm("P-LASTGREENPATH the full-green record's path has no `..` step (it does not "
         "resolve in a freshly cleaned worktree, where gate_logs does not exist yet)",
         ".." not in os.path.normpath(run_gates.LAST_GREEN).split(os.sep)

@@ -168,8 +168,10 @@ type and bytes on both machines, or the loader refuses the run.
   .41078129050281 here, .41078129050287 there; TAN inherits it (6.4 units, TAN(3.3333333333333#)).
 - **The zeros' bytes** ([D-TRANSZERO](../../todo/open/D-TRANSZERO.md)): the reference's zero result carries 2 pi's
   digits, 00 62 83 18 53 07 17 96, zerobas's other bytes (rule R-SIN-ZERO); measured invisible to `PRINT`, to `=0` and
-  to `+1` on both machines (R-SIN-USE), but `SIN(0)*1E10` and `Z!=SIN(0)` keep the reference's digit bytes there and
-  give zeros here (KTR FY 4, 6).
+  to `+1` on both machines, but `SIN(0)*1E10` and `Z!=SIN(0)` keep the reference's digit bytes there and
+  give zeros here (rule R-SIN-USE, KTR FY 4, 6). The same zeros come from `SIN(-0)` (rule R-SIN-FORMS, KTR FX 64) and
+  from a single POKEd to exponent byte 0 or &H80 with digit bytes left in it (rule R-SIN-ODDBYTES, KTR FX 67, 68,
+  FY 45, 46).
 
 The one rung not yet proven is **RAM usage**: `SIN` uses the same amount of free memory on both machines, but the two write different work-area cells along the way — the VG-8020 a few that zerobas does not, and zerobas some scratch cells of its own for the calculation.
 

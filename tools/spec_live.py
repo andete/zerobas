@@ -1,9 +1,10 @@
 #!/usr/bin/env python3
 # Copyright (c) 2026 Joost Yervante Damad
 # SPDX-License-Identifier: BSD-2-Clause
-"""spec_live -- a BIOS spec page AS a gate (docs/spec-method.md §8 step 2: "spec and test are one table").
+"""spec_live -- a BIOS or keyword spec page AS a gate (docs/spec-method.md §8 step 2: "spec and test are one table").
 
-    python3 -u tools/spec_live.py [probes/bios/spec/NAME_rules.py ...]   (default: every rules module)
+    python3 -u tools/spec_live.py [probes/bios/spec/NAME_rules.py ...]   (default: every rules module, the BIOS
+       pages' and the keyword pages' -- probes/basic/spec/)
 
 For each page's rules module:
   1. run its cases() once, recording which committed run files (scratchpad/*.out) it reads;
@@ -15,6 +16,10 @@ For each page's rules module:
   4. require that the rules zerobas fails are EXACTLY the rules the page's "Differences from the
      reference" table names. A rule failing that the page does not list is a REGRESSION; a listed rule
      that now holds is a STALE PAGE (a fix whose page was not updated). Both exit 1.
+
+    python3 -u tools/spec_live.py --keywords [...]   -- the KEYWORD pages (probes/basic/spec/*_rules.py) instead:
+       their run files hold one `===== GROUP` section per typed program (probes/basic/spec/ramrec.py); each group is
+       re-typed on zerobas only by the probe whose `RUN` names the file, and its `CAP zb  :` line replaced.
 
     python3 -u tools/spec_live.py --refresh [...]   -- also WRITE each live copy back over its committed run
        file (only zerobas's `CAP ours` / `PRN ours` lines change; the reference's are never touched): after a
@@ -46,6 +51,9 @@ HEADER = re.compile(r"^===== (\S+\.asm) (nodisk|disk|cf3300|nms8250): ")
 # `CAP ours`, so they are NOT re-run -- the committed line stays (D-DISKFORCBIOS (b): the NMS 8250's drive)
 REF_ONLY_ROWS = {"nms8250"}
 CAP_OURS = re.compile(r"^  CAP ours: [0-9a-fA-F]+$", re.M)
+KW_SPEC = os.path.join(ROOT, "probes", "basic", "spec")
+KW_GROUP = re.compile(r"^===== (\w+)$")
+KW_CAP_ZB = re.compile(r"^  CAP zb  : (\w+)$")
 RULE_ID = re.compile(r"\bR\d?-[A-Z0-9][A-Z0-9-]*[A-Z0-9]\b")
 
 
@@ -87,8 +95,32 @@ def page_listed(mod):
     listed = set()
     for line in m.group(1).splitlines():
         cells = [c.strip() for c in line.strip().strip("|").split("|")]
-        if len(cells) >= 2 and not set(cells[1]) <= set("-"):
+        if line.lstrip().startswith("|") and len(cells) >= 2 and not set(cells[1]) <= set("-"):
             listed |= set(RULE_ID.findall(cells[1]))
+    # a keyword page lists its differences as bullets; a rule that DIFFERS is cited as "rule R-X-Y" / "rules R-X-Y,
+    # R-X-Z" (a run of one keyword's rules may be shortened after the first: "rules R-RND-VALUE, -SEED / -REPEAT");
+    # a bare id is context ("its own result agrees (R-ABS-ODD)", "both machines hold R-ATN-NEAR") and is not listed
+    rid = r"R\d?-[A-Z0-9]+-[A-Z0-9][A-Z0-9-]*[A-Z0-9]"
+    prose = "\n".join(l for l in m.group(1).splitlines() if not l.lstrip().startswith("|"))
+    # ... and inside a parenthesis that opens with "rule" / "rules", every rule cited counts, case references between
+    # them: "(rule R-ABS-INT, KMA MI ABS -32768; R-ABS-FORMS, KMA FX 16)"
+    for par in re.finditer(r"\(rules?\s((?:[^()]|\([^()]*\))*)\)", prose):  # one nested level: `ABS(&H8000)`
+        prefix = None
+        for tok in re.findall(rf"{rid}|(?<=[,/]\s)-[A-Z][A-Z0-9-]*[A-Z0-9]", par.group(1)):
+            if tok.startswith("R"):
+                listed.add(tok)
+                prefix = re.match(r"R\d?-[A-Z0-9]+", tok).group(0)
+            elif prefix:
+                listed.add(prefix + tok)
+    for run in re.finditer(rf"\brules?\s+({rid}(?:\s*(?:,|/|and)\s*(?:{rid}|-[A-Z][A-Z0-9-]*[A-Z0-9]))*)",
+                           prose):
+        prefix = None
+        for tok in re.findall(rf"{rid}|-[A-Z][A-Z0-9-]*[A-Z0-9]", run.group(1)):
+            if tok.startswith("R"):
+                listed.add(tok)
+                prefix = re.match(r"R\d?-[A-Z0-9]+", tok).group(0)
+            elif prefix:
+                listed.add(prefix + tok)
     return listed
 
 
@@ -141,12 +173,73 @@ def live_run(run_file, td):
     return live
 
 
+def kw_probes():
+    """{run file basename: probe module} -- each keyword probe names its run file in `RUN = "..."`"""
+    out = {}
+    for f in sorted(os.listdir(KW_SPEC)):
+        if not (f.startswith("k") and f.endswith(".py")) or f.endswith(("_model.py", "_controls.py")):
+            continue
+        m = re.search(r'^RUN = "([^"]+)"', open(os.path.join(KW_SPEC, f)).read(), re.M)
+        if m:
+            out[m.group(1)] = f[:-3]
+    return out
+
+
+def kw_groups(run_file):
+    """the `===== GROUP` sections of a keyword run file, in file order"""
+    return [m.group(1) for m in (KW_GROUP.match(l.rstrip("\n")) for l in open(run_file)) if m]
+
+
+def is_kw_run(run_file):
+    return os.path.basename(run_file) in kw_probes()
+
+
+def kw_live_group(run_file, group):
+    """zerobas's capture of one group of a keyword run file, re-typed on the current build (hex), or None"""
+    import importlib
+    import time
+    if KW_SPEC not in sys.path:
+        sys.path.insert(0, KW_SPEC)
+    probe = importlib.import_module(kw_probes()[os.path.basename(run_file)])
+    import ramrec
+    lines, cases = probe.program(group)[:2]
+    rec = probe.REC[group] if isinstance(probe.REC, dict) else probe.REC
+    t0 = time.time()
+    cap = ramrec.measure(lines, len(cases), rec, probe.GAPS[group], machines=(("zb", ramrec.ZB),))["zb"]
+    recs, why = ramrec.frame(cap, len(cases), rec)
+    sys.stdout.write(f"  live {os.path.basename(run_file)} {group}: {len(cases)} cases, {time.time() - t0:.1f} s"
+                     f"{'' if recs is not None else ', NO READING: ' + why}\n")
+    return cap if recs is not None else None
+
+
+def kw_assemble(run_file, caps, td):
+    """the live copy of a keyword run file: each group's `CAP zb  :` line replaced by caps[group]"""
+    out, group, changed = [], None, []
+    for line in open(run_file):
+        m = KW_GROUP.match(line.rstrip("\n"))
+        if m:
+            group = m.group(1)
+        c = KW_CAP_ZB.match(line.rstrip("\n"))
+        if c and group in caps:
+            if c.group(1) != caps[group]:
+                changed.append(group)
+            line = f"  CAP zb  : {caps[group]}\n"
+        out.append(line)
+    sys.stdout.write(f"  live {os.path.basename(run_file)}: zerobas "
+                     f"{'CHANGED since the committed run in ' + ', '.join(changed) if changed else 'as committed'}\n")
+    live = os.path.join(td, os.path.basename(run_file))
+    with open(live, "w") as f:
+        f.write("".join(out))
+    return live
+
+
 def main(argv):
     refresh = "--refresh" in argv
-    argv = [a for a in argv if a != "--refresh"]
-    mods = argv or sorted(os.path.join(ROOT, "probes", "bios", "spec", f)
-                          for f in os.listdir(os.path.join(ROOT, "probes", "bios", "spec"))
-                          if f.endswith("_rules.py"))
+    keywords = "--keywords" in argv
+    argv = [a for a in argv if a not in ("--refresh", "--keywords")]
+    # default: every BIOS page AND every keyword page; --keywords: the keyword pages only
+    sdirs = [KW_SPEC] if keywords else [os.path.join(ROOT, "probes", "bios", "spec"), KW_SPEC]
+    mods = argv or [os.path.join(d, f) for d in sdirs for f in sorted(os.listdir(d)) if f.endswith("_rules.py")]
     td = tempfile.mkdtemp(prefix="spec_live_")
     redirect, rc = {}, 0
     try:
@@ -166,8 +259,17 @@ def main(argv):
         dirs = {f: os.path.join(td, str(i)) for i, f in enumerate(order)}
         for d in dirs.values():
             os.makedirs(d)
+        # a keyword run file is re-typed GROUP by group (one boot each), so its groups are the pool's tasks
+        tasks = [(f, g) for f in order if is_kw_run(f) for g in kw_groups(f)]
         with concurrent.futures.ThreadPoolExecutor(max_workers=jobs) as ex:
-            lives = list(ex.map(lambda f: live_run(f, dirs[f]), order))
+            kw = dict(zip(tasks, ex.map(lambda t: kw_live_group(*t), tasks)))
+            bios = [f for f in order if not is_kw_run(f)]
+            lives_of = dict(zip(bios, ex.map(lambda f: live_run(f, dirs[f]), bios)))
+        for f in order:
+            if is_kw_run(f):
+                caps = {g: kw[(f, g)] for g in kw_groups(f)}
+                lives_of[f] = None if any(v is None for v in caps.values()) else kw_assemble(f, caps, dirs[f])
+        lives = [lives_of[f] for f in order]
         for f, live in zip(order, lives):
             if live is None:
                 rc = 2

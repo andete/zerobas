@@ -178,12 +178,12 @@ type and bytes on both machines, or the loader refuses the run.
   reference's error (D-EXPNEG, 2026-08-31) went against the recorded decision, turned the tests red and was reverted
   in full; reopening it is Joost's call ([spec-basic-mathpack-slice2.md](../spec-basic-mathpack-slice2.md) §12.9,
   [the standing item](../../todo/open/X-THE-NEGATIVE-EXP-DEVIATION-IS-WIDER.md)).
-- **The zeros' bytes** ([D-TRANSZERO](../../todo/open/D-TRANSZERO.md)): from 1E-65 to 1E-64 (R-EXP-TINY, 9 cases)
-  the reference returns exponent 0 with e^x's digits, zerobas 8 zero bytes; below 1E-129 (R-EXP-FLUSH, 18 cases)
+- **The zeros' bytes** ([D-TRANSZERO](../../todo/open/D-TRANSZERO.md)): from 1E-65 to 1E-64 (rule R-EXP-TINY, 9 cases)
+  the reference returns exponent 0 with e^x's digits, zerobas 8 zero bytes; below 1E-129 (rule R-EXP-FLUSH, 18 cases)
   zerobas's zero keeps digit bytes -- the argument's own, as in EXP(-65536!) 00 65 53 60 00 00 00 00 -- where the
   reference returns 8 zero bytes, and so does its 0 where the reference raises Overflow (EXP(-999999!) is
   00 99 99 99 00 00 00 00 here; R-EXP-BAND, R-EXP-HUGE); and `R=EXP(N%)` for N% = -1000 or -32768,
-  `R=EXP(&H8000)` and `EXP(-32768)` (R-EXP-ASSIGN, R-EXP-FORMS: KTR TI EXP -1000, -32768, KTR FX 16, 17) store
+  `R=EXP(&H8000)` and `EXP(-32768)` (rules R-EXP-ASSIGN, R-EXP-FORMS: KTR TI EXP -1000, -32768, KTR FX 16, 17) store
   leftover digit bytes. Measured invisible to `PRINT` (STR$ " 0"), `=0` and `+1` on both machines (R-EXP-USE);
   `EXP(-147.4)*1E10`, its negation and `Z!=EXP(-147.4)` keep e^x's digits there and are zeros here.
 

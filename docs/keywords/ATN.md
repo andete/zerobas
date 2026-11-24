@@ -159,10 +159,10 @@ type and bytes on both machines, or the loader refuses the run.
   [spec-basic-mathacc.md](../spec-basic-mathacc.md)).
 - **The zeros' bytes** ([D-TRANSZERO](../../todo/open/D-TRANSZERO.md)): ATN of a single whose exponent byte is
   &H80 (a zero with its sign bit set: 80 10 00 00, 80 12 34 56) is 00 10 00 00 00 00 00 00 there and
-  C0 00 00 00 00 00 00 00 here (R-ATN-ZERO, KTR FX 137, FY 52). That one is NOT invisible: `STR$` -- PRINT's number
-  format -- gives " 0" there and "-." here (R-ATN-USE, KTR FY 32), and times 1E10, negated or put in a single it
+  C0 00 00 00 00 00 00 00 here (rules R-ATN-ZERO, R-ATN-ODDBYTES, KTR FX 137, FY 52). That one is NOT invisible: `STR$` -- PRINT's number
+  format -- gives " 0" there and "-." here (rule R-ATN-USE, KTR FY 32), and times 1E10, negated or put in a single it
   gives other bytes here (FY 36-38; `=0` and `+1` agree). `R=ATN(0%)` and `R=ATN(-0)` store leftover digit bytes in
-  R here (R-ATN-ASSIGN, KTR TI ATN 0, KTR FX 133), as D-SQRZERO.
+  R here (rule R-ATN-ASSIGN, KTR TI ATN 0, KTR FX 133), as D-SQRZERO.
 
 The one rung not yet proven is **RAM usage**: `ATN` uses the same amount of free memory on both machines, but the two write different work-area cells along the way — the VG-8020 a few that zerobas does not, and zerobas some scratch cells of its own for the calculation.
 

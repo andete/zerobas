@@ -166,8 +166,8 @@ type and bytes on both machines, or the loader refuses the run.
   observation, `ktrans_controls.py --zb`, not a rule), so only the fold above is outside R-COS-NEAR.
 - **The zeros' bytes** ([D-TRANSZERO](../../todo/open/D-TRANSZERO.md)): the reference's zero result carries 2 pi's
   digits, 00 62 83 18 53 07 17 96, zerobas's other bytes (rule R-COS-ZERO, now also COS(7E12), COS(1.2E13),
-  COS(1.7E13)); measured invisible to `PRINT`, `=0` and `+1` (R-COS-USE), but `COS(7E13)*1E10` and `Z!=COS(7E13)`
-  keep the reference's digit bytes there and give zeros here (KTR FY 12, 14).
+  COS(1.7E13)); measured invisible to `PRINT`, `=0` and `+1`, but `COS(7E13)*1E10` and `Z!=COS(7E13)`
+  keep the reference's digit bytes there and give zeros here (rule R-COS-USE, KTR FY 12, 14).
 
 The one rung not yet proven is **RAM usage**: `COS` uses the same amount of free memory on both machines, but the two write different work-area cells along the way — the VG-8020 a few that zerobas does not, and zerobas some scratch cells of its own for the calculation.
 

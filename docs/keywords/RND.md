@@ -229,11 +229,10 @@ string target refused before RND runs (1 of 1); the type checked before the `)` 
 
 - **A zero result's bytes** ([D-RNDZERO](../../todo/open/D-RNDZERO.md)). In the one state that is 0, the
   reference returns 8 zero bytes; zerobas returns exponent 0 with leftover digit bytes (the reseed's argument
-  digits, or other scratch). The value is 0 on both and RNDX agrees (R-RND-VALUE, -SEED, -REPEAT, -TYPE, -NESTED;
-  KRN SQ2 121, FX 54-59).
+  digits, or other scratch). The value is 0 on both and RNDX agrees (rules R-RND-VALUE, -SEED, -REPEAT, -TYPE, -NESTED, -ASSIGN,
+  -CHAIN; KRN SQ2 121, FX 54-59).
 - **`RND("A"` and `RND("A",2)` are error 13 here, 2 on the reference** ([D-ARGTYPEORDER](../../todo/open/D-ARGTYPEORDER.md),
-  shared with the other maths functions): the reference requires the `)` before it refuses a string (R-RND-CHECKS,
-  KRN FX 13-14).
+  shared with the other maths functions): the reference requires the `)` before it refuses a string (rules R-RND-CHECKS, R-RND-CHAIN, KRN FX 13-14).
 
 Everything else agrees byte for byte, RNDX included, in all 556 steps.
 
