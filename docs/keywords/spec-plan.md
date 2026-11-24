@@ -161,6 +161,31 @@ is open on MID$'s page). One probe, three rules modules, three pages at DRAFT 1:
 zerobas alike (`10 S$="":FOR I=1 TO 0:S$=S$+"X":NEXT` leaves `LEN(S$)` 1 and I 2; `FOR J=5 TO 1` prints J = 5, then
 J is 6). [FOR.md](FOR.md) does not say so; it belongs on FOR's spec page when the flow region comes.
 
+### The second unit (2026-11-24): LEN, ASC, CHR$, SPACE$, STRING$, INSTR
+
+One probe, six rules modules, six pages at DRAFT 1:
+
+- [probes/basic/spec/kstr.py](../../probes/basic/spec/kstr.py): 2,044 cases on each machine in ten groups (SRC:
+  LEN / ASC over 41 sources; NUM: CHR$ / SPACE$ over the 28 numbers; STRN: STRING$ over 28 counts x 17 codes;
+  STRS: STRING$ over 28 counts x 5 fill strings; INS1-INS4: INSTR over 5 haystacks x 13 (8) needles x 21 starts;
+  OS: SPACE$ / STRING$ where `CLEAR 200`'s string space runs out; FX: 115 fixed statements). Run file
+  [scratchpad/KST_run1.out](../../scratchpad/KST_run1.out). Its record holds BOTH result kinds -- `R$`'s digest and
+  `R`'s own 8 bytes, each with its sentinel -- so a numeric function that wrote a string, or the reverse, is seen.
+- [kstr_model.py](../../probes/basic/spec/kstr_model.py) holds the model and the rule builders; `len_rules.py`,
+  `asc_rules.py`, `chr_s_rules.py`, `space_s_rules.py`, `string_s_rules.py`, `instr_rules.py` are the pages' modules.
+  [kstr_controls.py](../../probes/basic/spec/kstr_controls.py) runs ten rival rules over the same reference cases;
+  each is FALSE on some (rounding for CHR$ / SPACE$, INT for CHR$, a C-string LEN, ASC of the last character, the
+  code before the count, an empty fill allowed at count 0, INSTR searching one past the start, start 0 allowed, and
+  zerobas's own empty-needle rule).
+- Result: every rule holds on the VG-8020 and every recorded output is read by a rule. zerobas differs in 39
+  cases, two new items: **D-INSTREMPTY** (`INSTR(p,a$,"")` with p past the end is 0 on the reference,
+  min(p, LEN(a$)+1) here; `INSTR("","")` 0 vs 1; 34 cases) and **D-CLOSESPACE** (a space between INSTR's or
+  STRING$'s last STRING argument and `)` is a syntax error here; 5 cases). LEN, ASC, CHR$ and SPACE$ agree in every
+  case.
+- Found in passing, on both machines: `INSTR("A",S$,T$)` is a Syntax error (a string first means the two-string
+  form, so the third argument is one too many); `STRING$(-1,"A"` (unclosed) is error 5 -- the count is checked
+  before the rest of the call is even parsed.
+
 ## 7. Tooling: what exists, what is missing
 
 Exists and fits unchanged: `tools/spec_rules.py` (the checker is not BIOS-specific: a module, its cases, its rules,
@@ -174,10 +199,13 @@ Missing:
    keyword probe needs a zerobas-only mode (`kslice.py` measures both machines today) and a run-file header that
    names it; then spec_live can dispatch on the probe kind. Until then the pilot's pages are checked against their
    committed run only (`spec-rules-check`), and a later zerobas change is not caught by them.
-2. **A shared RAM-record library**, when the second probe arrives: the program frame, the record subroutine, the
-   done flag and the decoder are kslice's own today.
-3. **Number readouts:** the maths region needs a record of a numeric result's own bytes (`VARPTR` of a single /
-   double / integer variable) and a decoder for the BCD format; not built.
+2. ~~A shared RAM-record library~~ **built 2026-11-24:** [ramrec.py](../../probes/basic/spec/ramrec.py) -- the
+   frame line, the error line, the string-digest subroutine, `measure` (both machines, sentinel capture), `frame`
+   (refuses a capture without the done flag and the end byte), `digest`, the run file's sections. kslice uses it;
+   its program text, run file and decoded cases are byte-identical through it.
+3. **Number readouts:** half built. `ramrec.number` decodes a numeric variable's own bytes exactly (integer,
+   single, double BCD), and kstr records `R`'s 8 bytes through it; the maths region still needs a matrix whose
+   result TYPE is seen (today a result is assigned to a double, so an integer-returning function's type is not).
 4. **A tie to the existing denominators:** a rules module could assert that its fixed expressions reach every
    (form, error) pair `kwerrset.py` lists for the keyword, so a spec page cannot miss an error the T6 rung knows.
 5. **The review loop** (spec-method §6) has not run on a keyword page yet; the pilot pages are DRAFT 1.
