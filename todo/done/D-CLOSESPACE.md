@@ -1,4 +1,4 @@
-- [ ] 🐛 **A SPACE BEFORE THE CLOSING PARENTHESIS AFTER `INSTR`'S / `STRING$`'S STRING ARGUMENT IS A SYNTAX ERROR
+- [x] 🐛 **A SPACE BEFORE THE CLOSING PARENTHESIS AFTER `INSTR`'S / `STRING$`'S STRING ARGUMENT IS A SYNTAX ERROR
       (D-CLOSESPACE, found 2026-11-24 by D-KWSPEC's strings probe).**
       🎚️ TIER 1 — `INSTR(A$,B$ )` and `STRING$(2,A$ )` are ordinary typed BASIC; the VG-8020 accepts them.
       🤖 **AUTONOMOUS** — measured by [`kstr.py`](../../probes/basic/spec/kstr.py) ->
@@ -12,3 +12,9 @@
       ➡️ When picked up: the `)` test after the string argument in INSTR and in STRING$'s string form (str-engine.asm)
       does not skip spaces first; LEFT$ / MID$ / RIGHT$ (numeric last argument) and the other string functions'
       last-argument paths are worth one row each in the same sweep.
+      ✅ FIXED 2026-11-24: the `)` test after a string argument read the byte under the cursor without skipping spaces
+      (`ld a,(hl)`); INSTR's and STRING$'s (sfg_close, shared by the numeric and string fill, and the empty-fill
+      branch) now `call skip_spaces` first (basic/str-engine.asm). The FX group re-run (KST_run1.out): 0 of 129 cases
+      differ (were FX 83, 84, 101, 113, 114, 116). The other `ld a,(hl) / cp ')'` sites in str-engine.asm follow a
+      NUMERIC last argument (the numeric evaluator skips trailing spaces itself) -- LEFT$ / RIGHT$ / MID$ / LEN / ASC
+      agree on kslice / kstr.

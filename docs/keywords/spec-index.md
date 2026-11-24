@@ -20,7 +20,7 @@ Every keyword page, the region the spec loop takes it in, and how far its page h
 | `MID$` | [strings](../concepts/strings-and-string-space.md) | RAM record | VG-8020 | [DRAFT 1](MID$.md) | 11 | — |
 | `ASC` | [strings](../concepts/strings-and-string-space.md) | RAM record | VG-8020 | [DRAFT 1](ASC.md) | 6 | — |
 | `CHR$` | [strings](../concepts/strings-and-string-space.md) | RAM record | VG-8020 | [DRAFT 1](CHR$.md) | 7 | — |
-| `INSTR` | [strings](../concepts/strings-and-string-space.md) | RAM record | VG-8020 | [DRAFT 1](INSTR.md) | 8 | D-INSTREMPTY, D-CLOSESPACE |
+| `INSTR` | [strings](../concepts/strings-and-string-space.md) | RAM record | VG-8020 | [DRAFT 1](INSTR.md) | 8 | D-INSTREMPTY |
 | `SPACE$` | [strings](../concepts/strings-and-string-space.md) | RAM record | VG-8020 | [DRAFT 1](SPACE$.md) | 8 | — |
 | `STRING$` | [strings](../concepts/strings-and-string-space.md) | RAM record | VG-8020 | [DRAFT 1](STRING$.md) | 8 | D-CLOSESPACE |
 | `STR$` | [strings](../concepts/strings-and-string-space.md) | RAM record | VG-8020 | [DRAFT 1](STR$.md) | 7 | — |

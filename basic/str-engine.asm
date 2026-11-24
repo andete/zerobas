@@ -2023,7 +2023,7 @@ str_fn_string:
                 call    eval_byte_arg       ; A = E = char code 0..255 (256.. ERR 5, >int16
                                             ; ERR 6); HL advanced past it
 sfg_close:                                  ; E = fill byte, HL = cursor       [count]
-                ld      a,(hl)
+                call    skip_spaces         ; D-CLOSESPACE: `STRING$(2,a$ )` (a numeric fill skipped them already)
                 cp      ')'
                 jr      nz,sfg_reject1      ; unbalance-safe: pop [count] first
                 inc     hl                  ; HL = cursor, past ')'
@@ -2058,7 +2058,7 @@ sfg_str2_empty:
                 ; `STRING$(2,"")X` are 5 (scratchpad/stringempty_run.out). So the
                 ; `)` is tested first, as sfg_close does, and FPERR 3 deferred.
                 pop     hl                  ; HL = cursor (restored)
-                ld      a,(hl)
+                call    skip_spaces         ; D-CLOSESPACE: as sfg_close
                 cp      ')'
                 jr      nz,sfg_reject1      ; no `)`: Syntax error wins
                 pop     af                  ; discard [count]
@@ -2154,7 +2154,7 @@ efi_dup_a:
                 call    str_snapshot_ro     ; HL = bT (b$ snapshot); STRPTR=bT
                                             ; (D-CATCOPY, as a$ above)
                 ex      (sp),hl             ; HL=cursor(restored); top:=bT        [aT][p][bT]
-                ld      a,(hl)
+                call    skip_spaces         ; D-CLOSESPACE: `INSTR(a$,b$ )` -- a space before ')'
                 cp      ')'
                 jp      nz,ev_f_empty       ; missing ')' (raises; SP re-based, see above)
                 inc     hl                  ; HL = cursor, past ')'

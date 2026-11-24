@@ -144,7 +144,7 @@ pass 1 the length and the sum only, which a keyword that reordered a source's by
 | **R-INSTR-TYPE** A number as either string is error 13 (Type mismatch), with or without a start; assigning the result to a string variable is 13 too: the result is a number. | 4 | ✓ | ✓ |
 | **R-INSTR-OWNERR** An argument that fails to compute raises its own error (1/0 as any argument: error 11). | 4 | ✓ | ✓ |
 | **R-INSTR-SYNTAX** One string, a start and one string, a start alone, no argument, a fourth (or, without a start, a third) argument, or no closing parenthesis is error 2 (Syntax error). A string as the first of three arguments is 2 as well: a string first means the two-string form, and the third argument is one too many. | 8 | ✓ | ✓ |
-| **R-INSTR-FORMS** Spaces are allowed before the parenthesis, after it, before and after every comma, and before the closing parenthesis; an integer or hex start is a number like any other; the strings may be literals in the program text or expressions (INSTR(7,S$+S$,T$) is 8). | 21 | ✓ | ✗ 4: KST FX 83, KST FX 84, KST FX 101, KST FX 113 |
+| **R-INSTR-FORMS** Spaces are allowed before the parenthesis, after it, before and after every comma, and before the closing parenthesis; an integer or hex start is a number like any other; the strings may be literals in the program text or expressions (INSTR(7,S$+S$,T$) is 8). | 21 | ✓ | ✓ |
 | **R-INSTR-KEEP** The source strings are left as they were, in every case, error or not (S$ and T$ read back after every case: length, first and last byte, the sum and the sum of position x byte). | 1202 | ✓ | ✓ |
 
 <!-- RULES END -->
@@ -157,17 +157,6 @@ pass 1 the length and the sum only, which a keyword that reordered a source's by
   start is further still: `INSTR(7,"ABCABC","")` is 0 there and 7 here,
   `INSTR(129,"ABCABC","")` 0 there and 7 here (KST INS1 HABCABC TE P129), and `INSTR("","")` 0 there and
   1 here.
-- **A space before the closing parenthesis** (rule R-INSTR-FORMS, cases KST FX
-  83, 84, 101, 113; [D-CLOSESPACE](../../todo/open/D-CLOSESPACE.md)).
-  `INSTR(S$,T$ )` is 3 on the VG-8020 and `Syntax error` (error 2) here, with or
-  without a start, with variables or literals. A space anywhere else is
-  accepted by both.
-
-The one rung not yet proven is **RAM usage**: `INSTR` changes free memory by
-the same amount on both machines, but the set of work-area cells written
-differs ([`kwram_full.out`](../../scratchpad/kwram_full.out)). Nothing a
-program can observe through `FRE` differs. No keyword has this rung yet.
-
 ## On later generations (MSX2, MSX2+)
 
 [A] Not measured yet: the probe has not run on the MSX2 / MSX2+ references (spec-method §4).

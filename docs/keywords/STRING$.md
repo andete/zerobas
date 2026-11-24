@@ -160,22 +160,15 @@ pass 1 the length and the sum only, which a keyword that reordered a source's by
 | **R-STRING-TYPE** A string as the count is error 13 (Type mismatch), checked before the code's range (STRING$("A",256) is 13); assigning the result to a numeric variable is 13 too. | 4 | ✓ | ✓ |
 | **R-STRING-OWNERR** An argument that fails to compute raises its own error (1/0 as the count or the code: error 11). | 2 | ✓ | ✓ |
 | **R-STRING-SYNTAX** No fill, no argument, a third argument, or no closing parenthesis (after an empty fill) is error 2 (Syntax error): the parenthesis is checked before the empty fill. | 5 | ✓ | ✓ |
-| **R-STRING-FORMS** Spaces before the parenthesis, around the arguments, and before or after a string fill (a variable or a literal in the program text) are allowed; an integer count and a hex code are numbers like any other; the fill may be a literal (STRING$(2,"AB") is "AA") or a string expression (T$+S$: T$'s first character). | 13 | ✓ | ✗ 2: KST FX 114, KST FX 116 |
+| **R-STRING-FORMS** Spaces before the parenthesis, around the arguments, and before or after a string fill (a variable or a literal in the program text) are allowed; an integer count and a hex code are numbers like any other; the fill may be a literal (STRING$(2,"AB") is "AA") or a string expression (T$+S$: T$'s first character). | 13 | ✓ | ✓ |
 | **R-STRING-KEEP** The source strings are left as they were, in every case, error or not (S$ and T$ read back after every case: length, first and last byte, the sum and the sum of position x byte). | 664 | ✓ | ✓ |
 
 <!-- RULES END -->
 
 ## Differences from the reference
 
-- **A space before the closing parenthesis after a string fill** (rule
-  R-STRING-FORMS, cases KST FX 114 and 116; [D-CLOSESPACE](../../todo/open/D-CLOSESPACE.md)).
-  `STRING$(2,S$ )` and `STRING$(2,"AB" )` are `"AA"` on the VG-8020 and `Syntax error` (error 2) here: after a
-  string variable and after a literal alike.
-  After a code (`STRING$( 2 , 65 )`) the space is accepted by both.
-
-The rung not yet proven is **RAM usage**: `STRING$` changes free memory
-by the same amount on both machines, but the set of work-area cells written
-differs ([`kwram_full.out`](../../scratchpad/kwram_full.out)).
+None measured: every case agrees with the VG-8020 (the space before `)` after a string fill, D-CLOSESPACE, was fixed
+2026-11-24).
 
 ## On later generations (MSX2, MSX2+)
 
