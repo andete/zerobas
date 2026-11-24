@@ -22,7 +22,7 @@ widen_uint_to equ 03B93H
 flt_to_int16 equ 032B9H
 vars_reset equ 03D68H
 penderr_set equ 02C57H
-flt_fmt equ 031EEH
+flt_fmt equ 031F4H
 rl_vpeek equ 00B9AH
 rl_vpoke equ 00BA5H
 rl_vaddr equ 00BB2H
@@ -97,7 +97,7 @@ p0_list_all equ 06201H   ; main's list_all
 p0_cas_ascii_finish equ 068C5H   ; main's cas_ascii_finish
 p0_cas_capture_name equ 0674FH   ; main's cas_capture_name
 p0_cas_name_cut equ 03F2DH   ; main's cas_name_cut
-p0_req_comma equ 031E6H   ; main's req_comma
+p0_req_comma equ 031ECH   ; main's req_comma
 p0_check_expr_errors equ 04381H   ; main's check_expr_errors
 p0_key_drain equ 05AFDH   ; main's key_drain
 p0_req_operand equ 0413CH   ; main's req_operand
