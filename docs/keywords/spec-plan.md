@@ -379,6 +379,25 @@ machines shifted alike, so no difference showed it -- only the decoded lengths d
 loop is now behind `IF L>0`. spec-live re-types the D* groups on zerobas's DISK build.
 The conversion region is complete at DRAFT 1.
 
+### Goldfish pass 1 over the conversion region (2026-11-24)
+
+Two reviewers, one per unit ([REVIEW-m2-gCONV1.md](../../scratchpad/REVIEW-m2-gCONV1.md),
+[REVIEW-m2-gMKCV1.md](../../scratchpad/REVIEW-m2-gMKCV1.md)): 20 + 23 items; scored real 34, known 4, wrong 0, minor
+5. Two new fixed-statement groups measured what the rules asserted beyond their cases -- KCV FY (31) and KMC FY /
+DFY (18 a pair) -- and the reference held every prediction: a POKEd double through CINT / CSNG / CDBL; `F(1/0` is 11
+but `CINT(32768` and `CSNG(9.999995D62` with no `)` are 2 (the `)` before the conversion); a double stored in a
+single rounds as CSNG, and past the top is error 6 leaving the variable as it was; CDBL of a single holding 1/3 is
+.33333300000000 (the reviewer's "is it widening at all?" answered); MKS$'s exact ties round half up in both signs;
+an error leaves `S$` as it was (not emptied); CVD returns non-canonical doubles raw. Found in passing, for the
+operators region: `CSNG(1/3)*3!`, a single times a single, is a DOUBLE on both machines. Corrected: stale sentences
+on CSNG / CDBL / MKS$ / MKD$ / CVI / CVS / CVD (sibling-only syntax, "{2, 13}", "a diskless zerobas does the same"),
+MKI$'s order of errors, CVS's sign-bit zero, MKD$'s "converted, not padded" (integers only), the mislabelled FX 78
+(it is a double), CSNG-ASSIGN now reads the statement's own error (R is the same on both machines), and each CV
+page's ASSIGN text cut to its own type. No new zerobas difference: the new failures are D-CONVZERO (doubles too),
+D-CSNGOVERUSR (the negative end) and D-DISKFNTYPE. Minor / kept: CINT's exponent-0 clause cannot be separated from
+truncation (both give 0); the literal types are kmath's measured LIT rows; the error-set closure (Out of string
+space) and DAC's bytes beyond the result are in the open lists.
+
 ### The operators region's first unit (2026-11-24): AND, OR, XOR, EQV, IMP, NOT, MOD
 
 One probe, [kops.py](../../probes/basic/spec/kops.py) -- two operands READ into X / Y of each type, both recorded, a

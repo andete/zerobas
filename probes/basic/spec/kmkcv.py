@@ -78,9 +78,10 @@ CV_STRS = [([], "the empty string"), ([0x01], "one byte"), ([0x01, 0x02], "two b
            ([0x7F, 0x99, 0x99, 0x99, 0x99, 0x99, 0x99, 0x99], "the largest double"),
            ([0x41, 0x12, 0x34, 0x56, 0x78, 0x90, 0x12, 0x34, 0x55], "nine bytes, a double first"),
            ([0x41, 0x12, 0x34, 0x56, 0x78, 0x90, 0x12], "seven bytes")]
-GAPS = {"MK": 4000.0, "CV": 4000.0, "FX": 2500.0, "DMK": 4000.0, "DCV": 4000.0, "DFX": 2500.0}
-ORDER = ["MK", "CV", "FX", "DMK", "DCV", "DFX"]
-DISKG = ("DMK", "DCV", "DFX")        # the same programs on the Disk BASIC machines (the pages' reference: CF-3300)
+GAPS = {"MK": 4000.0, "CV": 4000.0, "FX": 2500.0, "DMK": 4000.0, "DCV": 4000.0, "DFX": 2500.0, "FY": 2500.0,
+        "DFY": 2500.0}
+ORDER = ["MK", "CV", "FX", "DMK", "DCV", "DFX", "FY", "DFY"]
+DISKG = ("DMK", "DCV", "DFX", "DFY")        # the same programs on the Disk BASIC machines (the pages' reference: CF-3300)
 
 
 def machines(group):
@@ -117,6 +118,30 @@ FX += [("CVI", "R=CVI(MKI$(-12345))", "a round trip", "Q=USR(CVI(MKI$(-12345)))"
        ("CVS", "R=CVS(MKS$(-1.23456))", "a round trip", "Q=USR(CVS(MKS$(-1.23456)))"),
        ("CVD", "R=CVD(MKD$(1.2345678901234#))", "a round trip", "Q=USR(CVD(MKD$(1.2345678901234#)))"),
        ("CVI", 'S$="ABCDEFGH":R=CVI(MID$(S$,3))', "a string from MID$", 'Q=USR(CVI(MID$(S$,3)))')]
+
+# FY (goldfish pass 1, 2026-11-24, scratchpad/REVIEW-m2-gMKCV1.md): negative Overflow for MKI$; MKS$'s exact ties and
+# the near side of its Overflow; MID$ for CVS / CVD; a CV argument's own error; S$ set to "XY" before an error (is it
+# left alone, or emptied?); a round trip whose value is not R's sentinel; non-canonical doubles through CVD
+FY = [("MKI$", "S$=MKI$(-32769)", "-32769", None), ("MKI$", "S$=MKI$(-1E10)", "-1E10", None),
+      ("MKI$", "S$=MKI$(-32768.9999#)", "-32768.9999 (fits after truncation)", None),
+      ("MKS$", "S$=MKS$(1.234565#)", "an exact tie, even 6th digit", None),
+      ("MKS$", "S$=MKS$(-1.234565#)", "an exact tie, negative", None),
+      ("MKS$", "S$=MKS$(9.9999949999999D62)", "just below the Overflow threshold", None),
+      ("CVS", 'S$="ABCDEFGHIJ":R=CVS(MID$(S$,3))', "a string from MID$", 'Q=USR(CVS(MID$(S$,3)))'),
+      ("CVD", 'S$="ABCDEFGHIJ":R=CVD(MID$(S$,3))', "a string from MID$", 'Q=USR(CVD(MID$(S$,3)))'),
+      ("CVI", "R=CVI(CHR$(1/0))", "the argument's own error", None),
+      ("CVS", "R=CVS(CHR$(1/0))", "the argument's own error", None),
+      ("CVD", "R=CVD(CHR$(1/0))", "the argument's own error", None),
+      ("MKI$", 'S$="XY":S$=MKI$(32768)', "S$ before an Overflow", None),
+      ("MKS$", 'S$="XY":S$=MKS$("A")', "S$ before a type error", None),
+      ("CVI", 'S$="XY":S$=CVI("AB")', "S$ before a type error", None),
+      ("CVI", "R=CVI(MKI$(-12346))", "a round trip, not the sentinel", "Q=USR(CVI(MKI$(-12346)))"),
+      ("CVD", "R=CVD(CHR$(0)+CHR$(16)+STRING$(6,0))", "a double, exponent byte 0, digits 10 00 ...",
+       "Q=USR(CVD(CHR$(0)+CHR$(16)+STRING$(6,0)))"),
+      ("CVD", "R=CVD(CHR$(128)+CHR$(16)+STRING$(6,0))", "a double, exponent byte &H80, digits 10 00 ...",
+       "Q=USR(CVD(CHR$(128)+CHR$(16)+STRING$(6,0)))"),
+      ("CVD", "R=CVD(CHR$(65)+CHR$(26)+STRING$(6,0))", "a double with a non-BCD digit nibble",
+       "Q=USR(CVD(CHR$(65)+CHR$(26)+STRING$(6,0)))")]
 
 RECORD = [
     ramrec.ERRLINE,
@@ -184,11 +209,11 @@ def program(group):
     # FX: two lines a case (the statement LAST on its line: RESUME NEXT after a syntax error goes to the next line)
     lines = head + ["25 GOTO 2000"]
     cases = []
-    for i, (fn, stmt, why, ustmt) in enumerate(FX):
+    for i, (fn, stmt, why, ustmt) in enumerate(FX if group == "FX" else FY):
         n = 2000 + 2 * i
         lines.append(f"{n} GOSUB 880:{stmt}")
         lines.append(f"{n + 1} E1=E:E=0:" + (f"{ustmt}:E2=E" if ustmt else "E2=0") + ":GOSUB 900")
-        cases.append((f"KMC FX {i}", dict(fn=fn, stmt=stmt, why=why, ustmt=ustmt, ty=None, text=None, bytes=None)))
+        cases.append((f"KMC {group} {i}", dict(fn=fn, stmt=stmt, why=why, ustmt=ustmt, ty=None, text=None, bytes=None)))
     lines += [f"{2000 + 2 * len(FX)} " + ramrec.TAIL] + RECORD + ramrec.data(1000, routine)
     _fits(group, cases)
     return lines + ["RUN"], cases

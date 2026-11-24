@@ -10,3 +10,5 @@
       ➡️ When picked up: zerobas NODISK's MK*$ / CV* must raise 5 once the argument is evaluated, whatever its type.
       The acceptance is the six NODISK rules and the controls "without Disk BASIC the argument's type checked first
       (13) -- zerobas's" in [`kmkcv_controls.py`](../../probes/basic/spec/kmkcv_controls.py).
+      Goldfish pass 1 (2026-11-24): also `S$=MKS$("A")` with S$ holding "XY" (KMC FY 12; rule R-MKS-KEEPS):
+      13 here, 5 there; S$ keeps "XY" on both.

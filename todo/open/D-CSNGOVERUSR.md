@@ -9,3 +9,4 @@
       reads 8 with DAC 00 ... 00, ERR 6 on both. The overflow is raised after CSNG returns here, not by CSNG.
       ➡️ When picked up: CSNG's double -> single rounding must raise Overflow itself when the carry passes exponent
       &H7F. The acceptance is R-CSNG-OVER and R-CSNG-ASSIGN.
+      Goldfish pass 1 (2026-11-24): the negative end too, CSNG(-9.9999999999999D62) (KCV FY 21).

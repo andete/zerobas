@@ -40,15 +40,15 @@ Every keyword page, the region the spec loop takes it in, and how far its page h
 | `TAN` | [maths](../concepts/numbers.md) | RAM record | VG-8020 | [DRAFT 1](TAN.md) | 8 | D-TRIGHALF, D-SINDIGITS, D-TRANSZERO |
 | `ATN` | [maths](../concepts/numbers.md) | RAM record | VG-8020 | [DRAFT 1](ATN.md) | 7 | D-TRANSZERO, D-SQRZERO |
 | `RND` | [maths](../concepts/numbers.md) | RAM record | VG-8020 | [DRAFT 1](RND.md) | 9 | D-RNDZERO, D-ARGTYPEORDER, D-RNDNEGZERO |
-| `CINT` | [conversion](../concepts/numbers.md) | RAM record | VG-8020 | [DRAFT 1](CINT.md) | 5 | D-ARGTYPEORDER |
-| `CSNG` | [conversion](../concepts/numbers.md) | RAM record | VG-8020 | [DRAFT 1](CSNG.md) | 5 | D-ARGTYPEORDER, D-CSNGOVERUSR, D-CONVZERO |
-| `CDBL` | [conversion](../concepts/numbers.md) | RAM record | VG-8020 | [DRAFT 1](CDBL.md) | 5 | D-ARGTYPEORDER, D-CONVZERO |
-| `MKI$` | [conversion](../concepts/numbers.md) | RAM record | CF-3300 | [DRAFT 1](MKI$.md) | 4 | D-MKNOPAREN, D-DISKFNTYPE |
-| `MKS$` | [conversion](../concepts/numbers.md) | RAM record | CF-3300 | [DRAFT 1](MKS$.md) | 4 | D-MKNOPAREN, D-DISKFNTYPE |
-| `MKD$` | [conversion](../concepts/numbers.md) | RAM record | CF-3300 | [DRAFT 1](MKD$.md) | 4 | D-MKNOPAREN, D-DISKFNTYPE |
-| `CVI` | [conversion](../concepts/numbers.md) | RAM record | CF-3300 | [DRAFT 1](CVI.md) | 5 | D-DISKFNTYPE |
-| `CVS` | [conversion](../concepts/numbers.md) | RAM record | CF-3300 | [DRAFT 1](CVS.md) | 5 | D-DISKFNTYPE, D-ZEROLET |
-| `CVD` | [conversion](../concepts/numbers.md) | RAM record | CF-3300 | [DRAFT 1](CVD.md) | 5 | D-DISKFNTYPE |
+| `CINT` | [conversion](../concepts/numbers.md) | RAM record | VG-8020 | [DRAFT 1](CINT.md) | 8 | D-ARGTYPEORDER |
+| `CSNG` | [conversion](../concepts/numbers.md) | RAM record | VG-8020 | [DRAFT 1](CSNG.md) | 8 | D-ARGTYPEORDER, D-CSNGOVERUSR, D-CONVZERO |
+| `CDBL` | [conversion](../concepts/numbers.md) | RAM record | VG-8020 | [DRAFT 1](CDBL.md) | 8 | D-ARGTYPEORDER, D-CONVZERO |
+| `MKI$` | [conversion](../concepts/numbers.md) | RAM record | CF-3300 | [DRAFT 1](MKI$.md) | 6 | D-MKNOPAREN, D-DISKFNTYPE |
+| `MKS$` | [conversion](../concepts/numbers.md) | RAM record | CF-3300 | [DRAFT 1](MKS$.md) | 6 | D-MKNOPAREN, D-DISKFNTYPE |
+| `MKD$` | [conversion](../concepts/numbers.md) | RAM record | CF-3300 | [DRAFT 1](MKD$.md) | 6 | D-MKNOPAREN, D-DISKFNTYPE |
+| `CVI` | [conversion](../concepts/numbers.md) | RAM record | CF-3300 | [DRAFT 1](CVI.md) | 7 | D-DISKFNTYPE |
+| `CVS` | [conversion](../concepts/numbers.md) | RAM record | CF-3300 | [DRAFT 1](CVS.md) | 7 | D-DISKFNTYPE, D-ZEROLET |
+| `CVD` | [conversion](../concepts/numbers.md) | RAM record | CF-3300 | [DRAFT 1](CVD.md) | 7 | D-DISKFNTYPE |
 | `AND` | [operators](../concepts/numbers.md) | RAM record | VG-8020 | [DRAFT 1](AND.md) | 4 | — |
 | `OR` | [operators](../concepts/numbers.md) | RAM record | VG-8020 | [DRAFT 1](OR.md) | 4 | — |
 | `XOR` | [operators](../concepts/numbers.md) | RAM record | VG-8020 | [DRAFT 1](XOR.md) | 4 | — |

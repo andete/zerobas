@@ -126,9 +126,53 @@ FX_ARG = {k: v for k, v in K.FX_ARG.items() if k not in ("an expression", "neste
 FX_ARG.update({"an expression (a double)": ("D", THIRD_D), "nested": ("S", enc(Fraction(5, 2), "S"))})
 EXTRA = {"32767.5 as a literal": ("S", enc(Fraction(65535, 2), "S")),
          "-32768.5 as a literal": ("S", enc(Fraction(-65537, 2), "S")),
-         "a single expression widened": ("D", THIRD_D),
+         "1!/3, a double expression": ("D", THIRD_D),
          ".1 stored in a single, widened": ("S", enc(Fraction(1, 10), "S"))}
 ORDER_WHYS = ("a string, no closing parenthesis", "a string and an extra argument")
+# FY (goldfish pass 1): the inputs of its rows
+D0 = bytes([0x00, 0x10]) + bytes(6)
+D80 = bytes([0x80, 0x10]) + bytes(6)
+FY_ARG = {"a double with exponent byte 0, digit bytes 10 00 ...": ("D", D0),
+          "a double with exponent byte 80, digit bytes 10 00 ...": ("D", D80),
+          "40000.5 (the page's example)": ("S", enc(Fraction(80001, 2), "S")),
+          "the most negative double": ("D", enc(-Fraction(99999999999999, 10 ** 13) * 10 ** 62, "D")),
+          "CSNG(1/3) alone": ("D", THIRD_D)}
+FY_ORDER = {"the argument's own error, no closing parenthesis": 11,
+            "the argument's own error, then an extra argument": 11,
+            "Overflow, no closing parenthesis": 2}
+LET_D = {"the double 1.2345649999999# stored in a single": "1.2345649999999",
+         "the double 1.234565# stored in a single": "1.234565", "the double -1.234565# stored in a single": "-1.234565",
+         "the double 9.9999949999999D62 stored in a single": "9.9999949999999E62",
+         "the double 9.999995D62 stored in a single": "9.999995E62"}
+
+
+def fy_want(c, model=None):
+    """the predicted outcome of an FY row (whose kinds the rules below name)"""
+    m = model or MODELS[c.fn]
+    w = c.why
+    if w in FY_ORDER:
+        return "err", FY_ORDER[w]
+    if w in FY_ARG:
+        return m(*FY_ARG[w])
+    if w == "the result stored in an integer":            # Z%=F(2.7): the result truncated into an integer
+        k = MODELS[c.fn]("S", enc(Fraction(27, 10), "S"))
+        return "num", 2, enc(int(value(k[2])), "I")
+    if w == "the result stored in a single":               # Z!=F(1.234565#): the result made a single as CSNG
+        k = MODELS[c.fn]("D", enc(Fraction(1234565, 10 ** 6), "D"))
+        ty = {2: "I", 4: "S", 8: "D"}[k[1]]
+        return m_csng(ty, k[2])
+    if w == "CSNG(1/3) times a single":                   # the product of two singles is a DOUBLE (measured)
+        return "num", 8, enc(Fraction(999999, 10 ** 6), "D")
+    if w in LET_D:
+        k = m_csng("D", enc(K.text_value(LET_D[w]), "D"))
+        if k[0] == "err":                                 # Overflow; Z! keeps the previous row's value
+            return "keep", m_csng("D", enc(K.text_value("9.9999949999999E62"), "D"))[2]
+        return k
+    if w == "a single holding 1/3, widened":
+        return m_cdbl("S", enc(Fraction(333333, 10 ** 6), "S"))
+    if w == "the type of 1!/3 (apparatus)":
+        return "num", 8, THIRD_D
+    raise KeyError(w)
 FORM_WHYS = tuple(w for w in FX_ARG if "exponent byte" not in w)
 ODD_WHYS = tuple(w for w in FX_ARG if "exponent byte" in w)
 
@@ -139,6 +183,8 @@ def fx_by(c, *whys):
 
 def want(c, model=None):
     m = model or MODELS[c.fn]
+    if c.src == "FY":
+        return fy_want(c, model)
     if c.src in MX:
         return m(c.ty, K.argb(c))
     ty, b = FX_ARG.get(c.why) or EXTRA[c.why]
@@ -149,7 +195,25 @@ def want(c, model=None):
 
 
 def outcome(c, w):
+    if w[0] == "keep":           # an assignment that overflowed: ERR 6, then R=Z! / USR(Z!) read Z!'s old value
+        return c.e1 == 6 and c.e2 == 0 and c.vt == 4 and c.res == w[1]
+    if w[0] == "err" and c.src in ("FX", "FY") and c.ustmt is None:
+        return K.no_usr(c, w[1])
     return K.error_is(c, w[1]) if w[0] == "err" else K.result_is(c, w[1], w[2])
+
+
+def assigned(c):
+    """R after the case, from the STATEMENT's own outcome (not the USR form's): its sentinel after an error -- except
+    the overflowing `Z!=` row, whose next statement `R=Z!` still ran -- else the result widened to a double"""
+    if c.src == "FY" and c.why in LET_D and want(c)[0] == "keep":
+        return c.rbytes == K.as_double(4, want(c)[1])
+    if c.e1 != 0:
+        return c.rbytes == K.R_SENT
+    return c.res is not None and c.rbytes == K.as_double(c.vt, c.res)
+
+
+def fy(c, *whys):
+    return c.src == "FY" and c.why in whys
 
 
 def rules(fn):
@@ -164,9 +228,10 @@ def rules(fn):
                  "or &H80 is 0.",
                  lambda c: c.src in MX and want(c)[0] == "num", lambda c: outcome(c, want(c))),
             Rule("R-CINT-RANGE", s1, "When the truncated value is outside -32768..32767 -- 32768, -32769, 65535, 1E10, "
-                 "9.99999E62 -- it is error 6 (Overflow), from `R=CINT(x)` and from `USR(CINT(x))` alike, before "
-                 "anything is assigned.",
-                 lambda c: c.src in MX and want(c)[0] == "err", lambda c: outcome(c, want(c)))]
+                 "9.99999E62, 40000.5 -- it is error 6 (Overflow), from `R=CINT(x)` and from `USR(CINT(x))` alike, "
+                 "before anything is assigned.",
+                 lambda c: (c.src in MX and want(c)[0] == "err") or fy(c, "40000.5 (the page's example)"),
+                 lambda c: outcome(c, want(c)))]
     if fn == "CSNG":
         R += [
             Rule("R-CSNG-ROUND", s1, "The result is a SINGLE. An integer gives its exact value; a single is returned "
@@ -176,18 +241,26 @@ def rules(fn):
                  lambda c: c.src in MX and want(c)[0] == "num", lambda c: outcome(c, want(c))),
             Rule("R-CSNG-OVER", s1, "A double that rounds past the largest exponent -- 9.999995D62, "
                  "9.9999999999999D62 and their negatives -- is error 6 (Overflow), from `R=CSNG(x)` and from "
-                 "`USR(CSNG(x))` alike: USR is not reached.",
-                 lambda c: c.src in MX and want(c)[0] == "err", lambda c: outcome(c, want(c))),
-            Rule("R-CSNG-USE", s1, "CSNG(1/3)*3 is .999999, a double (the single's 6 digits times 3; the product's "
-                 "type is the operators' region's).",
-                 lambda c: fx_by(c, "the single 1/3 times 3"),
-                 lambda c: K.result_is(c, 8, enc(Fraction(999999, 10 ** 6), "D")))]
+                 "`USR(CSNG(x))` alike: USR is not reached (its type cell stays 255).",
+                 lambda c: (c.src in MX and want(c)[0] == "err") or fy(c, "the most negative double"),
+                 lambda c: outcome(c, want(c))),
+            Rule("R-CSNG-LET", s1, "Storing a double in a single variable rounds it the same way: `Z!=1.2345649999999#` "
+                 "is 1.23456, `Z!=1.234565#` 1.23457, `Z!=-1.234565#` -1.23457, `Z!=9.9999949999999D62` 9.99999E+62; "
+                 "`Z!=9.999995D62` is error 6 and Z! keeps the value it had.",
+                 lambda c: fy(c, *LET_D), lambda c: outcome(c, want(c))),
+            Rule("R-CSNG-USE", s1, "CSNG(1/3) is the single .333333; in arithmetic it counts with its 6 digits: "
+                 "CSNG(1/3)*3 and CSNG(1/3)*3! are .999999 -- a DOUBLE, even the product of two singles (the "
+                 "operators' region states why).",
+                 lambda c: fx_by(c, "the single 1/3 times 3") or fy(c, "CSNG(1/3) alone", "CSNG(1/3) times a single"),
+                 lambda c: (K.result_is(c, 8, enc(Fraction(999999, 10 ** 6), "D")) if c.why != "CSNG(1/3) alone"
+                            else outcome(c, want(c))))]
     if fn == "CDBL":
         R += [
             Rule("R-CDBL-WIDEN", s1, "The result is a DOUBLE: an integer's exact value; a single's 6 decimal digits "
                  "followed by 8 zeros (CDBL(.499999!) is .49999900000000, CDBL of a single holding .1 is "
                  ".10000000000000 -- nothing invented); a double unchanged.",
-                 lambda c: c.src in MX or fx_by(c, "a single expression widened", ".1 stored in a single, widened"),
+                 lambda c: c.src in MX or fx_by(c, "1!/3, a double expression", ".1 stored in a single, widened")
+                 or fy(c, "a single holding 1/3, widened", "the type of 1!/3 (apparatus)"),
                  lambda c: outcome(c, want(c)))]
     R += [
         Rule(f"R-{tag}-TYPE", s2, "A string as the argument (a literal or a variable) is error 13 (Type mismatch), and "
@@ -198,25 +271,33 @@ def rules(fn):
         Rule(f"R-{tag}-SYNTAX", s2, "No argument, a second argument, no closing parenthesis, or the name without a "
              "parenthesis is error 2 (Syntax error).",
              lambda c: fx_by(c, *K.SYNTAX_WHYS), lambda c: K.no_usr(c, 2)),
-        Rule(f"R-{tag}-ORDER", s2, f"The `)` is required before the argument's type is checked: {fn}(\"A\" (no `)`) and "
-             f"{fn}(\"A\",2) are error 2 (Syntax error), not 13.",
-             lambda c: fx_by(c, *ORDER_WHYS), lambda c: K.no_usr(c, 2)),
+        Rule(f"R-{tag}-ORDER", s2, f"The argument is evaluated first -- its own error wins: {fn}(1/0 and {fn}(1/0,2) are "
+             f"error 11 --, then the `)` is required, before the type is checked or the conversion done: "
+             f"{fn}(\"A\" and {fn}(\"A\",2) are error 2, not 13" + (", and CINT(32768 is 2, not 6." if fn == "CINT"
+             else ", and CSNG(9.999995D62 is 2, not 6." if fn == "CSNG" else "."),
+             lambda c: fx_by(c, *ORDER_WHYS) or fy(c, *FY_ORDER), lambda c: outcome(c, want(c))
+             if c.src == "FY" else K.no_usr(c, 2)),
         Rule(f"R-{tag}-FORMS", s2, f"Spaces before the parenthesis and around the argument are allowed; a literal's own "
              f"type is the argument's (2.5 a single, 7 an integer, &H8000 the integer -32768, -32768 a single, -0 "
              f"the integer 0, 1/3 a double -- kmath's measured literal types); {fn}({fn}(2.5)) is {fn} of that "
              f"result" + (", and the literals 32767.5 and -32768.5 give 32767 and -32768." if fn == "CINT" else "."),
              lambda c: fx_by(c, *FORM_WHYS) or (fn == "CINT" and fx_by(c, *list(EXTRA)[:2])),
              lambda c: outcome(c, want(c))),
+        Rule(f"R-{tag}-STORE", s3, f"Stored in a variable, {fn}'s result is converted for it as any number is: "
+             f"`Z%={fn}(2.7)` holds 2, `Z!={fn}(1.234565#)` holds " + ("1" if fn == "CINT" else "1.23457") + ".",
+             lambda c: fy(c, "the result stored in an integer", "the result stored in a single"),
+             lambda c: outcome(c, want(c))),
         Rule(f"R-{tag}-ODD", s2, {
-            "CINT": "A single whose exponent byte is 0 or &H80 with digit bytes 10 00 00 is 0.",
+            "CINT": "A single or double whose exponent byte is 0 or &H80 with digit bytes 10 00 ... is 0.",
             "CSNG": "A single whose exponent byte is 0 or &H80 with digit bytes 10 00 00 is returned as it is -- "
-                    "00 10 00 00 and 80 10 00 00, a single, not made a clean zero.",
+                    "00 10 00 00 and 80 10 00 00, a single, not made a clean zero; such a double gives its first 4 "
+                    "bytes.",
             "CDBL": "A single whose exponent byte is 0 or &H80 with digit bytes 10 00 00 is widened as any single: "
-                    "00 10 00 00 00 00 00 00 and 80 10 00 00 00 00 00 00."}[fn],
-             lambda c: fx_by(c, *ODD_WHYS), lambda c: outcome(c, want(c))),
+                    "00 10 00 00 00 00 00 00 and 80 10 00 00 00 00 00 00; such a double is returned as it is."}[fn],
+             lambda c: fx_by(c, *ODD_WHYS) or fy(c, *list(FY_ARG)[:2]), lambda c: outcome(c, want(c))),
         Rule(f"R-{tag}-ASSIGN", s3, "`R=" + fn + "(x)` with R a double stores the result as a double: an integer by its "
              "value, a single's 4 bytes then four zero bytes (an exponent-0 one too), a double's 8; after an error "
              "R keeps its sentinel -12345. Read in every case.",
-             lambda c: True, K.assigned),
+             lambda c: True, assigned),
     ]
     return R

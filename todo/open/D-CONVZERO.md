@@ -11,3 +11,5 @@
       ➡️ When picked up: CSNG of a single must return it as it is; CDBL of a single must append four zero bytes
       without normalising. The acceptance is the two ODD rules and the controls "an exponent-0 single made a clean
       zero -- zerobas's" in [`kconv_controls.py`](../../probes/basic/spec/kconv_controls.py).
+      Goldfish pass 1 (2026-11-24): the same for a DOUBLE POKEd so (KCV FY 6, 7, 12, 13): CSNG gives its first 4
+      bytes there (zerobas: zeros, of type 8 for &H80), CDBL returns it unchanged there (zerobas: 8 zero bytes).

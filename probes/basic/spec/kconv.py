@@ -60,8 +60,8 @@ CD_ARGS = ["0", "-0", "1", "-1", ".5", "-.5", "1.5", "-1.5", "2.5", "-2.5", ".49
            "1D-64", "-1D-64", "9.99999D62", "9.9999949999999D62", "9.999995D62", "-9.999995D62",
            "9.9999999999999D62"]
 ARGS = {"CI": ("I", CI_ARGS), "CS": ("S", CS_ARGS), "CD": ("D", CD_ARGS)}
-GAPS = {"CI": 3000.0, "CS": 6000.0, "CD": 6000.0, "FX": 2500.0}
-ORDER = ["CI", "CS", "CD", "FX"]
+GAPS = {"CI": 3000.0, "CS": 6000.0, "CD": 6000.0, "FX": 2500.0, "FY": 2500.0}
+ORDER = ["CI", "CS", "CD", "FX", "FY"]
 
 # FX: (fn, statement, what it separates, the USR form or None) -- kmath's list for these functions. S$ = "12".
 PRE0, PRE80 = kmath.PRE0, kmath.PRE80
@@ -100,26 +100,51 @@ for _f in FNS[1:]:
 FX += [("CINT", "R=CINT(32767.5)", "32767.5 as a literal", "Q=USR(CINT(32767.5))"),
        ("CINT", "R=CINT(-32768.5)", "-32768.5 as a literal", "Q=USR(CINT(-32768.5))"),
        ("CSNG", "R=CSNG(1/3)*3", "the single 1/3 times 3", "Q=USR(CSNG(1/3)*3)"),
-       ("CDBL", "R=CDBL(1!/3)", "a single expression widened", "Q=USR(CDBL(1!/3))"),
+       ("CDBL", "R=CDBL(1!/3)", "1!/3, a double expression", "Q=USR(CDBL(1!/3))"),
        ("CDBL", "Z!=.1:R=CDBL(Z!)", ".1 stored in a single, widened", "Q=USR(CDBL(Z!))")]
 FX_S = "12"
+
+# FY (goldfish pass 1, 2026-11-24, scratchpad/REVIEW-m2-gCONV1.md): a POKEd DOUBLE; the top negative double; a double
+# stored in a single beside CSNG; results stored in an integer / a single; the forms the pages quote; the order of an
+# argument's own error and of an overflow against a missing `)`; CDBL of a single holding 1/3; CSNG(1/3) alone and
+# times a single. Z!, Z%, N# are assigned in the statement itself.
+PRE0D = "N#=1:V=VARPTR(N#):POKE V,0:"
+PRE80D = "N#=1:V=VARPTR(N#):POKE V,128:"
+FY = []
+for _f in FNS[1:]:
+    FY += [(_f, f"{PRE0D}R={_f}(N#)", "a double with exponent byte 0, digit bytes 10 00 ...", f"Q=USR({_f}(N#))"),
+           (_f, f"{PRE80D}R={_f}(N#)", "a double with exponent byte 80, digit bytes 10 00 ...", f"Q=USR({_f}(N#))"),
+           (_f, f"R={_f}(1/0", "the argument's own error, no closing parenthesis", None),
+           (_f, f"R={_f}(1/0,2)", "the argument's own error, then an extra argument", None),
+           (_f, f"Z%={_f}(2.7):R=Z%", "the result stored in an integer", "Q=USR(Z%)"),
+           (_f, f"Z!={_f}(1.234565#):R=Z!", "the result stored in a single", "Q=USR(Z!)")]
+FY += [("CINT", "R=CINT(40000.5)", "40000.5 (the page's example)", "Q=USR(CINT(40000.5))"),
+       ("CINT", "R=CINT(32768", "Overflow, no closing parenthesis", None),
+       ("CSNG", "R=CSNG(9.999995D62", "Overflow, no closing parenthesis", None),
+       ("CSNG", "R=CSNG(-9.9999999999999D62)", "the most negative double", "Q=USR(CSNG(-9.9999999999999D62))"),
+       ("CSNG", "R=CSNG(1/3)", "CSNG(1/3) alone", "Q=USR(CSNG(1/3))"),
+       ("CSNG", "R=CSNG(1/3)*3!", "CSNG(1/3) times a single", "Q=USR(CSNG(1/3)*3!)")]
+for _t in ("1.2345649999999#", "1.234565#", "-1.234565#", "9.9999949999999D62", "9.999995D62"):
+    FY.append(("CSNG", f"Z!={_t}:R=Z!", f"the double {_t} stored in a single", "Q=USR(Z!)"))
+FY += [("CDBL", "Z!=1/3:R=CDBL(Z!)", "a single holding 1/3, widened", "Q=USR(CDBL(Z!))"),
+       ("CDBL", "Q=USR(1!/3):R=1!/3", "the type of 1!/3 (apparatus)", "Q=USR(1!/3)")]
 
 
 def program(group):
     """the typed lines (numbered program + RUN) and the case list [(id, meta)] in record order"""
     routine = [str(x) for x in kmath.ROUTINE]
-    if group == "FX":
+    if group in ("FX", "FY"):
         # kmath's FX frame in two lines a case and a shared prefix (880), so 138 cases fit below CLEAR's limit:
         # the statement stays LAST on its line (RESUME NEXT after a syntax error goes to the next line)
         lines = [kmath.head(), "20 FOR K=0 TO 17:READ X:POKE &HBF00+K,X:NEXT:DEFUSR=&HBF00",
                  f'25 S$="{FX_S}":GOTO 2000',
                  f"880 E=0:R={R_SENT}:POKE &HBF80,255:FOR K=1 TO 8:POKE A+K,0:NEXT:RETURN"]
         cases = []
-        for i, (fn, stmt, why, ustmt) in enumerate(FX):
+        for i, (fn, stmt, why, ustmt) in enumerate(FX if group == "FX" else FY):
             n = 2000 + 2 * i
             lines.append(f"{n} GOSUB 880:{stmt}")
             lines.append(f"{n + 1} E1=E:E=0:" + (f"{ustmt}:E2=E" if ustmt else "E2=0") + ":GOSUB 900")
-            cases.append((f"KCV FX {i}", dict(fn=fn, stmt=stmt, why=why, ustmt=ustmt, ty=None, text=None)))
+            cases.append((f"KCV {group} {i}", dict(fn=fn, stmt=stmt, why=why, ustmt=ustmt, ty=None, text=None)))
         lines += [f"{2000 + 2 * len(FX)} " + ramrec.TAIL] + kmath.RECORD + ramrec.data(1000, routine)
         _fits(group, cases)
         return lines + ["RUN"], cases
