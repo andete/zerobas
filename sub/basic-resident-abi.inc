@@ -36,7 +36,7 @@ crt_cp equ 0346BH
 ; --- page-0 call-back (p0cb) targets: zerobas-sub's p0cb / p1cb reach these through CLPRIM, never by absolute address ---
 p0_chrgtr equ 00168H   ; main's chrgtr
 p0_outdo equ 0017AH   ; main's outdo
-p0_bp_ret equ 06A27H   ; main's bp_ret
+p0_bp_ret equ 06A2AH   ; main's bp_ret
 p0_skip_spaces equ 0424CH   ; main's skip_spaces
 p0_exec_stmt equ 04149H   ; main's exec_stmt
 p0_gb_illegal equ 044C7H   ; main's gb_illegal
@@ -59,14 +59,14 @@ p0_load_error equ 06701H   ; main's load_error
 p0_dev_lpt equ 06D0FH   ; main's dev_lpt
 p0_dev_crt equ 06D14H   ; main's dev_crt
 p0_dev_grp equ 06D19H   ; main's dev_grp
-p0_dev_cas equ 06A33H   ; main's dev_cas
+p0_dev_cas equ 06A36H   ; main's dev_cas
 p0_fname_expr equ 06D25H   ; main's fname_expr
 p0_dev_cmp equ 06CF6H   ; main's dev_cmp
 p0_nodisk_dev equ 02C3AH   ; main's nodisk_dev
 p0_pdfcb_resume equ 06D1EH   ; main's pdfcb_resume
 p0_skipsp_test equ 02D09H   ; main's skipsp_test
 p0_upcase equ 04243H   ; main's upcase
-p0_eval equ 04A8AH   ; main's eval
+p0_eval equ 04A94H   ; main's eval
 p0_eval_byte_arg equ 044B9H   ; main's eval_byte_arg
 p0_stmt_bare_end equ 04253H   ; main's stmt_bare_end
 p0_mxf_require_end equ 03F06H   ; main's mxf_require_end

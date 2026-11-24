@@ -91,7 +91,7 @@ SUBROM_IDX_FORMAT equ 0000AH   ; format_tenant (CALL FORMAT eviction, sub/
 fname_expr equ 06D25H
 pdfcb_resume equ 06D1EH
 parse_disk_fcb equ 066B0H
-eval equ 04A8AH
+eval equ 04A94H
 fch_check equ 06F23H
 fch_mode_class equ 04F7CH
 field_item equ 072F6H
@@ -102,7 +102,7 @@ tgt_parse_req equ 05298H
 tgt_desc equ 0477DH
 skip_eq equ 0423DH
 req_operand equ 0413CH
-str_eval equ 048E5H
+str_eval equ 048EFH
 type_mismatch_error equ 04271H
 stmt_error equ 04263H
 lrset_finish equ 0718FH
