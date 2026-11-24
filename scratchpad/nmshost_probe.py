@@ -48,6 +48,12 @@ proc t {} { return [format %.6f [machine_info time]] }
 set ::seen_p1 0
 set ::nw 0
 proc on_write {name addr} {
+  if {$::seen_p1 && [info exists ::ring_on] && $::ring_on && [who] eq "page0@0" && $name eq "H.STKE"} {
+    puts $::log "RESTART [t] the start-up's H.STKE write is back (by page0@0) -- the last 80 page@slot changes:"
+    foreach l $::ring { puts $::log "  $l" }
+    puts $::log "DIRECT-COUNT $::direct"
+    flush $::log; exit
+  }
   incr ::nw
   if {$::nw > 4000} { if {$::nw == 4001} { puts $::log "CAP [t] more than 4000 watched writes -- the rest not logged" }; return }
   puts $::log "W [t] $name [format %04X $::wp_last_address] := [format %02X $::wp_last_value] by [who]"
@@ -61,8 +67,32 @@ proc sample {} {
     set ::seen_p1 1
     puts $::log "P1 [t] first code run in page 1 from the cartridge's slot $::env(CARTSLOT) SP=[format %04X [reg sp]] IFF=[reg iff]"
     # from here: every change of the executing page@slot, with SP, for 300 changes (page and slot only, no PC value)
-    set ::trace_left 300; set ::last_who ""
-    debug set_condition {$::trace_left > 0} { set w [who]; if {$w ne $::last_who} { puts $::log "X [t] $w SP=[format %04X [reg sp]] IFF=[reg iff]"; set ::last_who $w; incr ::trace_left -1 } }
+    set ::trace_left [expr {[info exists ::env(NMSHOST_RING)] ? 0 : 300}]; set ::last_who ""
+    set ::ring {}; set ::direct 0; set ::ring_on [info exists ::env(NMSHOST_RING)]
+    debug set_condition {$::trace_left > 0 || $::ring_on} {
+      set w [who]
+      if {$w ne $::last_who} {
+        set line "X [t] $w SP=[format %04X [reg sp]] IFF=[reg iff]"
+        # zerobas ONLY (NMSHOST_ZBPC): the address entered, when it is zerobas's own ROM (page 0 / page 1 of slot 0)
+        # or RAM (page 2 / 3) -- never on the reference machine, never an address inside the cartridge
+        if {[info exists ::env(NMSHOST_ZBPC)] && ([string match "page0@0" $w] || [string match "page1@0" $w] || [string match "page3@*" $w] || [string match "page2@*" $w])} {
+          append line " at=[format %04X [reg pc]]"
+        }
+        if {$::trace_left > 0} { puts $::log $line; incr ::trace_left -1 }
+        if {$::ring_on} {
+          # a jump from page-3 RAM straight into page 1 of slot 0: not a published (page-0) BIOS entry
+          if {[string match "page3@*" $::last_who] && [string match "page1@0*" $w]} {
+            incr ::direct; puts $::log "D [t] RAM -> page1@0 (direct, #$::direct) SP=[format %04X [reg sp]]"
+            if {$::direct == 1} {
+              puts $::log "FIRSTJUMP [t] -- the last 80 page@slot changes before it:"
+              foreach l $::ring { puts $::log "  $l" }
+            }
+          }
+          lappend ::ring $line; if {[llength $::ring] > 80} { set ::ring [lrange $::ring 1 end] }
+        }
+        set ::last_who $w
+      }
+    }
   }
   if {!$::seen_p1} { after time 0.0005 sample }
 }
@@ -115,8 +145,9 @@ def run(tag, machine):
     log = os.path.join(keep, f"nmshost_{tag}.log")
     cmd = [openmsx_paths.find_openmsx_binary(), "-machine", machine, "-ext", "Philips_NMS_1200", "-diska", dsk,
            "-script", tcl]
+    extra = {"NMSHOST_ZBPC": "1"} if tag == "zb" else {}
     try:
-        subprocess.run(omsx_preflight.guarded(cmd), env=dict(os.environ, LOGF=log, CARTSLOT=str(cart)),
+        subprocess.run(omsx_preflight.guarded(cmd), env=dict(os.environ, LOGF=log, CARTSLOT=str(cart), **extra),
                        stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, timeout=300)
     except subprocess.TimeoutExpired:
         print(f"!! {tag}: openMSX did not finish {SECONDS} s emulated within 300 s real -- log so far below")

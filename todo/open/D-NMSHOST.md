@@ -26,3 +26,12 @@
       changes before the first repeated start-up write), and whether the page-1 calls go to a published BIOS entry or
       not -- black box only (page@slot and SP, never PC values or ROM bytes); then decide the remedy with Joost (a
       page-1 call table for disk ROMs, as the reference keeps, or a call-context change in init_ext_roms).
+      STEP 2 (2026-11-24, AE_nmshost_step2_zb.out; zerobas's OWN addresses logged, never the reference's): the INIT waits
+      in a busy loop with interrupts on (each tick: zerobas's $0038 -> H.KEYI $FD9A -> $17C8 -> back); then the cartridge
+      runs RAM at $F392 (the inter-slot primitives' area, past CLPRIM $F38C) and execution enters zerobas at page-0
+      $2442 -> page-1 $40C0 -> H.STKE $FEDA -> a runaway RET chain (SP climbing by 2) -> the restart. $2442 is NOT a
+      published BIOS entry (the MSX1 jump table ends at $015F): THE NMS 1200 CALLS A FIXED UNPUBLISHED MAIN-ROM ADDRESS.
+      ⛔ DECISION FOR JOOST before measuring further: may a probe CALL that address on the VG-8020 and observe what it does
+      (registers / RAM / VRAM, black box -- as the unpublished SCANR / SCANL were measured), given that the address was
+      learnt from the cartridge's behaviour on zerobas (our own ROM's PC), never from the reference? If yes: measure
+      each unpublished address the NMS 1200 calls, then the remedy (zerobas answering them) is a ROM-layout decision.
