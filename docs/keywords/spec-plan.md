@@ -233,6 +233,38 @@ exponent is added without wrapping ("1E-194" and "1E300" are Overflow). VAL's ze
 D-VALWS (whitespace, incl. before `&`), D-VALEXP (the digit-count edges) and D-VALPCT (`"-32768%"` is Overflow here,
 -32768 on the reference).
 
+### The maths region's first unit (2026-11-24): ABS, SGN, INT, FIX, SQR
+
+One probe, five rules modules, five pages at DRAFT 1. The transcendentals (EXP, LOG, SIN, COS, TAN, ATN) and RND are
+LEFT FOR LATER UNITS: their last digits are the reference's own algorithm, so their rules are bounds that need a wider
+matrix per function (and RND a seed / sequence harness of its own).
+
+- [probes/basic/spec/kmath.py](../../probes/basic/spec/kmath.py): 160 cases a keyword on each machine (19 integers,
+  66 singles, 52 doubles, 23 fixed statements; 4 more fixed statements are LET evidence no page loads) in four groups
+  (MI / MS / MD: one per argument type, so no group's records reach $F380, asserted; FX). Run file
+  [scratchpad/KMA_run1.out](../../scratchpad/KMA_run1.out). **The result's TYPE is seen** (§7 item 3): every case
+  runs twice, `R=F(N)` (R's 8 bytes) and `Q=USR(F(N))`, where USR is the probe's own 18-byte routine above `CLEAR`'s
+  limit that copies `VALTYP` and `DAC` -- the result unconverted, by the MSX convention [USR.md](USR.md) documents --
+  into the probe's memory. An apparatus row per argument (no function) must give back the argument's own type and
+  bytes on both machines, or the loader refuses the run. Only the probe's own memory is PEEKed.
+- [kmath_model.py](../../probes/basic/spec/kmath_model.py) holds the models and the rule builders; `abs_rules.py`,
+  `sgn_rules.py`, `int_rules.py`, `fix_rules.py`, `sqr_rules.py` are the pages' modules.
+  [kmath_controls.py](../../probes/basic/spec/kmath_controls.py) runs 18 rival rules over the reference's cases; each
+  is FALSE on some (ABS(-32768%) a double or error 6; SGN in the argument's type; FIX rounding, flooring, or a clean
+  zero below 1; INT in the argument's type, toward zero, always a double, an integer whenever it fits; SQR correctly
+  rounded, truncated, within 1 unit, a single for a single; the sign of 80 10 00 00 ignored; zerobas's LET).
+- Result: every rule holds on the VG-8020 and every recorded output is read by a rule. SGN agrees in every case. Four
+  new items, all invisible to PRINT (the values agree): **D-ABSINTEDGE** (`ABS(-32768%)` a single there, a double
+  here), **D-INTNEGTYPE** (INT of a negative number with a fraction: the integer -1 above -1, a double below, on the
+  reference; the argument's type here), **D-ZEROLET** (a single whose exponent byte is 0 but whose digit bytes are
+  not -- FIX(.5!)'s result -- is stored as zero bytes here, as its own bytes on the reference), **D-SQRZERO** (`SQR(0%)`'s
+  result keeps leftover digit bytes here). SQR's last digit differs in 35 cases, the known difference ruled by Joost
+  on 2026-07-13 -- now measured as within 3 units of the 14th digit on the reference, not "one unit low".
+- Measured on both machines, now rules (the user pages said otherwise or nothing): SGN is always an integer; SQR is
+  always a double; a literal `2.5` is a single, `7` an integer, `-32768` a single, `1/4` a double; FIX and INT of a
+  number below 1 return a zero that keeps the argument's digit bytes (exponent byte 0, the sign dropped); SGN and
+  SQR see `80 10 00 00` (sign bit, exponent 0) as negative.
+
 ## 7. Tooling: what exists, what is missing
 
 Exists and fits unchanged: `tools/spec_rules.py` (the checker is not BIOS-specific: a module, its cases, its rules,
@@ -250,9 +282,11 @@ Missing:
    frame line, the error line, the string-digest subroutine, `measure` (both machines, sentinel capture), `frame`
    (refuses a capture without the done flag and the end byte), `digest`, the run file's sections. kslice uses it;
    its program text, run file and decoded cases are byte-identical through it.
-3. **Number readouts:** half built. `ramrec.number` decodes a numeric variable's own bytes exactly (integer,
-   single, double BCD); kstr records `R`'s 8 bytes through it, and knum a typed ARGUMENT's own bytes as well; the maths region still needs a matrix whose
-   result TYPE is seen (today a result is assigned to a double, so an integer-returning function's type is not).
+3. **Number readouts:** built. `ramrec.number` decodes a numeric variable's own bytes exactly (integer, single,
+   double BCD); kstr records `R`'s 8 bytes through it, and knum a typed ARGUMENT's own bytes as well. A result's
+   TYPE is seen since kmath (2026-11-24): the probe's own USR routine copies `VALTYP` and `DAC` as USR receives
+   them, checked on every argument by an apparatus row; a later numeric probe can reuse `kmath.ROUTINE` and the
+   `ID` row.
 4. **A tie to the existing denominators:** a rules module could assert that its fixed expressions reach every
    (form, error) pair `kwerrset.py` lists for the keyword, so a spec page cannot miss an error the T6 rung knows.
 5. **The review loop** (spec-method §6) has not run on a keyword page yet; the pilot pages are DRAFT 1.

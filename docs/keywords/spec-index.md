@@ -10,7 +10,7 @@ SPDX-License-Identifier: BSD-2-Clause
 
 Every keyword page, the region the spec loop takes it in, and how far its page has become a SPECIFICATION: measured rules, each checked against the reference machine's cases ([the plan](spec-plan.md), [the method](../spec-method.md)). A page that is not yet a spec is a "user page": it says what the keyword does and was checked by its example, but its sentences are not yet executable rules. The reference is the Philips VG-8020; disk statements, the National CF-3300.
 
-**14 of 150 keyword pages are specs; 0 are FINAL.**
+**19 of 150 keyword pages are specs; 0 are FINAL.**
 
 | keyword | region | harness | reference | page | open (not measured) | differences (TODO items, from the page) |
 |---|---|---|---|---|---|---|
@@ -28,11 +28,11 @@ Every keyword page, the region the spec loop takes it in, and how far its page h
 | `HEX$` | [strings](../concepts/strings-and-string-space.md) | RAM record | VG-8020 | [DRAFT 1](HEX$.md) | 6 | — |
 | `OCT$` | [strings](../concepts/strings-and-string-space.md) | RAM record | VG-8020 | [DRAFT 1](OCT$.md) | 6 | — |
 | `BIN$` | [strings](../concepts/strings-and-string-space.md) | RAM record | VG-8020 | [DRAFT 1](BIN$.md) | 6 | — |
-| `ABS` | [maths](../concepts/numbers.md) | RAM record | VG-8020 | [user page](ABS.md) | — | — |
-| `SGN` | [maths](../concepts/numbers.md) | RAM record | VG-8020 | [user page](SGN.md) | — | — |
-| `INT` | [maths](../concepts/numbers.md) | RAM record | VG-8020 | [user page](INT.md) | — | — |
-| `FIX` | [maths](../concepts/numbers.md) | RAM record | VG-8020 | [user page](FIX.md) | — | — |
-| `SQR` | [maths](../concepts/numbers.md) | RAM record | VG-8020 | [user page](SQR.md) | — | — |
+| `ABS` | [maths](../concepts/numbers.md) | RAM record | VG-8020 | [DRAFT 1](ABS.md) | 5 | D-ABSINTEDGE, D-ZEROLET |
+| `SGN` | [maths](../concepts/numbers.md) | RAM record | VG-8020 | [DRAFT 1](SGN.md) | 5 | — |
+| `INT` | [maths](../concepts/numbers.md) | RAM record | VG-8020 | [DRAFT 1](INT.md) | 5 | D-INTNEGTYPE, D-ZEROLET |
+| `FIX` | [maths](../concepts/numbers.md) | RAM record | VG-8020 | [DRAFT 1](FIX.md) | 5 | D-ZEROLET |
+| `SQR` | [maths](../concepts/numbers.md) | RAM record | VG-8020 | [DRAFT 1](SQR.md) | 6 | D-SQRZERO |
 | `EXP` | [maths](../concepts/numbers.md) | RAM record | VG-8020 | [user page](EXP.md) | — | D-EXPNEG |
 | `LOG` | [maths](../concepts/numbers.md) | RAM record | VG-8020 | [user page](LOG.md) | — | — |
 | `SIN` | [maths](../concepts/numbers.md) | RAM record | VG-8020 | [user page](SIN.md) | — | D-TANBIG |

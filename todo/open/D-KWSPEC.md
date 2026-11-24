@@ -23,5 +23,16 @@
       before the call, string results byte for byte. Every rule holds on the VG-8020, every output is read;
       knum_controls.py shows 17 rival rules FALSE. STR$ / HEX$ / OCT$ / BIN$ agree in every case; VAL differs in
       19, filed: D-VALWS (TAB / LF inside a number, a gap after `&`), D-VALEXP (the exponent byte's wrap and a
-      zero's digit bytes). The strings region's 14 keywords are all at DRAFT 1. NEXT: the review passes on the
-      fourteen (spec-method §6); a keyword probe in spec_live (plan §7.1); then the maths region (plan §2).
+      zero's digit bytes). The strings region's 14 keywords are all at DRAFT 1.
+      **Maths, first unit (2026-11-24): ABS / SGN / INT / FIX / SQR at DRAFT 1** from probes/basic/spec/kmath.py (160
+      cases a keyword on each machine, scratchpad/KMA_run1.out; plan §6, "The maths region's first unit"): the
+      result's TYPE is seen through the probe's own USR routine (VALTYP + DAC), checked per argument by an apparatus
+      row. Every rule holds on the VG-8020, every output is read; kmath_controls.py shows 18 rival rules FALSE. SGN
+      agrees in every case; filed (all invisible to PRINT): D-ABSINTEDGE (ABS(-32768%) a double here, a single
+      there), D-INTNEGTYPE (INT of a negative fraction: integer -1 / a double there, the argument's type here),
+      D-ZEROLET (an exponent-0 single with digit bytes stored as zeros here), D-SQRZERO (SQR(0%) keeps leftover
+      digit bytes here). SQR's known last-digit difference re-measured: the reference is within 3 units of the
+      14th digit, not "one unit low" (page corrected). NEXT: the transcendentals EXP / LOG / SIN / COS / TAN / ATN
+      as the maths region's second unit (bounds, like R-SQR-NEAR, over a wider matrix per function), then RND (a
+      seed / sequence harness); the review passes on the strings and maths pages (spec-method §6); a keyword probe
+      in spec_live (plan §7.1).
