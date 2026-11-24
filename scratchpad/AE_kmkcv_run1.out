@@ -1,0 +1,8 @@
+MK: 105 cases; both complete
+  0 cases differ
+CV: 51 cases; both complete
+  0 cases differ
+FX: 64 cases; both complete
+  9 cases differ: KMC FX 0, KMC FX 5, KMC FX 13, KMC FX 18, KMC FX 26, KMC FX 31, KMC FX 39, KMC FX 46, KMC FX 53
+wrote scratchpad/KMC_run1.out
+refcache: 0 hit, 6 miss, 6 stored

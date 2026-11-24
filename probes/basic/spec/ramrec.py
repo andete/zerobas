@@ -62,15 +62,30 @@ def data(n0, values):
     return out
 
 
-def measure(lines, n, rec, gap, machines=(("ref", REF), ("zb", ZB))):
-    """type `lines` (a numbered program ending in RUN) on each machine; {who: hex of the record area, or None}"""
+DISK_REF, DISK_ZB = "National_CF-3300", "C-BIOS_MSX1_EU_REPACK_DISK"
+DISK_TOP = 0xDE00          # a disk machine's records end below the disk ROM's claimed RAM (HIMEM $DE77 on both)
+
+
+def measure(lines, n, rec, gap, machines=(("ref", REF), ("zb", ZB)), disk=False):
+    """type `lines` (a numbered program ending in RUN) on each machine; {who: hex of the record area, or None}.
+    disk=True: Disk BASIC machines, each booted with its own copy of disk/test720.dsk in drive A (as
+    scratchpad/kwdoc_examples.py boots them)"""
     import omsx_repl
+    import shutil
+    import probe_tmp
     size = 1 + rec * n + 1
+    if disk:
+        assert BASE + size <= DISK_TOP, f"the records run past ${DISK_TOP:04X} (the disk ROM's RAM)"
     out = {}
     for who, machine in machines:
+        kw = {}
+        if disk:
+            dsk = probe_tmp.tmp(f"ramrec_{machine}.dsk")
+            shutil.copyfile(os.path.join(ROOT, "disk", "test720.dsk"), dsk)
+            kw = dict(diska=dsk, boot=14.0)
         out[who] = omsx_repl.run_cases(machine, [("direct", lines)], batch=False, reset=("", "SCREEN 0:WIDTH 40"),
                                        step=1.0, run_gap=gap, capture=("mem_abs", [(BASE, size)]),
-                                       sentinel=(BASE, DONE), sentinel_capture=True)[0]
+                                       sentinel=(BASE, DONE), sentinel_capture=True, **kw)[0]
     return out
 
 
@@ -120,8 +135,8 @@ def read_section(path, group):
     return {"ref": m.group(1), "zb": m.group(2)}
 
 
-def write_section(text, group, cap, n, bad):
+def write_section(text, group, cap, n, bad, machines=(REF, ZB)):
     """the run file's text with group's section replaced (appended at the end)"""
     sec = (f"===== {group}\n  CAP ref : {cap['ref'] or 'NONE'}\n  CAP zb  : {cap['zb'] or 'NONE'}\n"
-           f"  ({n} cases; machines {REF} / {ZB}; {'; '.join(bad) or 'both complete'})\n")
+           f"  ({n} cases; machines {machines[0]} / {machines[1]}; {'; '.join(bad) or 'both complete'})\n")
     return re.sub(rf"^===== {group}\n.*?(?=^===== |\Z)", "", text, flags=re.M | re.S) + sec

@@ -205,7 +205,10 @@ def kw_live_group(run_file, group):
     lines, cases = probe.program(group)[:2]
     rec = probe.REC[group] if isinstance(probe.REC, dict) else probe.REC
     t0 = time.time()
-    cap = ramrec.measure(lines, len(cases), rec, probe.GAPS[group], machines=(("zb", ramrec.ZB),))["zb"]
+    # a probe with Disk BASIC groups (kmkcv.py's D*) names their machines; zerobas's side boots its DISK build then
+    zb = dict(probe.machines(group))["zb"] if hasattr(probe, "machines") else ramrec.ZB
+    disk = group in getattr(probe, "DISKG", ())
+    cap = ramrec.measure(lines, len(cases), rec, probe.GAPS[group], machines=(("zb", zb),), disk=disk)["zb"]
     recs, why = ramrec.frame(cap, len(cases), rec)
     sys.stdout.write(f"  live {os.path.basename(run_file)} {group}: {len(cases)} cases, {time.time() - t0:.1f} s"
                      f"{'' if recs is not None else ', NO READING: ' + why}\n")

@@ -1,0 +1,16 @@
+  live KMC_run1.out MK: 105 cases, 0.1 s
+  live KMC_run1.out DFX: 64 cases, 0.1 s
+  live KMC_run1.out CV: 51 cases, 0.0 s
+  live KMC_run1.out DMK: 105 cases, 0.1 s
+  live KCV_run1.out CI: 52 cases, 0.0 s
+  live KMC_run1.out FX: 64 cases, 0.1 s
+  live KCV_run1.out CS: 196 cases, 0.0 s
+  live KMC_run1.out DCV: 51 cases, 0.0 s
+  live KCV_run1.out FX: 80 cases, 0.0 s
+  live KCV_run1.out CD: 176 cases, 0.0 s
+  live KMC_run1.out: zerobas as committed
+  live KCV_run1.out: zerobas as committed
+OK   docs/keywords/CVS.md: 6 rules, 2 failing on zerobas (live, 1 run file(s))
+OK   docs/keywords/CINT.md: 9 rules, 1 failing on zerobas (live, 1 run file(s))
+===== spec-live: ALL PAGES AGREE =====
+refcache: 10 hit, 0 miss, 10 of the hits were ZEROBAS readings

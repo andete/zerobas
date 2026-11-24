@@ -359,6 +359,26 @@ D-ARGTYPEORDER (all three), [D-CSNGOVERUSR](../../todo/open/D-CSNGOVERUSR.md) an
 [D-CONVZERO](../../todo/open/D-CONVZERO.md) (both TIER 6). Next in the region: MKI$ / MKS$ / MKD$ and CVI / CVS /
 CVD (string results: a STR_DIGEST record).
 
+### The conversion region's second unit (2026-11-24): MKI$, MKS$, MKD$, CVI, CVS, CVD
+
+One probe, [kmkcv.py](../../probes/basic/spec/kmkcv.py) -- a 37-byte record (the number's own bytes or the source
+string's, R, S$'s length and bytes, the USR type readout) -- run on TWO pairs: the National CF-3300 (Disk BASIC, the
+pages' reference) against zerobas DISK (groups DMK / DCV / DFX; [ramrec.py](../../probes/basic/spec/ramrec.py)'s
+`measure(..., disk=True)` boots each with a copy of `disk/test720.dsk`, its records below $DE00), and the VG-8020
+against zerobas NODISK (MK / CV / FX). Run file [scratchpad/KMC_run1.out](../../scratchpad/KMC_run1.out); model
+[kmkcv_model.py](../../probes/basic/spec/kmkcv_model.py), controls
+[kmkcv_controls.py](../../probes/basic/spec/kmkcv_controls.py) (17 rivals, each FALSE on some case). All six pages at
+DRAFT 1. Measured: MKI$ / MKS$ / MKD$ ARE CINT / CSNG / CDBL followed by the result's own bytes (so `MKS$(9.999995D62)`
+is Overflow -- the page had said MKS$ has no range error: refuted); CVI / CVS / CVD take the first 2 / 4 / 8 bytes of
+a string at least that long, raw; without Disk BASIC every call whose argument computes is error 5. zerobas agrees on
+every value; differences [D-MKNOPAREN](../../todo/open/D-MKNOPAREN.md) (`S$=MKI$` 24, not 2),
+[D-DISKFNTYPE](../../todo/open/D-DISKFNTYPE.md) (diskless: a wrong-type argument 13, not 5), and D-ZEROLET for CVS.
+**A probe pitfall, caught before any rule ran:** the empty source string's `FOR K=1 TO 0` loop ran its body ONCE (MSX
+BASIC's FOR, noted above), reading a byte that belonged to the next case and shifting every later DATA read; both
+machines shifted alike, so no difference showed it -- only the decoded lengths did (`[0]` with an S$ of 1 byte). The
+loop is now behind `IF L>0`. spec-live re-types the D* groups on zerobas's DISK build.
+The conversion region is complete at DRAFT 1.
+
 ### Goldfish pass 1 over RND (2026-11-24)
 
 One reviewer ([REVIEW-m2-gRND1.md](../../scratchpad/REVIEW-m2-gRND1.md)), 19 items, scored: **real 15**, known 1,

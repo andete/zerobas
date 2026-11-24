@@ -10,7 +10,7 @@ SPDX-License-Identifier: BSD-2-Clause
 
 Every keyword page, the region the spec loop takes it in, and how far its page has become a SPECIFICATION: measured rules, each checked against the reference machine's cases ([the plan](spec-plan.md), [the method](../spec-method.md)). A page that is not yet a spec is a "user page": it says what the keyword does and was checked by its example, but its sentences are not yet executable rules. The reference is the Philips VG-8020; disk statements, the National CF-3300.
 
-**29 of 150 keyword pages are specs; 0 are FINAL.**
+**35 of 150 keyword pages are specs; 0 are FINAL.**
 
 | keyword | region | harness | reference | page | open (not measured) | differences (TODO items, from the page) |
 |---|---|---|---|---|---|---|
@@ -43,12 +43,12 @@ Every keyword page, the region the spec loop takes it in, and how far its page h
 | `CINT` | [conversion](../concepts/numbers.md) | RAM record | VG-8020 | [DRAFT 1](CINT.md) | 5 | D-ARGTYPEORDER |
 | `CSNG` | [conversion](../concepts/numbers.md) | RAM record | VG-8020 | [DRAFT 1](CSNG.md) | 5 | D-ARGTYPEORDER, D-CSNGOVERUSR, D-CONVZERO |
 | `CDBL` | [conversion](../concepts/numbers.md) | RAM record | VG-8020 | [DRAFT 1](CDBL.md) | 5 | D-ARGTYPEORDER, D-CONVZERO |
-| `MKI$` | [conversion](../concepts/numbers.md) | RAM record | CF-3300 | [user page](MKI$.md) | — | — |
-| `MKS$` | [conversion](../concepts/numbers.md) | RAM record | CF-3300 | [user page](MKS$.md) | — | — |
-| `MKD$` | [conversion](../concepts/numbers.md) | RAM record | CF-3300 | [user page](MKD$.md) | — | — |
-| `CVI` | [conversion](../concepts/numbers.md) | RAM record | CF-3300 | [user page](CVI.md) | — | — |
-| `CVS` | [conversion](../concepts/numbers.md) | RAM record | CF-3300 | [user page](CVS.md) | — | — |
-| `CVD` | [conversion](../concepts/numbers.md) | RAM record | CF-3300 | [user page](CVD.md) | — | — |
+| `MKI$` | [conversion](../concepts/numbers.md) | RAM record | CF-3300 | [DRAFT 1](MKI$.md) | 4 | D-MKNOPAREN, D-DISKFNTYPE |
+| `MKS$` | [conversion](../concepts/numbers.md) | RAM record | CF-3300 | [DRAFT 1](MKS$.md) | 4 | D-MKNOPAREN, D-DISKFNTYPE |
+| `MKD$` | [conversion](../concepts/numbers.md) | RAM record | CF-3300 | [DRAFT 1](MKD$.md) | 4 | D-MKNOPAREN, D-DISKFNTYPE |
+| `CVI` | [conversion](../concepts/numbers.md) | RAM record | CF-3300 | [DRAFT 1](CVI.md) | 5 | D-DISKFNTYPE |
+| `CVS` | [conversion](../concepts/numbers.md) | RAM record | CF-3300 | [DRAFT 1](CVS.md) | 5 | D-DISKFNTYPE, D-ZEROLET |
+| `CVD` | [conversion](../concepts/numbers.md) | RAM record | CF-3300 | [DRAFT 1](CVD.md) | 5 | D-DISKFNTYPE |
 | `AND` | [operators](../concepts/numbers.md) | RAM record | VG-8020 | [user page](AND.md) | — | — |
 | `OR` | [operators](../concepts/numbers.md) | RAM record | VG-8020 | [user page](OR.md) | — | — |
 | `XOR` | [operators](../concepts/numbers.md) | RAM record | VG-8020 | [user page](XOR.md) | — | — |
