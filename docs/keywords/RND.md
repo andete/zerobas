@@ -196,7 +196,7 @@ string target refused before RND runs (1 of 1); the type checked before the `)` 
 | **R-RND-SIGN** What counts as negative is the sign BIT: a single 80 10 00 00 or a double 80 12 34 56 78 90 12 34 (exponent byte &H80) reseeds from its digit bytes (10 00 00 ..., 12 34 56 78 90 12 34); without the sign bit an exponent byte of 0 is a zero (00 10 00 00 and 00 12 34 ... repeat the last number). | 4 | ✓ | ✓ |
 | **R-RND-NESTED** An RND inside RND's argument runs first, and the outer call takes its result as any other argument: RND(RND(1)) steps twice, RND(RND(0)) once, and RND(-RND(1)) reseeds from the digits of the number RND(1) returned (normalised, R-RND-VALUE); RND(-RND(0)) in state 0 is RND(-0), which repeats the 0. | 5 | ✓ | ✗ 1: KRN FX 59 |
 | **R-RND-ORDER** Two calls in one expression run left to right: RND(1)-RND(0) is exactly 0 (8 zero bytes) and steps once; RND(0)-RND(1) is the old number minus the new one, exactly. | 2 | ✓ | ✓ |
-| **R-RND-CHAIN** Every group's whole sequence -- each result's bytes and each RNDX -- follows from the start-up state 40649651372358 and the arguments alone, by R-RND-NEXT, R-RND-REPEAT, R-RND-SEED and R-RND-START, reading no measured state (SQ3: RND(-1) then 200 steps of RND(1)). | 556 | ✓ | ✗ 13: KRN BOOT 6, KRN BOOT 7, KRN GOTO2 0, KRN GOTO2 1, KRN GOTO2 2, KRN SQ2 121 … (+7) |
+| **R-RND-CHAIN** Every group's whole sequence -- each result's bytes and each RNDX -- follows from the start-up state 40649651372358 and the arguments alone, by R-RND-NEXT, R-RND-REPEAT, R-RND-SEED and R-RND-START, reading no measured state (SQ3: RND(-1) then 200 steps of RND(1)). | 556 | ✓ | ✗ 8: KRN SQ2 121, KRN FX 13, KRN FX 14, KRN FX 54, KRN FX 56, KRN FX 57 … (+2) |
 
 #### 2. The result
 
@@ -204,13 +204,13 @@ string target refused before RND runs (1 of 1); the type checked before the `)` 
 |---|---|---|---|
 | **R-RND-VALUE** The number returned is S / 10^14 as a DOUBLE, normalised: S's 14 digits shifted left past their leading zeros, the exponent byte &H40 minus the count (S = 4389820420821 is .04389820420821, 3F 43 89 82 04 20 82 10; S = 1 is 1E-14, 33 10 00 ...); S = 0 gives 8 zero bytes. Read on every step that assigns R. | 413 | ✓ | ✗ 5: KRN SQ2 121, KRN FX 54, KRN FX 56, KRN FX 57, KRN FX 59 |
 | **R-RND-TYPE** The result is always a double, whatever the argument's type (USR sees VALTYP 8 and the same 8 bytes R-RND-VALUE gives): RND(1%), RND(1!), RND(1#), RND(0), RND(-1), RND(0) in state 0 (8 zero bytes). | 94 | ✓ | ✗ 1: KRN FX 58 |
-| **R-RND-ASSIGN** `R=RND(x)` with R a double stores the result's 8 bytes; a step that assigns nothing (an error, `Q=USR(...)`, another statement) leaves R's sentinel -12345. Read in every case. | 556 | ✓ | ✗ 8: KRN BOOT 7, KRN GOTO2 1, KRN GOTO2 2, KRN SQ2 121, KRN FX 54, KRN FX 56 … (+2) |
+| **R-RND-ASSIGN** `R=RND(x)` with R a double stores the result's 8 bytes; a step that assigns nothing (an error, `Q=USR(...)`, another statement) leaves R's sentinel -12345. Read in every case. | 556 | ✓ | ✗ 5: KRN SQ2 121, KRN FX 54, KRN FX 56, KRN FX 57, KRN FX 59 |
 
 #### 3. Start-up and resets
 
 | rule | cases | reference | zerobas |
 |---|---|---|---|
-| **R-RND-START** At power-on RNDX holds 00 40 64 96 51 37 23 58: S0 = 40649651372358, so the first RND(1) is .59521943994623 and RND(0) before it .40649651372358. CLEAR (with or without arguments), NEW, RUN and ENTERING A PROGRAM LINE (`10 REM` typed in direct mode) each put S0 back; CLS and GOTO do not. | 12 | ✓ | ✗ 2: KRN BOOT 6, KRN GOTO2 0 |
+| **R-RND-START** At power-on RNDX holds 00 40 64 96 51 37 23 58: S0 = 40649651372358, so the first RND(1) is .59521943994623 and RND(0) before it .40649651372358. CLEAR (with or without arguments), NEW, RUN and ENTERING A PROGRAM LINE (`10 REM` typed in direct mode) each put S0 back; CLS and GOTO do not. | 12 | ✓ | ✓ |
 | **R-RND-OTHER** Statements that do not call RND leave the state alone: other maths (SIN, EXP, SQR, LOG, ATN, INT, ABS, STR$, HEX$), READ, POKE, VARPTR, USR of a number, an error. | 16 | ✓ | ✓ |
 
 #### 4. Forms, errors and literals
@@ -227,11 +227,6 @@ string target refused before RND runs (1 of 1); the type checked before the `)` 
 
 ## Differences from the reference
 
-- **Entering a program line does not restart the sequence here** ([D-RNDLINE](../../todo/open/D-RNDLINE.md)).
-  On the VG-8020, typing or editing a line puts the state back to its power-on start, as `CLEAR` does; zerobas wipes
-  the variables but keeps the state (R-RND-START, KRN BOOT 6-7, GOTO2 0-2). `RND(1)` in direct mode after an edit
-  prints .59521943994623 there and the next number of the old sequence here. A program typed and then `RUN` is
-  unaffected.
 - **A zero result's bytes** ([D-RNDZERO](../../todo/open/D-RNDZERO.md)). In the one state that is 0, the
   reference returns 8 zero bytes; zerobas returns exponent 0 with leftover digit bytes (the reseed's argument
   digits, or other scratch). The value is 0 on both and RNDX agrees (R-RND-VALUE, -SEED, -REPEAT, -TYPE, -NESTED;
@@ -270,7 +265,7 @@ of its own.
 
 - **The spec probe** (D-KWSPEC, 2026-11-24): the July generator predicts all 556 measured steps on the VG-8020, one
   at a time and as whole sequences; and three new facts, each a rule now. Entering a program line restarts the
-  sequence on the reference (not on zerobas: D-RNDLINE). `R$=RND(1)` steps the sequence before it reports `Type
+  sequence on the reference (zerobas too since D-RNDLINE's fix, 2026-11-24). `R$=RND(1)` steps the sequence before it reports `Type
   mismatch`. A single whose exponent byte is `&H80` (a zero with its sign bit set) RESEEDS from its digit bytes, while
   one with exponent byte 0 is a zero -- the sign bit decides, as for `SGN`. The zero result's bytes differ
   (D-RNDZERO), and `RND("A"` shares D-ARGTYPEORDER.

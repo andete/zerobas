@@ -39,7 +39,7 @@ Every keyword page, the region the spec loop takes it in, and how far its page h
 | `COS` | [maths](../concepts/numbers.md) | RAM record | VG-8020 | [DRAFT 1](COS.md) | 8 | D-TRIGHALF, D-TRANSZERO |
 | `TAN` | [maths](../concepts/numbers.md) | RAM record | VG-8020 | [DRAFT 1](TAN.md) | 8 | D-TRIGHALF, D-SINDIGITS, D-TRANSZERO |
 | `ATN` | [maths](../concepts/numbers.md) | RAM record | VG-8020 | [DRAFT 1](ATN.md) | 7 | D-TRANSZERO, D-SQRZERO |
-| `RND` | [maths](../concepts/numbers.md) | RAM record | VG-8020 | [DRAFT 1](RND.md) | 8 | D-RNDLINE, D-RNDZERO, D-ARGTYPEORDER |
+| `RND` | [maths](../concepts/numbers.md) | RAM record | VG-8020 | [DRAFT 1](RND.md) | 8 | D-RNDZERO, D-ARGTYPEORDER |
 | `CINT` | [conversion](../concepts/numbers.md) | RAM record | VG-8020 | [user page](CINT.md) | — | — |
 | `CSNG` | [conversion](../concepts/numbers.md) | RAM record | VG-8020 | [user page](CSNG.md) | — | — |
 | `CDBL` | [conversion](../concepts/numbers.md) | RAM record | VG-8020 | [user page](CDBL.md) | — | — |

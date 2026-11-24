@@ -1103,6 +1103,24 @@ parse_lineno:
 ; Zero name0 of every slot (a 0 name0 = empty). Clearing the whole numeric
 ; region keeps it tidy; for strings, zeroing each entry's name0 marks it free.
 ; Clobbers A, BC, HL.
+; --- rnd_reset: RND's 14-digit state := S0 (D-RNDLINE, 2026-11-24) -----------------------------------------
+; The VG-8020 resets it on power-on, NEW, CLEAR, RUN AND a typed program line (docs/keywords/RND.md, KRN_run1.out);
+; clear_vars covers the first four, store_line calls this for the fifth. KEEPS BC, DE, HL: store_line calls it
+; mid-routine with live registers (as hstke / hrunc, which keep everything) -- the first cut clobbered them and every
+; typed program then failed to run (KRN groups RUNR .. FX incomplete on zerobas).
+rnd_reset:
+                push    hl
+                push    de
+                push    bc
+                ld      hl,RND_S0_PACKED
+                ld      de,RND_SEED
+                ld      bc,7
+                ldir
+                pop     bc
+                pop     de
+                pop     hl
+                ret
+
 clear_vars:
                 ; Direct-mode control flow (docs/spec-basic-direct-ctrl.md §4,
                 ; D-DIR-2): empty the FOR and GOSUB frame stacks. This MOVED here
@@ -1158,13 +1176,11 @@ cv_deftbl:                                  ; (RUN clears here first, then the p
                 ld      (hl),a              ;  DEF lines run); consulted by var_name_key /
                 inc     hl                  ;  var_str_type at every variable reference
                 djnz    cv_deftbl
-                ld      hl,RND_S0_PACKED    ; math pack slice 2e (docs/spec-basic-
-                ld      de,RND_SEED         ; mathpack-slice2.md §15.3): reset the
-                ld      bc,7                ; RND generator's persistent 14-digit
-                ldir                        ; state to S0 on every NEW/CLEAR/RUN +
-                                            ; cold boot -- this clear_vars call IS
-                                            ; the single hook that covers all four
-                                            ; (§15.1's reference-identical reset).
+                call    rnd_reset           ; math pack slice 2e (docs/spec-basic-
+                                            ; mathpack-slice2.md §15.3): the RND state to
+                                            ; S0 on every NEW/CLEAR/RUN + cold boot -- and
+                                            ; (D-RNDLINE) on a typed program line, which
+                                            ; reaches rnd_reset from store_line, not here.
                 ; Arrays slice-4a (docs/spec-basic-arrays-slice4a-string-
                 ; heap.md §2/§6): reset the string heap + temp-descriptor
                 ; stack to empty. The reset body lives in the low region

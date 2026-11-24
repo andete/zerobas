@@ -1,4 +1,4 @@
-- [ ] 🐛 **ENTERING A PROGRAM LINE RESETS RND'S SEQUENCE ON THE VG-8020 (BACK TO ITS POWER-ON START), NOT HERE
+- [x] 🐛 **ENTERING A PROGRAM LINE RESETS RND'S SEQUENCE ON THE VG-8020 (BACK TO ITS POWER-ON START), NOT HERE
       (D-RNDLINE, found 2026-11-24 by D-KWSPEC's RND unit).**
       🎚️ TIER 1 — a value difference in plain use: `PRINT RND(1)` typed in direct mode, then a program line typed or
       edited, then `PRINT RND(1)` again prints .59521943994623 on the reference (the sequence restarted) and the
@@ -14,3 +14,7 @@
       and keeps the seed. Whether the edit path skips anything ELSE `clear_vars` resets is not measured. The
       acceptance is R-RND-START and the control "entering a program line keeps the state -- zerobas's" in
       [`krnd_controls.py`](../../probes/basic/spec/krnd_controls.py).
+      ✅ FIXED 2026-11-24: basic/vars.asm `rnd_reset` (the S0 copy clear_vars did inline, now a helper that KEEPS BC /
+      DE / HL) is also called from store_line (basic/files.asm) after hrunc. The first cut clobbered the registers and
+      every typed program failed to run (krnd.py: RUNR .. FX incomplete on zerobas) -- store_line runs mid-routine.
+      krnd.py re-run (KRN_run1.out): no typed-line rule fails; the 8 cases left are D-RNDZERO (6) and D-ARGTYPEORDER (2).

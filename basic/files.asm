@@ -547,6 +547,7 @@ hook_jp:        jp      (hl)
 store_line:
                 call    hstke               ; D-HSTKE: a typed line, once
                 call    hrunc               ; D-NMSHOST: a typed line, once (AE_hrunc_when.out)
+                call    rnd_reset           ; D-RNDLINE: a typed line restarts RND, as CLEAR does (KRN_run1.out)
                 xor     a
                 ld      (CONTVALID),a       ; editing the program invalidates CONT
                 ld      (SL_NUM),bc
