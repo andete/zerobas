@@ -1,0 +1,8 @@
+D-NMSHOST step 17 (2026-11-24): a COMMAND.COM session on the VG-8020 + Sony HBD-F1 and on zerobas NODISK + HBD-F1,
+msxdos103-cmd111.dsk (a private copy each). Keys: 14 s Enter, 16 s Enter, 18 s VER, 20 s DIR, 24 s COPY COMMAND.COM X.COM,
+30 s DIR. Screens compared line for line with each date token replaced (the date ORDER is the locale's: M-D-Y on the
+VG-8020, D-M-Y on C-BIOS EU). The listing's file names are not reproduced here (a user's disk image; the repo is public).
+screen at 22 s: 23 / 23 lines, 1 differing (line 22: zerobas still printing the DIR listing)
+screen at 40 s: 24 / 24 lines, 0 differing
+Philips_VG_8020: DOS entries 2; last lines: '| 41 files 375808 bytes free' / '| A>'
+C-BIOS_MSX1_EU_REPACK_NODISK: DOS entries 2; last lines: '| 41 files 375808 bytes free' / '| A>'

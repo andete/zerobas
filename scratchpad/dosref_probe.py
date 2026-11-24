@@ -107,6 +107,30 @@ if {[info exists ::env(DOSREF_SNAP)]} {
   }
   debug set_bp 0xFFA7 {$::snapst == 1} { set ::snapst 2; puts $::f "VRAMWRITES $::vw"; snap S1 }
 }
+# DOSREF_KEYS="T1:text1;T2:text2;...": type each text at emulated time Ti (`\r` = Enter), e.g. a COMMAND.COM session
+if {[info exists ::env(DOSREF_KEYS)]} {
+  foreach kv [split $::env(DOSREF_KEYS) ";"] {
+    set i [string first ":" $kv]
+    set t [string range $kv 0 [expr {$i - 1}]]
+    set txt [string map {"\\r" "\r"} [string range $kv [expr {$i + 1}] end]]
+    after time $t [list type $txt]
+  }
+}
+if {[info exists ::env(DOSREF_SHOTS)]} { foreach s [split $::env(DOSREF_SHOTS) ","] { after time $s "shot $s" } }
+# zerobas ONLY: DOSREF_HRUNC=<zerobas's own hrunc address>: when the cold start calls it, record its return address
+# (from the stack, RAM) and the time; then log when execution comes back there -- does H.RUNC return before DOS?
+if {[info exists ::env(DOSREF_HRUNC)]} {
+  if {[string match "*Philips*" [machine_info config_name]] || [string match "*National*" [machine_info config_name]]} {
+    error "DOSREF_HRUNC is for zerobas only" }
+  set ::hr_done 0
+  debug set_bp $::env(DOSREF_HRUNC) {[machine_info time] > 2.0 && !$::hr_done && [lindex [get_selected_slot 1] 0] == 0} {
+    set ::hr_done 1
+    set ::hr_ret [peek16 [reg sp]]
+    puts $::f "HRUNC_CALL [format %.5f [machine_info time]] ret=[format %04X $::hr_ret] sp=[format %04X [reg sp]]"
+    debug set_bp $::hr_ret {[lindex [get_selected_slot 1] 0] == 0} {
+      puts $::f "HRUNC_BACK [format %.5f [machine_info time]] sp=[format %04X [reg sp]]"; flush $::f }
+  }
+}
 proc shot {tag} { puts $::f "=== SCREEN $tag s"; foreach l [split [get_screen] "\n"] { if {[string trim $l] ne ""} { puts $::f "  |$l" } } ; flush $::f }
 foreach s {10 20} { after time $s "shot $s" }
 after time SECS { puts $::f "hits0100 $::hits"; close $::f; exit }

@@ -1,4 +1,7 @@
-- [ ] 🎯 **D-NMSHOST — ZEROBAS WITHOUT ITS DISK ROM HOSTS THE NMS 1200 CARTRIDGE AND BOOTS MSX-DOS (the host half of the disk contract)**
+- [ ] 🎯 **D-NMSHOST — ZEROBAS WITHOUT ITS DISK ROM HOSTS A DISK INTERFACE CARTRIDGE AND RUNS MSX-DOS (the host half of the disk contract)**
+      🔁 **TARGET SWITCHED (Joost 2026-11-24: "lets just switch to the sony"): the cartridge is now the Sony HBD-F1
+      (`-ext Sony_HBD-F1`), the reference the VG-8020 with the same cartridge; probe scratchpad/dosref_probe.py.** The
+      NMS 1200 boots no MSX-DOS in openMSX on any host (step 16); the steps below that name it stand as history.
       🎚️ TIER 1 — Joost 2026-11-24: preparing zerobas for disk ROM support in C-BIOS; "plain C-BIOS won't work, no need
       to test that yet. We still need to port any kind of disk facilities to it." The host is zerobas's no-disk build
       (C-BIOS_MSX1_EU_REPACK_NODISK = C-BIOS plus our fixes), the cartridge the Philips NMS 1200 (openMSX `-ext
@@ -176,7 +179,7 @@
       text screen on both builds: a presentation split ships the VG-8020's value).
       ✅ STEP 15 (2026-11-24; Joost: "go ahead with the locale-driven pin for EU"): $7D2F pinned to STARTUP_SCREEN
       (basic/sysvars.inc: INITXT for this EU build, INIT32 for a JP one), stepped over by a `ld de,nn` inside
-      esn_scan_lp (basic/program.asm; DE dead there): 3 B of page 1, no pad; tools/pin_plan.py checks it (9/9 pins).
+      esn_scan_lp (basic/program.asm; DE dead there): 3 B of page 1 (measured 2026-11-24 at 7ffc85c4e), no pad; tools/pin_plan.py checks it (9/9 pins).
       zerobas NODISK + HBD-F1: at $0100 every field equals the VG-8020's, the screen line for line (only the RAM slot
       label differs: 3-0 here, 3 unexpanded there -- machine wiring); NMS 1200 + a non-boot disk: the date prompt alone
       on a cleared 40-column screen on both (scratchpad/AE_pin7d2f_after.out). HOST CONTRACT ITEM 4 MET. Left: the date
@@ -189,4 +192,17 @@
       scratchpad/AE_nms_dosboot.out. The other dump in systemroms (Philips_NMS1200-27C128.ROM) is the same version 6;
       the extension's version 4 is not available. So: not the host, not the secondary slot; the v6 ROM or openMSX's
       emulation of the cartridge. A report for openMSX, or a v4 dump / real hardware, would settle it.
+      NEXT (the HBD-F1): past COMMAND.COM's date prompt on both machines -- answer date and time, then DIR, TYPE, VER and
+      a COPY -- and compare the screens; MSX-DOS runs on the host's BIOS (CHPUT / CHGET / the disk calls), so a host gap
+      shows there.
+      ✅ STEP 17 (2026-11-24): a COMMAND.COM session (date, time, VER, DIR, COPY COMMAND.COM X.COM, DIR) on the VG-8020
+      + HBD-F1 and on zerobas NODISK + HBD-F1: the screens are identical line for line once the date tokens are
+      normalised -- the only difference is the date ORDER (the locale's, kept: Joost) -- and the copy lands the same
+      (41 files, the same free bytes) (scratchpad/AE_dos_session.out). MSX-DOS from a cartridge runs on zerobas
+      without its disk ROM as on the reference.
+      STEP 18 (2026-11-24): this morning's memory question re-asked without a cartridge (memboot_probe.py, plain boot):
+      the layout cells agree; the remaining differences (FRETOP, zerobas state in published cells, leftover buffers) are
+      filed as D-BOOTCELLS. The same diff WITH the NMS 1200 (nmshost_probe.py's SYSDATA) is skewed on zerobas: its
+      0.5 ms PC sample caught the cartridge's first code only after its first HIMEM write -- not a reliable INIT-time
+      snapshot. The host-contract items for C-BIOS were handed over to C-BIOS separately (Joost's request).
 
