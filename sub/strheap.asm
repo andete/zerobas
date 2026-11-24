@@ -2557,19 +2557,19 @@ sh_instr_search:                            ; IY = the block on entry (S16)
                 or      a
                 jr      nz,sis_nonempty
                 ; --- empty b$: result = min(len_a+1, p) ---
+                ; D-INSTREMPTY (2026-11-24): an EMPTY b$ answers p when p is within a$ (p <= LEN(a$)) and 0
+                ; otherwise -- the VG-8020's rule (R-INSTR-EMPTY, docs/keywords/INSTR.md: INSTR(7,"ABCABC","") is
+                ; 0, INSTR("","") is 0). It was min(p, LEN(a$)+1) here. p >= 1 (eval_pos_arg).
                 ld      a,(ix+0)            ; len_a
-                inc     a                   ; ceiling = len_a+1 (saturates at
-                jr      nz,sis_ceil_ok      ; 255 if len_a was 255 -- see the
-                ld      a,255               ; main-ROM's own former comment)
-sis_ceil_ok:
-                ; A = min(A, BC) inline (str_min_bc's own logic — a main-ROM
-                ; resident leaf a page-0 tenant cannot call).
                 inc     b
                 dec     b
-                jr      nz,sis_empty_result ; p >= 256 -> min is A (ceiling)
+                jr      nz,sis_empty_zero   ; p >= 256: past any a$
                 cp      c
-                jr      c,sis_empty_result  ; ceiling < p -> min is A
-                ld      a,c                 ; else min is p
+                jr      c,sis_empty_zero    ; len_a < p
+                ld      a,c                 ; p
+                jr      sis_empty_result
+sis_empty_zero:
+                xor     a
 sis_empty_result:
                 ld      l,a
                 ld      h,0                 ; HL = the result (she_instr_op stores it)

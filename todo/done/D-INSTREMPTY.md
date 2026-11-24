@@ -1,4 +1,4 @@
-- [ ] 🐛 **`INSTR` WITH AN EMPTY STRING TO FIND, AND A START PAST THE END: 0 ON THE VG-8020, `LEN(a$)+1` (OR THE START) HERE
+- [x] 🐛 **`INSTR` WITH AN EMPTY STRING TO FIND, AND A START PAST THE END: 0 ON THE VG-8020, `LEN(a$)+1` (OR THE START) HERE
       (D-INSTREMPTY, found 2026-11-24 by D-KWSPEC's strings probe).**
       🎚️ TIER 1 — `INSTR(P,A$,"")` is ordinary typed BASIC and answers a different number, no error anywhere.
       🤖 **AUTONOMOUS** — measured by [`kstr.py`](../../probes/basic/spec/kstr.py) ->
@@ -10,3 +10,6 @@
       ➡️ When picked up: the empty-needle branch of zerobas's INSTR (str-engine.asm) needs the "start > LEN(a$) -> 0"
       test that the non-empty search already gets; the rule and its control (`kstr_controls.py`, which runs zerobas's
       rule over the reference's cases: FALSE on 34) are the acceptance.
+      ✅ FIXED 2026-11-24: sub/strheap.asm sh_instr_search's empty-needle branch answers p when p <= LEN(a$) and 0
+      otherwise (was min(p, LEN(a$)+1); -2 B, sub page 0 now 2 B free). kstr.py INS1-INS4 re-run (KST_run1.out): 0 of
+      1,155 cases differ (were 34). INSTR.md: the difference removed, rule tables regenerated.
