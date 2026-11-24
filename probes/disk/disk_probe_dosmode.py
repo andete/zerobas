@@ -15,7 +15,7 @@ Each snapshot is a row: `ROW <step> CF=[cells | screen] ZB=[...] <SAME|DIVERGES>
 Exit 0 all agree; 1 a divergence; 2 no reading / no DOS disk.
 usage: disk_probe_dosmode.py [DOSDISK]
 """
-import os, shutil, signal, subprocess, sys, time
+import os, re, shutil, signal, subprocess, sys, time
 REPO = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 sys.path.insert(0, os.path.join(REPO, "probes", "lib"))
 import omsx_preflight                               # noqa: E402
@@ -48,7 +48,7 @@ def tcl(out):
     return "\n".join(b) + "\n"
 
 
-def run(machine):
+def run(machine, ext=None):
     out = probe_tmp.tmp(f"dosmode_{machine}.txt")
     dsk = probe_tmp.tmp(f"dosmode_{machine}.dsk")
     shutil.copyfile(DOS, dsk)
@@ -57,7 +57,7 @@ def run(machine):
     script = probe_tmp.tmp(f"dosmode_{machine}.tcl")
     open(script, "w").write(tcl(out))
     proc = subprocess.Popen(omsx_preflight.guarded(
-        [OMSX, "-machine", machine, "-diska", dsk, "-command",
+        [OMSX, "-machine", machine] + (["-ext", ext] if ext else []) + ["-diska", dsk, "-command",
          "set renderer none; set sound_driver null", "-script", script]),
         stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, start_new_session=True)
     deadline = time.time() + 150
@@ -83,37 +83,72 @@ def render(lines):
     return out
 
 
-# D-BIOSLADDER B1 (2026-11-10): zerobas sets LINL40 = 37 BEFORE the extension-ROM
-# scan, as the VG-8020 does (a cartridge's -- and the disk ROM's -- INIT sees 37
-# there: probes/bios/biosl/b1text.asm, both rows), so MSX-DOS boots with 37 where
-# the CF-3300 keeps its own 39. Presentational (the screen at these rows is SCREEN 1,
-# LINLEN 29 on both), so the VG-8020's value ships (Joost 2026-09-04). Excused ONLY
-# on the two boot rows and ONLY as exactly 39 -> 37; every other cell must match.
-LINL40_SPLIT = ("boot", "date")
+# D-BIOSLADDER B1 (2026-11-10): zerobas sets LINL40 = 37 before the extension-ROM
+# scan, as the VG-8020 does; the CF-3300 keeps 39. That split used to be excused here
+# on the two boot rows as exactly 39 -> 37; since D-DISKROMHOST step 2b those rows are
+# measured against the VG-8020 itself (below), so no cell is excused any more.
+# D-DISKROMHOST step 2b (2026-11-24): zerobas's disk ROM now calls the start-up-screen
+# routine named by the main ROM's word at $7D2F before MSX-DOS starts, as the stock
+# cartridges do. The CF-3300 is a JP machine (its routine is INIT32: SCREEN 1, 29
+# columns); zerobas is EU (INITXT: TEXT1, 37), which is the VG-8020's. A presentational
+# split, so the VG-8020's screen ships (Joost 2026-09-04) -- and the two boot rows are
+# compared, cell for cell and line for line, against a MEASURED VG-8020 + Sony HBD-F1
+# booting the same disk, not excused. The steps after them stay on the CF-3300.
+VG_ROWS = ("boot", "date")
+# On those rows the date ORDER differs (VG-8020 M-D-Y ` 1-01-1984`, zerobas the
+# locale's Y-M-D `1984-01-01`): the locale's order is kept (Joost, D-NMSHOST step 9).
+# The line is compared as a DATE: each machine's token is read in its own order and
+# must name the same day; any other difference on the line still diverges.
+_DATE = re.compile(r"(Current date is \w+ +)(\S+)$")
+
+
+def _iso(tok):
+    a = [int(x) for x in tok.split("-") if x.isdigit()]
+    if len(a) != 3:
+        return None
+    if a[0] > 31:
+        y, m, d = a
+    else:
+        m, d, y = a
+    return f"{y % 100:02d}-{m:02d}-{d:02d}"
+
+
+def date_as_date(row):
+    out = []
+    for line in row.split(" | "):
+        m = _DATE.search(line)
+        if m and _iso(m.group(2)):
+            line = line[:m.start(2)].rstrip() + " <" + _iso(m.group(2)) + ">"   # the pad before a 1-digit month is the format's
+        out.append(line)
+    return " | ".join(out)
 
 
 def main():
     if not os.path.isfile(DOS):
         print(f"INSTRUMENT FAULT: no MSX-DOS 1 system disk at {DOS}")
         return 2
-    got = {side: render(run(m)) for side, m in (("CF", "National_CF-3300"),
-                                                 ("ZB", "C-BIOS_MSX1_EU_REPACK_DISK"))}
+    got = {side: render(run(m, e)) for side, m, e in (("CF", "National_CF-3300", None),
+                                                       ("VG", "Philips_VG_8020", "Sony_HBD-F1"),
+                                                       ("ZB", "C-BIOS_MSX1_EU_REPACK_DISK", None))}
     bad, blind = [], []
     for tag, _, _ in STEPS:
         cf, zb = got["CF"].get(tag), got["ZB"].get(tag)
+        if tag in VG_ROWS:
+            cf = got["VG"].get(tag)
         if cf is None:
             verdict = "NO-REFERENCE"
             blind.append(tag)
         elif cf == zb:
             verdict = "SAME"
-        elif tag in LINL40_SPLIT and cf.replace("LINL40=39", "LINL40=37", 1) == zb:
-            verdict = "SAME (LINL40 37: the VG-8020's, pinned)"
+        elif tag in VG_ROWS and zb and date_as_date(cf) == date_as_date(zb):
+            verdict = "SAME (the date in the locale's order)"
         else:
             verdict = "DIVERGES"
             bad.append(tag)
-        print(f"ROW {tag} CF=[{cf}] ZB=[{zb}] {verdict}", flush=True)
+        ref = "VG" if tag in VG_ROWS else "CF"
+        print(f"ROW {tag} {ref}=[{cf}] ZB=[{zb}] {verdict}", flush=True)
     if blind:
-        print(f"\nINSTRUMENT FAULT: the CF-3300 gave no reading on {', '.join(blind)}")
+        print(f"\nINSTRUMENT FAULT: a reference gave no reading on {', '.join(blind)}")
         return 2
     print(f"\n{'PASS' if not bad else 'FAIL'}: MODE at the A> prompt "
           f"({len(STEPS) - len(bad)}/{len(STEPS)})")

@@ -56,7 +56,12 @@ def build(dos_src: str, out: str, tmp_dir: str) -> dict:
     shutil.copyfile(dos_src, out)
     img = bytearray(open(out, "rb").read())
     fat12_add(img, "BDOSXB", "COM", com_bytes)
-    fat12_add(img, "AUTOEXEC", "BAT", b"BDOSXB\r\n")
+    # MODE 32 first (D-DISKROMHOST step 2b, 2026-11-24): MSX-DOS now starts in the host's
+    # start-up screen ($7D2F: JP SCREEN 1 / 29 on the CF-3300, EU TEXT1 / 37 on zerobas, a
+    # style split the VG-8020 decides -- dosmode-acceptance measures it). This exerciser's
+    # subject is the BDOS console, so it fixes its own screen; dosmode-acceptance's mode32
+    # row shows MODE 32 leaves identical cells on both machines.
+    fat12_add(img, "AUTOEXEC", "BAT", b"MODE 32\r\nBDOSXB\r\n")
     open(out, "wb").write(img)
     addrs["sig"] = com_bytes[2]                   # byte at $0102 (resident-program arm)
     addrs["len"] = addrs["screen"] + 960 - addrs["cells"]

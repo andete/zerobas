@@ -70,10 +70,14 @@
       2026-11-24 (FDC window excluded): 80 B in 36 runs before, 115 B in 40 after (`make basic-reloc` for today's).
       NOT DONE: the stock cartridges move their stack below each new STKTOP and set SLTWRK; ours does neither
       (unchanged from before); HOOK_SLOT ($ED6A) lies below INIT's claim between INIT and H.RUNC.
-      GATES (isolated instance, 2026-11-24): 74 of 76 green. ⛔ RED, ASK JOOST: dosmode-acceptance (rows boot / date)
-      and bdos-acceptance (BDOSXC / BDOSXK / BDOSXB, the captures that copy LINLEN / CSRY / CSRX and the screen) --
-      both compare the DISK machine's MSX-DOS start screen with the CF-3300's SCREEN 1 / 29 columns, and the DISK
-      machine now starts DOS in zerobas EU's start-up screen (TEXT1, 37 columns, the VG-8020's) because the disk ROM
-      calls $7D2F. A presentational JP / EU split; the standing rule (style splits ship the VG-8020's value) would
-      re-reference those rows to the VG-8020 + HBD-F1 -- not done without a ruling.
+      GATES (isolated instance, 2026-11-24): 74 of 76 green; the 2 red ones RESOLVED on merge (main ROM and sub ROM
+      byte-identical before / after, only disk.rom changed): both compared the DISK machine's MSX-DOS start screen
+      with the CF-3300's JP SCREEN 1 / 29, and the DISK machine now starts DOS in zerobas EU's TEXT1 / 37 because the
+      disk ROM calls $7D2F -- a presentational JP / EU split, which the standing rule gives to the VG-8020 (Joost
+      2026-09-04). (a) dosmode-acceptance: the boot / date rows are now compared against a MEASURED VG-8020 + Sony
+      HBD-F1 booting the same disk -- every cell and line equal, the date compared as a date (the locale's order is
+      kept, D-NMSHOST step 9); the old LINL40 39->37 excusal is gone (scratchpad/AE_dh2_dosmode3.out). (b)
+      bdos-acceptance BDOSXC / BDOSXK / BDOSXB: their subject is the BDOS console, so each AUTOEXEC.BAT now runs MODE
+      32 first and the exerciser no longer inherits the start-up screen; all three 0-byte-diff against the CF-3300
+      again (scratchpad/AE_dh2_BDOSXC.out, AE_dh2_BDOSXK.out, AE_dh2_BDOSXB.out).
 
