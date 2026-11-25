@@ -2340,8 +2340,8 @@ GFX_DDX         equ     $FAFB           ; $FAFB: this command's dx (int16) (2)
 GFX_DDY         equ     $F7BA           ; $F7BA: ...dy (2)
 GFX_DTX         equ     $F410           ; $F410: move target X (2)
 GFX_DTY         equ     $F412           ; $F412: ...Y (2)
-GFX_DTMP        equ     $FAFE           ; $FAFE: mul/sign scratch (2) -- rotate no longer (D-REREAD sub batch 2)
-GFX_DSP         equ     $FB00           ; $FB00: tenant entry SP -- an error deep in the (2 B)
+GFX_DTMP        equ     $F7A9           ; $F7A9: mul/sign scratch (2) -- rotate no longer (D-REREAD sub batch 2)
+GFX_DSP         equ     $F7AC           ; $F7AC: tenant entry SP -- an error deep in the (2 B)
                                         ; parse restores it and exits, so every helper can
                                         ; just jump to the error tail instead of threading
                                         ; a CF through the whole call chain (2) -> ends $E54F
@@ -4690,10 +4690,16 @@ COPY_CLUS       equ     $EEF9   ; DISK-ONLY: the source's first cluster (word)
 COPY_LEFT       equ     $EEFB   ; DISK-ONLY: bytes still to copy (4-byte LE)
 ; D-SCREDIT (docs/spec-basic-screditor.md): read_line's marshalling to the readline
 ; tenant, 6 B from the same band.
-RL_HL           equ     $F7A9   ; main -> tenant: the write cursor (LINEBUF, or AUTO's preset) (2)
+; 🔁 D-BOOTCELLS step 3 (2026-11-25): RL_HL / RL_ROW0 / RL_COL0 hold the editor's state at
+; the prompt (5EF5 / 05 / 01 after boot), so they left PARM2 (the reference's DEF FN area,
+; 0 there) for the MSX2-only bytes of the MSX1 RS2IQ, $FAFE-$FB01 (XSAVE / YSAVE on an
+; MSX2; constant 0 on the VG-8020: scratchpad/AE_bootcells3_hosts.out). DRAW's GFX_DTMP
+; and GFX_DSP took $F7A9 / $F7AC: both live only inside one tenant activation, so the FN
+; shadow-slot rule these hosts carry (S12) holds for them too.
+RL_HL           equ     $FAFE   ; main -> tenant: the write cursor (LINEBUF, or AUTO's preset) (2)
 RL_STAT         equ     $F7AB   ; tenant -> main: 0 = Enter, $FF = Ctrl-STOP / Ctrl-C (1)
-RL_ROW0         equ     $F7AC   ; the row where input began (1-based; 0 once scrolled off) (1)
-RL_COL0         equ     $F7AD   ; the column where input began, after any prompt (1)
+RL_ROW0         equ     $FB00   ; the row where input began (1-based; 0 once scrolled off) (1)
+RL_COL0         equ     $FB01   ; the column where input began, after any prompt (1)
 AUTFLG          equ     $F6AA   ; the standard AUTO-mode flag: with it set INLIN reads the line from column 1 (D-PINLINSTART; zerobas's BASIC never sets it) (1)
 RL_LAST         equ     $F7AE   ; the logical line's last row at Enter (1)
 RL_KEY          equ     $F7AF   ; main -> tenant: the key CHGET returned (main waits in CHGET, as before) (1)
@@ -6017,8 +6023,8 @@ MSGESC_SUB      equ     6       ; body = this byte alone -> the sub-ROM tenant
     IF GFX_DTY + 2 > ERRFLG
                 db      S11_DRAW_TARGET_OVERRAN_INTO_ERRFLG
     ENDIF
-    IF GFX_DSP + 2 > $FB02
-                db      S11_DRAW_CELLS_OVERRAN_THE_RS2IQ_BYTES
+    IF RL_COL0 + 1 > SUBSLOT
+                db      BOOTCELLS_READLINE_CELLS_OVERRAN_INTO_SUBSLOT
     ENDIF
 ; D-BOOTCELLS step 3: SUBSLOT_OK must sit past trap_init's fill (ZTRAP..TRAPSVC), which
 ; runs at every clear_vars, and SUBSLOT inside the MSX2-only bytes $FAF5-$FB02 (at
@@ -6086,8 +6092,8 @@ MSGESC_SUB      equ     6       ; body = this byte alone -> the sub-ROM tenant
     IF TKLNUM + 1 > FN_PAREA_END
                 db      S12_FN_GUESTS_OVERRAN_INTO_FPERR
     ENDIF
-    IF RL_HL < $F7A9
-                db      S12_READLINE_CELLS_INSIDE_DISKROM_BDOS_CONSOLE_SCRATCH
+    IF GFX_DTMP < $F7A9
+                db      S12_FN_SLOT_GUESTS_INSIDE_DISKROM_BDOS_CONSOLE_SCRATCH
     ENDIF
     IF TKDIG < MULPROD
                 db      S12_LEAF_GUESTS_BELOW_MULPROD

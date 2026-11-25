@@ -539,10 +539,9 @@ extents the standard already fixes would be noise, not rigour.
 | `$F7A7` | 1 B | `disk` | `CONIN_MAX` | CONIN: max length ([DE+0]) (1 B) |  |
 | `$F7A8` | 1 B | `basic` | `SV_STAT` | 1 B: tenant -> main, 0 = written, 1 = load_error |  |
 | `$F7A8` | 1 B | `disk` | `CONIN_COUNT` | CONIN: running fill count (1 B) |  |
-| `$F7A9` | 2 B | `basic` | `RL_HL` | main -> tenant: the write cursor (LINEBUF, or AUTO's preset) (2) |  |
+| `$F7A9` |  | `basic` | `GFX_DTMP` | $F7A9: mul/sign scratch (2) -- rotate no longer (D-REREAD sub batch 2) |  |
 | `$F7AB` | 1 B | `basic` | `RL_STAT` | tenant -> main: 0 = Enter, $FF = Ctrl-STOP / Ctrl-C (1) |  |
-| `$F7AC` | 1 B | `basic` | `RL_ROW0` | the row where input began (1-based; 0 once scrolled off) (1) |  |
-| `$F7AD` | 1 B | `basic` | `RL_COL0` | the column where input began, after any prompt (1) |  |
+| `$F7AC` | 2 B | `basic` | `GFX_DSP` | $F7AC: tenant entry SP -- an error deep in the (2 B) |  |
 | `$F7AE` | 1 B | `basic` | `RL_LAST` | the logical line's last row at Enter (1) |  |
 | `$F7AF` | 1 B | `basic` | `RL_KEY` | main -> tenant: the key CHGET returned (main waits in CHGET, as before) (1) |  |
 | `$F7B0` | 2 B | `basic` | `PLN_NUM` | 2 B: the parsed line number (BC), $FFFF if the |  |
@@ -653,8 +652,9 @@ extents the standard already fixes would be noise, not rigour.
 | `$FAF9` | 2 B | `basic` | `PU_FMTD` | -> the format's [len][ptr] descriptor (2) |  |
 | `$FAFB` | 2 B | `basic` | `GFX_DDX` | $FAFB: this command's dx (int16) (2) |  |
 | `$FAFD` | 1 B | `basic` | `GFX_DFN` | $FAFD: 1 = N (no-update) prefix pending (1) |  |
-| `$FAFE` |  | `basic` | `GFX_DTMP` | $FAFE: mul/sign scratch (2) -- rotate no longer (D-REREAD sub batch 2) |  |
-| `$FB00` | 2 B | `basic` | `GFX_DSP` | $FB00: tenant entry SP -- an error deep in the (2 B) |  |
+| `$FAFE` | 2 B | `basic` | `RL_HL` | main -> tenant: the write cursor (LINEBUF, or AUTO's preset) (2) |  |
+| `$FB00` | 1 B | `basic` | `RL_ROW0` | the row where input began (1-based; 0 once scrolled off) (1) |  |
+| `$FB01` | 1 B | `basic` | `RL_COL0` | the column where input began, after any prompt (1) |  |
 | `$FB02` | 1 B | `basic` | `SUBSLOT` | slot id of zerobas-sub (bit7 exp \| 3-2 \| 3), 1 (1 B) |  |
 | `$FB20` | 1 B | `disk` | `HOKVLD` | bit 0: the EXTBIO hook ($FFCA) is valid, MSX2 TH work area (1 B) |  |
 | `$FB21` | 1 B | `basic` | `DISKSLOT_OK` | nonzero = DISKSLOT valid (1 B; the disk ROM's drive count once INIT ran -- D-DRVCOUNT) |  |
