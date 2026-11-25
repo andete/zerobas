@@ -993,11 +993,19 @@ fmtdos-acceptance: repack-machine $(DISK_TEST_DSK)
 # (build/disk.rom) under the real CF-3300 BIOS — the string-engine arc does not touch the
 # disk ROM, so BDOS behaviour was identical across the lean and repack BASIC builds.
 REPACK_MACHINE  := C-BIOS_MSX1_EU_REPACK_DISK
-repack-machine: $(MAIN_ROM) $(DISK_ROM) $(SUB_ROM)
+# ⏱ B5 (2026-11-25, gate_time_review): A STAMP, NOT A RE-RUN. `repack-machine` names no file, so each of the ~246
+# units that depend on it re-ran the installer twice (two python starts, two machine-XML re-publishes). The stamp
+# re-installs when a ROM or the installer changes; the battery's `rm -rf build` clears it, and a probe's preflight
+# still refuses a machine whose ROM is not the build's.
+repack-machine: $(BUILD)/repack-machine.stamp
+
+$(BUILD)/repack-machine.stamp: $(MAIN_ROM) $(DISK_ROM) $(SUB_ROM) tools/install-repack-machine.py \
+                               tools/openmsx_paths.py
 	python3 tools/install-repack-machine.py --merged $(MAIN_ROM) --disk-rom $(DISK_ROM) \
 	  --sub-rom $(SUB_ROM)
 	python3 tools/install-repack-machine.py --merged $(MAIN_ROM) --sub-rom $(SUB_ROM) \
 	  --no-disk
+	@touch $@
 
 # --- the DISKLESS target (Joost, 2026-09-03) --------------------------------
 # "it should also be possible to ship zerobas without a disk ROM ... any disk
@@ -4814,11 +4822,11 @@ gates:
 	python3 tools/run_gates.py $(GATE_ARGS)
 
 # --- D-GATESKIP (docs/spec-gateskip.md): the two tiers ----------------------
-# Measured 2026-08-28 over a full battery: the STATIC tier is 65 serial-seconds
-# and the EMULATOR tier is 2870. Nearly the whole cost of a battery is the
-# emulator half -- and both of that day's real reds came out of the static half.
+# Measured 2026-08-28 over a full battery: the STATIC tier was 65 serial-seconds
+# and the EMULATOR tier 2870 -- HISTORY: on 2026-11-25 STATIC was 882 unit-seconds and `gates-fast` took 140-443 s
+# (docs/gate-time-review-2026-11-25.md, ⏱ W2). Read the figure from a battery log; never quote one from here.
 #
-# `gates-fast` is the iteration loop: ~20s, run it after every edit instead of
+# `gates-fast` is the iteration loop: run it after every edit instead of
 # guessing. It NEVER records a green baseline, and its report says
 # [STATIC TIER ONLY] so it can never be mistaken for a full battery.
 #

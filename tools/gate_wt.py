@@ -91,7 +91,7 @@ SWEEP_PINS = ("build/sweeps-rom.txt", "build/kwsweep-verdicts.json", "build/kwti
 REWRITE_DIRS = ("machines", "extensions")
 ROM_TREES = ("basic/", "sub/", "disk/", "tape/", "cbios-repack/")   # = pick_gates.ROM_TREES (D-TAPEPLAN)
 EXCLUDED5 = ("bdos-acceptance", "bdos-cfhost-acceptance", "diskbasic-acceptance", "fat-error-acceptance",
-             "input-devices-acceptance", "lnblank-say-acceptance",
+             "input-devices-acceptance",
              "dskfmt-acceptance CHOICES=1,4",
              "fmtdos-acceptance CHOICES=1,4")   # D-DSKFMT: the two extremes (1 side x 40,
                                                 # 2 x 80); all four take ~15 min

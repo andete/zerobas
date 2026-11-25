@@ -19,6 +19,9 @@ as a prerequisite**, so a single battery RE-PUBLISHES
 `~/.openMSX/share/machines/*.xml` up to 24 times, concurrently, while every other
 unit is reading it. This paragraph used to end "nothing rebuilds", which was
 false for the one artifact that all 41 units share.
+⏱ B5 (2026-11-25): NO LONGER. By then 246 units named it (not 24), and it is now a stamp in build/ that the
+warm-up makes: a unit's `make` finds it up to date and publishes nothing. The atomic publish below still holds for
+the one install the warm-up does.
 
 That is survivable for exactly one reason: `openmsx_paths.publish()` writes to a
 sibling temp and `os.replace`s it, so a reader can never see a partial file
@@ -66,6 +69,8 @@ WARM = ["repack-machine", "basic-reloc", "subrom-abi-check", "disk/test720.dsk"]
 # 2026-08-28 over a full battery: 19 static units = 65 serial-seconds, 31
 # emulator units = 2870. The entire cost of a battery is the emulator tier, and
 # both of that day's real reds came out of the static one.
+# ⏱ W2 (2026-11-25): THOSE FIGURES ARE HISTORY. On 2026-11-25 the STATIC tier was 882 unit-seconds (spec-live and
+# unit-test boot or fork heavily) -- docs/gate-time-review-2026-11-25.md. Read today's from a battery log.
 STATIC = """basic-reloc kwidx-check deps-check subrom-abi-check diskrom-abi-check cbios-abi-check rom-parts-check subrom-closure-check unit-test deadcode
 wall-assertion-check ram-claim-check ram-map-check pin-check build-assert-check needle-case-check redundant-load-check stubinl-check rowshape-check injector-check
 dead-alias-check alias-order-check size-check hostkill-check session-path-check
@@ -119,7 +124,10 @@ DAILY_SUITES = ("ctrlkeys-acceptance", "screenerr-acceptance", "lnblank-acceptan
                 "math-acceptance", "ifsem-acceptance", "deffn-strict",
                 "deffn-acceptance", "width-acceptance", "lineerr-acceptance",
                 "arrdim-acceptance", "castail-acceptance", "nodisk-acceptance",
-                "pusing-acceptance", "penderr-acceptance")
+                "pusing-acceptance", "penderr-acceptance",
+                # ⏱ A3 (2026-11-25, gate_time_review): its --say twin, daily WITH it -- it ran serially after
+                # every FULL among the excluded five (~134 s) while lnblank-acceptance itself was daily
+                "lnblank-say-acceptance")
 DAILY_STAMP = "daily_suites.stamp"
 SLOW_PIN_KEEP = "scratchpad/gate_pins"
 
@@ -148,7 +156,7 @@ perf-pin-check
 cassave-acceptance castail-acceptance cas-ascii-acceptance wprotect-acceptance deffn-acceptance direct-ctrl-acceptance
 dskmsg-acceptance editverb-acceptance fldary-acceptance fldwidth-acceptance
 forvar-acceptance gicini-acceptance graphics-floor-acceptance ifsem-acceptance input-acceptance nodisk-acceptance pusing-acceptance catterm-acceptance catusr-acceptance nameord-acceptance namegate-acceptance
-inputary-acceptance key-trap-acceptance linemax-acceptance lnblank-acceptance
+inputary-acceptance key-trap-acceptance linemax-acceptance lnblank-acceptance lnblank-say-acceptance
 locarg-acceptance lof-acceptance lptverb-acceptance lrvar-acceptance
 lvfix-acceptance nxary-acceptance nxlist-acceptance play-acceptance
 play-trace-acceptance readvar-acceptance runtail-acceptance sound-acceptance
@@ -722,13 +730,21 @@ def kwcover_env(name):
     return dict(os.environ, ZEROBAS_KWCOVER_TAG=name)
 
 
+UNIT_CPU: dict[str, float] = {}     # ⏱ (2026-11-25, gate_time_review): log name -> CPU seconds, descendants included
+
+
 def sh(argv, log, env=None):
     # guarded() is a no-op passthrough here (argv is make/python3/nice, never a
     # -machine openMSX launch -- those live guarded inside the probes), but it is
     # what preflight-check requires of every spawn site (spec-probe-preflight).
+    # ⏱ os.wait4: the unit's CPU (user + sys, every descendant it waited for) -- the unit-SECONDS a log prints
+    # understate a unit with its own inner pool, and a later decision should rest on CPU, not wall.
     with open(log, "w") as f:
-        return subprocess.call(omsx_preflight.guarded(argv),
-                               stdout=f, stderr=subprocess.STDOUT, env=env)
+        proc = subprocess.Popen(omsx_preflight.guarded(argv), stdout=f, stderr=subprocess.STDOUT, env=env)
+        _, status, ru = os.wait4(proc.pid, 0)
+        proc.returncode = os.waitstatus_to_exitcode(status)
+        UNIT_CPU[os.path.basename(log)] = ru.ru_utime + ru.ru_stime
+        return proc.returncode
 
 
 # A unit may exit 0 while declaring it could not measure anything -- the shipped
@@ -1025,7 +1041,8 @@ def main():
     windows = {}
 
     print(f"=== {len(units)} units, J={jobs}"
-          + (f", lineerr in {a.lineerr_shards} shards" if not a.serial else "")
+          + (f", lineerr in {a.lineerr_shards} shards"        # ⏱ W10: only when lineerr is IN this run
+             if any(n.startswith("lineerr#") for n, _ in units) else "")
           + f", nice={a.nice} solo={sorted(solo) or None} ===", flush=True)
 
     def run(idx_unit):
@@ -1196,6 +1213,15 @@ def main():
     total_gates = len([g for g in GATES + POSTCHECKS if g not in excl])
     print(f"\n=== wall {ttot:.0f}s ({twarm:.0f}s build + "
           f"{ttot-twarm:.0f}s gates) ===")
+    if UNIT_CPU:
+        top = sorted(UNIT_CPU.items(), key=lambda kv: -kv[1])
+        print(f"=== CPU {sum(UNIT_CPU.values()):.0f} s over {len(UNIT_CPU)} unit(s); the most: "
+              + ", ".join(f"{n[:-4] if n.endswith('.log') else n} {c:.0f}" for n, c in top[:10]) + " ===")
+        try:
+            with open(os.path.join(OUT, "_cpu.json"), "w") as fh:
+                json.dump(dict(top), fh, indent=1)
+        except OSError:
+            pass
     # 🔴 A PARTIAL BATTERY MUST NEVER PRINT WHAT A FULL ONE PRINTS. The whole
     # risk of D-GATESKIP is a skipped run being MISTAKEN for a complete one --
     # by a person scrolling back, or by me quoting it in a commit message. So

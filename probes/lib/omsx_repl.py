@@ -1029,7 +1029,15 @@ def run_case(machine: str, mode: str, lines: list[str], **kw) -> str | None:
     SCREEN-0 name-table string (or None on capture failure). THE DEFAULT ENTRY
     POINT: one boot per case = power-on-fresh vars + DEFtbl, matching the
     matrix-typing harness this replaces (differential-inert). See module docstring
-    on why batching is unsafe on the current zerobas build."""
+    on why batching is unsafe on the current zerobas build.
+
+    ⏱ A2 (2026-11-25, gate_time_review): THROUGH THE CACHE. This went straight to run_batch, so every probe built
+    on it (intarg, abort, play, sound, parts of error-trap) booted the reference LIVE on every battery. It is
+    run_cases' boot-per-case path for one case with reset=() -- the same run_batch call -- so it goes through
+    run_cases (and its refcache wrapper) whenever run_cases takes every keyword it was given; otherwise, as before."""
+    import inspect
+    if set(kw) <= set(inspect.signature(_run_cases_impl).parameters):
+        return run_cases(machine, [(mode, lines)], batch=False, reset=(), **kw)[0]
     return run_batch(machine, [(mode, lines)], reset=(), **kw)[0]
 
 
@@ -1329,7 +1337,10 @@ def _run_batch(machine: str, cases: list[tuple[str, list[str]]], *,
         # freeze and a slow crawl throughout average to similar figures.
         beats: list[tuple[float, float]] = []   # (emulated instant, wall time)
         while proc.poll() is None:
-            time.sleep(0.05)
+            try:                                 # ⏱ B6 (2026-11-25): wake AT the exit, not up to 50 ms after it
+                proc.wait(timeout=0.05)
+            except subprocess.TimeoutExpired:
+                pass
             now = time.time()
             try:
                 m = os.path.getmtime(hb)
@@ -1904,6 +1915,10 @@ def run_cases(machine: str, cases: list[tuple[str, list[str]]], **kw):
     # ZEROBAS_REFCACHE=refs -- what the battery runs -- a zerobas machine (by
     # its ROM bytes, then its name) is measured live, never loaded, never stored.
     if rc.subject_bypass(machine, [args.get("cart")]):
+        return _run_cases_impl(machine, cases, **kw)
+    # ⏱ A2 (2026-11-25): a call that writes a side file the caller reads back (a recorded tape, a printer log
+    # read from disk) cannot be replayed -- a hit would hand back the screen without the file
+    if rc.side_output(args):
         return _run_cases_impl(machine, cases, **kw)
 
     key = rc.key_for(machine, cases, args)

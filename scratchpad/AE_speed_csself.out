@@ -1,0 +1,9 @@
+PASS  S1 only scripts advertising --selftest are picked up  found ['b.py', 'g.py']
+PASS  S2 a passing selftest is rc=0
+PASS  S3 🔴 a FAILING selftest is rc!=0 and would be reported
+PASS  S4 every EXPECT_ARG entry carries a reason
+PASS  S5 every PLANTERS entry carries a reason and names a script that exists
+PASS  S6 inside a battery, a selftest its own unit runs is skipped here (and ONLY that unit's)  got {'tools/check_dead_aliases.py': 'dead-alias-check'}
+PASS  S7 NEGATIVE: standalone (no battery), nothing is skipped
+
+ALL PASS — check_selftests

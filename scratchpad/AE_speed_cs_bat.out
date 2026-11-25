@@ -1,0 +1,25 @@
+check_selftests — 70 script(s) run (2 planter(s) alone, 68 on 8 workers), 1 skipped by declaration, 20 run by their own unit in this battery
+  SKIP  probes/lib/omsx_repl.py
+        --selftest takes a MACHINE and boots an emulator; it is an emulator check, not a static one
+  BY    probes/basic/basic_probe_deffn.py  (deffn-selftest)
+  BY    probes/basic/basic_probe_kwram.py  (kwram)
+  BY    probes/lib/probe_refcache.py  (refcache-check)
+  BY    tools/check_alias_order.py  (alias-order-check)
+  BY    tools/check_battery_membership.py  (battery-membership-check)
+  BY    tools/check_build_asserts.py  (build-assert-check)
+  BY    tools/check_dead_aliases.py  (dead-alias-check)
+  BY    tools/check_disk_mount.py  (disk-mount-check)
+  BY    tools/check_file_sizes.py  (size-check)
+  BY    tools/check_fixture_integrity.py  (fixture-integrity-check)
+  BY    tools/check_knife_guard.py  (knife-guard-check)
+  BY    tools/check_knife_rom_guard.py  (knife-rom-guard-check)
+  BY    tools/check_needle_case.py  (needle-case-check)
+  BY    tools/check_no_hostkill.py  (hostkill-check)
+  BY    tools/check_ram_claims.py  (ram-claim-check)
+  BY    tools/check_session_paths.py  (session-path-check)
+  BY    tools/check_temp_root.py  (temp-root-check)
+  BY    tools/check_todo_markers.py  (todo-marker-check)
+  BY    tools/check_tracked_inputs.py  (tracked-inputs-check)
+  BY    tools/ram_map.py  (ram-map-check)
+
+0 failing selftest(s)

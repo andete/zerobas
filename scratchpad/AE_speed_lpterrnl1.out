@@ -1,0 +1,19 @@
+wrote C-BIOS_MSX1_EU_REPACK_DISK  (-> machine "C-BIOS_MSX1_EU_REPACK_DISK": merged repack ROM in slot 0, zerobas-disk in slot 3-1, zerobas-sub in slot 3-2)
+     /Users/joost/.openMSX/share/machines/C-BIOS_MSX1_EU_REPACK_DISK.xml
+wrote C-BIOS_MSX1_EU_REPACK_NODISK  (-> machine "C-BIOS_MSX1_EU_REPACK_NODISK": merged repack ROM in slot 0, slot 3-1 EMPTY (diskless target), zerobas-sub in slot 3-2)
+     /Users/joost/.openMSX/share/machines/C-BIOS_MSX1_EU_REPACK_NODISK.xml
+vg8020  inlp    A[\r\nE 11 \r\n
+vg8020  after   A[\r\nE 11 \r\n
+vg8020  quiet   A[\r\nZ\r\n
+vg8020  quiet2  A[\r\nZ\r\n
+vg8020  untrap  A[\r\n
+vg8020  ctrl    A[Z\r\n
+zb      inlp    A[\r\nE 11 \r\n
+zb      after   A[\r\nE 11 \r\n
+zb      quiet   A[\r\nZ\r\n
+zb      quiet2  A[\r\nZ\r\n
+zb      untrap  A[\r\n
+zb      ctrl    A[Z\r\n
+refcache: REFS MODE (references replayed, zerobas measured), 0 REFERENCE reading(s) replayed, 1 reference miss, 1 zerobas reading(s) MEASURED, 0 zerobas replayed, 1 stored
+lpterrnl: 6/6 rows agree
+refcache: REFS MODE (references replayed, zerobas measured), 0 REFERENCE reading(s) replayed, 1 reference miss, 1 zerobas reading(s) MEASURED, 0 zerobas replayed, 1 stored

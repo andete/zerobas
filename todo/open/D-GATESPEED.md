@@ -20,9 +20,23 @@
       run_gates gives a mutator's restored files their old mtime back (index blob / saved bytes compared), so the
       post-mutator refresh has nothing to rebuild (a no-op WARM is 0 s). pick_gates's selftest 23 s -> 6 s
       (footprints memoised).
-      OPEN: A2 the three refcache holes (verify battery) · A5 fingerprint-skip unit-test / selftest-check on docs-only
-      · A3 lnblank-say out of the excluded five; time the five · B3 shard kwsweep · B4 one host-wide slot budget
-      (A/B) · B5 repack-machine as a stamp · B6 proc.wait polling · A6 programs / intarg daily (knife check first) ·
-      W2 the "~20 s" / "65 serial-seconds" comments · W10 the lineerr banner · per-unit rusage · B1 step 2: split the
+      ✅ A2, the three refcache holes (batch 2): (1) a temp path in a key is keyed by its BYTES (a printer log as
+      <OUT>: openMSX truncates it on plug), (2) run_case goes through run_cases' wrapper, (3) run_programs,
+      run_sessions and the lof / badfnum launcher go through cached_run (+ `optional=` outputs: a session that prints
+      nothing). Each suite run twice, REFS mode, output identical: lptverb 48 -> 11 s, intarg 36 -> 14, programs
+      104 -> 74, sessions 33 -> 21, lof 17 -> 10, badfnum 29 -> 11, editverb 38 -> 12, outdlp 20 -> 9, abort 31 -> 19
+      (scratchpad/AE_speed_*.out). 🔴 THE CATCH THE REVIEW PREDICTED ("a key that is too coarse"): cassave and
+      tapebios went RED on the replay run -- their reading includes a TAPE the machine records (`cassetteplayer
+      new`), which a hit cannot recreate; they had missed by accident before (the fresh path was in the key).
+      side_output() now runs any call that records a tape, writes a savestate or reads a printer log from the file
+      LIVE (selftest KM7, negatives included); both green on two runs. omsx_session.py left alone: its users
+      (diskbasic-acceptance) run zerobas only, which is never cached.
+      ✅ B6: the watchdog loops wait on proc.wait(timeout) instead of a fixed sleep (omsx_repl + the launchers).
+      ✅ A3: lnblank-say-acceptance is a daily suite beside its twin, out of the excluded five (pick_gates, gate_wt).
+      ✅ B5: repack-machine is a stamp in build/ (a no-op make 0.06 s); W9's docstring corrected.
+      ✅ W2 / W10: the stale timing comments, and the banner names lineerr's shards only when they run.
+      ✅ per-unit CPU: run_gates' sh() records each unit's CPU (os.wait4) and prints the top ten + build/_cpu.json.
+      OPEN: A5 fingerprint-skip unit-test / selftest-check on docs-only · B3 shard kwsweep · B4 one host-wide slot
+      budget (A/B) · A6 programs / intarg daily (knife check first) · B1 step 2: split the
       own-live probes by group (the long pole is now one probe's serial cases) · check_disk_deps --selftest (30 s,
       a planter, alone) and tier_table --selftest (33 s): why so slow.

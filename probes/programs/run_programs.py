@@ -50,6 +50,7 @@ sys.path.insert(0, os.path.join(REPO, "probes", "lib"))
 import cas_encode                                    # noqa: E402
 import omsx_preflight                                # noqa: E402
 import probe_tmp                                     # noqa: E402
+import probe_refcache                                # noqa: E402
 from omsx_run import _tcl_dquote                     # noqa: E402
 from omsx_repl import key_proc                       # noqa: E402
 
@@ -257,18 +258,34 @@ def run(machine, name, text, gaps=False, typing="inject"):
                          .replace("GAPOUT", GAP_OUT if gaps else ""))
     cmd = [OMSX, "-machine", machine, "-command",
            "set renderer none; set sound_driver null", "-script", tcl]
+    dsk = None
     if needs_disk(text):
         dsk = probe_tmp.tmp(f"prog_{machine}_{name}.dsk")
         shutil.copyfile(os.path.join(REPO, "disk", "empty720.dsk"), dsk)
         cmd += ["-diska", dsk]
-    proc = subprocess.Popen(omsx_preflight.guarded(cmd),
-                            stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL,
-                            start_new_session=True)
-    deadline = time.time() + 600
-    while proc.poll() is None and time.time() < deadline:
-        time.sleep(0.2)
-    if proc.poll() is None:
-        os.killpg(os.getpgid(proc.pid), signal.SIGTERM)
+
+    def launch():
+        proc = subprocess.Popen(omsx_preflight.guarded(cmd),
+                                stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL,
+                                start_new_session=True)
+        deadline = time.time() + 600
+        while proc.poll() is None and time.time() < deadline:
+            try:                                  # ⏱ B6's rule: wake at the exit
+                proc.wait(timeout=0.2)
+            except subprocess.TimeoutExpired:
+                pass
+        if proc.poll() is None:
+            os.killpg(os.getpgid(proc.pid), signal.SIGTERM)
+            return "TIMEOUT"
+        return "ok"
+    # ⏱ A2 hole 3 (2026-11-25, gate_time_review): the reference's runs through the store (D-REFBYPASS's
+    # cached_run): zerobas is still measured every time; a TIMEOUT is never stored. ZB_GAPTRACE writes a file the
+    # store does not know, so a traced run is always live.
+    if os.environ.get("ZB_GAPTRACE"):
+        launch()
+    else:
+        probe_refcache.cached_run(cmd, [log, out], launch, inouts=[dsk] if dsk else (),
+                                  ok=lambda v: v == "ok")
     lpt = open(log, "rb").read().decode("latin-1") if os.path.exists(log) else ""
     if KEEP:
         os.makedirs(KEEP, exist_ok=True)

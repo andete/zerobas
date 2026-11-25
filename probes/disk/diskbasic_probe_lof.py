@@ -95,6 +95,7 @@ import os as _zbo, sys as _zbs  # noqa: E402
 _zbs.path.insert(0, _zbo.path.join(_zbo.path.dirname(
     _zbo.path.dirname(_zbo.path.abspath(__file__))), "lib"))
 import omsx_preflight  # noqa: E402
+import probe_refcache  # noqa: E402
 
 OMSX = shutil.which("openmsx") or "/Applications/openMSX.app/Contents/MacOS/openmsx"
 SRC_DSK = os.path.join(os.path.dirname(os.path.dirname(
@@ -760,15 +761,25 @@ def run_case(side: str, label: str, lines, dirname, step: float = 14.0):
         fh.write(build_tcl(out, lines, date_prompt, boot_t, step))
     if os.path.exists(out):
         os.unlink(out)
-    proc = subprocess.Popen(
-        omsx_preflight.guarded([OMSX, "-machine", machine, "-diska", dsk,
-         "-command", "set renderer none; set sound_driver null", "-script", tcl]),
-        stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, start_new_session=True)
-    deadline = time.time() + 240
-    while proc.poll() is None and time.time() < deadline:
-        time.sleep(0.1)
-    if proc.poll() is None:
-        os.killpg(os.getpgid(proc.pid), signal.SIGKILL)
+    cmd = [OMSX, "-machine", machine, "-diska", dsk,
+           "-command", "set renderer none; set sound_driver null", "-script", tcl]
+
+    def launch():
+        proc = subprocess.Popen(omsx_preflight.guarded(cmd), stdout=subprocess.DEVNULL,
+                                stderr=subprocess.DEVNULL, start_new_session=True)
+        deadline = time.time() + 240
+        while proc.poll() is None and time.time() < deadline:
+            try:                                  # ⏱ B6's rule: wake at the exit
+                proc.wait(timeout=0.1)
+            except subprocess.TimeoutExpired:
+                pass
+        if proc.poll() is None:
+            os.killpg(os.getpgid(proc.pid), signal.SIGKILL)
+            return "TIMEOUT"
+        return "ok"
+    # ⏱ A2 hole 3 (2026-11-25, gate_time_review): the reference's runs through the store (cached_run); the disk is
+    # an in-out (the second instrument reads the directory the machine left); zerobas is measured every time
+    if probe_refcache.cached_run(cmd, [out], launch, inouts=[dsk], ok=lambda v: v == "ok")[1] == "TIMEOUT":
         os.unlink(dsk)
         return side, label, None, ["TIMEOUT"], "", None
     # the SECOND instrument: read the directory the machine left behind.

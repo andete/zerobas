@@ -78,7 +78,7 @@ CANARY = ("error-acceptance", "string-acceptance", "runline-acceptance",
           # a ROM change gets them HERE -- they are the keyword-level net.
           # ⏱ kwtime / kwram left 2026-10-13 (daily, in FULL): only kwsweep stays.
           "kwsweep")
-EXCLUDED5 = ("input-devices-acceptance", "lnblank-say-acceptance",
+EXCLUDED5 = ("input-devices-acceptance",
              "diskbasic-acceptance", "bdos-acceptance", "fat-error-acceptance")
 # 🔴 GENERATED FILES ARE NOT INPUTS. `disk/basic-resident-abi.inc` is regenerated
 # whenever a main-ROM address moves -- i.e. on almost EVERY handler change -- so

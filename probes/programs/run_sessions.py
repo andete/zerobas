@@ -54,6 +54,7 @@ sys.path.insert(0, HERE)
 import cas_encode                                    # noqa: E402
 import omsx_preflight                                # noqa: E402
 import probe_tmp                                     # noqa: E402
+import probe_refcache                                # noqa: E402
 from omsx_run import _tcl_dquote                     # noqa: E402
 from omsx_repl import key_proc                       # noqa: E402
 import run_programs as rp                            # noqa: E402
@@ -252,18 +253,29 @@ def run(machine, name, text):
                          .replace("MINSTART", "10.5" if disk else "0"))
     cmd = [rp.OMSX, "-machine", machine, "-command",
            "set renderer none; set sound_driver null", "-script", tcl]
+    dsk = None
     if disk:
         dsk = probe_tmp.tmp(f"ses_{machine}_{name}.dsk")
         subprocess.run([sys.executable, os.path.join(REPO, "tools", "make_test_dsk.py"),
                         "--empty", dsk], check=True, capture_output=True)
         cmd += ["-diska", dsk]
-    proc = subprocess.Popen(omsx_preflight.guarded(cmd), stdout=subprocess.DEVNULL,
-                            stderr=subprocess.DEVNULL, start_new_session=True)
-    deadline = time.time() + 600
-    while proc.poll() is None and time.time() < deadline:
-        time.sleep(0.2)
-    if proc.poll() is None:
-        os.killpg(os.getpgid(proc.pid), signal.SIGTERM)
+
+    def launch():
+        proc = subprocess.Popen(omsx_preflight.guarded(cmd), stdout=subprocess.DEVNULL,
+                                stderr=subprocess.DEVNULL, start_new_session=True)
+        deadline = time.time() + 600
+        while proc.poll() is None and time.time() < deadline:
+            try:                                  # ⏱ B6's rule: wake at the exit
+                proc.wait(timeout=0.2)
+            except subprocess.TimeoutExpired:
+                pass
+        if proc.poll() is None:
+            os.killpg(os.getpgid(proc.pid), signal.SIGTERM)
+            return "TIMEOUT"
+        return "ok"
+    # ⏱ A2 hole 3 (2026-11-25): the reference's runs through the store, as run_programs.py's; zerobas measured
+    probe_refcache.cached_run(cmd, [log, out], launch, inouts=[dsk] if dsk else (), ok=lambda v: v == "ok",
+                              optional=(log,))
     lpt = open(log, "rb").read().decode("latin-1") if os.path.exists(log) else ""
     snaps = []
     if os.path.exists(out):

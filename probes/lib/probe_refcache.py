@@ -365,6 +365,8 @@ MEDIA_PARAMS = ("diska", "diskb", "cassette", "cart")
 
 
 def _param_key(k, v):
+    if k == "capture" and isinstance(v, tuple) and v and v[0] == "screen_printer":
+        return [v[0], "<OUT>"]            # ⏱ A2: the printer log is an output (see _tmp_paths_by_bytes)
     # 🔴 A MEDIA PARAMETER IS KEYED BY ITS BYTES, NOT ITS PATH (2026-11-03). The
     # disk / tape probes copy their image to a fresh temp file per run, so the
     # path made every run a new key: the first FULL under `refs` stored 718
@@ -382,6 +384,58 @@ def _param_key(k, v):
     return list(v) if isinstance(v, tuple) else v
 
 
+_TMP_PATH = None
+
+
+def _tmp_paths_by_bytes(text: str) -> str:
+    """⏱ A2 (2026-11-25, gate_time_review): THE 2026-11-03 MEDIA-PATH BUG THROUGH A SECOND CHANNEL. A probe that
+    names a fresh temp file inside `prologue=` or `capture=("screen_printer", log)` -- a printer log, a tape -- put
+    its PATH in the key, so the same reference call missed and was stored again on every run (lptverb 20 of 20,
+    cassave 16 of 16, editverb 6 of 6, kwsweep 5 ...). Every path under the probe temp roots is replaced by what
+    the machine can see of it: the file's sha256 when it exists (an input, or an output that already holds bytes),
+    `<TMP>` when it does not (an output yet to be written). Two calls that differ only in WHERE a temp file sits
+    now share a key; two that differ in its BYTES still do not."""
+    global _TMP_PATH
+    import re
+    if _TMP_PATH is None:
+        roots = {probe_tmp.ROOT, os.environ.get("ZB_TEST_TMP") or ""}
+        roots |= {os.path.realpath(r) for r in roots if r}
+        alts = "|".join(re.escape(r.rstrip("/")) for r in sorted(roots, key=len, reverse=True) if r)
+        _TMP_PATH = re.compile(rf"(?:{alts})/[^\s\"'{{}}\[\];\\]+")
+
+    def sub(m):
+        p = m.group(0)
+        return f"<TMP:{_file_sha(p)}>" if os.path.isfile(p) else "<TMP>"
+    # a PRINTER LOG is an OUTPUT whatever it holds: openMSX truncates it when the printer is plugged (once per boot,
+    # basic_probe_lptverb.py's prn_battery), so its bytes before the run never reach the machine -- and keying them
+    # made the key depend on which call ran before (lptverb: 7 of 20 still missed)
+    text = _PRN_LOG.sub(r"\1{<OUT>}", text)
+    return _TMP_PATH.sub(sub, text)
+
+
+_PRN_LOG = __import__("re").compile(r"(printerlogfilename )\{[^}]*\}")
+
+
+def side_output(params: dict) -> str | None:
+    """⏱ A2 (2026-11-25): why a run_cases call must NOT be served from the store, or None.
+
+    A stored reading is the CAPTURE. A call whose Tcl makes the machine write a FILE the caller reads afterwards --
+    a tape recorded with `cassetteplayer new`, a printer log read straight from disk -- needs that file too, and a
+    hit cannot recreate it. Until 2026-11-25 such calls missed by accident (their fresh temp path was in the key);
+    normalising temp paths (_tmp_paths_by_bytes) made them hit, and cassave / tapebios replayed screens with no
+    tape behind them (scratchpad/AE_speed_cassave2.out, AE_speed_tapebios2.out). So they run live. A printer log
+    returned INSIDE the capture (`screen_printer`) is part of the reading and stays cacheable."""
+    text = json.dumps(params.get("prologue") or (), default=str)
+    cap = params.get("capture")
+    if "cassetteplayer new" in text:
+        return "the call records a tape the caller reads back"
+    if "savestate" in text:
+        return "the call writes a savestate"
+    if "printerlogfilename" in text and not (isinstance(cap, (tuple, list)) and cap and cap[0] == "screen_printer"):
+        return "the call writes a printer log the caller reads from the file"
+    return None
+
+
 def key_for(machine: str, cases, params: dict) -> str:
     # "v" 2 for a call that carries a media file: entries stored before
     # 2026-11-04 hold no post-run media bytes (see media_snapshot), so they
@@ -394,7 +448,7 @@ def key_for(machine: str, cases, params: dict) -> str:
         "cases": [[c[0], list(c[1])] for c in cases],
         "params": {k: _param_key(k, v) for k, v in sorted(params.items())},
     }
-    return _sha(json.dumps(payload, sort_keys=True, default=str).encode())
+    return _sha(_tmp_paths_by_bytes(json.dumps(payload, sort_keys=True, default=str)).encode())
 
 
 def _enc(o):
@@ -948,25 +1002,28 @@ def _share_dirs() -> list[str]:
         return []
 
 
-def _read_outs(paths) -> list[bytes] | None:
+def _read_outs(paths, optional=()) -> list[bytes] | None:
     got = []
     for p in paths:
         try:
             with open(p, "rb") as fh:
                 got.append(fh.read())
         except OSError:
+            if p in optional:
+                got.append(b"")
+                continue
             return None
     return got
 
 
-def direct_storable(blobs) -> bool:
-    """Every declared output exists, is non-empty, holds no non-reading."""
+def direct_storable(blobs, may_be_empty=()) -> bool:
+    """Every declared output exists, is non-empty (bar the indices in may_be_empty), holds no non-reading."""
     if blobs is None or not blobs:
         return False
     if sum(len(b) for b in blobs) > DIRECT_MAX_BYTES:
         return False
-    for b in blobs:
-        if not b.strip():
+    for i, b in enumerate(blobs):
+        if not b.strip() and i not in may_be_empty:
             return False
         if any(n.encode() in b for n in NON_READINGS):
             return False
@@ -988,8 +1045,8 @@ def _direct_load(key: str):
         return None
 
 
-def _direct_store(key: str, blobs, machine: str) -> bool:
-    if not direct_storable(blobs):
+def _direct_store(key: str, blobs, machine: str, may_be_empty=()) -> bool:
+    if not direct_storable(blobs, may_be_empty):
         STATS["refused"] += 1
         return False
     d = _path(key)
@@ -1018,7 +1075,7 @@ def _hit_preflight(cmd) -> None:
     omsx_preflight.guard_cmd(list(cmd))
 
 
-def cached_run(cmd, outs, run, *, inouts=(), media=(), ok=None):
+def cached_run(cmd, outs, run, *, inouts=(), media=(), ok=None, optional=()):
     """Run ONE openMSX launch through the reference store.
 
     cmd     the argv the caller is about to spawn, BEFORE guarded() (guarded's
@@ -1034,6 +1091,9 @@ def cached_run(cmd, outs, run, *, inouts=(), media=(), ok=None):
             watchdog); its return value is handed back on a miss
     media   extra input files to hash (inputs are auto-detected too)
     ok      ok(value) -> False vetoes the store (e.g. a watchdog timeout)
+    optional  outputs among `outs` that a genuine reading may leave EMPTY or ABSENT (a printer log of a session
+            that prints nothing): stored as found (absent -> empty) and replayed as an empty file. Every other
+            output must still be a non-empty reading (⏱ A2, 2026-11-25: run_sessions.py's 18 of 20 refused)
 
     -> (served_from_cache: bool, value). value is None on a hit.
     """
@@ -1082,7 +1142,7 @@ def cached_run(cmd, outs, run, *, inouts=(), media=(), ok=None):
         except OSError:
             pass
     value = run()
-    blobs = _read_outs(list(outs) + list(inouts))
+    blobs = _read_outs(list(outs) + list(inouts), optional)
     if VERIFY and stored is not None and len(stored) == len(outs) + len(inouts):
         if blobs == stored:
             STATS["verify_ok"] += 1
@@ -1099,7 +1159,7 @@ def cached_run(cmd, outs, run, *, inouts=(), media=(), ok=None):
     if ok is not None and not ok(value):
         STATS["refused"] += 1
         return False, value
-    _direct_store(key, blobs, machine)
+    _direct_store(key, blobs, machine, {i for i, p in enumerate(list(outs) + list(inouts)) if p in optional})
     return False, value
 
 
@@ -1263,6 +1323,13 @@ def _selftest() -> int:
                      (["ok", None], "one good one None")):
         arm(f"K6 refuse to store {why}", not storable(bad))
     arm("K6b a real reading IS storable (control)", storable(["READY", "OK"]))
+    # ⏱ A2 (2026-11-25): an OPTIONAL output (a printer log nothing printed to) may be empty; nothing else may
+    arm("K6c a direct launch whose OPTIONAL output is empty IS storable",
+        direct_storable([b"SCREEN", b""], {1}))
+    arm("K6c NEGATIVE: the same empty output, NOT declared optional, is refused",
+        not direct_storable([b"SCREEN", b""]))
+    arm("K6c NEGATIVE: optional covers only ITS index -- an empty REQUIRED output is still refused",
+        not direct_storable([b"", b"LOG"], {1}))
 
     # --- K7 round trip ---------------------------------------------------
     global ROOT
@@ -1747,6 +1814,34 @@ def _selftest() -> int:
         arm("KM3 a disk the run WROTE is replayed byte for byte on a hit (the "
             "six disk-write suites that read their image back)",
             list(ch) == ["diska"] and open(pc, "rb").read() == b"\x00" * 60 + b"SAVE")
+        # ⏱ A2 (2026-11-25): a temp path in prologue / capture is keyed by its BYTES, not where it sits
+        root = probe_tmp.ROOT
+        os.makedirs(root, exist_ok=True)
+        t1, t2 = os.path.join(root, f"km4_{os.getpid()}_1.cas"), os.path.join(root, f"km4_{os.getpid()}_2.cas")
+        for t, b in ((t1, b"A"), (t2, b"B")):
+            with open(t, "wb") as fh:
+                fh.write(b)
+        lg = lambda n: ("screen_printer", os.path.join(root, f"km4_none_{n}/p.log"))
+        arm("KM4 two printer logs that differ only in their temp PATH share a key (lptverb missed 20 of 20)",
+            key_for("Fake_Media", cs, {"capture": lg(1)}) == key_for("Fake_Media", cs, {"capture": lg(2)}))
+        pro = lambda t: (f'cassetteplayer insert "{t}"',)
+        arm("KM5 NEGATIVE: two temp INPUTS with different bytes keep different keys",
+            key_for("Fake_Media", cs, {"prologue": pro(t1)}) != key_for("Fake_Media", cs, {"prologue": pro(t2)}))
+        with open(t2, "wb") as fh:
+            fh.write(b"A")
+        arm("KM7 a call that RECORDS a tape is never served (cassave / tapebios replayed screens with no tape)",
+            side_output({"prologue": (f"cassetteplayer new {{{root}/x.wav}}",)}) is not None)
+        arm("KM7 a printer log read from the FILE is never served",
+            side_output({"prologue": (f"set printerlogfilename {{{root}/p.log}}",)}) is not None)
+        arm("KM7 NEGATIVE: a printer log returned INSIDE the capture stays cacheable",
+            side_output({"prologue": (f"set printerlogfilename {{{root}/p.log}}",),
+                         "capture": ("screen_printer", f"{root}/p.log")}) is None)
+        arm("KM7 NEGATIVE: playing a tape (an input, keyed by its bytes) stays cacheable",
+            side_output({"prologue": (f"cassetteplayer insert {{{root}/x.cas}}",)}) is None)
+        arm("KM6 and two temp inputs with the SAME bytes share one",
+            key_for("Fake_Media", cs, {"prologue": pro(t1)}) == key_for("Fake_Media", cs, {"prologue": pro(t2)}))
+        for t in (t1, t2):
+            os.remove(t)
     finally:
         shutil.rmtree(_md, ignore_errors=True)
         _MACHINE_ID.pop("Fake_Media", None)

@@ -1,0 +1,6 @@
+GATE TIER: FULL
+  why: the gate harness changed: Makefile tools/pick_gates.py tools/run_gates.py
+  hours since the last full green: 3.2 (full once a day, at every hand-off, and on a RAM-address move)
+  ⏱ the 14 daily suites are due (last green 59 h ago): run `make gates-sweeps` ALONE, not beside a battery
+  ⏱ kwtime / kwram are due (last measured 59 h ago, 59 h ago): run `make gates-sweeps` ALONE, not beside a battery
+  excluded-five suites: bdos-acceptance diskbasic-acceptance fat-error-acceptance input-devices-acceptance lnblank-say-acceptance

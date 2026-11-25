@@ -1,0 +1,113 @@
+🔴 refcache VERIFY MISMATCH on Philips_VG_8020: case(s) [0] differ between the stored reading and a fresh one. The store is WRONG or the machine moved; key 362274f4579d
+🔴 refcache VERIFY MISMATCH on Fake_Direct (direct launch): output(s) [0] differ between the stored reading and a fresh one. The store is WRONG or the machine moved; key a01fd07c8d68
+⚠️ refcache: C-BIOS_MSX1_EU_REPACK_PLANT: name says zerobas, its ROM bytes say reference -- treated as ZEROBAS (measured, never replayed)
+⚠️ refcache: Fake_Ref_With_Repo_Rom: name says reference, its ROM bytes say zerobas -- treated as ZEROBAS (measured, never replayed)
+PASS  K0 identical inputs give the same key (green control)  0e2c7666af9a
+PASS  K1 one character of a typed line -> MISS  0e2c7666 vs e5fd2e62
+PASS  K2 an extra typed line -> MISS  0e2c7666 vs e23b80d2
+PASS  K3 param 'batch' -> MISS  0e2c7666 vs ca458708
+PASS  K3 param 'reset' -> MISS  0e2c7666 vs 624245dc
+PASS  K3 param 'boot' -> MISS  0e2c7666 vs b7159049
+PASS  K3 param 'capture' -> MISS  0e2c7666 vs c4a3e3ef
+PASS  K3 param 'sentinel_capture' -> MISS  0e2c7666 vs f35c7e4c
+PASS  K4 one byte of a ROM the machine names -> different identity  0a21b041 vs 1fb33c62
+PASS  K4b restoring the ROM restores the identity (control)  0a21b0418327
+PASS  K5 a changed harness fingerprint -> MISS  0e2c7666 vs 349b3014
+PASS  K5e another openMSX build -> a different harness fingerprint -> MISS  62a59408 vs 6db7231d
+PASS  K6 refuse to store None
+PASS  K6 refuse to store empty list
+PASS  K6 refuse to store [None]
+PASS  K6 refuse to store empty string
+PASS  K6 refuse to store blank
+PASS  K6 refuse to store <NO OUTPUT>
+PASS  K6 refuse to store <NO CAPTURE>
+PASS  K6 refuse to store one good one None
+PASS  K6b a real reading IS storable (control)
+PASS  K6c a direct launch whose OPTIONAL output is empty IS storable
+PASS  K6c NEGATIVE: the same empty output, NOT declared optional, is refused
+PASS  K6c NEGATIVE: optional covers only ITS index -- an empty REQUIRED output is still refused
+PASS  K7 store -> load round-trips the result exactly
+PASS  K7b settle_out round-trips int keys and tuples exactly  {'sentinel': {0: 56.0, 1: 80.125}, 'fallback': {}, 'marks': {0: [(56.0, 255)]}, 'span': {0: (1.5, 9.0)}}
+PASS  K7c an unknown key loads as (None, None)
+PASS  K7d a settle-less entry stores no provenance
+PASS  K8 24 concurrent writers, 0 torn reads
+NOTE  K9 binds the IMPORTED module instance (DISTINCT from __main__) -- see the comment above; this is a statement of fact, not an arm.
+PASS  K9a a real reading came back    Ok                                    
+PASS  K9b VERIFY agreed with the untampered entry (green control)  verify_ok=1
+PASS  K9c VERIFY caught a tampered entry (the arm that matters)  verify_bad 0 -> 1
+PASS  KA1 a FRESH entry is not expired (the green control -- without it every arm below passes on a store that simply never wrote)
+PASS  KA2 a fresh entry LOADS
+PASS  KA3 an entry past the cap reads as EXPIRED
+PASS  KA4 🔴 THE ARM THAT MATTERS: an expired entry LOADS AS A MISS, so the caller re-measures against the live machine
+PASS  KA5 and the refusal is COUNTED, not silent
+PASS  KA6 the summary NAMES the expiry rather than folding it into miss
+PASS  KA7 store_stats sees the entry and its age
+PASS  KA8 prune deletes the expired entry
+PASS  KA9 prune KEEPS a fresh entry (negative control -- a prune that deletes everything would pass KA8)
+PASS  KA10 a cap of 0 DISABLES expiry (the escape hatch works)
+refcache store: 1 entr(ies), 0.0 MB, oldest 14.0d, cap 14d; pruned 1, kept 1
+PASS  KA11 GREEN CONTROL (and only that): maintain() is green on an entry under the cap. 🔴 IT PASSES WITH OR WITHOUT THE ONE-CLOCK FIX -- a mutation reverting `prune(now=now)` left it PASSING -- because the real gap between the two walks is microseconds and this fixture plants half a second of margin. Named for what it is; KA12 is the arm with content.
+refcache store: 1 entr(ies), 0.0 MB, oldest 14.0d, cap 14d; pruned 0, kept 1
+🔴 an entry survived the prune at 14.0d > 14d cap
+   CAUSE: no unlink failed, so this is NOT the `except OSError` arm. The oldest survivor was under the cap when prune looked and over it when the report did, or it arrived between the two walks.
+     oldest survivor: 14.0000d  /tmp/zerobas/refage-yodxwfky/cc/cccccccccccccccccccccccccccccccccccccccc.json
+     margin over cap: 0.500s
+PASS  KA12 🔴 THE ARM WITH CONTENT: measure the post-condition a second LATER than the prune -- the shape the code had before D-REFRACE -- and the SAME store goes RED. That is what makes `maintain` capable of failing ITSELF on the calendar, and why one clock reading is now threaded through both walks.
+refcache store: 0 entr(ies), 0.0 MB, oldest 0.0d, cap 14d; pruned 1, kept 0
+PASS  KA13 and a genuinely over-cap entry is still PRUNED, so KA11 did not buy its green by disabling expiry
+refcache store: 1 entr(ies), 0.0 MB, oldest 0.0d, cap 14d; pruned 0, kept 1
+PASS  KA15 🔴 THE ARM THAT COVERS D-REFRACE: maintain() threads ITS clock into prune(), so an entry that is 'not yet written' at that clock SURVIVES -- revert `prune(now=now)` and this entry is deleted
+refcache store: 0 entr(ies), 0.0 MB, oldest 0.0d, cap 14d; pruned 1, kept 0
+PASS  KA15 NEGATIVE: at the REAL clock the same 20-day entry is pruned, so KA15 is about the clock and not about expiry being broken
+refcache store: 1 entr(ies), 0.0 MB, oldest 28.0d, cap 14d; pruned 0, kept 1
+🔴 an entry survived the prune at 28.0d > 14d cap
+   CAUSE: 1 over-cap entr(ies) could NOT be unlinked -- this is the `except OSError` arm, and it is counted in `kept`, which is why it used to look like a young entry:
+     28.00d  PermissionError/13  /tmp/zerobas/refage-yodxwfky/dd/dddddddddddddddddddddddddddddddddddddddd.json
+PASS  KA14 an over-cap entry that CANNOT be unlinked makes maintain red AND is named in PRUNE_FAILED, so the post-mortem has the path
+PASS  KA14 NEGATIVE: once it IS removable the same entry prunes and PRUNE_FAILED is EMPTY -- so the list means 'could not delete', not merely 'an over-cap entry existed'
+PASS  KD0 GREEN CONTROL: the same launch from ANOTHER temp dir (out, tcl, tape and Tcl-named disk all renamed) gives the SAME key  a01fd07c vs a01fd07c
+PASS  KD1 one byte of an ARGV medium (-cassetteplayer) -> MISS  a01fd07c vs 174ab709
+PASS  KD2 one byte of a medium named ONLY in the Tcl text (`diska {...}`) -> MISS (auto-detected, not declared)  a01fd07c vs 880e67ca
+PASS  KD3 one character of the Tcl -> MISS  a01fd07c vs 6605d4f5
+PASS  KD4 one byte of a ROM the machine names -> MISS, through cached_run's own key  a01fd07c vs fa6e9c38
+PASS  KD4b restoring the ROM restores the key (control)
+PASS  KD5 a Tcl that reads the host (clock) is UNCACHEABLE  the Tcl reads the host (clock)
+PASS  KD5 a Tcl that reads the host (rand) is UNCACHEABLE  the Tcl reads the host (rand())
+PASS  KD5 a Tcl that reads the host (after realtime) is UNCACHEABLE  the Tcl reads the host (after realtime)
+PASS  KD5 a Tcl that reads the host (exec) is UNCACHEABLE  the Tcl reads the host (exec)
+PASS  KD5 a Tcl that reads the host (glob) is UNCACHEABLE  the Tcl reads the host (glob)
+PASS  KD5 a Tcl that reads the host (env) is UNCACHEABLE  the Tcl reads the host (env())
+PASS  KD-R C-BIOS_MSX1_EU_REPACK_NODISK: every repo-built ROM it names is ABSOLUTE and PRESENT, so its bytes are in the key  2 repo ROM(s)
+PASS  KD-R C-BIOS_MSX1_EU_REPACK_DISK: every repo-built ROM it names is ABSOLUTE and PRESENT, so its bytes are in the key  3 repo ROM(s)
+PASS  KD6 miss -> stored -> the SAME launch from another temp dir is a HIT, the run is NOT called, and the output is replayed byte-exact  (False, 'ran') (True, None) calls=1
+PASS  KD12 a repeat of an identical launch INSIDE one process is re-measured (a `--trials` repeat must not be a copy of trial 1)  (False, 'ran') calls=2
+PASS  KD12b a later process serves trial 1 and trial 2 from their OWN entries  b'READING 1\n' b'TRIAL 2\n'
+PASS  KD7 an EMPTY output is never stored (the next call runs)
+PASS  KD8 an `ok` veto (a watchdog timeout) is never stored
+PASS  KD9 a stale output file from an earlier call is DELETED before the run, so it can never be stored as this run's reading
+PASS  KD10 VERIFY agrees with an untampered entry (green control)
+PASS  KD11 VERIFY catches a reading that moved (the arm that matters)
+PASS  KS1 the real machines classify: REPACK_NODISK/_DISK are zerobas, the VG-8020 and CF-3300 are references
+PASS  KS2 name and bytes DISAGREE -> zerobas, both ways round (a REPACK name over foreign ROMs; a reference name over a repo-built ROM)
+PASS  KS3 a repo-built ROM inserted as a cart makes a REFERENCE machine's launch a zerobas measurement
+PASS  KS4 (control) the zerobas entry really is in the store
+PASS  KS5 🔴 THE ARM THAT MATTERS: in refs mode a zerobas launch is NEVER served, even with a matching entry -- it runs, and is counted  (False, 'ran')
+PASS  KS5b ... and is not STORED either (the old entry is untouched)
+PASS  KS6 in refs mode a REFERENCE launch is still served (the green control: without it KS5 passes on a mode that serves nothing)
+PASS  KS7 the hit-path guard is a HARD STOP for zerobas in refs mode
+PASS  KS8 the tally names both sides  refcache: REFS MODE (references replayed, zerobas measured), 4 REFERENCE reading(s) replayed, 8 reference miss, 1 zerobas reading(s) MEASURED, 0 zerobas replayed, 33 stored, 3 refused (non-reading)
+PASS  KM1 the same disk bytes at two temp paths give ONE key (the 718-miss bug)
+PASS  KM2 one changed disk byte gives a NEW key
+PASS  KM3 a disk the run WROTE is replayed byte for byte on a hit (the six disk-write suites that read their image back)
+PASS  KM4 two printer logs that differ only in their temp PATH share a key (lptverb missed 20 of 20)
+PASS  KM5 NEGATIVE: two temp INPUTS with different bytes keep different keys
+PASS  KM7 a call that RECORDS a tape is never served (cassave / tapebios replayed screens with no tape)
+PASS  KM7 a printer log read from the FILE is never served
+PASS  KM7 NEGATIVE: a printer log returned INSIDE the capture stays cacheable
+PASS  KM7 NEGATIVE: playing a tape (an input, keyed by its bytes) stays cacheable
+PASS  KM6 and two temp inputs with the SAME bytes share one
+PASS  KS9 🔴 refs mode, run_cases, the REAL zerobas machine with a LIE planted under its exact key: the lie is NOT served -- zerobas boots    ZB                                    
+
+ALL PASS — refcache falsification suite
+refcache: 0 hit, 1 miss, 10 stored, 1 EXPIRED past 14d (re-measured)
+refcache: 4 hit, 9 miss, 43 stored, 3 refused (non-reading), 1 EXPIRED past 14d (re-measured)

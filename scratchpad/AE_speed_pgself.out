@@ -1,0 +1,52 @@
+PASS  P1 docs-only -> STATIC, no emulator suite
+PASS  P1b one-file-per-item: the skeleton + todo/open/*.md + todo/done/*.md -> STATIC, no emulator suite, like TODO.md
+PASS  P1c an item file alone never triggers the daily FULL by itself
+PASS  P-SPECLIVE an item-file change reads nothing spec-live reads
+PASS  P-SPECLIVE a TODO / concept-page change reads nothing spec-live reads
+PASS  P-SPECLIVE NEGATIVE: a spec page, a rules module, a run file or its tool does
+PASS  P-SLSCOPE a page change re-runs that page's module only
+PASS  P-SLSCOPE a keyword probe change re-runs the module(s) importing it, and only those
+PASS  P-SLSCOPE a run file re-runs every page that READS it (evaluate's record, not a regex)
+PASS  P-SLSCOPE NEGATIVE: a spec tool change runs every page (nobody claims it)
+PASS  P-SLSCOPE NEGATIVE: a ROM change runs every page
+PASS  P-SLSCOPE a docs-only change runs no page
+PASS  P-LASTGREENPATH the full-green record's path has no `..` step (it does not resolve in a freshly cleaned worktree, where gate_logs does not exist yet)
+PASS  P2 NEGATIVE: the harness is shared -> FULL
+PASS  P-TAPEPLAN a tape/ change is a ROM change: SCOPED with the tape suites and the canary
+PASS  P-TAPEPLAN a cbios-repack/ patch is a ROM change (the canary), not STATIC -- and NEGATIVE: it does not drag the tape suites in
+PASS  P-ISRPLAN a cbios-repack/ patch on the interrupt path (keyint) -> FULL with the five excluded suites
+PASS  P-ISRPLAN NEGATIVE: a patch off the interrupt path stays SCOPED
+PASS  P3 a WIDTH-handler change -> SCOPED: the WIDTH suite + the canary, not math
+PASS  P4 an asm change outside any ex_ handler -> SCOPED with the canary (⏱ 2026-10-13: was FULL; the daily FULL backs it)
+PASS  P4b interpreter shared code with no RAM move -> SCOPED (⏱ was FULL)
+PASS  P4c NEGATIVE: a RAM-address move -> FULL with the five excluded suites
+PASS  P15 layout_moves: a changed RAM literal and an ADDED cell are moves; a constant, a comment-only edit and a REMOVED cell are not
+PASS  P5 a probes/lib file is shared even when only one suite imports it
+PASS  P6 a probe change selects ITS suite and not an unrelated one
+PASS  P7 NEGATIVE: 24 h since the last full green -> FULL
+PASS  P7b 23.5 h since the last full green -> still SCOPED
+PASS  P7c a docs-only change never triggers the daily FULL by itself
+PASS  P16 a new ladder program -> SCOPED with programs-acceptance only (the catcopy probe IMPORTS the runner but does not run the ladder)
+PASS  P18 sub/playparse.asm -> PLAY (index row + ex_play's use of the index)
+PASS  P18b sub/fp_sin.asm -> SIN among the math words (one hop through mathwrap's mw_sin; a TOKEN dispatch row, not an ex_ handler)
+PASS  P18c NEGATIVE: the string heap (no ex_ / token use of its index) stays unknown -> the canary, as before
+PASS  P16d a new typed session -> SCOPED with sessions-acceptance only (it IMPORTS the ladder runner but is not the ladder)
+PASS  P16b a .bas a probe names by path -> that suite
+PASS  P16c NEGATIVE: a non-.bas data file plans nothing (STATIC)
+PASS  P8 NEGATIVE: no full green on record -> FULL, never 'assume recent'
+PASS  P-STATICEMU a handler-local ROM change schedules kwsweep -- and NOT kwtime / kwram (⏱ daily since 2026-10-13)
+PASS  P-STATICEMU NEGATIVE: a docs-only plan schedules NO emulator unit, sweeps included
+PASS  P-STATICEMU a probe-only change does not drag the sweeps in
+PASS  P9 --handoff forces FULL even on docs
+PASS  P10 the handler walk: a local label inside ex_width belongs to WIDTH
+PASS  P11 NEGATIVE: a line above every ex_ label has no handler -> None
+PASS  P12 the closure follows imports TRANSITIVELY (a -> b -> c) and adds nothing unimported (NEGATIVE: d)
+PASS  P12b a child run BY PATH (a quoted `kid.py`) is in the closure (D-PLANCHILD); NEGATIVE: an unnamed module is not
+PASS  P14 NEGATIVE: a keyword named only in a SHARED LIBRARY's comment does not select the suite (the 81-of-90 fault)
+PASS  P13 D-WIDTHKEEP's real shape (a handler + the regenerated ABI + patches) is SCOPED with the disk canary, not FULL
+PASS  P17 a probe whose diff only renumbers TODO.md citations is NOT a change
+PASS  P17b NEGATIVE: a real line change beside a citation renumber IS a change
+PASS  P17c NEGATIVE: an empty diff is not 'citation only' (nothing to drop)
+PASS  P17d an item-file citation renumber (todo/open/<id>.md:<n>) is NOT a change
+PASS  P17e NEGATIVE: repointing a citation at a DIFFERENT item file IS a change
+selftest: GREEN
