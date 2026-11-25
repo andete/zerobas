@@ -289,12 +289,29 @@ def run():
     must_not = {"p.flim", "p.flimn", "p.fstep", "p.fstep15", "p.biglim",
                 "p.biglimn", "p.strlim", "p.botlit", "p.dblfrac", "p.dblfrac2",
                 "p.lim32768f"}
+    # Programs whose behaviour a LATER item changed on purpose: each is held to that item's own rule instead of to
+    # the old image's snapshots (every other program stays held to identity).
+    changed = {
+        "p.strlim": "D-FORFRAME (2026-11-25): a FOR whose limit faults pushes NO frame -- the image before this "
+                    "slice pushed one, so its CSP and statement boundaries differ. Held to: the same printed output "
+                    "(the ON ERROR report), and CSP never below its first value in the new image (no frame).",
+    }
     for name, lines in corpus.items():
         o_out = old.run(lines)
         o_snaps = old.snaps
         n_out = new.run(lines)
         n_snaps = new.snaps
         same = o_out == n_out and o_snaps == n_snaps
+        if name in changed:
+            same = o_out == n_out and bool(n_snaps) and all(sn[1] >= n_snaps[0][1] for sn in n_snaps)
+            check(f"I1 {name}: as {changed[name].split(' ')[0]} changed it", same,
+                  f"out old={o_out!r} new={n_out!r}; CSP {[sn[1] for sn in n_snaps]}")
+            ident += same
+            bounds += len(n_snaps)
+            done = new.fast_hits - new.fslow_hits
+            if name in must_not:
+                check(f"I2 {name}: int path NOT completed", done == 0)
+            continue
         detail = ""
         if not same:
             if o_out != n_out:
