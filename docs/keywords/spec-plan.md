@@ -588,6 +588,17 @@ byte-identical). FY predictions: 26 of 28 held; the misses are two laws now stat
 condition goes on at the next `:` OR ELSE (so `IF 1/0 THEN a ELSE b:c` runs neither part), and `IF c GOTO` without a
 number is THEN. zerobas agrees on all 60.
 
+**END / STOP / CONT / RUN reworked (2026-11-25), the last -- goldfish pass 1 over the flow region is acted on in
+full.** [kstop_model.py](../../probes/basic/spec/kstop_model.py) types each case into a small BASIC (program lines,
+direct statements, the resume point, open files, an error handler) and predicts the WHOLE normalised screen -- every
+prompt and echo included, so a hang can no longer pass as "does nothing" and every recorded line is read (the first
+model dropped 105 of 143). [kstop_controls.py](../../probes/basic/spec/kstop_controls.py): 26 one-law rivals.
+[kstop.py](../../probes/basic/spec/kstop.py) gained group FY, 34 cases; the JSON run file now holds one section per
+group. FY predictions: 31 of 34 held; the miss that matters -- **END closes open files on the VG-8020** (END.md had
+said "stay open", a CF-3300 measurement: whether the references split is left open in D-ENDCLOSE). One case could not
+reach its subject (FY 28's file was closed by END, not RUN) and was joined by two STOP-based ones. zerobas: three new
+differences, D-ENDCLOSE, D-DELNOLINE, D-RUNCONT (TIER 6).
+
 ### The errors region's first unit (2026-11-25): DEFINT, DEFSNG, DEFDBL, DEFSTR -- the first interpreter model
 
 [kdeftype.py](../../probes/basic/spec/kdeftype.py), 58 cases on the RAM-record harness (run file

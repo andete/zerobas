@@ -6,10 +6,11 @@ SPDX-License-Identifier: BSD-2-Clause
 
 # `RUN` — start the program
 
-> **Spec:** DRAFT 1 (2026-11-25) — 5 cases measured on the Philips VG-8020 (BASIC's reference) and on
+> **Spec:** DRAFT 1 (2026-11-25) — 16 cases measured on the Philips VG-8020 (BASIC's reference) and on
 > zerobas, by typed BASIC ([`kstop.py`](../../probes/basic/spec/kstop.py), with END's, STOP's, CONT's and RUN's
-> cases together; it reads the screen); every rule is executable and every recorded output is read by one. Not yet
-> reviewed ([the keyword plan](spec-plan.md)).
+> cases together; it reads the screen); every rule is executable and every recorded output is read by one.
+> Goldfish pass 1 acted on (2026-11-25: the model is now an interpreter that predicts the whole screen, 11 more
+> cases); not yet re-reviewed ([the keyword plan](spec-plan.md)).
 >
 > **Status (2026-10-09):** level 3 — happy path ✓ · reasonable time ✓ · common
 > errors ✓ · RAM usage not yet proven · every error not yet proven. No known
@@ -42,7 +43,8 @@ RUN <file name>[,R]
   `ON ERROR GOTO`, and the resume point of [`CONT`](CONT.md).
 - **Open files are closed** (measured on the CF-3300): a program that left
   `#1` open finds it closed after the next `RUN` — `PRINT #1` is
-  `File not OPEN` (error 59). `END` and `NEW` do not close files.
+  `File not OPEN` (error 59); on the VG-8020 too (KST FY 28, FY 33). `END`
+  closes them as well on the VG-8020 (see [`END`](END.md)); `STOP` does not.
 - **`RUN 20` starts at line 20**, typed or in a program, with or without the
   space (`RUN20`). A missing line is `Undefined line number` (error 8).
 - **A bare `RUN` inside a program restarts it.** Because the variables are
@@ -97,30 +99,43 @@ The tables are generated from the checks, so a sentence here cannot say more tha
 restart the program, so a program cannot record them -- the probe reads the SCREEN. Each case starts with `NEW` and
 `CLS`, types a short program and the commands it names (RUN, CONT, ...), and keeps the screen NORMALISED: lines
 stripped, the prompt -- "Ok" on the VG-8020, "ZB" on zerobas, a deliberate difference (basic/repl.asm) -- read as one
-token, the function-key line dropped. A rule reads the case's RESPONSE: the screen without the prompts and without the
-echo of what was typed (each typed line cut at the line width, 37). Run file
-[`scratchpad/KSP_run1.out`](../../scratchpad/KSP_run1.out) (2026-11-25).
+token, the function-key line dropped. Two groups, FX (the first run's cases) and FY (goldfish pass 1's separating
+cases); run file [`scratchpad/KSP_run1.out`](../../scratchpad/KSP_run1.out) (JSON, 2026-11-25). The model,
+[`kstop_model.py`](../../probes/basic/spec/kstop_model.py), is an INTERPRETER: it types each case into a small BASIC
+and predicts the WHOLE screen -- every prompt (so a hang cannot pass as "does nothing"), the echo of every typed line
+(wrapped at 37), the output and the messages; it holds no per-case answer.
 - **[KST FX *i*]** (RUN), the lines typed after NEW / CLS:
   14: `10 PRINT "[A]"` / `20 PRINT "[B]"` / `RUN 20`
   15: `10 PRINT "[A]"` / `RUN 15`
   16: `10 PRINT "[";A;"]":A=5` / `RUN` / `RUN`
   17: `10 PRINT "[A]":RUN 20` / `20 PRINT "[B]"` / `RUN`
   18: `RUN`
+- **[KST FY *i*]** (RUN, goldfish pass 1), the lines typed after NEW / CLS:
+  22: `10 PRINT "[";A$;"]":A$="X"` / `RUN` / `RUN`
+  23: `10 DIM A(5):PRINT "[D]"` / `RUN` / `RUN`
+  24: `10 READ A:PRINT "[";A;"]"` / `20 DATA 1,2` / `RUN` / `RUN`
+  25: `10 ON ERROR GOTO 100` / `20 STOP` / `30 X=1/0` / `100 PRINT "[H]":END` / `RUN` / `RUN 30`
+  26: `10 A=5:RUN 30` / `20 PRINT "[X]"` / `30 PRINT "[";A;"]"` / `RUN`
+  27: `10 V=VPEEK(4096):VPOKE 4096,V+1:PRINT "[";V;"]":IF V=1 THEN END` / `20 RUN` / `VPOKE 4096,0` / `RUN`
+  28: `10 OPEN "CRT:" FOR OUTPUT AS #1:END` / `20 PRINT #1,"[X]"` / `RUN` / `RUN 20`
+  29: `10 A=5` / `RUN` / `PRINT A`
+  30: `10 PRINT "[A]"` / `20 PRINT "[B]"` / `RUN20`
+  31: `10 PRINT "[A]"` / `RUN A+0`
+  33: `10 OPEN "CRT:" FOR OUTPUT AS #1:STOP` / `20 PRINT #1,"[X]"` / `RUN` / `RUN 20`
 
-**Controls** ([`kstop_controls.py`](../../probes/basic/spec/kstop_controls.py)): each is a rival rule run over the
-reference's cases: “RUN keeps the variables” is FALSE on 1 of the 1 cases R-RUN-CLEAR selects (e.g. KST FX 16).
+**Controls** ([`kstop_controls.py`](../../probes/basic/spec/kstop_controls.py)): each changes ONE law of the interpreter model and runs over the reference's cases: “RUN n inside a program is GOTO n (no clearing)” is FALSE on 1 of the 8 cases R-RUN-START selects (e.g. KST FY 26); “RUN keeps the variables” is FALSE on 5 of the 8 cases R-RUN-CLEAR selects (e.g. KST FX 16); “RUN keeps the DATA pointer” is FALSE on 1 of the 8 cases R-RUN-CLEAR selects (e.g. KST FY 24); “RUN keeps ON ERROR” is FALSE on 1 of the 8 cases R-RUN-CLEAR selects (e.g. KST FY 25); “RUN keeps open files” is FALSE on 1 of the 8 cases R-RUN-CLEAR selects (e.g. KST FY 33); “the end of a run clears the variables” is FALSE on 1 of the 8 cases R-RUN-CLEAR selects (e.g. KST FY 29).
 
 <!-- RULES BEGIN -->
 <!-- GENERATED by tools/spec_rules.py from probes/basic/spec/run_rules.py -- do not edit; `python3 tools/spec_rules.py probes/basic/spec/run_rules.py --write` -->
 
-**2 rules; 2 hold on the reference. Of the 29 recorded outputs (each case's normalised screen (prompts as <prompt>, the echo of the typed lines read as typed)): 29 read by a rule's check, 0 declared NOT evidence (below), 0 unread.**
+**2 rules; 2 hold on the reference. Of the 117 recorded outputs (each case's normalised screen (prompts as <prompt>, the echo of the typed lines, the output, the messages)): 117 read by a rule's check, 0 declared NOT evidence (below), 0 unread.**
 
 #### 1. Starting
 
 | rule | cases | reference | zerobas |
 |---|---|---|---|
-| **R-RUN-START** RUN starts at the first line, RUN n at line n; a missing n is `Undefined line number`; RUN inside a program starts it again there; RUN with no program does nothing. | 4 | ✓ | ✓ |
-| **R-RUN-CLEAR** RUN clears the variables first: a value left by the last run reads 0. | 1 | ✓ | ✓ |
+| **R-RUN-START** RUN starts at the first line, RUN n (also `RUN20`) at line n -- inside a program too, after clearing; a bare RUN inside a program restarts it. A missing n is `Undefined line number`; a number expression is `Type mismatch`; RUN with no program does nothing. | 8 | ✓ | ✓ |
+| **R-RUN-CLEAR** RUN clears first: numbers, strings, arrays (DIM again is no error), the DATA pointer, ON ERROR and open files. The end of a run clears nothing (the variables are still there at the prompt). | 8 | ✓ | ✓ |
 
 <!-- RULES END -->
 
@@ -141,8 +156,8 @@ And **RAM usage**.
 
 ## Open (not measured)
 
-- [A] What the probe cannot reach yet: CTRL+STOP (a held key), STOP ON / OFF (the traps region), files left open at
-  END, `RUN "name"` (the files region).
+- [A] What the probe cannot reach yet: CTRL+STOP (a held key), STOP ON / OFF (the traps region), `RUN "name"`
+  (the files region), a DISK file left open at END (D-ENDCLOSE: the VG-8020 closes a `CRT:` file).
 
 ## What we found, and how
 

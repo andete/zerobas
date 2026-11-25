@@ -1,0 +1,8 @@
+  live KSP_run1.out FX: zerobas as committed
+  live KSP_run1.out FY: zerobas as committed
+OK   docs/keywords/END.md: 2 rules, 1 failing on zerobas (live, 1 run file(s))
+OK   docs/keywords/STOP.md: 2 rules, 0 failing on zerobas (live, 1 run file(s))
+OK   docs/keywords/CONT.md: 2 rules, 1 failing on zerobas (live, 1 run file(s))
+OK   docs/keywords/RUN.md: 2 rules, 0 failing on zerobas (live, 1 run file(s))
+===== spec-live: ALL PAGES AGREE =====
+refcache: 2 hit, 0 miss, 2 of the hits were ZEROBAS readings

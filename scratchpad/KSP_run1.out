@@ -1,368 +1,1160 @@
 {
- "ref": [
-  [
-   "<prompt>",
-   "10 PRINT \"[A]\":END:PRINT \"[B]\"",
-   "RUN",
-   "[A]",
-   "<prompt>"
+ "FX": {
+  "ref": [
+   [
+    "<prompt>",
+    "10 PRINT \"[A]\":END:PRINT \"[B]\"",
+    "RUN",
+    "[A]",
+    "<prompt>"
+   ],
+   [
+    "<prompt>",
+    "10 PRINT \"[A]\":END",
+    "20 PRINT \"[B]\"",
+    "RUN",
+    "[A]",
+    "<prompt>",
+    "CONT",
+    "[B]",
+    "<prompt>"
+   ],
+   [
+    "<prompt>",
+    "END",
+    "<prompt>"
+   ],
+   [
+    "<prompt>",
+    "10 GOSUB 30:PRINT \"[A]\"",
+    "20 END",
+    "30 END",
+    "RUN",
+    "<prompt>"
+   ],
+   [
+    "<prompt>",
+    "10 PRINT \"[A]\":STOP:PRINT \"[B]\"",
+    "RUN",
+    "[A]",
+    "Break in 10",
+    "<prompt>"
+   ],
+   [
+    "<prompt>",
+    "10 PRINT \"[A]\":STOP:PRINT \"[B]\"",
+    "RUN",
+    "[A]",
+    "Break in 10",
+    "<prompt>",
+    "CONT",
+    "[B]",
+    "<prompt>"
+   ],
+   [
+    "<prompt>",
+    "10 GOSUB 30:PRINT \"[C]\":END",
+    "30 PRINT \"[A]\":STOP:PRINT \"[B]\":RETUR",
+    "N",
+    "RUN",
+    "[A]",
+    "Break in 30",
+    "<prompt>",
+    "CONT",
+    "[B]",
+    "[C]",
+    "<prompt>"
+   ],
+   [
+    "<prompt>",
+    "10 FOR I=1 TO 3:PRINT \"[\";I;\"]\";:STOP",
+    ":NEXT",
+    "RUN",
+    "[ 1 ]",
+    "Break in 10",
+    "<prompt>",
+    "CONT",
+    "[ 2 ]",
+    "Break in 10",
+    "<prompt>",
+    "CONT",
+    "[ 3 ]",
+    "Break in 10",
+    "<prompt>"
+   ],
+   [
+    "<prompt>",
+    "STOP",
+    "Break",
+    "<prompt>"
+   ],
+   [
+    "<prompt>",
+    "10 A=5:STOP:PRINT \"[\";A;\"]\"",
+    "RUN",
+    "Break in 10",
+    "<prompt>",
+    "A=7",
+    "<prompt>",
+    "CONT",
+    "[ 7 ]",
+    "<prompt>"
+   ],
+   [
+    "<prompt>",
+    "CONT",
+    "Can't CONTINUE",
+    "<prompt>"
+   ],
+   [
+    "<prompt>",
+    "10 PRINT \"[A]\":X=1/0:PRINT \"[B]\"",
+    "RUN",
+    "[A]",
+    "Division by zero in 10",
+    "<prompt>",
+    "CONT",
+    "Division by zero in 10",
+    "<prompt>"
+   ],
+   [
+    "<prompt>",
+    "10 PRINT \"[A]\":STOP:PRINT \"[B]\"",
+    "RUN",
+    "[A]",
+    "Break in 10",
+    "<prompt>",
+    "20 PRINT \"[C]\"",
+    "CONT",
+    "Can't CONTINUE",
+    "<prompt>"
+   ],
+   [
+    "<prompt>",
+    "10 PRINT \"[A]\":STOP:PRINT \"[B]\"",
+    "RUN",
+    "[A]",
+    "Break in 10",
+    "<prompt>",
+    "PRINT 1+1",
+    "2",
+    "<prompt>",
+    "CONT",
+    "[B]",
+    "<prompt>"
+   ],
+   [
+    "<prompt>",
+    "10 PRINT \"[A]\"",
+    "20 PRINT \"[B]\"",
+    "RUN 20",
+    "[B]",
+    "<prompt>"
+   ],
+   [
+    "<prompt>",
+    "10 PRINT \"[A]\"",
+    "RUN 15",
+    "Undefined line number",
+    "<prompt>"
+   ],
+   [
+    "<prompt>",
+    "10 PRINT \"[\";A;\"]\":A=5",
+    "RUN",
+    "[ 0 ]",
+    "<prompt>",
+    "RUN",
+    "[ 0 ]",
+    "<prompt>"
+   ],
+   [
+    "<prompt>",
+    "10 PRINT \"[A]\":RUN 20",
+    "20 PRINT \"[B]\"",
+    "RUN",
+    "[A]",
+    "[B]",
+    "<prompt>"
+   ],
+   [
+    "<prompt>",
+    "RUN",
+    "<prompt>"
+   ]
   ],
-  [
-   "<prompt>",
-   "10 PRINT \"[A]\":END",
-   "20 PRINT \"[B]\"",
-   "RUN",
-   "[A]",
-   "<prompt>",
-   "CONT",
-   "[B]",
-   "<prompt>"
-  ],
-  [
-   "<prompt>",
-   "END",
-   "<prompt>"
-  ],
-  [
-   "<prompt>",
-   "10 GOSUB 30:PRINT \"[A]\"",
-   "20 END",
-   "30 END",
-   "RUN",
-   "<prompt>"
-  ],
-  [
-   "<prompt>",
-   "10 PRINT \"[A]\":STOP:PRINT \"[B]\"",
-   "RUN",
-   "[A]",
-   "Break in 10",
-   "<prompt>"
-  ],
-  [
-   "<prompt>",
-   "10 PRINT \"[A]\":STOP:PRINT \"[B]\"",
-   "RUN",
-   "[A]",
-   "Break in 10",
-   "<prompt>",
-   "CONT",
-   "[B]",
-   "<prompt>"
-  ],
-  [
-   "<prompt>",
-   "10 GOSUB 30:PRINT \"[C]\":END",
-   "30 PRINT \"[A]\":STOP:PRINT \"[B]\":RETUR",
-   "N",
-   "RUN",
-   "[A]",
-   "Break in 30",
-   "<prompt>",
-   "CONT",
-   "[B]",
-   "[C]",
-   "<prompt>"
-  ],
-  [
-   "<prompt>",
-   "10 FOR I=1 TO 3:PRINT \"[\";I;\"]\";:STOP",
-   ":NEXT",
-   "RUN",
-   "[ 1 ]",
-   "Break in 10",
-   "<prompt>",
-   "CONT",
-   "[ 2 ]",
-   "Break in 10",
-   "<prompt>",
-   "CONT",
-   "[ 3 ]",
-   "Break in 10",
-   "<prompt>"
-  ],
-  [
-   "<prompt>",
-   "STOP",
-   "Break",
-   "<prompt>"
-  ],
-  [
-   "<prompt>",
-   "10 A=5:STOP:PRINT \"[\";A;\"]\"",
-   "RUN",
-   "Break in 10",
-   "<prompt>",
-   "A=7",
-   "<prompt>",
-   "CONT",
-   "[ 7 ]",
-   "<prompt>"
-  ],
-  [
-   "<prompt>",
-   "CONT",
-   "Can't CONTINUE",
-   "<prompt>"
-  ],
-  [
-   "<prompt>",
-   "10 PRINT \"[A]\":X=1/0:PRINT \"[B]\"",
-   "RUN",
-   "[A]",
-   "Division by zero in 10",
-   "<prompt>",
-   "CONT",
-   "Division by zero in 10",
-   "<prompt>"
-  ],
-  [
-   "<prompt>",
-   "10 PRINT \"[A]\":STOP:PRINT \"[B]\"",
-   "RUN",
-   "[A]",
-   "Break in 10",
-   "<prompt>",
-   "20 PRINT \"[C]\"",
-   "CONT",
-   "Can't CONTINUE",
-   "<prompt>"
-  ],
-  [
-   "<prompt>",
-   "10 PRINT \"[A]\":STOP:PRINT \"[B]\"",
-   "RUN",
-   "[A]",
-   "Break in 10",
-   "<prompt>",
-   "PRINT 1+1",
-   "2",
-   "<prompt>",
-   "CONT",
-   "[B]",
-   "<prompt>"
-  ],
-  [
-   "<prompt>",
-   "10 PRINT \"[A]\"",
-   "20 PRINT \"[B]\"",
-   "RUN 20",
-   "[B]",
-   "<prompt>"
-  ],
-  [
-   "<prompt>",
-   "10 PRINT \"[A]\"",
-   "RUN 15",
-   "Undefined line number",
-   "<prompt>"
-  ],
-  [
-   "<prompt>",
-   "10 PRINT \"[\";A;\"]\":A=5",
-   "RUN",
-   "[ 0 ]",
-   "<prompt>",
-   "RUN",
-   "[ 0 ]",
-   "<prompt>"
-  ],
-  [
-   "<prompt>",
-   "10 PRINT \"[A]\":RUN 20",
-   "20 PRINT \"[B]\"",
-   "RUN",
-   "[A]",
-   "[B]",
-   "<prompt>"
-  ],
-  [
-   "<prompt>",
-   "RUN",
-   "<prompt>"
+  "zb": [
+   [
+    "<prompt>",
+    "10 PRINT \"[A]\":END:PRINT \"[B]\"",
+    "RUN",
+    "[A]",
+    "<prompt>"
+   ],
+   [
+    "<prompt>",
+    "10 PRINT \"[A]\":END",
+    "20 PRINT \"[B]\"",
+    "RUN",
+    "[A]",
+    "<prompt>",
+    "CONT",
+    "[B]",
+    "<prompt>"
+   ],
+   [
+    "<prompt>",
+    "END",
+    "<prompt>"
+   ],
+   [
+    "<prompt>",
+    "10 GOSUB 30:PRINT \"[A]\"",
+    "20 END",
+    "30 END",
+    "RUN",
+    "<prompt>"
+   ],
+   [
+    "<prompt>",
+    "10 PRINT \"[A]\":STOP:PRINT \"[B]\"",
+    "RUN",
+    "[A]",
+    "Break in 10",
+    "<prompt>"
+   ],
+   [
+    "<prompt>",
+    "10 PRINT \"[A]\":STOP:PRINT \"[B]\"",
+    "RUN",
+    "[A]",
+    "Break in 10",
+    "<prompt>",
+    "CONT",
+    "[B]",
+    "<prompt>"
+   ],
+   [
+    "<prompt>",
+    "10 GOSUB 30:PRINT \"[C]\":END",
+    "30 PRINT \"[A]\":STOP:PRINT \"[B]\":RETUR",
+    "N",
+    "RUN",
+    "[A]",
+    "Break in 30",
+    "<prompt>",
+    "CONT",
+    "[B]",
+    "[C]",
+    "<prompt>"
+   ],
+   [
+    "<prompt>",
+    "10 FOR I=1 TO 3:PRINT \"[\";I;\"]\";:STOP",
+    ":NEXT",
+    "RUN",
+    "[ 1 ]",
+    "Break in 10",
+    "<prompt>",
+    "CONT",
+    "[ 2 ]",
+    "Break in 10",
+    "<prompt>",
+    "CONT",
+    "[ 3 ]",
+    "Break in 10",
+    "<prompt>"
+   ],
+   [
+    "<prompt>",
+    "STOP",
+    "Break",
+    "<prompt>"
+   ],
+   [
+    "<prompt>",
+    "10 A=5:STOP:PRINT \"[\";A;\"]\"",
+    "RUN",
+    "Break in 10",
+    "<prompt>",
+    "A=7",
+    "<prompt>",
+    "CONT",
+    "[ 7 ]",
+    "<prompt>"
+   ],
+   [
+    "<prompt>",
+    "CONT",
+    "Can't CONTINUE",
+    "<prompt>"
+   ],
+   [
+    "<prompt>",
+    "10 PRINT \"[A]\":X=1/0:PRINT \"[B]\"",
+    "RUN",
+    "[A]",
+    "Division by zero in 10",
+    "<prompt>",
+    "CONT",
+    "Division by zero in 10",
+    "<prompt>"
+   ],
+   [
+    "<prompt>",
+    "10 PRINT \"[A]\":STOP:PRINT \"[B]\"",
+    "RUN",
+    "[A]",
+    "Break in 10",
+    "<prompt>",
+    "20 PRINT \"[C]\"",
+    "CONT",
+    "Can't CONTINUE",
+    "<prompt>"
+   ],
+   [
+    "<prompt>",
+    "10 PRINT \"[A]\":STOP:PRINT \"[B]\"",
+    "RUN",
+    "[A]",
+    "Break in 10",
+    "<prompt>",
+    "PRINT 1+1",
+    "2",
+    "<prompt>",
+    "CONT",
+    "[B]",
+    "<prompt>"
+   ],
+   [
+    "<prompt>",
+    "10 PRINT \"[A]\"",
+    "20 PRINT \"[B]\"",
+    "RUN 20",
+    "[B]",
+    "<prompt>"
+   ],
+   [
+    "<prompt>",
+    "10 PRINT \"[A]\"",
+    "RUN 15",
+    "Undefined line number",
+    "<prompt>"
+   ],
+   [
+    "<prompt>",
+    "10 PRINT \"[\";A;\"]\":A=5",
+    "RUN",
+    "[ 0 ]",
+    "<prompt>",
+    "RUN",
+    "[ 0 ]",
+    "<prompt>"
+   ],
+   [
+    "<prompt>",
+    "10 PRINT \"[A]\":RUN 20",
+    "20 PRINT \"[B]\"",
+    "RUN",
+    "[A]",
+    "[B]",
+    "<prompt>"
+   ],
+   [
+    "<prompt>",
+    "RUN",
+    "<prompt>"
+   ]
   ]
- ],
- "zb": [
-  [
-   "<prompt>",
-   "10 PRINT \"[A]\":END:PRINT \"[B]\"",
-   "RUN",
-   "[A]",
-   "<prompt>"
+ },
+ "FY": {
+  "ref": [
+   [
+    "<prompt>",
+    "10 GOSUB 30:PRINT \"[A]\":END",
+    "30 END:RETURN",
+    "RUN",
+    "<prompt>",
+    "CONT",
+    "[A]",
+    "<prompt>"
+   ],
+   [
+    "<prompt>",
+    "10 PRINT \"[A]\":END:PRINT \"[B]\"",
+    "20 PRINT \"[C]\"",
+    "RUN",
+    "[A]",
+    "<prompt>",
+    "CONT",
+    "[B]",
+    "[C]",
+    "<prompt>"
+   ],
+   [
+    "<prompt>",
+    "10 OPEN \"CRT:\" FOR OUTPUT AS #1:END",
+    "RUN",
+    "<prompt>",
+    "PRINT #1,\"[X]\"",
+    "File not OPEN",
+    "<prompt>"
+   ],
+   [
+    "<prompt>",
+    "10 ON ERROR GOTO 100",
+    "20 X=1/0",
+    "100 PRINT \"[H]\":END",
+    "RUN",
+    "[H]",
+    "<prompt>",
+    "RESUME",
+    "RESUME without error",
+    "<prompt>"
+   ],
+   [
+    "<prompt>",
+    "10 PRINT \"[A]\"",
+    "20 STOP",
+    "RUN",
+    "[A]",
+    "Break in 20",
+    "<prompt>"
+   ],
+   [
+    "<prompt>",
+    "10 ON ERROR GOTO 100",
+    "20 X=1/0:PRINT \"[B]\":END",
+    "100 PRINT \"[H]\":STOP:RESUME NEXT",
+    "RUN",
+    "[H]",
+    "Break in 100",
+    "<prompt>",
+    "CONT",
+    "[B]",
+    "<prompt>"
+   ],
+   [
+    "<prompt>",
+    "10 FOR I=1 TO 3:PRINT \"[\";I;\"]\";:STOP",
+    ":NEXT:PRINT \"[E]\"",
+    "RUN",
+    "[ 1 ]",
+    "Break in 10",
+    "<prompt>",
+    "CONT",
+    "[ 2 ]",
+    "Break in 10",
+    "<prompt>",
+    "CONT",
+    "[ 3 ]",
+    "Break in 10",
+    "<prompt>",
+    "CONT",
+    "[E]",
+    "<prompt>"
+   ],
+   [
+    "<prompt>",
+    "10 PRINT \"[A]\":STOP:PRINT \"[B]\"",
+    "RUN",
+    "[A]",
+    "Break in 10",
+    "<prompt>",
+    "10 PRINT \"[A]\":STOP:PRINT \"[Z]\"",
+    "CONT",
+    "Can't CONTINUE",
+    "<prompt>"
+   ],
+   [
+    "<prompt>",
+    "10 PRINT \"[A]\":STOP:PRINT \"[B]\"",
+    "RUN",
+    "[A]",
+    "Break in 10",
+    "<prompt>",
+    "20",
+    "Undefined line number",
+    "<prompt>",
+    "CONT",
+    "[B]",
+    "<prompt>"
+   ],
+   [
+    "<prompt>",
+    "10 PRINT \"[A]\":STOP:PRINT \"[B]\"",
+    "20 PRINT \"[C]\"",
+    "RUN",
+    "[A]",
+    "Break in 10",
+    "<prompt>",
+    "20",
+    "CONT",
+    "Can't CONTINUE",
+    "<prompt>"
+   ],
+   [
+    "<prompt>",
+    "10 A=5:STOP",
+    "RUN",
+    "Break in 10",
+    "<prompt>",
+    "20 REM",
+    "PRINT A",
+    "0",
+    "<prompt>"
+   ],
+   [
+    "<prompt>",
+    "10 PRINT \"[A]\":STOP:PRINT \"[B]\"",
+    "RUN",
+    "[A]",
+    "Break in 10",
+    "<prompt>",
+    "NEW",
+    "<prompt>",
+    "CONT",
+    "Can't CONTINUE",
+    "<prompt>"
+   ],
+   [
+    "<prompt>",
+    "10 PRINT \"[A]\":STOP:PRINT \"[B]\"",
+    "RUN",
+    "[A]",
+    "Break in 10",
+    "<prompt>",
+    "CLEAR",
+    "<prompt>",
+    "CONT",
+    "Can't CONTINUE",
+    "<prompt>"
+   ],
+   [
+    "<prompt>",
+    "10 PRINT \"[A]\":STOP:PRINT \"[B]\"",
+    "RUN",
+    "[A]",
+    "Break in 10",
+    "<prompt>",
+    "RUN 15",
+    "Undefined line number",
+    "<prompt>",
+    "CONT",
+    "Can't CONTINUE",
+    "<prompt>"
+   ],
+   [
+    "<prompt>",
+    "10 PRINT \"[A]\":STOP:PRINT \"[B]\"",
+    "RUN",
+    "[A]",
+    "Break in 10",
+    "<prompt>",
+    "STOP",
+    "Break",
+    "<prompt>",
+    "CONT",
+    "[B]",
+    "<prompt>"
+   ],
+   [
+    "<prompt>",
+    "10 PRINT \"[A]\":STOP:PRINT \"[B]\"",
+    "RUN",
+    "[A]",
+    "Break in 10",
+    "<prompt>",
+    "END",
+    "<prompt>",
+    "CONT",
+    "[B]",
+    "<prompt>"
+   ],
+   [
+    "<prompt>",
+    "10 PRINT \"[A]\":STOP:PRINT \"[B]\"",
+    "RUN",
+    "[A]",
+    "Break in 10",
+    "<prompt>",
+    "PRINT 1/0",
+    "Division by zero",
+    "<prompt>",
+    "CONT",
+    "[B]",
+    "<prompt>"
+   ],
+   [
+    "<prompt>",
+    "10 PRINT \"[A]\":STOP:PRINT \"[B]\"",
+    "RUN",
+    "[A]",
+    "Break in 10",
+    "<prompt>",
+    "FOR J=1 TO 2:NEXT",
+    "<prompt>",
+    "CONT",
+    "[B]",
+    "<prompt>"
+   ],
+   [
+    "<prompt>",
+    "10 PRINT \"[A]\"",
+    "RUN",
+    "[A]",
+    "<prompt>",
+    "CONT",
+    "<prompt>",
+    "CONT",
+    "<prompt>"
+   ],
+   [
+    "<prompt>",
+    "10 PRINT \"[A]\":X=1/D:PRINT \"[B]\"",
+    "RUN",
+    "[A]",
+    "Division by zero in 10",
+    "<prompt>",
+    "D=1",
+    "<prompt>",
+    "CONT",
+    "[B]",
+    "<prompt>"
+   ],
+   [
+    "<prompt>",
+    "10 PRINT \"[A]\":STOP:PRINT \"[B]\"",
+    "RUN",
+    "[A]",
+    "Break in 10",
+    "<prompt>",
+    "CONT:PRINT 1",
+    "[B]",
+    "<prompt>"
+   ],
+   [
+    "<prompt>",
+    "10 CONT",
+    "RUN",
+    "Can't CONTINUE in 10",
+    "<prompt>"
+   ],
+   [
+    "<prompt>",
+    "10 PRINT \"[\";A$;\"]\":A$=\"X\"",
+    "RUN",
+    "[]",
+    "<prompt>",
+    "RUN",
+    "[]",
+    "<prompt>"
+   ],
+   [
+    "<prompt>",
+    "10 DIM A(5):PRINT \"[D]\"",
+    "RUN",
+    "[D]",
+    "<prompt>",
+    "RUN",
+    "[D]",
+    "<prompt>"
+   ],
+   [
+    "<prompt>",
+    "10 READ A:PRINT \"[\";A;\"]\"",
+    "20 DATA 1,2",
+    "RUN",
+    "[ 1 ]",
+    "<prompt>",
+    "RUN",
+    "[ 1 ]",
+    "<prompt>"
+   ],
+   [
+    "<prompt>",
+    "10 ON ERROR GOTO 100",
+    "20 STOP",
+    "30 X=1/0",
+    "100 PRINT \"[H]\":END",
+    "RUN",
+    "Break in 20",
+    "<prompt>",
+    "RUN 30",
+    "Division by zero in 30",
+    "<prompt>"
+   ],
+   [
+    "<prompt>",
+    "10 A=5:RUN 30",
+    "20 PRINT \"[X]\"",
+    "30 PRINT \"[\";A;\"]\"",
+    "RUN",
+    "[ 0 ]",
+    "<prompt>"
+   ],
+   [
+    "<prompt>",
+    "10 V=VPEEK(4096):VPOKE 4096,V+1:PRINT",
+    "\"[\";V;\"]\":IF V=1 THEN END",
+    "20 RUN",
+    "VPOKE 4096,0",
+    "<prompt>",
+    "RUN",
+    "[ 0 ]",
+    "[ 1 ]",
+    "<prompt>"
+   ],
+   [
+    "<prompt>",
+    "10 OPEN \"CRT:\" FOR OUTPUT AS #1:END",
+    "20 PRINT #1,\"[X]\"",
+    "RUN",
+    "<prompt>",
+    "RUN 20",
+    "File not OPEN in 20",
+    "<prompt>"
+   ],
+   [
+    "<prompt>",
+    "10 A=5",
+    "RUN",
+    "<prompt>",
+    "PRINT A",
+    "5",
+    "<prompt>"
+   ],
+   [
+    "<prompt>",
+    "10 PRINT \"[A]\"",
+    "20 PRINT \"[B]\"",
+    "RUN20",
+    "[B]",
+    "<prompt>"
+   ],
+   [
+    "<prompt>",
+    "10 PRINT \"[A]\"",
+    "RUN A+0",
+    "Type mismatch",
+    "<prompt>"
+   ],
+   [
+    "<prompt>",
+    "10 OPEN \"CRT:\" FOR OUTPUT AS #1:STOP",
+    "20 PRINT #1,\"[X]\"",
+    "RUN",
+    "Break in 10",
+    "<prompt>",
+    "CONT",
+    "[X]",
+    "<prompt>"
+   ],
+   [
+    "<prompt>",
+    "10 OPEN \"CRT:\" FOR OUTPUT AS #1:STOP",
+    "20 PRINT #1,\"[X]\"",
+    "RUN",
+    "Break in 10",
+    "<prompt>",
+    "RUN 20",
+    "File not OPEN in 20",
+    "<prompt>"
+   ]
   ],
-  [
-   "<prompt>",
-   "10 PRINT \"[A]\":END",
-   "20 PRINT \"[B]\"",
-   "RUN",
-   "[A]",
-   "<prompt>",
-   "CONT",
-   "[B]",
-   "<prompt>"
-  ],
-  [
-   "<prompt>",
-   "END",
-   "<prompt>"
-  ],
-  [
-   "<prompt>",
-   "10 GOSUB 30:PRINT \"[A]\"",
-   "20 END",
-   "30 END",
-   "RUN",
-   "<prompt>"
-  ],
-  [
-   "<prompt>",
-   "10 PRINT \"[A]\":STOP:PRINT \"[B]\"",
-   "RUN",
-   "[A]",
-   "Break in 10",
-   "<prompt>"
-  ],
-  [
-   "<prompt>",
-   "10 PRINT \"[A]\":STOP:PRINT \"[B]\"",
-   "RUN",
-   "[A]",
-   "Break in 10",
-   "<prompt>",
-   "CONT",
-   "[B]",
-   "<prompt>"
-  ],
-  [
-   "<prompt>",
-   "10 GOSUB 30:PRINT \"[C]\":END",
-   "30 PRINT \"[A]\":STOP:PRINT \"[B]\":RETUR",
-   "N",
-   "RUN",
-   "[A]",
-   "Break in 30",
-   "<prompt>",
-   "CONT",
-   "[B]",
-   "[C]",
-   "<prompt>"
-  ],
-  [
-   "<prompt>",
-   "10 FOR I=1 TO 3:PRINT \"[\";I;\"]\";:STOP",
-   ":NEXT",
-   "RUN",
-   "[ 1 ]",
-   "Break in 10",
-   "<prompt>",
-   "CONT",
-   "[ 2 ]",
-   "Break in 10",
-   "<prompt>",
-   "CONT",
-   "[ 3 ]",
-   "Break in 10",
-   "<prompt>"
-  ],
-  [
-   "<prompt>",
-   "STOP",
-   "Break",
-   "<prompt>"
-  ],
-  [
-   "<prompt>",
-   "10 A=5:STOP:PRINT \"[\";A;\"]\"",
-   "RUN",
-   "Break in 10",
-   "<prompt>",
-   "A=7",
-   "<prompt>",
-   "CONT",
-   "[ 7 ]",
-   "<prompt>"
-  ],
-  [
-   "<prompt>",
-   "CONT",
-   "Can't CONTINUE",
-   "<prompt>"
-  ],
-  [
-   "<prompt>",
-   "10 PRINT \"[A]\":X=1/0:PRINT \"[B]\"",
-   "RUN",
-   "[A]",
-   "Division by zero in 10",
-   "<prompt>",
-   "CONT",
-   "Division by zero in 10",
-   "<prompt>"
-  ],
-  [
-   "<prompt>",
-   "10 PRINT \"[A]\":STOP:PRINT \"[B]\"",
-   "RUN",
-   "[A]",
-   "Break in 10",
-   "<prompt>",
-   "20 PRINT \"[C]\"",
-   "CONT",
-   "Can't CONTINUE",
-   "<prompt>"
-  ],
-  [
-   "<prompt>",
-   "10 PRINT \"[A]\":STOP:PRINT \"[B]\"",
-   "RUN",
-   "[A]",
-   "Break in 10",
-   "<prompt>",
-   "PRINT 1+1",
-   "2",
-   "<prompt>",
-   "CONT",
-   "[B]",
-   "<prompt>"
-  ],
-  [
-   "<prompt>",
-   "10 PRINT \"[A]\"",
-   "20 PRINT \"[B]\"",
-   "RUN 20",
-   "[B]",
-   "<prompt>"
-  ],
-  [
-   "<prompt>",
-   "10 PRINT \"[A]\"",
-   "RUN 15",
-   "Undefined line number",
-   "<prompt>"
-  ],
-  [
-   "<prompt>",
-   "10 PRINT \"[\";A;\"]\":A=5",
-   "RUN",
-   "[ 0 ]",
-   "<prompt>",
-   "RUN",
-   "[ 0 ]",
-   "<prompt>"
-  ],
-  [
-   "<prompt>",
-   "10 PRINT \"[A]\":RUN 20",
-   "20 PRINT \"[B]\"",
-   "RUN",
-   "[A]",
-   "[B]",
-   "<prompt>"
-  ],
-  [
-   "<prompt>",
-   "RUN",
-   "<prompt>"
+  "zb": [
+   [
+    "<prompt>",
+    "10 GOSUB 30:PRINT \"[A]\":END",
+    "30 END:RETURN",
+    "RUN",
+    "<prompt>",
+    "CONT",
+    "[A]",
+    "<prompt>"
+   ],
+   [
+    "<prompt>",
+    "10 PRINT \"[A]\":END:PRINT \"[B]\"",
+    "20 PRINT \"[C]\"",
+    "RUN",
+    "[A]",
+    "<prompt>",
+    "CONT",
+    "[B]",
+    "[C]",
+    "<prompt>"
+   ],
+   [
+    "<prompt>",
+    "10 OPEN \"CRT:\" FOR OUTPUT AS #1:END",
+    "RUN",
+    "<prompt>",
+    "PRINT #1,\"[X]\"",
+    "[X]",
+    "<prompt>"
+   ],
+   [
+    "<prompt>",
+    "10 ON ERROR GOTO 100",
+    "20 X=1/0",
+    "100 PRINT \"[H]\":END",
+    "RUN",
+    "[H]",
+    "<prompt>",
+    "RESUME",
+    "RESUME without error",
+    "<prompt>"
+   ],
+   [
+    "<prompt>",
+    "10 PRINT \"[A]\"",
+    "20 STOP",
+    "RUN",
+    "[A]",
+    "Break in 20",
+    "<prompt>"
+   ],
+   [
+    "<prompt>",
+    "10 ON ERROR GOTO 100",
+    "20 X=1/0:PRINT \"[B]\":END",
+    "100 PRINT \"[H]\":STOP:RESUME NEXT",
+    "RUN",
+    "[H]",
+    "Break in 100",
+    "<prompt>",
+    "CONT",
+    "[B]",
+    "<prompt>"
+   ],
+   [
+    "<prompt>",
+    "10 FOR I=1 TO 3:PRINT \"[\";I;\"]\";:STOP",
+    ":NEXT:PRINT \"[E]\"",
+    "RUN",
+    "[ 1 ]",
+    "Break in 10",
+    "<prompt>",
+    "CONT",
+    "[ 2 ]",
+    "Break in 10",
+    "<prompt>",
+    "CONT",
+    "[ 3 ]",
+    "Break in 10",
+    "<prompt>",
+    "CONT",
+    "[E]",
+    "<prompt>"
+   ],
+   [
+    "<prompt>",
+    "10 PRINT \"[A]\":STOP:PRINT \"[B]\"",
+    "RUN",
+    "[A]",
+    "Break in 10",
+    "<prompt>",
+    "10 PRINT \"[A]\":STOP:PRINT \"[Z]\"",
+    "CONT",
+    "Can't CONTINUE",
+    "<prompt>"
+   ],
+   [
+    "<prompt>",
+    "10 PRINT \"[A]\":STOP:PRINT \"[B]\"",
+    "RUN",
+    "[A]",
+    "Break in 10",
+    "<prompt>",
+    "20",
+    "Undefined line number in 10",
+    "<prompt>",
+    "CONT",
+    "Break in 10",
+    "<prompt>"
+   ],
+   [
+    "<prompt>",
+    "10 PRINT \"[A]\":STOP:PRINT \"[B]\"",
+    "20 PRINT \"[C]\"",
+    "RUN",
+    "[A]",
+    "Break in 10",
+    "<prompt>",
+    "20",
+    "CONT",
+    "Can't CONTINUE",
+    "<prompt>"
+   ],
+   [
+    "<prompt>",
+    "10 A=5:STOP",
+    "RUN",
+    "Break in 10",
+    "<prompt>",
+    "20 REM",
+    "PRINT A",
+    "0",
+    "<prompt>"
+   ],
+   [
+    "<prompt>",
+    "10 PRINT \"[A]\":STOP:PRINT \"[B]\"",
+    "RUN",
+    "[A]",
+    "Break in 10",
+    "<prompt>",
+    "NEW",
+    "<prompt>",
+    "CONT",
+    "Can't CONTINUE",
+    "<prompt>"
+   ],
+   [
+    "<prompt>",
+    "10 PRINT \"[A]\":STOP:PRINT \"[B]\"",
+    "RUN",
+    "[A]",
+    "Break in 10",
+    "<prompt>",
+    "CLEAR",
+    "<prompt>",
+    "CONT",
+    "Can't CONTINUE",
+    "<prompt>"
+   ],
+   [
+    "<prompt>",
+    "10 PRINT \"[A]\":STOP:PRINT \"[B]\"",
+    "RUN",
+    "[A]",
+    "Break in 10",
+    "<prompt>",
+    "RUN 15",
+    "Undefined line number",
+    "<prompt>",
+    "CONT",
+    "[B]",
+    "<prompt>"
+   ],
+   [
+    "<prompt>",
+    "10 PRINT \"[A]\":STOP:PRINT \"[B]\"",
+    "RUN",
+    "[A]",
+    "Break in 10",
+    "<prompt>",
+    "STOP",
+    "Break",
+    "<prompt>",
+    "CONT",
+    "[B]",
+    "<prompt>"
+   ],
+   [
+    "<prompt>",
+    "10 PRINT \"[A]\":STOP:PRINT \"[B]\"",
+    "RUN",
+    "[A]",
+    "Break in 10",
+    "<prompt>",
+    "END",
+    "<prompt>",
+    "CONT",
+    "[B]",
+    "<prompt>"
+   ],
+   [
+    "<prompt>",
+    "10 PRINT \"[A]\":STOP:PRINT \"[B]\"",
+    "RUN",
+    "[A]",
+    "Break in 10",
+    "<prompt>",
+    "PRINT 1/0",
+    "Division by zero",
+    "<prompt>",
+    "CONT",
+    "[B]",
+    "<prompt>"
+   ],
+   [
+    "<prompt>",
+    "10 PRINT \"[A]\":STOP:PRINT \"[B]\"",
+    "RUN",
+    "[A]",
+    "Break in 10",
+    "<prompt>",
+    "FOR J=1 TO 2:NEXT",
+    "<prompt>",
+    "CONT",
+    "[B]",
+    "<prompt>"
+   ],
+   [
+    "<prompt>",
+    "10 PRINT \"[A]\"",
+    "RUN",
+    "[A]",
+    "<prompt>",
+    "CONT",
+    "<prompt>",
+    "CONT",
+    "<prompt>"
+   ],
+   [
+    "<prompt>",
+    "10 PRINT \"[A]\":X=1/D:PRINT \"[B]\"",
+    "RUN",
+    "[A]",
+    "Division by zero in 10",
+    "<prompt>",
+    "D=1",
+    "<prompt>",
+    "CONT",
+    "[B]",
+    "<prompt>"
+   ],
+   [
+    "<prompt>",
+    "10 PRINT \"[A]\":STOP:PRINT \"[B]\"",
+    "RUN",
+    "[A]",
+    "Break in 10",
+    "<prompt>",
+    "CONT:PRINT 1",
+    "[B]",
+    "<prompt>"
+   ],
+   [
+    "<prompt>",
+    "10 CONT",
+    "RUN",
+    "Can't CONTINUE in 10",
+    "<prompt>"
+   ],
+   [
+    "<prompt>",
+    "10 PRINT \"[\";A$;\"]\":A$=\"X\"",
+    "RUN",
+    "[]",
+    "<prompt>",
+    "RUN",
+    "[]",
+    "<prompt>"
+   ],
+   [
+    "<prompt>",
+    "10 DIM A(5):PRINT \"[D]\"",
+    "RUN",
+    "[D]",
+    "<prompt>",
+    "RUN",
+    "[D]",
+    "<prompt>"
+   ],
+   [
+    "<prompt>",
+    "10 READ A:PRINT \"[\";A;\"]\"",
+    "20 DATA 1,2",
+    "RUN",
+    "[ 1 ]",
+    "<prompt>",
+    "RUN",
+    "[ 1 ]",
+    "<prompt>"
+   ],
+   [
+    "<prompt>",
+    "10 ON ERROR GOTO 100",
+    "20 STOP",
+    "30 X=1/0",
+    "100 PRINT \"[H]\":END",
+    "RUN",
+    "Break in 20",
+    "<prompt>",
+    "RUN 30",
+    "Division by zero in 30",
+    "<prompt>"
+   ],
+   [
+    "<prompt>",
+    "10 A=5:RUN 30",
+    "20 PRINT \"[X]\"",
+    "30 PRINT \"[\";A;\"]\"",
+    "RUN",
+    "[ 0 ]",
+    "<prompt>"
+   ],
+   [
+    "<prompt>",
+    "10 V=VPEEK(4096):VPOKE 4096,V+1:PRINT",
+    "\"[\";V;\"]\":IF V=1 THEN END",
+    "20 RUN",
+    "VPOKE 4096,0",
+    "<prompt>",
+    "RUN",
+    "[ 0 ]",
+    "[ 1 ]",
+    "<prompt>"
+   ],
+   [
+    "<prompt>",
+    "10 OPEN \"CRT:\" FOR OUTPUT AS #1:END",
+    "20 PRINT #1,\"[X]\"",
+    "RUN",
+    "<prompt>",
+    "RUN 20",
+    "File not OPEN in 20",
+    "<prompt>"
+   ],
+   [
+    "<prompt>",
+    "10 A=5",
+    "RUN",
+    "<prompt>",
+    "PRINT A",
+    "5",
+    "<prompt>"
+   ],
+   [
+    "<prompt>",
+    "10 PRINT \"[A]\"",
+    "20 PRINT \"[B]\"",
+    "RUN20",
+    "[B]",
+    "<prompt>"
+   ],
+   [
+    "<prompt>",
+    "10 PRINT \"[A]\"",
+    "RUN A+0",
+    "Type mismatch",
+    "<prompt>"
+   ],
+   [
+    "<prompt>",
+    "10 OPEN \"CRT:\" FOR OUTPUT AS #1:STOP",
+    "20 PRINT #1,\"[X]\"",
+    "RUN",
+    "Break in 10",
+    "<prompt>",
+    "CONT",
+    "[X]",
+    "<prompt>"
+   ],
+   [
+    "<prompt>",
+    "10 OPEN \"CRT:\" FOR OUTPUT AS #1:STOP",
+    "20 PRINT #1,\"[X]\"",
+    "RUN",
+    "Break in 10",
+    "<prompt>",
+    "RUN 20",
+    "File not OPEN in 20",
+    "<prompt>"
+   ]
   ]
- ]
+ }
 }

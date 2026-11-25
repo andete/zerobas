@@ -3,10 +3,26 @@
 # SPDX-License-Identifier: BSD-2-Clause
 """The model and rule builders for END / STOP / CONT / RUN's EXECUTABLE RULES (docs/spec-method.md §3a,
 docs/keywords/spec-plan.md region 5). The cases come from probes/basic/spec/kstop.py's committed run
-(scratchpad/KSP_run1.out): each case's normalised screen. A case's RESPONSE is that screen without the prompts and
-without the echo of what was typed (each typed line cut at the screen's line width, 37); the model predicts the response
-from the rules, and a control (kstop_controls.py) replaces one rule with a rival that must be FALSE on some case."""
+(scratchpad/KSP_run1.out, groups FX and FY): each case's normalised SCREEN.
+
+THE MODEL IS AN INTERPRETER (goldfish pass 1, 2026-11-25, scratchpad/REVIEW-m2-gkwstop.md: the first model was a table
+of expected responses, and it dropped the prompts and the echo, so a hang read as "does nothing"). It types the case
+into a small BASIC -- program lines stored, direct statements run -- and predicts the WHOLE screen: the prompt after
+every direct command, the echo of every typed line (wrapped at 37), the program's output and the messages. The laws:
+
+  END       stops; files are CLOSED, an error handler is finished; CONT goes on after it (a pending GOSUB kept).
+  STOP      `Break in n`, n the STOP's own line (`Break` typed); an error handler stays active; CONT goes on after it.
+  CONT      goes on at the resume point; none (`Can't CONTINUE`) after NEW, CLEAR, RUN -- dropped BEFORE RUN looks for
+            its line -- or a successful program edit; a direct statement, a typed STOP / END / error, or a failed delete
+            leaves it. After an error, CONT runs the failing statement again; after the program ran off its end, CONT
+            does nothing. The rest of CONT's own line is never run.
+  RUN       clears first -- variables, arrays, strings, the DATA pointer, ON ERROR, the resume point, open files --
+            then starts at the first line or at n (also inside a program); `RUN A+0` is Type mismatch.
+  an edit   (a program line typed) clears the variables and the resume point.
+
+A control (kstop_controls.py) flips ONE of these laws (`alt`) and must be FALSE on some case."""
 import os
+import re
 import sys
 
 HERE = os.path.dirname(os.path.abspath(__file__))
@@ -17,58 +33,368 @@ import kstop  # noqa: E402
 from spec_rules import Rule  # noqa: E402
 
 FIELDS = ["scr"]
-OUTPUTS = {"FX": FIELDS}
-OUTPUTS_DESC = "each case's normalised screen (prompts as <prompt>, the echo of the typed lines read as typed)"
-
-B = "Break in 10"
-T = {
-    "END stops the program mid-line": ["[A]"],
-    "CONT after END": ["[A]", "[B]"],
-    "END in direct mode": [],
-    "END inside a GOSUB": [],
-    "STOP stops with Break in": ["[A]", B],
-    "CONT after STOP goes on after it": ["[A]", B, "[B]"],
-    "STOP inside a GOSUB, then CONT returns normally": ["[A]", "Break in 30", "[B]", "[C]"],
-    "STOP inside a FOR, CONT twice": ["[ 1 ]", B, "[ 2 ]", B, "[ 3 ]", B],
-    "STOP in direct mode": ["Break"],
-    "a variable changed while stopped": [B, "[ 7 ]"],
-    "CONT before anything ran": ["Can't CONTINUE"],
-    "CONT after an error": ["[A]", "Division by zero in 10", "Division by zero in 10"],
-    "CONT after a line was added": ["[A]", B, "Can't CONTINUE"],
-    "CONT after a direct statement": ["[A]", B, "2", "[B]"],
-    "RUN n starts at line n": ["[B]"],
-    "RUN to a line that does not exist": ["Undefined line number"],
-    "RUN clears the variables": ["[ 0 ]", "[ 0 ]"],
-    "RUN inside a program": ["[A]", "[B]"],
-    "RUN with no program": [],
-}
-RIVAL = {
-    "cont-after-end-cant": {"CONT after END": ["[A]", "Can't CONTINUE"]},
-    "cont-after-error-cant": {"CONT after an error": ["[A]", "Division by zero in 10", "Can't CONTINUE"]},
-    "direct-blocks-cont": {"CONT after a direct statement": ["[A]", B, "2", "Can't CONTINUE"]},
-    "edit-keeps-cont": {"CONT after a line was added": ["[A]", B, "[B]"]},
-    "run-keeps-vars": {"RUN clears the variables": ["[ 0 ]", "[ 5 ]"]},
-    "stop-direct-silent": {"STOP in direct mode": []},
-    "cont-from-stmt-start": {"CONT after STOP goes on after it": ["[A]", B, "[A]", B]},
-}
+OUTPUTS = {"FX": FIELDS, "FY": FIELDS}
+OUTPUTS_DESC = "each case's normalised screen (prompts as <prompt>, the echo of the typed lines, the output, the messages)"
+MSG = {1: "NEXT without FOR", 2: "Syntax error", 3: "RETURN without GOSUB", 8: "Undefined line number",
+       10: "Redimensioned array", 11: "Division by zero", 13: "Type mismatch", 17: "Can't CONTINUE",
+       20: "RESUME without error", 59: "File not OPEN"}
+WIDTH = 37
 
 
-def response(c):
-    echo = set()
-    for t in c.lines + ["NEW", "CLS"]:
-        echo.update(t[i:i + 37].strip() for i in range(0, len(t), 37))   # a typed line wraps at LINLEN 37
-    return [l for l in (c.scr or []) if l != "<prompt>" and l not in echo]
+class Err(Exception):
+    def __init__(self, n):
+        self.n = n
 
 
-def expect(c, alt=frozenset()):
-    for a in alt:
-        if c.why in RIVAL.get(a, {}):
-            return RIVAL[a][c.why]
-    return T[c.why]
+class Stop(Exception):
+    pass
+
+
+def split(text):
+    out, cur, q = [], "", False
+    for ch in text:
+        if ch == '"':
+            q = not q
+        if ch == ":" and not q:
+            out.append(cur.strip())
+            cur = ""
+        else:
+            cur += ch
+    return out + [cur.strip()]
+
+
+class Basic:
+    def __init__(self, alt):
+        self.alt = alt
+        self.prog = {}
+        self.vram = {}
+        self.screen = ["<prompt>"]
+        self.cur = ""
+        self.cont = None              # None: nothing to continue; "END": ran off the end; (line, index)
+        self.files = set()
+        self.reset()
+
+    def reset(self):
+        self.vars, self.arrays = {}, set()
+        self.data = None
+        self.onerr = None
+        self.handler = None           # the failing point while an error handler runs
+        self.stack = []
+
+    # -- the screen ---------------------------------------------------------------------------------------------
+    def out(self, s):
+        self.cur += s
+
+    def newline(self):
+        if self.cur.strip():
+            self.screen.append(self.cur.strip())
+        self.cur = ""
+
+    def message(self, s):
+        self.newline()
+        self.screen.append(s)
+
+    # -- values -------------------------------------------------------------------------------------------------
+    def value(self, s):
+        s = s.strip()
+        if s.startswith('"'):
+            return s.strip('"')
+        m = re.fullmatch(r"VPEEK\((\d+)\)", s)
+        if m:
+            return self.vram.get(int(m.group(1)), 0)
+        m = re.fullmatch(r"(\w+)\+(\d+)", s)
+        if m:
+            a = self.value(m.group(1))
+            if isinstance(a, str):
+                raise Err(13)
+            return a + int(m.group(2))
+        m = re.fullmatch(r"(\w+)/(\w+)", s)
+        if m:
+            a, b = self.value(m.group(1)), self.value(m.group(2))
+            if b == 0:
+                raise Err(11)
+            return a / b
+        if re.fullmatch(r"-?\d+", s):
+            return int(s)
+        if re.fullmatch(r"[A-Z]\w*\$", s):
+            return self.vars.get(s, "")
+        return self.vars.get(s, 0)
+
+    @staticmethod
+    def fmt(v):
+        if isinstance(v, str):
+            return v
+        v = int(v) if float(v).is_integer() else v
+        return (" " if v >= 0 else "") + str(v) + " "
+
+    # -- running ------------------------------------------------------------------------------------------------
+    def lines(self):
+        return sorted(self.prog)
+
+    def first(self, n=None):
+        ls = self.lines()
+        if n is None:
+            return (ls[0], 0) if ls else None
+        if n not in self.prog:
+            raise Err(8)
+        return (n, 0)
+
+    def next_point(self, pt):
+        line, i = pt
+        if line == "D":                                  # a statement typed at the prompt
+            return ("D", i + 1)
+        if i + 1 < len(split(self.prog[line])):
+            return (line, i + 1)
+        later = [k for k in self.lines() if k > line]
+        return (later[0], 0) if later else "END"
+
+    def run_from(self, pt, budget=400):
+        """run the program from pt until it stops; returns when it does"""
+        while pt != "END" and budget:
+            budget -= 1
+            line, i = pt
+            st = split(self.prog[line])[i]
+            try:
+                to = self.stmt(st, pt)
+            except Err as e:
+                if self.onerr is not None and self.handler is None:
+                    self.handler = pt
+                    pt = (self.onerr, 0)
+                    continue
+                self.message(f"{MSG[e.n]} in {line}")
+                self.cont = pt                           # CONT runs the failing statement again
+                if "cont-after-error-cant" in self.alt:
+                    self.cont = None
+                if "cont-after-error-reprint" in self.alt:
+                    self.cont = ("REPRINT", e.n, line)
+                return
+            except Stop:
+                return
+            pt = self.next_point(pt) if to is None else to
+        if pt == "END":
+            self.newline()
+            self.cont = "END" if "run-end-cant" not in self.alt else None
+            if "run-end-clears" in self.alt:
+                self.vars = {}
+
+    def stmt(self, s, pt):
+        """one statement; pt is its point ("D" in direct mode). Returns None (go on) or the next point"""
+        direct = pt[0] == "D"
+        if s.startswith("PRINT #"):
+            m = re.fullmatch(r"PRINT #(\d+),(.+)", s)
+            if int(m.group(1)) not in self.files:
+                raise Err(59)
+            self.out(self.value(m.group(2)))
+            self.newline()
+            return None
+        if s.startswith("PRINT"):
+            body = s[5:].strip()
+            items = [x for x in re.split(r";", body)]
+            for x in items:
+                if x.strip():
+                    self.out(self.fmt(self.value(x)))
+            if not body.endswith(";"):
+                self.newline()
+            return None
+        if s == "END":
+            if direct:
+                return None
+            self.newline()
+            if "end-keeps-files" not in self.alt:
+                self.files.clear()
+            self.handler = None
+            self.cont = self.next_point(pt)
+            if "cont-after-end-cant" in self.alt:
+                self.cont = None
+            if "cont-after-end-next-line" in self.alt and self.cont != "END" and self.cont[0] == pt[0]:
+                later = [k for k in self.lines() if k > pt[0]]
+                self.cont = (later[0], 0) if later else "END"
+            if "end-drops-gosub" in self.alt:
+                self.stack = [f for f in self.stack if f[0] != "G"]
+            raise Stop
+        if s == "STOP":
+            if direct:
+                if "stop-direct-silent" not in self.alt:
+                    self.message("Break")
+                return None
+            line = self.lines()[0] if "break-first-line" in self.alt else pt[0]
+            self.message(f"Break in {line}")
+            self.cont = self.next_point(pt) if "cont-from-stmt-start" not in self.alt else pt
+            if "stop-ends-handler" in self.alt:
+                self.handler = None
+            raise Stop
+        if s.startswith("CONT"):
+            if self.cont is None:
+                raise Err(17)
+            if self.cont == "END":
+                raise Stop
+            if self.cont[0] == "REPRINT":
+                self.message(f"{MSG[self.cont[1]]} in {self.cont[2]}")
+                raise Stop
+            pt2, self.cont = self.cont, None
+            self.run_from(pt2)
+            raise Stop                                   # the rest of CONT's line is never run
+        if s.startswith("RUN"):
+            arg = s[3:].strip()
+            if "run-drops-cont-late" not in self.alt:
+                self.cont = None
+            if arg and not arg.isdigit():
+                v = self.value(arg)
+                if not isinstance(v, str):
+                    raise Err(13)
+            if "run-n-goto" in self.alt and arg and not direct:
+                return self.first(int(arg))
+            start = self.first(int(arg) if arg else None)
+            if "run-keeps-vars" not in self.alt:
+                keep_data, keep_err = self.data, self.onerr
+                self.reset()
+                if "run-keeps-data" in self.alt:
+                    self.data = keep_data
+                if "run-keeps-onerror" in self.alt:
+                    self.onerr = keep_err
+            if "run-keeps-files" not in self.alt:
+                self.files.clear()
+            self.cont = None
+            if start is None:
+                raise Stop
+            self.run_from(start)
+            raise Stop
+        if s.startswith("GOSUB"):
+            self.stack.append(("G", self.next_point(pt)))
+            return self.first(int(s[5:]))
+        if s == "RETURN":
+            g = [i for i, f in enumerate(self.stack) if f[0] == "G"]
+            if not g:
+                raise Err(3)
+            ret = self.stack[g[-1]][1]
+            del self.stack[g[-1]:]
+            return ret
+        if s.startswith("FOR "):
+            m = re.fullmatch(r"FOR (\w+)=(\d+) TO (\d+)", s)
+            self.vars[m.group(1)] = int(m.group(2))
+            self.stack.append(("F", m.group(1), int(m.group(3)), self.next_point(pt)))
+            return None
+        if s == "NEXT":
+            f = [i for i, x in enumerate(self.stack) if x[0] == "F"]
+            if not f:
+                raise Err(1)
+            _, v, lim, body = self.stack[f[-1]]
+            self.vars[v] += 1
+            if self.vars[v] <= lim:
+                return body
+            self.stack.pop(f[-1])
+            return None
+        if s.startswith("ON ERROR GOTO"):
+            self.onerr = int(s.split()[-1])
+            return None
+        if s.startswith("RESUME"):
+            if self.handler is None:
+                raise Err(20)
+            at, self.handler = self.handler, None
+            return self.next_point(at)
+        if s.startswith("DIM "):
+            name = s[4:].split("(")[0]
+            if name in self.arrays:
+                raise Err(10)
+            self.arrays.add(name)
+            return None
+        if s.startswith("READ "):
+            if self.data is None:
+                self.data = [x.strip() for k in self.lines() for st in split(self.prog[k]) if st.startswith("DATA ")
+                             for x in st[5:].split(",")]
+            self.vars[s[5:].strip()] = int(self.data.pop(0))
+            return None
+        if s.startswith("DATA") or s.startswith("REM"):
+            return None
+        if s.startswith("VPOKE "):
+            a, v = s[6:].split(",")
+            self.vram[int(a)] = self.value(v)
+            return None
+        if s.startswith("IF "):
+            m = re.fullmatch(r"IF (\w+)=(\d+) THEN (.+)", s)
+            if self.value(m.group(1)) == int(m.group(2)):
+                return self.stmt(m.group(3), pt)
+            return self.next_line(pt)
+        if s.startswith("OPEN "):
+            self.files.add(int(s.split("#")[1]))
+            return None
+        if s == "CLEAR":
+            self.reset()
+            if "clear-keeps-cont" not in self.alt:
+                self.cont = None
+            return None
+        if s == "NEW":
+            self.prog = {}
+            self.reset()
+            self.cont = None
+            return None
+        m = re.fullmatch(r"([A-Z]\w*\$?)=(.+)", s)
+        if m:
+            self.vars[m.group(1)] = self.value(m.group(2))
+            return None
+        raise Err(2)
+
+    def next_line(self, pt):
+        later = [k for k in self.lines() if k > pt[0]]
+        return (later[0], 0) if later else "END"
+
+    # -- typing -------------------------------------------------------------------------------------------------
+    def type(self, t):
+        self.newline()
+        self.screen += [t[i:i + WIDTH].strip() for i in range(0, len(t), WIDTH)]
+        m = re.fullmatch(r"(\d+) ?(.*)", t)
+        if m and not t.startswith("RUN"):
+            n, text = int(m.group(1)), m.group(2).strip()
+            if not text and n not in self.prog:
+                self.message(MSG[8])                     # a delete of a line that is not there: a direct error
+                self.screen.append("<prompt>")
+                if "delete-missing-drops-cont" in self.alt:
+                    self.cont = None
+                return
+            if text:
+                self.prog[n] = text
+            else:
+                del self.prog[n]
+            if "edit-keeps-vars" not in self.alt:
+                self.reset()
+            if "edit-keeps-cont" not in self.alt:
+                self.cont = None
+            return
+        sts = split(t)
+        i = 0
+        while i < len(sts):
+            st = sts[i]
+            try:
+                to = self.stmt(st, ("D", i))
+                if to is not None and to[0] == "D":       # a jump inside the typed line (a direct FOR / NEXT)
+                    i = to[1]
+                    continue
+                if to is not None and to != "END":
+                    self.run_from(to)
+                    break
+            except Err as e:
+                self.message(MSG[e.n])
+                if "direct-error-drops-cont" in self.alt:
+                    self.cont = None
+                break
+            except Stop:
+                break
+            if "direct-blocks-cont" in self.alt and not st.startswith("CONT"):
+                self.cont = None
+            i += 1
+        self.newline()
+        self.screen.append("<prompt>")
+
+
+def run(c, alt=frozenset()):
+    b = Basic(alt)
+    for t in c.lines:
+        b.type(t)
+    return b.screen
 
 
 def ok(c, alt=frozenset()):
-    return response(c) == expect(c, alt)
+    return list(c.scr or []) == run(c, alt)
 
 
 def load(kw):
@@ -82,33 +408,61 @@ def by(*whys):
 
 def rules(kw):
     if kw == "END":
-        return [Rule("R-END-STOP", "1. Stopping", "END stops the program where it stands -- the rest of its line, and a "
-                     "GOSUB still pending, are dropped -- with no message; in direct mode it does nothing. CONT after "
-                     "END goes on with the statement after it.",
-                     by("END stops the program mid-line", "CONT after END", "END in direct mode", "END inside a GOSUB"),
-                     ok)]
+        return [
+            Rule("R-END-STOP", "1. Stopping", "END stops the program where it stands, with no message, and the prompt "
+                 "returns; in direct mode it does nothing. CONT after END goes on with the statement after it -- "
+                 "mid-line if one follows -- and a GOSUB still pending is KEPT (its RETURN works).",
+                 by("END stops the program mid-line", "CONT after END", "END in direct mode", "END inside a GOSUB",
+                    "END inside a GOSUB, then CONT", "CONT after a mid-line END"), ok),
+            Rule("R-END-CLOSE", "1. Stopping", "END closes every open file (a `PRINT #1` after it is `File not OPEN`) "
+                 "and finishes an error handler (a typed RESUME is then `RESUME without error`).",
+                 by("END leaves a file open", "END inside an error handler"), ok),
+        ]
     if kw == "STOP":
         return [
-            Rule("R-STOP-BREAK", "1. Stopping", "STOP stops the program with `Break in n` (n its line); in direct mode "
-                 "it prints `Break` alone.",
-                 by("STOP stops with Break in", "STOP in direct mode"), ok),
+            Rule("R-STOP-BREAK", "1. Stopping", "STOP stops the program with `Break in n`, n the STOP's own line (also "
+                 "inside a subroutine or an error handler); in direct mode it prints `Break` alone.",
+                 by("STOP stops with Break in", "STOP in direct mode", "Break in names the STOP's own line"), ok),
             Rule("R-STOP-CONT", "2. Going on", "CONT goes on with the statement AFTER the STOP: inside a GOSUB the "
-                 "RETURN still works, inside a FOR the loop goes on (each STOP stopping again), and a variable changed "
-                 "while stopped is seen.",
+                 "RETURN still works, inside a FOR the loop goes on to its end, inside an error handler the handler is "
+                 "still active (its RESUME NEXT works), a file opened before it is still open, and a variable "
+                 "changed while stopped is seen.",
                  by("CONT after STOP goes on after it", "STOP inside a GOSUB, then CONT returns normally",
-                    "STOP inside a FOR, CONT twice", "a variable changed while stopped"), ok),
+                    "STOP inside a FOR, CONT twice", "a variable changed while stopped",
+                    "STOP inside an error handler, then CONT", "STOP inside a FOR, CONT to the loop's end",
+                    "STOP leaves a file open"), ok),
         ]
     if kw == "CONT":
-        return [Rule("R-CONT-WHEN", "1. When CONT can go on", "CONT before anything ran, or after a program line was "
-                     "added or changed, prints `Can't CONTINUE`; a direct statement in between does not stop it; after "
-                     "an ERROR, CONT runs the failing statement again and raises the same error.",
-                     by("CONT before anything ran", "CONT after a line was added", "CONT after a direct statement",
-                        "CONT after an error"), ok)]
+        return [
+            Rule("R-CONT-WHEN", "1. When CONT can go on", "There is nothing to continue -- `Can't CONTINUE` -- before "
+                 "anything ran, after NEW or CLEAR, after a program line was added, changed or deleted, and after a "
+                 "RUN, even one that then failed on a missing line. A direct statement in between -- a typed STOP, "
+                 "END, an error, a FOR loop, a delete of a line that is not there -- leaves the resume point alone. An "
+                 "edit also clears the variables.",
+                 by("CONT before anything ran", "CONT after a line was added", "CONT after a direct statement",
+                    "CONT after the stopped line was changed", "CONT after deleting a line that does not exist",
+                    "CONT after deleting a line", "an edit clears the variables", "CONT after NEW", "CONT after CLEAR",
+                    "CONT after RUN to a missing line", "CONT after a typed STOP", "CONT after a typed END",
+                    "CONT after a typed error", "CONT after a typed FOR loop"), ok),
+            Rule("R-CONT-WHERE", "2. Where it goes on", "After an error, CONT runs the failing statement AGAIN (with "
+                 "whatever was changed meanwhile); after the program ran off its end, CONT does nothing, every time. "
+                 "The rest of CONT's own line is never run; CONT inside a program with nothing to continue is `Can't "
+                 "CONTINUE in n`.",
+                 by("CONT after an error", "CONT after the program ran to its end",
+                    "CONT after an error runs the statement again", "the rest of CONT's line", "CONT inside a program"),
+                 ok),
+        ]
     return [
-        Rule("R-RUN-START", "1. Starting", "RUN starts at the first line, RUN n at line n; a missing n is `Undefined line "
-             "number`; RUN inside a program starts it again there; RUN with no program does nothing.",
+        Rule("R-RUN-START", "1. Starting", "RUN starts at the first line, RUN n (also `RUN20`) at line n -- inside a "
+             "program too, after clearing; a bare RUN inside a program restarts it. A missing n is `Undefined line "
+             "number`; a number expression is `Type mismatch`; RUN with no program does nothing.",
              by("RUN n starts at line n", "RUN to a line that does not exist", "RUN inside a program",
-                "RUN with no program"), ok),
-        Rule("R-RUN-CLEAR", "1. Starting", "RUN clears the variables first: a value left by the last run reads 0.",
-             by("RUN clears the variables"), ok),
+                "RUN with no program", "RUN n inside a program clears and jumps", "a bare RUN inside a program restarts it",
+                "RUN n without a space", "RUN and a number expression"), ok),
+        Rule("R-RUN-CLEAR", "1. Starting", "RUN clears first: numbers, strings, arrays (DIM again is no error), the "
+             "DATA pointer, ON ERROR and open files. The end of a run clears nothing (the variables are still there "
+             "at the prompt).",
+             by("RUN clears the variables", "RUN clears a string", "RUN clears an array", "RUN resets the DATA pointer",
+                "RUN resets ON ERROR", "RUN closes a file", "the end of a run keeps the variables",
+                "RUN closes a file left open by STOP"), ok),
     ]

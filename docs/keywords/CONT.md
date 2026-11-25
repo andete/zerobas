@@ -6,10 +6,11 @@ SPDX-License-Identifier: BSD-2-Clause
 
 # `CONT` — continue a stopped program
 
-> **Spec:** DRAFT 1 (2026-11-25) — 4 cases measured on the Philips VG-8020 (BASIC's reference) and on
+> **Spec:** DRAFT 1 (2026-11-25) — 19 cases measured on the Philips VG-8020 (BASIC's reference) and on
 > zerobas, by typed BASIC ([`kstop.py`](../../probes/basic/spec/kstop.py), with END's, STOP's, CONT's and RUN's
-> cases together; it reads the screen); every rule is executable and every recorded output is read by one. Not yet
-> reviewed ([the keyword plan](spec-plan.md)).
+> cases together; it reads the screen); every rule is executable and every recorded output is read by one.
+> Goldfish pass 1 acted on (2026-11-25: the model is now an interpreter that predicts the whole screen, 15 more
+> cases); not yet re-reviewed ([the keyword plan](spec-plan.md)).
 >
 > **Status (2026-11-06):** level 3 — happy path ✓ · reasonable time ✓ · common
 > errors ✓ · RAM usage not yet proven · every error ✓.
@@ -103,34 +104,64 @@ The tables are generated from the checks, so a sentence here cannot say more tha
 restart the program, so a program cannot record them -- the probe reads the SCREEN. Each case starts with `NEW` and
 `CLS`, types a short program and the commands it names (RUN, CONT, ...), and keeps the screen NORMALISED: lines
 stripped, the prompt -- "Ok" on the VG-8020, "ZB" on zerobas, a deliberate difference (basic/repl.asm) -- read as one
-token, the function-key line dropped. A rule reads the case's RESPONSE: the screen without the prompts and without the
-echo of what was typed (each typed line cut at the line width, 37). Run file
-[`scratchpad/KSP_run1.out`](../../scratchpad/KSP_run1.out) (2026-11-25).
+token, the function-key line dropped. Two groups, FX (the first run's cases) and FY (goldfish pass 1's separating
+cases); run file [`scratchpad/KSP_run1.out`](../../scratchpad/KSP_run1.out) (JSON, 2026-11-25). The model,
+[`kstop_model.py`](../../probes/basic/spec/kstop_model.py), is an INTERPRETER: it types each case into a small BASIC
+and predicts the WHOLE screen -- every prompt (so a hang cannot pass as "does nothing"), the echo of every typed line
+(wrapped at 37), the output and the messages; it holds no per-case answer.
 - **[KST FX *i*]** (CONT), the lines typed after NEW / CLS:
   10: `CONT`
   11: `10 PRINT "[A]":X=1/0:PRINT "[B]"` / `RUN` / `CONT`
   12: `10 PRINT "[A]":STOP:PRINT "[B]"` / `RUN` / `20 PRINT "[C]"` / `CONT`
   13: `10 PRINT "[A]":STOP:PRINT "[B]"` / `RUN` / `PRINT 1+1` / `CONT`
+- **[KST FY *i*]** (CONT, goldfish pass 1), the lines typed after NEW / CLS:
+  7: `10 PRINT "[A]":STOP:PRINT "[B]"` / `RUN` / `10 PRINT "[A]":STOP:PRINT "[Z]"` / `CONT`
+  8: `10 PRINT "[A]":STOP:PRINT "[B]"` / `RUN` / `20` / `CONT`
+  9: `10 PRINT "[A]":STOP:PRINT "[B]"` / `20 PRINT "[C]"` / `RUN` / `20` / `CONT`
+  10: `10 A=5:STOP` / `RUN` / `20 REM` / `PRINT A`
+  11: `10 PRINT "[A]":STOP:PRINT "[B]"` / `RUN` / `NEW` / `CONT`
+  12: `10 PRINT "[A]":STOP:PRINT "[B]"` / `RUN` / `CLEAR` / `CONT`
+  13: `10 PRINT "[A]":STOP:PRINT "[B]"` / `RUN` / `RUN 15` / `CONT`
+  14: `10 PRINT "[A]":STOP:PRINT "[B]"` / `RUN` / `STOP` / `CONT`
+  15: `10 PRINT "[A]":STOP:PRINT "[B]"` / `RUN` / `END` / `CONT`
+  16: `10 PRINT "[A]":STOP:PRINT "[B]"` / `RUN` / `PRINT 1/0` / `CONT`
+  17: `10 PRINT "[A]":STOP:PRINT "[B]"` / `RUN` / `FOR J=1 TO 2:NEXT` / `CONT`
+  18: `10 PRINT "[A]"` / `RUN` / `CONT` / `CONT`
+  19: `10 PRINT "[A]":X=1/D:PRINT "[B]"` / `RUN` / `D=1` / `CONT`
+  20: `10 PRINT "[A]":STOP:PRINT "[B]"` / `RUN` / `CONT:PRINT 1`
+  21: `10 CONT` / `RUN`
 
-**Controls** ([`kstop_controls.py`](../../probes/basic/spec/kstop_controls.py)): each is a rival rule run over the
-reference's cases: “CONT after an error cannot continue” is FALSE on 1 of the 4 cases R-CONT-WHEN selects (e.g. KST FX 11); “a direct statement in between blocks CONT” is FALSE on 1 of the 4 cases R-CONT-WHEN selects (e.g. KST FX 13); “an added line keeps CONT possible” is FALSE on 1 of the 4 cases R-CONT-WHEN selects (e.g. KST FX 12).
+**Controls** ([`kstop_controls.py`](../../probes/basic/spec/kstop_controls.py)): each changes ONE law of the interpreter model and runs over the reference's cases: “an edit keeps CONT possible” is FALSE on 3 of the 14 cases R-CONT-WHEN selects (e.g. KST FX 12); “an edit keeps the variables” is FALSE on 1 of the 14 cases R-CONT-WHEN selects (e.g. KST FY 10); “CLEAR keeps the resume point” is FALSE on 1 of the 14 cases R-CONT-WHEN selects (e.g. KST FY 12); “RUN drops the resume point only once its line is found -- zerobas's” is FALSE on 1 of the 14 cases R-CONT-WHEN selects (e.g. KST FY 13); “a direct statement in between blocks CONT” is FALSE on 4 of the 14 cases R-CONT-WHEN selects (e.g. KST FX 13); “a typed error drops the resume point” is FALSE on 1 of the 14 cases R-CONT-WHEN selects (e.g. KST FY 16); “a failed delete drops the resume point” is FALSE on 1 of the 14 cases R-CONT-WHEN selects (e.g. KST FY 8); “CONT after an error cannot continue” is FALSE on 2 of the 5 cases R-CONT-WHERE selects (e.g. KST FX 11); “CONT after an error prints the stored error again” is FALSE on 1 of the 5 cases R-CONT-WHERE selects (e.g. KST FY 19); “CONT after the end of the program cannot continue” is FALSE on 1 of the 5 cases R-CONT-WHERE selects (e.g. KST FY 18).
 
 <!-- RULES BEGIN -->
 <!-- GENERATED by tools/spec_rules.py from probes/basic/spec/cont_rules.py -- do not edit; `python3 tools/spec_rules.py probes/basic/spec/cont_rules.py --write` -->
 
-**1 rules; 1 hold on the reference. Of the 35 recorded outputs (each case's normalised screen (prompts as <prompt>, the echo of the typed lines read as typed)): 35 read by a rule's check, 0 declared NOT evidence (below), 0 unread.**
+**2 rules; 2 hold on the reference. Of the 191 recorded outputs (each case's normalised screen (prompts as <prompt>, the echo of the typed lines, the output, the messages)): 191 read by a rule's check, 0 declared NOT evidence (below), 0 unread.**
 
 #### 1. When CONT can go on
 
 | rule | cases | reference | zerobas |
 |---|---|---|---|
-| **R-CONT-WHEN** CONT before anything ran, or after a program line was added or changed, prints `Can't CONTINUE`; a direct statement in between does not stop it; after an ERROR, CONT runs the failing statement again and raises the same error. | 4 | ✓ | ✓ |
+| **R-CONT-WHEN** There is nothing to continue -- `Can't CONTINUE` -- before anything ran, after NEW or CLEAR, after a program line was added, changed or deleted, and after a RUN, even one that then failed on a missing line. A direct statement in between -- a typed STOP, END, an error, a FOR loop, a delete of a line that is not there -- leaves the resume point alone. An edit also clears the variables. | 14 | ✓ | ✗ 2: KST FY 8, KST FY 13 |
+
+#### 2. Where it goes on
+
+| rule | cases | reference | zerobas |
+|---|---|---|---|
+| **R-CONT-WHERE** After an error, CONT runs the failing statement AGAIN (with whatever was changed meanwhile); after the program ran off its end, CONT does nothing, every time. The rest of CONT's own line is never run; CONT inside a program with nothing to continue is `Can't CONTINUE in n`. | 5 | ✓ | ✓ |
 
 <!-- RULES END -->
 
 ## Differences from the reference
 
-None recorded. The three that stood until 2026-11-06 are under *What we found*.
+- **Deleting a line that is not there, while stopped** (rule R-CONT-WHEN, case KST FY 8;
+  [D-DELNOLINE](../../todo/open/D-DELNOLINE.md)): the VG-8020 says `Undefined line number` and
+  CONT then goes on; zerobas says `Undefined line number in 10` and CONT runs the STOP again.
+- **RUN to a missing line keeps the resume point** (rule R-CONT-WHEN, case KST FY 13;
+  [D-RUNCONT](../../todo/open/D-RUNCONT.md)): after `RUN 15` fails, the VG-8020's CONT is `Can't
+  CONTINUE`; zerobas's continues the old program.
+
+The three that stood until 2026-11-06 are under *What we found*.
 
 The rung not yet proven is **RAM usage**.
 
@@ -140,8 +171,8 @@ The rung not yet proven is **RAM usage**.
 
 ## Open (not measured)
 
-- [A] What the probe cannot reach yet: CTRL+STOP (a held key), STOP ON / OFF (the traps region), files left open at
-  END, `RUN "name"` (the files region).
+- [A] What the probe cannot reach yet: CTRL+STOP (a held key), STOP ON / OFF (the traps region), `RUN "name"`
+  (the files region), a DISK file left open at END (D-ENDCLOSE: the VG-8020 closes a `CRT:` file).
 
 ## What we found, and how
 

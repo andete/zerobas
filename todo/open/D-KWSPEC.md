@@ -84,3 +84,7 @@
       **IF reworked (2026-11-25)**: kif_model.py an interpreter, 12 one-law controls, group FY (28 cases; 26
       predictions held, the 2 misses became stated laws), an IF-free error handler. zerobas agrees on all 60. NEXT:
       END / STOP / CONT / RUN, the last of the four.
+      **END / STOP / CONT / RUN reworked (2026-11-25)**: kstop_model.py predicts the whole screen, 26 one-law controls,
+      group FY (34 cases). Filed D-ENDCLOSE, D-DELNOLINE, D-RUNCONT (TIER 6). GOLDFISH PASS 1 OVER THE FLOW REGION IS
+      ACTED ON IN FULL. NEXT: region 6's remaining units -- ERROR / ERR / ERL / RESUME / ON ERROR, then TRON / TROFF /
+      REM.
