@@ -1,0 +1,11 @@
+baseline: ('RUNS', '[ 1/1] RUNS?         6293  ref S2 L65535  zb S2 L65535  Chuckie Egg')
+183 points $6289..$6BCC
+  insert before ccn_lp ($6755, basic/cascap-body.inc:25): RESET  [ 1/1] RESET         8918  ref S2 L65535  zb S0 L65535  Chuckie Egg
+  insert before verb_run ($6961, basic/files.asm:285): RUNS  [ 1/1] RUNS?         6293  ref S2 L65535  zb S2 L65535  Chuckie Egg
+  insert before ascii_load ($6851, basic/cload.asm:748): RESET  [ 1/1] RESET         8918  ref S2 L65535  zb S0 L65535  Chuckie Egg
+  insert before cas_fb_lp ($68EF, basic/save.asm:195): RUNS  [ 1/1] RUNS?         6293  ref S2 L65535  zb S2 L65535  Chuckie Egg
+  insert before cas_write_ea_header ($68A2, basic/save.asm:122): RESET  [ 1/1] RESET         8918  ref S2 L65535  zb S0 L65535  Chuckie Egg
+  insert before caf_pad ($68CA, basic/save.asm:149): RUNS  [ 1/1] RUNS?         6293  ref S2 L65535  zb S2 L65535  Chuckie Egg
+  insert before caw_id ($68AD, basic/save.asm:128): RESET  [ 1/1] RESET         8918  ref S2 L65535  zb S0 L65535  Chuckie Egg
+  insert before cas_ascii_finish ($68C5, basic/save.asm:146): RUNS  [ 1/1] RUNS?         6293  ref S2 L65535  zb S2 L65535  Chuckie Egg
+RESULT: the game depends on an address in [$68AD caw_id, $68C5 cas_ascii_finish) -- inserting before caw_id resets, after it runs

@@ -76,3 +76,14 @@
       machine code depends on an address in that stretch -- a BASIC ROM entry the reference has there and zerobas
       matches only by position. Next: log the page-1 addresses its RAM code calls (zerobas's own PCs) and pin the one
       inside $6289-$6CF3, as D-BASICINT2 pinned Demonia's $72D4.
+      📏 2026-11-25, CHUCKIE EGG NARROWED TO ONE ADDRESS: $68C3. A layout bisection (scratchpad/chuckie_bisect.py ->
+      AE_chuckie_bisect.out: three NOPs before a code label, rebuild, run the tape; 8 rounds over $6289-$6BCC) put the
+      dependence in [$68AD caw_id, $68C5 cas_ascii_finish); breakpoints on those 24 bytes during the tape run hit ONCE:
+      zerobas executes $68C3 at t=58.0 s (top of stack $0001 -- reached by a jump, not a call; HL $0023, A 0). On zerobas
+      $68C3 is the LAST byte of `ld (CAS_WCNT),a` (`32 39 F7`): entered there it runs as RST 30h (CALLF) with the
+      following bytes as slot / address -- harmless in this layout by accident, a reset when shifted. So the game jumps
+      to an MS-BASIC entry at $68C3 that zerobas does not provide; it "runs" only by luck. ➡️ NEXT (black box): on the
+      VG-8020, find where the game's RAM code jumps from (RAM breakpoints, the game's own code) and what entering $68C3
+      does there -- registers / RAM / the screen before and after, never the reference ROM's bytes -- then give zerobas
+      that routine at $68C3 and pin it (as D-BASICINT2 pinned Demonia's $72D4). The window sits in basic/save.asm's
+      cassette ASCII-header writer, so the pin needs its own placement there.
