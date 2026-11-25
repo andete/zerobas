@@ -1,0 +1,5 @@
+zb no cartridge      ZB | PRINT PEEK(&HFB21) | 2 | ZB | PRINT HEX$(PEEK(&HFC4A)+256*PEEK(&HFC | 4B)) | DE77 | ZB | PRINT DSKF(0) | 706 | ZB | color  auto   goto   list   run
+zb with the claimer  ZB | PRINT PEEK(&HFB21) | 0 | ZB | PRINT HEX$(PEEK(&HFC4A)+256*PEEK(&HFC | 4B)) | F380 | ZB | PRINT DSKF(0) | Illegal function call | ZB | color  auto   goto   list   run
+cf no cartridge      Ok | PRINT PEEK(&HFB21) | 2 | Ok | PRINT HEX$(PEEK(&HFC4A)+256*PEEK(&HFC4B | )) | DE77 | Ok | PRINT DSKF(0) | 706 | Ok | color   auto    goto    list    run
+cf with the claimer  Ok | PRINT PEEK(&HFB21) | 2 | Ok | PRINT HEX$(PEEK(&HFC4A)+256*PEEK(&HFC4B | )) | DE57 | Ok | PRINT DSKF(0) | 706 | Ok | color   auto    goto    list    run
+refcache: 0 hit, 4 miss, 4 stored

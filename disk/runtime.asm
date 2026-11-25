@@ -881,6 +881,13 @@ boot_rd:
                 ret     z
                 or      $FF             ; neither: NZ, NC
                 ret
+; write_sector -- one sector from HL to logical sector DE of drive A. 📍 D-DISKROOM (2026-11-25): moved here from
+; the $5E10..$5FE5 region (disk/kernel.asm), which needed the bytes for bt_keep's HIMEM reset; 10 B -> 8 B.
+write_sector:
+                ld      bc, $0100       ; B = one sector, C = media 0: not an ID -> the mounted disk's (D-SIDES)
+                xor     a               ; drive 0 (ignored); the scf below sets Cy again
+                scf                     ; Cy = 1 = WRITE direction (MSX2 TH DSKIO)
+                jp      bdos_dskio      ; tail-call (D-DISKVE: DISKVE's handler on an error)
                 ds      $7F7C - $, $00
 k_7F7C:         jp      disk_show_banner    ; $7F7C: emit "zerobas Disk BASIC"
                 IF ($ > $7F80)

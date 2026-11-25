@@ -1,0 +1,5 @@
+check_selftests — 90 script(s) run (2 planter(s) alone, 88 on 8 workers), 1 skipped by declaration, 0 run by their own unit in this battery
+  SKIP  probes/lib/omsx_repl.py
+        --selftest takes a MACHINE and boots an emulator; it is an emulator check, not a static one
+
+0 failing selftest(s)

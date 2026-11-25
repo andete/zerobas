@@ -1,0 +1,10 @@
+wrote C-BIOS_MSX1_EU_REPACK_DISK  (-> machine "C-BIOS_MSX1_EU_REPACK_DISK": merged repack ROM in slot 0, zerobas-disk in slot 3-1, zerobas-sub in slot 3-2)
+     /Users/joost/.openMSX/share/machines/C-BIOS_MSX1_EU_REPACK_DISK.xml
+wrote C-BIOS_MSX1_EU_REPACK_NODISK  (-> machine "C-BIOS_MSX1_EU_REPACK_NODISK": merged repack ROM in slot 0, slot 3-1 EMPTY (diskless target), zerobas-sub in slot 3-2)
+     /Users/joost/.openMSX/share/machines/C-BIOS_MSX1_EU_REPACK_NODISK.xml
+zb no cartridge      ZB | PRINT PEEK(&HFB21) | 2 | ZB | PRINT HEX$(PEEK(&HFC4A)+256*PEEK(&HFC | 4B)) | DE77 | ZB | PRINT DSKF(0) | 706 | ZB | color  auto   goto   list   run
+zb with the claimer  ZB | PRINT PEEK(&HFB21) | 0 | ZB | PRINT HEX$(PEEK(&HFC4A)+256*PEEK(&HFC | 4B)) | F380 | ZB | PRINT DSKF(0) | Illegal function call | ZB | color  auto   goto   list   run
+cf no cartridge      Ok | PRINT PEEK(&HFB21) | 2 | Ok | PRINT HEX$(PEEK(&HFC4A)+256*PEEK(&HFC4B | )) | DE77 | Ok | PRINT DSKF(0) | 706 | Ok | color   auto    goto    list    run
+cf with the claimer  Ok | PRINT PEEK(&HFB21) | 2 | Ok | PRINT HEX$(PEEK(&HFC4A)+256*PEEK(&HFC4B | )) | DE57 | Ok | PRINT DSKF(0) | 706 | Ok | color   auto    goto    list    run
+diskguard: GREEN
+refcache: 4 hit, 0 miss, 2 of the hits were ZEROBAS readings

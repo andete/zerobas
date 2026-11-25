@@ -124,6 +124,47 @@ def page_listed(mod):
     return listed
 
 
+_ZB_MEMO, _ZB_LOCK = {}, None
+
+
+def zb_reading(asm, row, st, td):
+    """⏱ W7 (2026-11-25, gate_time_review): zerobas's reading of one .asm on one zerobas machine. The `disk` and
+    `cf3300` rows (and `nms8250`) differ only in their REFERENCE -- zerobas's side is the same machine, the same .asm,
+    the same disk flag -- so it is measured ONCE per (asm, machine, disk) and shared. SPEC_LIVE_DEDUPE_CHECK=1 measures
+    every row anyway and refuses unless the shared reading is byte-equal (the proof the memo loses nothing)."""
+    import concurrent.futures
+    import threading
+    global _ZB_LOCK
+    disk = row != "nodisk"
+    key = (os.path.realpath(os.path.join(ROOT, asm)), biosl_run.ROWS[row][1], disk)
+
+    def measure():
+        rom = biosl_run.build(os.path.join(ROOT, asm), td)
+        return biosl_run.run(biosl_run.ROWS[row][1], rom, st, td, disk=disk)
+    if _ZB_LOCK is None:
+        _ZB_LOCK = threading.Lock()
+    with _ZB_LOCK:
+        fut = _ZB_MEMO.get(key)
+        mine = fut is None
+        if mine:
+            fut = _ZB_MEMO[key] = concurrent.futures.Future()
+    if mine:
+        try:
+            fut.set_result(measure())
+        except BaseException as e:                  # the waiters see the same failure
+            fut.set_exception(e)
+            raise
+        return fut.result()
+    shared = fut.result()
+    if os.environ.get("SPEC_LIVE_DEDUPE_CHECK"):
+        own = measure()
+        if own != shared:
+            raise SystemExit(f"spec-live: DEDUPE CHECK FAILED for {asm} {row}: its own reading differs from the "
+                             f"shared one -- the memo would lose something")
+        sys.stdout.write(f"  dedupe check {os.path.basename(asm)} {row}: byte-equal\n")
+    return shared
+
+
 def live_run(run_file, td):
     """a live copy of run_file with zerobas's CAP re-measured on the current build, row by row (a
     file may hold a nodisk and a disk section, each a header line and one `CAP ours` line)"""
@@ -142,9 +183,8 @@ def live_run(run_file, td):
             sys.stdout.write(f"  live {os.path.basename(run_file)} {row}: reference-only row, not re-run\n")
             continue
         st = biosl_run.settings(open(os.path.join(ROOT, asm)).read())
-        rom = biosl_run.build(os.path.join(ROOT, asm), td)
         t0 = time.time()
-        zb = biosl_run.run(biosl_run.ROWS[row][1], rom, st, td, disk=(row != "nodisk"))
+        zb = zb_reading(asm, row, st, td)
         if not zb or zb.get("DONE") != "165":
             sys.stdout.write(f"  NO READING: {asm} {row} (DONE {zb and zb.get('DONE')})\n")
             return None
@@ -276,13 +316,22 @@ def main(argv):
             os.makedirs(d)
         # a keyword run file is re-typed GROUP by group (one boot each), so its groups are the pool's tasks
         tasks = [(f, g) for f in order if is_kw_run(f) and not own_live(f) for g in kw_groups(f)]
+        # ⏱ B1 (2026-11-25, gate_time_review): the own-live probes (kstop, kerr, kdim, klist, ktron, kdata -- ~300
+        # screen cases, one boot each) ran one after another AFTER this pool: two thirds of spec-live's wall. They are
+        # independent boots into their own temp dirs, so they join the pool -- submitted FIRST, being the longest.
+        # The modules are imported here, on the main thread, before any worker starts.
+        owns = {f: own_live(f) for f in order if own_live(f)}
         with concurrent.futures.ThreadPoolExecutor(max_workers=jobs) as ex:
-            kw = dict(zip(tasks, ex.map(lambda t: kw_live_group(*t), tasks)))
+            own_fut = {f: ex.submit(p.live_copy, f, dirs[f]) for f, p in owns.items()}
+            kw_fut = {t: ex.submit(kw_live_group, *t) for t in tasks}
             bios = [f for f in order if not is_kw_run(f)]
-            lives_of = dict(zip(bios, ex.map(lambda f: live_run(f, dirs[f]), bios)))
+            bios_fut = {f: ex.submit(live_run, f, dirs[f]) for f in bios}
+            kw = {t: fu.result() for t, fu in kw_fut.items()}
+            lives_of = {f: fu.result() for f, fu in bios_fut.items()}
+            lives_of.update({f: fu.result() for f, fu in own_fut.items()})
         for f in order:
-            if own_live(f):
-                lives_of[f] = own_live(f).live_copy(f, dirs[f])
+            if f in owns:
+                pass
             elif is_kw_run(f):
                 caps = {g: kw[(f, g)] for g in kw_groups(f)}
                 lives_of[f] = None if any(v is None for v in caps.values()) else kw_assemble(f, caps, dirs[f])

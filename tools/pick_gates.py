@@ -143,6 +143,58 @@ def spec_live_inputs(changed):
             or (f.startswith("scratchpad/") and f.endswith(".out"))]
 
 
+SPEC_DIRS = ("probes/bios/spec", "probes/basic/spec")
+
+
+def spec_module_file(name):
+    """module_file, plus the spec dirs (a rules module imports its model and probe from beside it)"""
+    for d in SPEC_DIRS:
+        if os.path.exists(os.path.join(ROOT, d, name + ".py")):
+            return f"{d}/{name}.py"
+    return module_file(name)
+
+
+_FOOT = {}
+
+
+def spec_footprints():
+    """{rules module: its footprint} -- one evaluate() pass per process (~5 s), shared by every scope question"""
+    if not _FOOT:
+        sys.path.insert(0, os.path.join(ROOT, "tools"))
+        import spec_live
+        for d in SPEC_DIRS:
+            for f in sorted(os.listdir(os.path.join(ROOT, d))):
+                if f.endswith("_rules.py"):
+                    m = f"{d}/{f}"
+                    mod, _, runs = spec_live.evaluate(os.path.join(ROOT, m), {})
+                    _FOOT[m] = (closure(m, resolve=spec_module_file) | {os.path.relpath(r, ROOT) for r in runs}
+                                | {getattr(mod, "PAGE", "")})
+    return _FOOT
+
+
+def spec_live_scope(changed):
+    """⏱ A1 (2026-11-25, gate_time_review): the rules modules spec-live must re-run for `changed`, or None = all.
+
+    A page's live result depends on the ROMs, the spec tools, its rules module and what that imports, the run files
+    it READS (spec_live.evaluate records every scratchpad/*.out it opens -- exact, not a guess from a regex) and the
+    page itself. So: a module is selected when its footprint meets the changed spec-live inputs. Every changed input
+    must be claimed by SOME footprint, else None: an input nobody claims could be read by anybody (tools/spec_*.py
+    are never claimed, so a spec tool change runs every page). A ROM change is None too -- every zerobas reading moves.
+    Errs toward MORE pages, never fewer: the only way to drop a page is for its footprint to miss the change."""
+    if any(f.startswith(ROM_TREES) or f in GENERATED for f in changed):
+        return None
+    inputs = set(spec_live_inputs(changed))
+    if not inputs:
+        return []
+    claimed, pick = set(), []
+    for m, foot in spec_footprints().items():
+        hit = inputs & foot
+        if hit:
+            pick.append(m)
+            claimed |= hit
+    return None if inputs - claimed else pick
+
+
 def changed_files():
     """Tracked files changed against BASE (HEAD), staged or not (a staged ADD counts)."""
     return sorted({l for l in git("diff", "--name-only", BASE).splitlines() if l})
@@ -502,6 +554,21 @@ def selftest():
                                              "probes/bios/spec/xbcon_rules.py", "scratchpad/XBCON1_run1.out",
                                              "tools/spec_rules.py", "tools/spec_live.py",
                                              "docs/keywords/RND.md", "probes/basic/spec/krnd.py")))
+    # ⏱ A1: spec-live's scope. The NEGATIVES are the safety: an input nobody claims, and a ROM change, run ALL.
+    sc = spec_live_scope(["docs/bios/CHPUT.md"])
+    arm("P-SLSCOPE a page change re-runs that page's module only",
+        sc == ["probes/bios/spec/chput_rules.py"])
+    sc = spec_live_scope(["probes/basic/spec/kdim.py"])
+    arm("P-SLSCOPE a keyword probe change re-runs the module(s) importing it, and only those",
+        bool(sc) and all("spec/" in m for m in sc) and any("dim" in m for m in sc) and len(sc) < 20)
+    sc = spec_live_scope(["scratchpad/KDM_run1.out"])
+    arm("P-SLSCOPE a run file re-runs every page that READS it (evaluate's record, not a regex)",
+        bool(sc) and "probes/basic/spec/dim_rules.py" in sc)
+    arm("P-SLSCOPE NEGATIVE: a spec tool change runs every page (nobody claims it)",
+        spec_live_scope(["tools/spec_live.py"]) is None)
+    arm("P-SLSCOPE NEGATIVE: a ROM change runs every page",
+        spec_live_scope(["docs/bios/CHPUT.md", "basic/interp.asm"]) is None)
+    arm("P-SLSCOPE a docs-only change runs no page", spec_live_scope(["TODO.md", "docs/concepts/x.md"]) == [])
     arm("P-LASTGREENPATH the full-green record's path has no `..` step (it does not "
         "resolve in a freshly cleaned worktree, where gate_logs does not exist yet)",
         ".." not in os.path.normpath(run_gates.LAST_GREEN).split(os.sep)
@@ -707,22 +774,31 @@ def main(argv):
         return 0
     # ⚠️ LIST LITERALS, NOT A `cmd` VARIABLE: `preflight-check` cannot prove a
     # variable argv is not an openMSX launch, and caught this file's first cut.
-    if mode == "STATIC" and not spec_live_inputs(changed):
+    # ⏱ A1 (2026-11-25): below FULL, spec-live runs only the pages a change can move (spec_live_scope); FULL runs all
+    scope = None if mode == "FULL" else spec_live_scope(changed)
+    env = dict(os.environ)
+    noslive = []
+    if scope == []:
         print("  spec-live left out: no spec page, rules module, probe, run file or spec tool changed "
               "(D-STATICSLOW (3))")
+        noslive = ["spec-live"]
+    elif scope:
+        print(f"  spec-live scoped to {len(scope)} page(s) (A1): " + " ".join(os.path.basename(m) for m in scope))
+        env["SPEC_LIVE_MODS"] = " ".join(scope)
+    if mode == "STATIC" and noslive:
         rc = subprocess.run(["python3", "tools/run_gates.py", "--static", "--exclude", "spec-live"],
-                            cwd=ROOT).returncode
+                            cwd=ROOT, env=env).returncode
     elif mode == "STATIC":
         rc = subprocess.run(["python3", "tools/run_gates.py", "--static"],
-                            cwd=ROOT).returncode
+                            cwd=ROOT, env=env).returncode
     elif mode == "FULL":
         rc = subprocess.run(["python3", "tools/run_gates.py", "--full"],
                             cwd=ROOT).returncode
     else:
-        skip = ",".join(t for t in run_gates.EMULATOR if t not in emu)
+        skip = ",".join([t for t in run_gates.EMULATOR if t not in emu] + noslive)
         keep = ",".join(t for t in emu if t in run_gates.DAILY_SUITES)
         rc = subprocess.run(["python3", "tools/run_gates.py", "--full",
-                             "--exclude", skip, "--keep", keep], cwd=ROOT).returncode
+                             "--exclude", skip, "--keep", keep], cwd=ROOT, env=env).returncode
     for t in x5:
         r = subprocess.run(["make", t], cwd=ROOT, capture_output=True, text=True)
         print(f"{t} exit={r.returncode}")

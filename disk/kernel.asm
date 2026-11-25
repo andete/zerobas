@@ -3529,8 +3529,8 @@ dos_clear_screen:
                 ld      ($F3DD), a          ; CSRX := 1 (home col, 1-based)
                 ret
                 ds      $5E10 - $, $00  ; pad up to the pinned $5E10 entry
-mb_5e10:
-                jp      basent_body
+mb_5e10:                        ; D-DISKROOM (2026-11-25): the pinned $5E10 entry FALLS INTO basent_body,
+                                ; which follows at once -- it was a `jp` to the next byte (3 B for init_gate's guard)
 ; basent_body -- $4022. Runs in page 1 (this ROM), so the switch away from it
 ; happens in a copy of basent_tramp placed in page-3 RAM (SECTOR_BUF: scratch).
 ; D-BOOTDATE: when MSX-DOS never started (the mark is not DOS_SIG -- a boot code
@@ -3588,6 +3588,12 @@ basent_tramp:
                 ld      (WA_JMPTAB), a
                 ld      (WA_JMPTAB + 3), a
 bt_keep:
+                ; 🔴 D-DISKROMHOST step 4(d): and HIMEM back to $F380, as at power-on. The INITs main reruns
+                ; claim from it again, and init_gate's guard declines a HIMEM that is not $F380 -- MSX-DOS's
+                ; $DF93 (or Disk BASIC's, from a program) left here read as "a cartridge claimed before us",
+                ; and A>BASIC came up with no disk (scratchpad/AE_room_dosbasic.out).
+                ld      hl, $F380
+                ld      (HIMEM), hl
                 ld      sp, $F2EC           ; the SP the BIOS enters INIT with
                 in      a, ($A8)
                 and     $F0                 ; pages 0/1 -> primary slot 0, the BIOS
@@ -3675,9 +3681,7 @@ hk_agetb:
                 jr      c,hkg_st
                 xor     a                   ; 0 = C holds a byte
 hkg_st:
-                ld      (DISKOP_STATUS),a
-                scf
-                ret
+                jr      hka_st              ; D-DISKROOM: hka_st's tail is this one, byte for byte
 
 ; --- hk_format: CALL FORMAT's geometry menu + tenant dispatch, RUNNING IN THE DISK ROM (docs/spec-basic-nodisk.md §9) ---
 ; D-FMTHOOK (C6-FORMAT-TO-DISKROM, 2026-10-03). Behind H_FORM ($FFAC): H.FORM in
@@ -3888,32 +3892,33 @@ init_gate:
                 call    $0141               ; SNSMAT: A = row 6, a 0 bit = held
                 rrca                        ; SHIFT -> Cy
                 jr      c, ig_init          ; not held: the normal INIT
+ig_out:
                 pop     af
                 xor     a
                 ld      (DISKSLOT_OK), a    ; 0: no disk ROM (D-DRVTBLNODISK: main no longer inc's it)
                 ret
 ig_init:
+                ; 🔴 D-DISKROMHOST step 4(d), THE GUARD (Joost 2026-11-25: "guard first"). This ROM's work
+                ; area sits at FIXED addresses, right only when it is the first to claim RAM. If HIMEM is not
+                ; the untouched $F380, a cartridge scanned before us claimed some: decline exactly as SHIFT
+                ; held does (no hooks, no claim, DISKSLOT_OK 0) instead of writing into its RAM. Cy is SET
+                ; here (the jr c above), so `sbc hl,$F37F` IS `HIMEM - $F380`. HL / DE are free: init reads A
+                ; only. The base-addressed work area (host independence) is the later step.
+                ld      hl, (HIMEM)
+                ld      de, $F37F
+                sbc     hl, de
+                jr      nz, ig_out          ; someone claimed before us
                 pop     af
                 jp      init
 
 ; (calslt_body, CALSLT for a page-0 target under MSX-DOS -- D-DOSMODE40 -- was here;
 ; D-TPAP1's br_calslt enters the main BIOS's own CALSLT, which covers that case.)
 
-frp_full:                                   ; fat_rand_put's record past any disk (D-RECBIG;
-                                            ; sited in this fill's room)
-                ld      a, 66               ; Disk full, pending as fat_alloc_cluster
-                ld      (DISKOP_ERR), a     ; leaves it
-                scf
-                ret
+frp_full:                                   ; fat_rand_put's record past any disk (D-RECBIG): Disk
+                jp      fac_full            ; full, pending -- fac_full's tail byte for byte (D-DISKROOM)
 
-; (write_sector moved here from the $5456 gap by D-AUXOUT, whose $5474 veneer
-; needed the room in front of the $553C pin.)
-write_sector:                           ; relocated (its entry once collided with the $4935 veneer, gone)
-                ld      b, 1            ; one sector
-                ld      c, 0            ; media: not an ID -> the mounted disk's (D-SIDES)
-                ld      a, 0            ; drive 0 (ignored)
-                scf                     ; Cy = 1 = WRITE direction (MSX2 TH DSKIO)
-                jp      bdos_dskio      ; tail-call (D-DISKVE: DISKVE's handler on an error)
+; (write_sector stood here until D-DISKROOM (2026-11-25) moved it in front of the $7F7C pin,
+; disk/runtime.asm: this region needed the bytes for bt_keep's HIMEM reset.)
 ; bcw_own -- 🔴 D-SEQMIX2 (2026-11-14): FCLOSE ends write mode only for the WRITER'S OWN
 ; file. BDOS_WRMODE is one global; a copy that closed its SOURCE before the destination's
 ; last SEQWRITE had that write answered $FF and the record lost (scratchpad/
@@ -5913,7 +5918,7 @@ hrh_him:
                 call    layout_rebuild      ; the H.RUNC claim: MSX-DOS runs with $DF93
                 call    init_p2             ; MSX-DOS: no return. Otherwise BASIC is next --
                 pop     hl
-                jp      layout_rebuild      ; -- so the last claim, and back to H.RUNC's caller
+                jr      layout_rebuild      ; -- so the last claim, and back to H.RUNC's caller
 ; fat_wclus_x15 -- D-DISKROMHOST step 2b: the run it replaces stood at 2 sites (fat-prim-body.inc)
 fat_wclus_x15:
                 ld      hl, (FWR_CLUS)
@@ -6503,9 +6508,7 @@ hkn_done:
 ; tail and main's decode, so the pending code survives with the channel left
 ; live, as it is on the CF-3300.
 hk_claim_status:
-                ld      (DISKOP_STATUS),a
-                scf                         ; CF=1: the hook is claimed
-                ret
+                jp      hka_st              ; D-DISKROOM: DISKOP_STATUS := A, CF=1 -- hka_st's tail
 
 
 ; --- hk_copy: COPY's body, BOTH HALVES, in the disk ROM (MSX2 TH hook) ------
@@ -8973,10 +8976,7 @@ fdel_relocate:
 ; (fdel_miss -- byte-identical to disk/fat.asm's fren_miss -- removed by D-DISKCARVE,
 ; 2026-11-07: its three callers jump to fren_miss, A = $FF, CF set, $F306 = 0)
 fdel_ioerr:
-                call     clr_f306   ; M20 dispatcher-flag rule
-                scf
-                ld      a, 2                ; generic FDC I/O error (fdc_read_data convention)
-                ret
+                jp      fren_ioerr          ; D-DISKROOM: the same body (clr_f306, CF, A = 2)
 
 ; fcb_fatst -- FAT_FIRSTCLUS := FCB +26..27, FAT_FILESIZE := FCB +16..19 (IX = the FCB).
 ; It stood twice, inline, in wfs_geom and rrnd_position (D-DSKFMT's carve, 2026-11-10).

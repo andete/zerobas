@@ -147,6 +147,26 @@
       not. The full base-addressed rewrite (~2.5 KB, estimated) stays filed for later.
       📋 The readiness map for the C-BIOS port: [docs/disk/port-readiness.md](../../docs/disk/port-readiness.md) (2026-11-25):
       the disk ROM has 0 B usable, so the guard needs room carved first.
+      ✅ STEP 4 (d), THE GUARD (2026-11-25). disk/kernel.asm init_gate: after the SHIFT test, HIMEM is compared with
+      $F380; any other value means a cartridge scanned before us claimed RAM, and INIT declines exactly as SHIFT held
+      does (no hooks, no claim, DISKSLOT_OK 0). Room: carved the same day (D-DISKROOM, below). 🔴 THE FIRST FULL GATE
+      WAS RED in 4 disk units (scratchpad/AE_room_full.out): A>BASIC reruns the ROM INITs with MSX-DOS's HIMEM $DF93
+      still in the cell, the guard declined, and BASIC came up with no disk (scratchpad/AE_room_dosbasic.out). Fixed:
+      basent_tramp's bt_keep (both restart paths) puts HIMEM back to $F380 before re-entering the main INIT, as at
+      power-on -- the hooks were already reset there. MEASURED (probes/disk/disk_probe_guard.py + the test cartridge
+      probes/disk/claimer.asm, which lowers HIMEM by 16; scratchpad/AE_room_guard.out): zerobas with no cartridge 2
+      drives / $DE77 / DSKF 706 as the CF-3300; with the claimer, 0 drives and DSKF "Illegal function call" -- declined.
+      The CF-3300 installs either way ($DE57 with the claimer: its work area follows its claim) -- that is what (d)'s
+      base-addressed rewrite would give zerobas. 🔮 scored: "zerobas + claimer reads HIMEM $F370" MISSED -- it reads
+      $F380: zerobas BASIC's boot drops a small claim ([D-CARTCLAIM](D-CARTCLAIM.md), filed). Disk collection on the
+      new ROM (scratchpad/AE_room_diskcorpus.out): every class the same as AE_s4_diskcorpus.out but f1sp3d-2.dsk
+      BOTH-RUN -> UNSETTLED; sampled again at 10..90 s it is BOTH-RUN (at 45 s the PC sat in a BIOS RAM routine, $F38C,
+      which the classifier rightly refuses as a reading) -- not worse (🔮 "none worse": HIT on re-reading).
+      D-DISKROOM, the carve that paid for it: five tails shared (hkg_st, hk_claim_status -> hka_st; frp_full ->
+      fac_full; fdel_ioerr -> fren_ioerr), two `jp` -> `jr` (fname_ev, hrh_him), the pinned $5E10 entry falls into
+      basent_body instead of jumping to the next byte, and write_sector shortened (10 -> 8 B) and moved in front of the
+      $7F7C pin to make room for bt_keep's reset. What is left is under the wall tool's 16-byte floor.
+      LEFT of step 4: (d)'s base-addressed work area (host independence, ~2.5 KB estimated -- no room for it).
       ✅ STEP 4 (e) for (b) + (c) (2026-11-25): the disk collection (scratchpad/diskcorpus_run.py, 143 images) on
       0f5e72f1f against the last recorded run (scratchpad/diskcorpus_iffread.out): NO image worse (🔮 "none worse":
       HIT); BOTH-RUN 98 -> 99, UNSETTLED 19 -> 17; YOUMAKOR, xak2eng3 / 4 / 5 UNSETTLED -> BOTH-RUN, and TestameB

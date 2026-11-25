@@ -48,6 +48,69 @@ EXPECT_ARG = {
 }
 
 
+# ⏱ B2 (2026-11-25, gate_time_review): the selftests that PLANT into tracked files (content or mtime), measured by
+# `--classify` (2026-11-25: these two of 90). They run ALONE, first; every other selftest runs on a pool. A script that
+# plants and is not listed here is caught by the guard around the pool (tracked files' (mtime, size) before / after)
+# and turns this check RED, naming the files -- re-run `--classify` and update the list.
+PLANTERS = {
+    "tools/check_disk_deps.py": "plants a dependency into the Makefile and restores it",
+    "tools/check_wall_literals.py": "plants a literal into basic/sysvars.inc and a probe, and restores them",
+}
+JOBS = max(1, min(8, os.cpu_count() or 1))
+
+
+def tracked_stat():
+    """{tracked path: (mtime_ns, size)}"""
+    out = {}
+    for f in subprocess.run(["git", "-C", ROOT, "ls-files", "-z"], capture_output=True).stdout.split(b"\0"):
+        if f:
+            try:
+                st = os.stat(os.path.join(ROOT, f.decode()))
+                out[f.decode()] = (st.st_mtime_ns, st.st_size)
+            except OSError:
+                pass
+    return out
+
+
+def collected_elsewhere():
+    """⏱ A4 (2026-11-25): {script: the unit of THIS battery whose recipe runs `<script> --selftest`}. Only inside a
+    battery (run_gates sets ZEROBAS_BATTERY_UNITS to the units of the run); standalone, nothing is skipped."""
+    units = set(os.environ.get("ZEROBAS_BATTERY_UNITS", "").split())
+    if not units:
+        return {}
+    out, target = {}, None
+    for line in open(os.path.join(ROOT, "Makefile"), errors="replace"):
+        m = re.match(r"^([A-Za-z0-9_.-]+):", line)
+        if m:
+            target = m.group(1)
+            continue
+        m = re.match(r"^\tpython3 (\S+\.py) --selftest\s*$", line)
+        if m and target in units and target != "selftest-check":
+            out.setdefault(m.group(1), target)
+    return out
+
+
+def run_one(rel):
+    r = subprocess.run([sys.executable, os.path.join(ROOT, rel), "--selftest"],
+                       capture_output=True, text=True, cwd=ROOT)
+    return rel, r.returncode, r.stdout
+
+
+def classify():
+    """each selftest alone: does it move a tracked file? (the measurement PLANTERS records)"""
+    import time
+    for rel in advertised():
+        if rel in EXPECT_ARG:
+            continue
+        a = tracked_stat()
+        t = time.time()
+        _, rc, _ = run_one(rel)
+        b = tracked_stat()
+        moved = sorted(f for f in set(a) | set(b) if a.get(f) != b.get(f))
+        print(f"{time.time() - t:6.1f}s rc={rc} {'PLANTS ' + ' '.join(moved) if moved else 'pure'}  {rel}", flush=True)
+    return 0
+
+
 def advertised():
     out = []
     for t in TREES:
@@ -60,18 +123,40 @@ def advertised():
 def main(argv):
     if "--selftest" in argv:
         return selftest()
+    if "--classify" in argv:
+        return classify()
+    import concurrent.futures
     red, skipped, green = [], [], []
+    elsewhere = collected_elsewhere()
+    pool_list, plant_list = [], []
     for rel in advertised():
         if rel in EXPECT_ARG:
             skipped.append(rel)
-            continue
-        r = subprocess.run([sys.executable, os.path.join(ROOT, rel), "--selftest"],
-                           capture_output=True, text=True, cwd=ROOT)
-        (green if r.returncode == 0 else red).append((rel, r.returncode, r.stdout))
-    print(f"check_selftests — {len(green) + len(red)} script(s) run, "
-          f"{len(skipped)} skipped by declaration")
+        elif rel in elsewhere:
+            pass
+        elif rel in PLANTERS:
+            plant_list.append(rel)
+        else:
+            pool_list.append(rel)
+    results = [run_one(rel) for rel in plant_list]          # alone, first
+    before = tracked_stat()
+    with concurrent.futures.ThreadPoolExecutor(max_workers=JOBS) as ex:
+        results += list(ex.map(run_one, pool_list))
+    after = tracked_stat()
+    planted = sorted(f for f in set(before) | set(after) if before.get(f) != after.get(f))
+    for rel, rc, out in results:
+        (green if rc == 0 else red).append((rel, rc, out))
+    print(f"check_selftests — {len(green) + len(red)} script(s) run ({len(plant_list)} planter(s) alone, "
+          f"{len(pool_list)} on {JOBS} workers), {len(skipped)} skipped by declaration, "
+          f"{len(elsewhere)} run by their own unit in this battery")
     for rel in skipped:
         print(f"  SKIP  {rel}\n        {EXPECT_ARG[rel]}")
+    for rel, unit in sorted(elsewhere.items()):
+        print(f"  BY    {rel}  ({unit})")
+    if planted:
+        print(f"  🔴 A SELFTEST NOT IN PLANTERS MOVED TRACKED FILE(S) while the pool ran: {' '.join(planted)} -- "
+              f"run `python3 tools/check_selftests.py --classify` and add it to PLANTERS")
+        red.append(("(the pool guard)", 1, ""))
     for rel, rc, out in red:
         tail = [l for l in out.strip().split("\n") if l.strip()][-3:]
         print(f"  RED   {rel}  (rc={rc})")
@@ -112,6 +197,22 @@ def selftest():
     arm("S3 🔴 a FAILING selftest is rc!=0 and would be reported", rcs["b.py"] != 0)
     arm("S4 every EXPECT_ARG entry carries a reason",
         all(v.strip() for v in EXPECT_ARG.values()))
+    arm("S5 every PLANTERS entry carries a reason and names a script that exists",
+        all(v.strip() and os.path.exists(os.path.join(ROOT, k)) for k, v in PLANTERS.items()))
+    old = os.environ.get("ZEROBAS_BATTERY_UNITS")
+    try:
+        os.environ["ZEROBAS_BATTERY_UNITS"] = "dead-alias-check"
+        got = collected_elsewhere()
+        os.environ["ZEROBAS_BATTERY_UNITS"] = ""
+        alone = collected_elsewhere()
+    finally:
+        if old is None:
+            os.environ.pop("ZEROBAS_BATTERY_UNITS", None)
+        else:
+            os.environ["ZEROBAS_BATTERY_UNITS"] = old
+    arm("S6 inside a battery, a selftest its own unit runs is skipped here (and ONLY that unit's)",
+        got == {"tools/check_dead_aliases.py": "dead-alias-check"}, f"got {got}")
+    arm("S7 NEGATIVE: standalone (no battery), nothing is skipped", alone == {})
     shutil.rmtree(d, ignore_errors=True)
     print()
     print("ALL PASS — check_selftests" if not fails else f"🔴 {fails}")

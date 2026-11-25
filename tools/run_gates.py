@@ -164,7 +164,7 @@ asavedev-acceptance casprdir-acceptance casbrk-acceptance
 castype-acceptance casbin-acceptance
 fcbhdr-acceptance putdir-acceptance readflt-acceptance
 recauto-acceptance recbig-acceptance ampb-acceptance pulong-acceptance rg7-acceptance bloadrtail-acceptance wszero-acceptance tapionlead-acceptance basicint-acceptance filesnl-acceptance
-filesbare-acceptance callsystem-acceptance bootkey-acceptance dskib-acceptance boot5e10-acceptance namecase-acceptance cloadverr-acceptance programs-acceptance gcdi-acceptance catcopy-acceptance nodev-acceptance savedev-acceptance pustardol-acceptance putiny-acceptance puneglead-acceptance usrstr-acceptance fullclash-acceptance playeq-acceptance inputcont-acceptance postty-acceptance playarr-acceptance prstr2x-acceptance keyrepaint-acceptance prstrfn-acceptance resnextend-acceptance playqueue-acceptance concat3-acceptance pustype-acceptance relspace-acceptance argspace-acceptance sessions-acceptance
+filesbare-acceptance callsystem-acceptance bootkey-acceptance dskib-acceptance boot5e10-acceptance diskguard-acceptance namecase-acceptance cloadverr-acceptance programs-acceptance gcdi-acceptance catcopy-acceptance nodev-acceptance savedev-acceptance pustardol-acceptance putiny-acceptance puneglead-acceptance usrstr-acceptance fullclash-acceptance playeq-acceptance inputcont-acceptance postty-acceptance playarr-acceptance prstr2x-acceptance keyrepaint-acceptance prstrfn-acceptance resnextend-acceptance playqueue-acceptance concat3-acceptance pustype-acceptance relspace-acceptance argspace-acceptance sessions-acceptance
 resnext-acceptance readerl-acceptance
 dosmode-acceptance dossession-acceptance ramatlas-acceptance bootkeys-acceptance
 diskfre-acceptance deepexpr-acceptance fcb0-acceptance prec-acceptance dimedge-acceptance loaddi-acceptance wcache-acceptance fdcdi-acceptance geteject-acceptance
@@ -578,6 +578,57 @@ def selftest():
 MUTATORS = ["switch-build-check", "diskdep-check", "wall-literal-check",
             "selftest-check"]
 
+# ⏱ B2 (2026-11-25, gate_time_review): A RESTORED PLANT KEEPS ITS NEW MTIME, and a moved Makefile or sysvars.inc
+# makes the post-mutator refresh rebuild everything. A mutator that put a file's BYTES back gets its MTIME back too:
+# compared against the index blob (a clean file) or a copy taken before (a dirty one). A file whose bytes really
+# changed keeps its new mtime, so the refresh still rebuilds exactly what changed.
+def restorable_snapshot():
+    """(stat, index blob hash, dirty bytes) of the tracked files, before a mutator"""
+    import hashlib  # noqa: F401
+    stat, blob = {}, {}
+    for line in subprocess.run(["git", "-C", ROOT, "ls-files", "-s", "-z"], capture_output=True,
+                               text=True).stdout.split("\0"):
+        if not line:
+            continue
+        meta, path = line.split("\t", 1)
+        blob[path] = meta.split()[1]
+        try:
+            st = os.stat(os.path.join(ROOT, path))
+            stat[path] = (st.st_mtime_ns, st.st_size)
+        except OSError:
+            pass
+    dirty = {}
+    for f in subprocess.run(["git", "-C", ROOT, "diff", "--name-only", "-z"], capture_output=True,
+                            text=True).stdout.split("\0"):
+        if f and f in stat:
+            dirty[f] = open(os.path.join(ROOT, f), "rb").read()
+    return stat, blob, dirty
+
+
+def restore_mtimes(snap):
+    """the tracked files a mutator moved but whose bytes are back: their old mtime again -> [paths]"""
+    import hashlib
+    stat, blob, dirty = snap
+    back = []
+    for path, (mt, size) in stat.items():
+        p = os.path.join(ROOT, path)
+        try:
+            st = os.stat(p)
+        except OSError:
+            continue
+        if st.st_mtime_ns == mt:
+            continue
+        data = open(p, "rb").read()
+        if path in dirty:
+            same = data == dirty[path]
+        else:
+            same = hashlib.sha1(b"blob %d\0" % len(data) + data).hexdigest() == blob.get(path)
+        if same:
+            os.utime(p, ns=(st.st_atime_ns, mt))
+            back.append(path)
+    return back
+
+
 # --- units that must run AFTER the pool, serially ----------------------------
 # 🔴 D-TIERDOC, and the placement was WRONG TWICE BEFORE IT WAS RIGHT. The first
 # version put `tiers-md-check` in MUTATORS, reasoning that it READS
@@ -786,6 +837,9 @@ def main():
     os.makedirs(OUT, exist_ok=True)
     print(f"=== warm-up (serial build of shared artifacts) ===", flush=True)
     t0 = time.time()
+    t_start = t0                # ⏱ W1 (2026-11-25): the battery's start -- ttot is measured from HERE; the phases
+                                # below time themselves with _t0 (the mutator phase reassigned t0, and every printed
+                                # wall left out the warm-up and the mutators: ~105 s of serial time, gate_time_review)
     if sh(["make", *WARM], f"{OUT}/_warmup.log") != 0:
         print("WARM-UP FAILED:"); os.system(f"tail -25 {OUT}/_warmup.log")
         return 1
@@ -910,13 +964,20 @@ def main():
     # --- the mutators, serially, with the pool not yet running -------------
     mut_results = []
     run_mut = [g for g in MUTATORS if g not in excl]
+    # ⏱ A4 (2026-11-25): the units of THIS run, so selftest-check can skip a selftest a unit here already runs
+    os.environ["ZEROBAS_BATTERY_UNITS"] = " ".join(g for g in GATES + MUTATORS + POSTCHECKS if g not in excl)
     if run_mut and not a.serial:
         print(f"=== {len(run_mut)} tree-mutating unit(s), SERIAL "
               f"(they rewrite a shared tracked file) ===", flush=True)
         for g in run_mut:
-            t0 = time.time()
+            _t0 = time.time()
+            _snap = restorable_snapshot()
             rc = sh(["make", g], f"{OUT}/{g}.log", env=kwcover_env(g))
-            dt = time.time() - t0
+            _back = restore_mtimes(_snap)
+            dt = time.time() - _t0
+            if _back:
+                print(f"  ({g}: {len(_back)} restored file(s) given back their mtime: {' '.join(_back[:4])})",
+                      flush=True)
             mut_results.append((g, rc, dt, None))
             print(f"  rc={rc:<3d} {dt:12.0f}s  {g}", flush=True)
         # 🔴 A RESTORED PLANT IS NOT A RESTORED TREE. The selftests put the
@@ -927,12 +988,12 @@ def main():
         # scores rc=2, and passes on the serial retry: a REAL defect wearing a
         # flake's clothes, seen twice in one day on float-acceptance and earlier
         # on math-acceptance. Rebuilding here costs one relink, once.
-        t0 = time.time()
+        _t0 = time.time()
         if sh(["make", *WARM], f"{OUT}/_refresh.log") != 0:
             print("POST-MUTATOR REFRESH FAILED:")
             os.system(f"tail -25 {OUT}/_refresh.log")
             return 1
-        print(f"  (post-mutator refresh {time.time() - t0:.0f}s -- the plants "
+        print(f"  (post-mutator refresh {time.time() - _t0:.0f}s -- the plants "
               f"moved mtimes, so the pool would otherwise race a rebuild)",
               flush=True)
 
@@ -1117,7 +1178,7 @@ def main():
                   f"{results[g][0]}->{rc}", flush=True)
             results[g] = (rc, dt)
 
-    ttot = time.time() - t0
+    ttot = time.time() - t_start
     shard_rc = [rc for n, (rc, _) in results.items() if n.startswith("lineerr#")]
     lineerr_ran = bool(shard_rc)
     lineerr_ok = (not shard_rc) or all(rc == 0 for rc in shard_rc)

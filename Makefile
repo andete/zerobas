@@ -2646,6 +2646,10 @@ filesnl-acceptance: repack-machine $(DISK_TEST_DSK)
 dskib-acceptance: repack-machine $(DISK_TEST_DSK)
 	python3 probes/disk/disk_probe_dskib.py
 
+# --- diskguard-acceptance: the disk ROM's INIT guard declines after a foreign HIMEM claim (D-DISKROMHOST 4(d)) ---
+diskguard-acceptance: repack-machine $(DISK_TEST_DSK)
+	python3 -u probes/disk/disk_probe_guard.py
+
 # --- boot5e10-acceptance: a boot code calling the disk ROM's fixed $5E10 (D-DISKRUN) ---
 # mb.dsk's boot code does; the VG-8020 + NMS 1200 starts BASIC and runs AUTOEXEC.BAS
 # with no date question (Joost 2026-10-27: match the NMS 1200). Our own disk, our own
@@ -4592,8 +4596,9 @@ kw-spec-index-check:
 # probes on zerobas only (the reference side stays the page's measured values) and requires that the
 # rules zerobas fails are exactly the rules its "Differences from the reference" table names: a new
 # failure is a REGRESSION, a listed rule that now holds a STALE PAGE. ~8 s (zerobas's boots only).
+# SPEC_LIVE_MODS (set by tools/pick_gates.py below FULL, A1): only those rules modules; empty = every page
 spec-live: repack-machine
-	python3 -u tools/spec_live.py
+	python3 -u tools/spec_live.py $(SPEC_LIVE_MODS)
 
 spec-rules-check:
 	@set -e; for f in probes/bios/spec/*_rules.py probes/basic/spec/*_rules.py; do python3 tools/spec_rules.py "$$f" --check > build/spec-rules.out || { cat build/spec-rules.out; exit 1; }; tail -1 build/spec-rules.out; done

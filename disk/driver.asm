@@ -227,7 +227,7 @@ new_taken:
 ; fname_ev -- the file-name expression through calbak (MOVED here by D-DISKCARVE6 step 2).
 fname_ev:
                 ld      ix,fname_expr
-                jp      calbak
+                jr      calbak              ; D-DISKROOM: jp -> jr
                 ds      $436C - $, $00      ; pad remainder up to the pinned canonical entry
 k_436C:
                 jp      fdel_body           ; $436C: BDOS $13 FDEL canonical entry (M26)
