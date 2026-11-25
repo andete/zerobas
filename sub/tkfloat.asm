@@ -320,6 +320,10 @@ tksd_stop:
 ; push HL and may `pop hl` to REWIND across a blank run they decided not to
 ; consume -- a decrementing counter would drift out of step with the cursor on
 ; every rejected run. Comparing HL against a stored end address cannot.
+; 🟢 D-VALWS (2026-11-25): a BLANK is space, TAB (9) or LF (10) -- the VG-8020 skips all three wherever it skips a
+; space in a number, in VAL, in READ of a DATA item and in the tokeniser (a LOADed `A=1<TAB>2` is stored `A=12`):
+; scratchpad/readtab_probe.py, AE_readtab*.out. Other control characters are not blanks on either machine. The
+; `cp ' '` stays LAST, so every caller still classifies the returned character by its flags.
 tkf_fetch:
                 dec     hl                  ; pre-step: the loop's `inc` lands on (HL)
 tkf_f_lp:
@@ -327,6 +331,10 @@ tkf_f_lp:
                 call    tkf_inrange
                 jr      nc,tkf_eos
                 ld      a,(hl)
+                cp      9                   ; TAB
+                jr      z,tkf_f_lp
+                cp      10                  ; LF
+                jr      z,tkf_f_lp
                 cp      ' '
                 jr      z,tkf_f_lp
                 ret

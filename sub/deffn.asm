@@ -135,7 +135,7 @@ dfn_start:
                 ld      hl,(FN_PTR)
                 call    skip_spaces
                 cp      '('
-                jp      nz,dfn_err2         ; a list in the DEF and none at the
+                jr      nz,dfn_err2         ; a list in the DEF and none at the
                                             ; call is ERR 2 (o.barecall)
                 inc     hl
                 ld      (FN_PTR),hl
@@ -148,7 +148,7 @@ dfn_formal:
                 ld      hl,(FN_DPTR)
                 call    skip_spaces
                 call    is_letter
-                jp      nc,dfn_err2
+                jr      nc,dfn_err2
                 call    dfn_name_key
                 ld      (FN_DPTR),hl
                 ld      (FN_TYP),a
@@ -179,7 +179,7 @@ dfn_actual:                                 ; B = $81/$82
 dfn_a_str:
                 cp      $82                 ; numeric actual, string formal?
 dfn_a_chk:
-                jp      nz,dfn_err13
+                jr      nz,dfn_err13
                 ; --- count the formal against the ceiling ------------------
                 ; FN_SLOTP no longer names a slot: in this pass it is the byte
                 ; offset the next formal's slot would have, so after the list it
@@ -204,9 +204,9 @@ dfn_a_chk:
                 ; the bound is FN_AREA, which is FN_MAXP*FN_SLOTSZ.
                 ld      a,(FN_SLOTP)
                 sub     low FN_PAREA        ; A = the next slot's byte offset
-                jp      c,dfn_err5          ; ...wrapped off the top of the page
+                jr      c,dfn_err5          ; ...wrapped off the top of the page
                 cp      FN_AREA
-                jp      nc,dfn_err5         ; past the ninth formal
+                jr      nc,dfn_err5         ; past the ninth formal
                 add     a,low FN_PAREA + FN_SLOTSZ
                 ld      (FN_SLOTP),a        ; one more formal counted
                 ld      a,2                 ; park the value

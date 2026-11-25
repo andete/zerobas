@@ -1,0 +1,13 @@
+VG-8020  space   12
+VG-8020  tab     12
+VG-8020  lf      12
+VG-8020  ctlx    ";A;"
+VG-8020  tabexp  100
+VG-8020  valtab  12
+zerobas  space   12
+zerobas  tab     12
+zerobas  lf      12
+zerobas  ctlx    ";A;"
+zerobas  tabexp  100
+zerobas  valtab  12
+refcache: 1 hit, 1 miss, 1 stored

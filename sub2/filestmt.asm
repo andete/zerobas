@@ -73,10 +73,10 @@ file_tenant:                                ; index 19: C = the token (main's ex
 ; (56) and oo_fail_bfn (52) are each exactly `ld a,N / jp raise_error`.
 fs_syntax:                                  ; oo_synerr / oo_fail_syn: stmt_error, ERR 2
                 ld      ix,p0_stmt_error
-                jp      p0cb                ; raises; never returns
+                jr      p0cb                ; raises; never returns
 fs_dio:                                     ; dpl_dio: motor off, ERR 19
                 ld      ix,p0_dpl_dio
-                jp      p0cb
+                jr      p0cb
 fs_badname:                                 ; pdf_badname: ERR 56
                 ld      a,56
                 jr      fs_raise
@@ -87,7 +87,7 @@ fs_illegal:                                 ; gb_illegal: ERR 5 (also LEN= out o
                 ld      a,5                 ; 1..256, D-RECLEN2)
 fs_raise:                                   ; A = the ERR code
                 ld      ix,p0_raise_error
-                jp      p0cb
+                jr      p0cb
 fs_pop_exec:                                ; main's `jp pop_exec`
                 pop     hl
 fs_exec:                                    ; main's `jp exec_stmt`
@@ -105,7 +105,7 @@ fs_end_line:                                ; main's `jp end_line_end`: a contin
 ; the five sites holds anything in it. A, F, HL out as CHRGTR's; AF' clobbered.
 fs_chrgtr:
                 ld      ix,p0_chrgtr
-                jp      p0cb
+                jr      p0cb
 
 ; ===========================================================================
 ; OPEN "name" [FOR INPUT|OUTPUT|APPEND] AS [#]n [LEN=r]   (main's ex_open/do_open)

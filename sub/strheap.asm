@@ -929,7 +929,7 @@ strheap_gc:
                 ; N==0 (empty heap) -> FRETOP = C, nothing to move.
                 ld      a,(ix+4)
                 or      (ix+5)
-                jp      z,sg_finish
+                jr      z,sg_finish
                 ; --- Phase C: the sort buffer (2N B) --------------------------
                 ; 🔁 D-DETOKBUF S2 (2026-09-25): NOT DETOKBUF any more -- that
                 ; 1280 B buffer is gone (Joost: "Drop DETOKBUF"). The array goes
@@ -954,7 +954,7 @@ strheap_gc:
                 pop     de
                 push    de                  ; DE = base   [base]
                 add     hl,de               ; the array's end
-                jp      c,gc_nobuf
+                jr      c,gc_nobuf
                 ld      de,CTL_STACK_MARGIN
                 add     hl,de               ; ...plus the stack's headroom
                 jr      c,gc_nobuf

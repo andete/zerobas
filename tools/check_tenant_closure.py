@@ -297,8 +297,9 @@ PAGE1_HOOKS = {"H_ERRP": 0xFEFD}
 # which it reaches with main mapped (CLPRIM), so p0_X is an IX TARGET, not a
 # callee and not a byte this tenant reads.
 CALLBACKS = ("p0cb", "p1cb")
-_CB_XFER = re.compile(r'^(?:call|jp)\s+(?:(?:nz|z|nc|c|p|m|pe|po)\s*,\s*)?'
-                      r'(p0cb|p1cb)$', re.I)
+_CB_XFER = re.compile(r'^(?:(?:call|jp)\s+(?:(?:nz|z|nc|c|p|m|pe|po)\s*,\s*)?'
+                      r'|jr\s+(?:(?:nz|z|nc|c)\s*,\s*)?)(p0cb|p1cb)$', re.I)
+# (D-VALWS, 2026-11-25: a `jr p0cb` is the same transfer as `jp p0cb` -- sub page 0's carve turned four into jr.)
 _LD_IX = re.compile(r'^ld\s+ix\s*,\s*([A-Za-z_]\w*)$', re.I)
 _LD_DH = re.compile(r'^ld\s+(de|hl)\s*,\s*([A-Za-z_]\w*)$', re.I)
 _DIRECT = re.compile(r'^(?:call|jp)\s+(?:(?:nz|z|nc|c|p|m|pe|po)\s*,\s*)?'
@@ -1176,6 +1177,10 @@ def _selftest_tables(arm, probe_tmp):
     r = scenario(1, " jp ta\n", "ta:\n ld ix,p0_hifn\n call p1cb\n ret\n" + cb,
                  {"ta": P1, **cbs})
     arm("B1 `ld ix,p0_X / call p1cb` is an IX target, allowed", names(r) == set())
+    r = scenario(1, " jp ta\n", "ta:\n ld ix,p0_hifn\n jr p1cb\n" + cb, {"ta": P1, **cbs})
+    arm("B1j `ld ix,p0_X / jr p1cb` is an IX target too (D-VALWS's carve)", names(r) == set())
+    r = scenario(1, " jp ta\n", "ta:\n ld ix,p0_hifn\n jr tz\ntz:\n ret\n" + cb, {"ta": P1, "tz": P1 + 4, **cbs})
+    arm("B1n ...but a `jr` to anything else is not (negative control)", names(r) != set())
     r = scenario(1, " jp ta\n", "ta:\n ld ix,p0_hifn\n jr tb\ntb:\n push ix\n"
                  " ld ix,p0_lowfn\n call p1cb\n pop ix\n jp p1cb\n" + cb,
                  {"ta": P1, "tb": P1 + 1, **cbs})

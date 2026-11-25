@@ -181,9 +181,9 @@ tk_nondot:
                 ld      (TKLNUM),a
                 pop     af
                 cp      REM_TOKEN           ; REM swallows the rest of the line
-                jp      z,tk_rem_rest
+                jr      z,tk_rem_rest
                 cp      DATA_TOKEN          ; DATA body is stored verbatim (to ':')
-                jp      z,tk_data_rest
+                jr      z,tk_data_rest
                 cp      CALL_TOKEN          ; CALL <name>: the device name is verbatim
                 jp      z,tk_call_name      ; (oracle: `call format` keeps "FORMAT", not
                                             ;  FOR+MAT — the extended name is not crunched)

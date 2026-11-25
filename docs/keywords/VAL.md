@@ -165,7 +165,7 @@ from the `DATA` text.
 | rule | cases | reference | zerobas |
 |---|---|---|---|
 | **R-VAL-NUMBER** A string that starts with a decimal number: an optional + or -, digits, an optional point and more digits, an optional exponent (E, D, e or d, an optional sign, digits). The value keeps 14 significant digits, rounded once, the magnitude half up at the 15th ("123456789012345" is 1.2345678901235E+14, "-123456789012345" -1.2345678901235E+14, "999999999999995" 1E+15, "12345678901234.5" 12345678901235); a 16th digit plays no part ("1234567890123449" is 1.2345678901234E+15); 7 to 14 digits are kept even with an E exponent ("1.23456789E3" is 1234.56789). Leading zeros do not count. | 56 | ✓ | ✓ |
-| **R-VAL-SPACE** Spaces, TAB (CHR$(9)) and LF (CHR$(10)) are skipped everywhere in a decimal number: before it, between the sign and the digits, between digits, around the point, inside the exponent ("1 2" and "1"+CHR$(9)+"2" are 12, " - 12" is -12, "1E- 3" .001; 254 spaces then 7 is 7). | 17 | ✓ | ✗ 7: KNM VL 45, KNM VL 46, KNM VL 47, KNM VL 160, KNM VL 161, KNM VL 162 … (+1) |
+| **R-VAL-SPACE** Spaces, TAB (CHR$(9)) and LF (CHR$(10)) are skipped everywhere in a decimal number: before it, between the sign and the digits, between digits, around the point, inside the exponent ("1 2" and "1"+CHR$(9)+"2" are 12, " - 12" is -12, "1E- 3" .001; 254 spaces then 7 is 7). | 17 | ✓ | ✓ |
 | **R-VAL-STOP** The number ends at the first character that cannot continue it, and what was read so far is the value: "12ABC" 12, "1.2.3" 1.2, "1,000" 1, "2+3" 2, "1E3E3" 1000, "1.5E1.5" 15, "1E" and "1E+" 1, "1"+CHR$(0)+"2" 1, "1"+CHR$(255)+"2" 1. | 11 | ✓ | ✓ |
 | **R-VAL-NONE** No number at the start is 0, not an error: "", spaces only, "ABC", ".", "-", "+", "E3", ".E3", "$12", and a second sign ("--1", "+-1", "-+1"). Zero is stored as 8 zero bytes, "-0" included. Control characters other than TAB and LF are not skipped: CR, CHR$(0), CHR$(11), CHR$(12), CHR$(28), CHR$(31), CHR$(127) and CHR$(160) before the digits give 0. | 23 | ✓ | ✓ |
 | **R-VAL-SUFFIX** A type mark after the digits or the exponent ends the number and sets its precision: ! rounds to 6 digits, half up ("1234567!" is 1234570, "1234565!" 1234570, "1234575!" 1234580), # changes nothing, % cuts the value toward zero to a whole number and THEN tests -32768..32767 ("1.5%" 1, "-1.5%" -1, "32767.9%" 32767, "-32768%" and "-32768.5%" -32768; "32768%", "-32769%" and "40000%" error 6, Overflow). Nothing after the mark is read ("12%3" is 12, "1.5!E3" 1.5). | 21 | ✓ | ✗ 2: KNM VL 189, KNM VL 192 |
@@ -184,14 +184,11 @@ from the `DATA` text.
 
 ## Differences from the reference
 
-- **TAB and line feed in or before a number** (rules R-VAL-SPACE and R-VAL-PREFIX, cases KNM VL 45, 46, 47, 160,
-  161, 162, 163, 196, 197; [D-VALWS](../../todo/open/D-VALWS.md)). The VG-8020 skips `CHR$(9)` and `CHR$(10)`
-  wherever it skips a space; zerobas stops there: `VAL(CHR$(9)+"12")` is 12 there and 0 here,
-  `VAL("1"+CHR$(9)+"2")` 12 and 1, `VAL("1E"+CHR$(9)+"3")` 1000 and 1, `VAL("-"+CHR$(9)+"12")` −12 and 0,
-  `VAL(CHR$(9)+"&HFF")` 255 and 0.
-- **A gap between `&` and its letter** (rule R-VAL-PREFIX, cases KNM VL 84, 164-168;
-  [D-VALWS](../../todo/open/D-VALWS.md)). `VAL("& H10")`, `VAL("&  H10")`, `VAL("& O17")`, `VAL("& B101")` and
-  the TAB and LF forms are 16, 15 or 5 on the VG-8020 and `Syntax error` (error 2) here.
+- **A gap after `&`, or a TAB / LF before it** (rule R-VAL-PREFIX, cases KNM VL 84, 164-168, 196, 197;
+  [D-AMPGAP](../../todo/open/D-AMPGAP.md)). `VAL("& H10")`, `VAL("&  H10")`, `VAL("& O17")`, `VAL("& B101")` and
+  the TAB and LF forms are 16, 15 or 5 on the VG-8020 and `Syntax error` (error 2) here; `VAL(CHR$(9)+"&HFF")` is
+  255 there and 0 here. (A TAB or LF inside a DECIMAL number -- `VAL("1"+CHR$(9)+"2")` -- is skipped as on the
+  VG-8020 since 2026-11-25: D-VALWS.)
 - **A digit count that wraps the exponent** (rule R-VAL-RANGE, cases KNM VL 148, 175, 185, 186;
   [D-VALEXP](../../todo/open/D-VALEXP.md)). The reference counts the digits' exponent in 8 bits, so 192 ones are a
   zero with its digits kept, 193 ones 1.1111111111111E-63, 200 ones 1.1111111111111E-57 and 255 ones

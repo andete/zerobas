@@ -1,0 +1,3 @@
+CF-3300  load    ['16', '16', '16', '";A;"', '";C;"', '";D;"']  ... 16 ] [R 16 ] [R 16 ] Ok LIST 10 A=&H10:PRINT"[R";A;"]" 20 C=&H10:PRINT"[R";C;"]" 30 READ D:PRINT"[R";D;"]" 40 DATA & H10 Ok color auto goto list run 
+zerobas  load    ['";A;"', '";C;"', '";D;"']  ... Syntax error in 10 ZB LIST 10 A=& H10:PRINT"[R";A;"]" 20 C=& H10:PRINT"[R";C;"]" 30 READ D:PRINT"[R";D;"]" 40 DATA & H10 ZB color auto goto list run 
+refcache: 0 hit, 2 miss, 2 stored

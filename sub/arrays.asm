@@ -113,7 +113,7 @@ ary_engine:
                 cp      2
                 jr      z,aeng_erase
                 cp      3
-                jp      z,aeng_copy_str
+                jr      z,aeng_copy_str
                 cp      4
                 jp      z,aeng_scalar_find  ; arrays slice-4b (docs/spec-
                                             ; basic-arrays-slice4b-scalar-
