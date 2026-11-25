@@ -18,3 +18,7 @@
       FORMAT (H.FORM's dialogue) -- with rules on the disk pages; (b) the disk row leaves the directory's date / time
       out ("neither machine has a clock") -- both machines are deterministic (1984-01-01 or the date the session set),
       and D-COPYDATE showed the DIR screen was the only witness of a date, so the disk row should compare them too.
+      ✅ (b) DONE 2026-11-25: the disk row compares each entry's date and time words too (both machines are
+      deterministic), and prints the listing it compared on agreement, so the agreement can be read
+      (scratchpad/AE_dossession_dates.out: HELLO.TXT $14A5 = 1990-05-05, CAT.TXT -- COPY a+b -- the current $0821 on
+      both, MSXDOS.SYS its own); 20 / 20. LEFT: (a) BASIC and FORMAT typed at A>.

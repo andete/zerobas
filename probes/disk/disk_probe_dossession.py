@@ -10,8 +10,8 @@ and the boot, and every command reaches the disk through them.
 Both machines boot a private copy of the reference DOS disk (test.dsk: MSX-DOS 1.03 / COMMAND 1.08) with one known
 text file added (HELLO.TXT), answer the date prompt, then type each step of SESSION and snapshot after it: the
 text screen (the current mode's name table) and the cursor. After the session the disk image the machine wrote is
-read back -- the root directory (name, extension, attribute, size) and every file's bytes -- and compared too. The
-directory's date / time fields are left out: neither machine has a clock, so a stamp records when the probe ran.
+read back -- the root directory (name, extension, attribute, size, date and time) and every file's bytes -- and compared too.
+Neither machine has a clock, so the stamps are deterministic (until 2026-11-25 this row left them out).
 
 Clean-room: typed keys in; work-area RAM, VRAM and the disk image the machine wrote out. Microsoft's DOS files run
 as they are; nothing of theirs is read.
@@ -114,7 +114,9 @@ def tcl(out):
 
 def disk_listing(img):
     """The root directory (name.ext, attribute, size) and each file's sha1, from the image the machine wrote.
-    Date / time fields are not read: neither machine has a clock."""
+    And each entry's date and time words (+24 / +22): neither machine has a clock, so they are deterministic --
+    the default 1984-01-01, the date the session sets, or the source's (D-COPYDATE: a copy keeps it) -- and the DIR
+    screen must not be the only witness of them (added 2026-11-25; until then this row left them out)."""
     bps = struct.unpack_from("<H", img, 11)[0]
     spc = img[13]
     resv = struct.unpack_from("<H", img, 14)[0]
@@ -142,7 +144,9 @@ def disk_listing(img):
             off = data + (c - 2) * spc * bps
             body += img[off:off + spc * bps]
             c, guard = nxt(c), guard + 1
-        out.append(f"{name} attr={e[11]:02X} size={size} sha1={hashlib.sha1(body[:size]).hexdigest()[:12]}")
+        tm, dt = struct.unpack_from("<HH", e, 22)
+        out.append(f"{name} attr={e[11]:02X} size={size} date={dt:04X} time={tm:04X} "
+                   f"sha1={hashlib.sha1(body[:size]).hexdigest()[:12]}")
     return sorted(out)
 
 
@@ -239,6 +243,9 @@ def main():
     cfl, zbl = got["CF"][1], got["ZB"][1]
     same_disk = cfl == zbl
     print(f"ROW {'disk':9s} {'(the directory and file bytes after)':40s} {'SAME' if same_disk else 'DIVERGES'}")
+    if same_disk:                       # what was compared, so an agreement can be read (dates included)
+        for e in zbl:
+            print(f"   == {e}")
     if not same_disk:
         for side, lst in (("CF", cfl), ("ZB", zbl)):
             for e in lst:
