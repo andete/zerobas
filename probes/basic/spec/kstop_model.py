@@ -35,10 +35,15 @@ from spec_rules import Rule  # noqa: E402
 FIELDS = ["scr"]
 OUTPUTS = {"FX": FIELDS, "FY": FIELDS}
 OUTPUTS_DESC = "each case's normalised screen (prompts as <prompt>, the echo of the typed lines, the output, the messages)"
-MSG = {1: "NEXT without FOR", 2: "Syntax error", 3: "RETURN without GOSUB", 5: "Illegal function call",
-       6: "Overflow", 7: "Out of memory", 8: "Undefined line number", 10: "Redimensioned array",
-       11: "Division by zero", 13: "Type mismatch", 17: "Can't CONTINUE", 21: "No RESUME",
-       22: "RESUME without error", 24: "Missing operand", 59: "File not OPEN"}
+MSG = {1: "NEXT without FOR", 2: "Syntax error", 3: "RETURN without GOSUB", 4: "Out of DATA",
+       5: "Illegal function call", 6: "Overflow", 7: "Out of memory", 8: "Undefined line number",
+       9: "Subscript out of range", 10: "Redimensioned array", 11: "Division by zero", 12: "Illegal direct",
+       13: "Type mismatch", 14: "Out of string space", 15: "String too long", 16: "String formula too complex",
+       17: "Can't CONTINUE", 18: "Undefined user function", 19: "Device I/O error", 20: "Verify error",
+       21: "No RESUME", 22: "RESUME without error", 24: "Missing operand", 25: "Line buffer overflow",
+       50: "FIELD overflow", 51: "Internal error", 52: "Bad file number", 53: "File not found",
+       54: "File already open", 55: "Input past end", 56: "Bad file name", 57: "Direct statement in file",
+       58: "Sequential I/O only", 59: "File not OPEN"}
 
 
 def msg(n):
@@ -54,6 +59,10 @@ class Err(Exception):
 
 class Stop(Exception):
     pass
+
+
+class Hang(Exception):
+    """the program never comes back to the prompt (the model's step budget ran out)"""
 
 
 def split(text, alt=frozenset()):
@@ -97,6 +106,8 @@ class Basic:
         self.reset()
 
     def reset(self):
+        if "reset-clears-err" in self.alt:
+            self.err, self.erl = 0, 0
         self.vars, self.arrays = {}, set()
         self.data = None
         self.onerr = None
@@ -140,7 +151,7 @@ class Basic:
             return int(s)
         if re.fullmatch(r"-?\d*\.\d+", s):
             return float(s)
-        if s == "ERR":
+        if s == "ERR" or (s == "ERR 1" and "err-tail-ok" in self.alt):
             return self.err
         if s == "ERL":
             return self.erl
@@ -208,7 +219,9 @@ class Basic:
                 self.err, self.erl = e.n, (65535 if line == "D" else line)
                 if line == "D" and "typed-erl-zero" in self.alt:
                     self.erl = 0
-                trap = e.n != 22 or "resume-error-trapped" in self.alt   # RESUME's own error is never trapped
+                trap = not st.startswith("RESUME") or "resume-error-trapped" in self.alt  # a RESUME's own error
+                if e.n == 22 and "code22-untrapped" in self.alt:
+                    trap = False
                 if "end-disarms-handler" in self.alt and self.disarmed:
                     trap = False
                 if line == "D" and "typed-errors-untrapped" in self.alt:
@@ -218,6 +231,7 @@ class Basic:
                     continue
                 if self.onerr is not None and self.handler is None and trap:
                     self.handler = pt
+                    self.depth = len(self.stack)
                     pt = (self.onerr, 0)
                     continue
                 if line == "D":
@@ -226,6 +240,8 @@ class Basic:
                         self.cont = None
                     return
                 self.message(f"{msg(e.n)} in {line}")
+                if "untrapped-keeps-handler" not in self.alt:
+                    self.handler = None                  # an untrapped stop finishes the handler too
                 self.cont = pt                           # CONT runs the failing statement again
                 if "cont-after-error-cant" in self.alt:
                     self.cont = None
@@ -238,9 +254,13 @@ class Basic:
                 self.cont = None
             self._from = line
             pt = self.next_point(pt) if to is None else to
+        if not budget:
+            raise Hang
         if pt == "END" and self.handler is not None:     # a handler ran off the end of the program
             self.err, self.erl = 21, self.last
             self.message(f"{msg(21)} in {self.last}")
+            if "untrapped-keeps-handler" not in self.alt:
+                self.handler = None
             return
         if pt == "END":
             self.newline()
@@ -268,19 +288,42 @@ class Basic:
         if s.startswith("TRON") or s.startswith("TROFF"):
             raise Err(2)                                 # anything after them
         if s.startswith("PRINT"):
-            body = s[5:].strip()
-            m = re.fullmatch(r'"([^"]*)"\s*(\S.*)', body)
-            if m and not m.group(2).startswith(";"):     # a literal, then something that is not an item
-                self.out(m.group(1))
-                if "rem-after-stmt-ok" in self.alt and m.group(2).startswith("REM"):
-                    self.newline()
-                    return None
-                raise Err(2)
-            items = [x for x in re.split(r";", body)]
-            for x in items:
-                if x.strip():
-                    self.out(self.fmt(self.value(x)))
-            if not body.endswith(";"):
+            # PRINT's items: a string literal, or an expression up to the next `;`, `,` or `"`; `;` and juxtaposition
+            # join, `,` moves to the next 14-column zone; a trailing `;` or `,` keeps the line open. A keyword where an
+            # item belongs (`PRINT "A" REM X`) is error 2 -- after the items before it were printed.
+            body, i, last = s[5:], 0, ""
+            while True:
+                while i < len(body) and body[i] == " ":
+                    i += 1
+                if i >= len(body):
+                    break
+                ch = body[i]
+                if ch == ";":
+                    i, last = i + 1, ";"
+                    continue
+                if ch == ",":
+                    self.out(" " * (14 - len(self.cur) % 14))
+                    i, last = i + 1, ","
+                    continue
+                if body.startswith("REM", i) or body.startswith("ELSE", i):
+                    if "rem-after-stmt-ok" in self.alt and body.startswith("REM", i):
+                        break
+                    raise Err(2)
+                if ch == '"':
+                    j = body.find('"', i + 1)
+                    j = len(body) if j < 0 else j
+                    self.out(body[i + 1:j])
+                    i = j + 1
+                else:
+                    m = re.match(r'[^;,"]+', body[i:])
+                    item = m.group(0).rstrip()
+                    for kw in (" REM", " ELSE"):
+                        if kw in item:
+                            item = item[:item.index(kw)]
+                    self.out(self.fmt(self.value(item)))
+                    i += len(item)
+                last = ""
+            if last not in (";", ","):
                 self.newline()
             return None
         if s == "END":
@@ -378,12 +421,16 @@ class Basic:
             arg = s[13:].strip()
             if arg and not arg.isdigit() and "onerr-var-syntax" in self.alt:
                 raise Err(2)
-            n = int(arg) if arg.isdigit() else 0         # no number (nothing, a variable) is GOTO 0
+            n = int(arg) if arg.isdigit() else 0         # no number (nothing, a variable) is GOTO 0 -- acted on FIRST
             if n == 0:
                 self.onerr = None
                 if self.handler is not None and "onerr0-just-disarms" not in self.alt:
+                    self.cont = self.handler             # CONT runs the failing statement again, as after any error
+                    self.handler = None
                     self.message(f"{msg(self.err)} in {self.erl}" if self.erl != 65535 else msg(self.err))
                     raise Stop
+                if arg and not arg.isdigit():
+                    raise Err(2)                         # ...and only then the rest: the trap is already off
                 return None
             if n not in self.prog and "onerr-missing-late" not in self.alt:
                 raise Err(8)
@@ -400,10 +447,14 @@ class Basic:
                 if "resume-next-next-line" in self.alt:
                     to = self.next_line(self.handler)
             else:
+                if not arg.isdigit():
+                    raise Err(2)                         # `RESUME A`: in the active handler, so untrapped
                 if "resume-missing-silent" in self.alt and int(arg) not in self.prog:
                     raise Stop
                 to = self.first(int(arg))                # a missing line: 8, the handler still active
             self.handler = None
+            if "resume-drops-frames" in self.alt:
+                del self.stack[getattr(self, "depth", 0):]
             if "resume-keeps-err" not in self.alt:
                 self.err = 0
             return to
@@ -411,16 +462,19 @@ class Basic:
             arg = s[5:].strip()
             if not arg:
                 raise Err(24)
-            if "," in arg:
+            code, comma, _ = arg.partition(",")
+            if comma and "error-comma-first" in self.alt:
                 raise Err(2)
-            v = self.value(arg)
+            v = self.value(code)
             if isinstance(v, str):
                 raise Err(13)
             v = round(v) if "error-code-rounds" in self.alt else int(v)
-            if not -32768 <= v <= 65535:
+            if not -32768 <= v <= (65535 if "error-bound-65535" in self.alt else 32767):
                 raise Err(6)
             if not 1 <= v <= 255:
                 raise Err(5)
+            if comma:
+                raise Err(2)                             # the code is refused before anything after it is looked at
             raise Err(v)
         if s.startswith("DIM "):
             name = s[4:].split("(")[0]
@@ -481,6 +535,8 @@ class Basic:
 
     # -- typing -------------------------------------------------------------------------------------------------
     def type(self, t):
+        if getattr(self, "hung", False):
+            return
         self.newline()
         self.screen += [t[i:i + WIDTH].strip() for i in range(0, len(t), WIDTH)]
         m = re.fullmatch(r"(\d+) ?(.*)", t)
@@ -502,7 +558,12 @@ class Basic:
                 self.cont = None
             return
         self.direct = split(t)
-        self.run_from(("D", 0))
+        try:
+            self.run_from(("D", 0))
+        except Hang:
+            self.newline()
+            self.hung = True                             # no prompt; the keys typed after it are never read
+            return
         self.newline()
         self.screen.append("<prompt>")
 

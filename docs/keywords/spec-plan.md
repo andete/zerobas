@@ -653,3 +653,13 @@ start); WV# starts at a sentinel (-77); each record carries the case's own index
 refused at typing cannot pass for its predecessor; the typed program's size is asserted. All 33 predictions held;
 zerobas agrees on every value. The model gained a real FOR loop and DEF FN; its rule sentences now state every law it
 uses; 18 controls, every rule pinned.
+
+**ERROR / ERR / ERL / RESUME reworked.** [kerr.py](../../probes/basic/spec/kerr.py) gained group FY (29 cases from the
+review); 27 of the predictions held. The misses, now stated laws: ERROR's bound is 32767 (`ERROR 40000` is Overflow --
+the rule had said 65535), and ON ERROR GOTO acts on its number FIRST and checks the rest after (`ON ERROR GOTO A`
+outside a handler is error 2 with the trap already off). Further laws the model had to learn from the reference: an
+untrapped stop finishes the handler (a typed RESUME is then 22); after a GOTO 0 re-raise CONT runs the failing
+statement again; RESUME leaves the GOSUB / FOR stack alone. The shared small BASIC also lost a wrong law the TRON
+review found -- "a string literal followed by anything but `;` is error 2" (PRINT "A","B" is legal) -- for a real item
+parser; RESUME's own error is untrapped because it is a RESUME, not because its code is 22; a run that never returns
+leaves no prompt. 20 controls, every rule pinned.

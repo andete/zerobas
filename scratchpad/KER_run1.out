@@ -748,5 +748,637 @@
     "<prompt>"
    ]
   ]
+ },
+ "FY": {
+  "ref": [
+   [
+    "<prompt>",
+    "10 ON ERROR GOTO 100",
+    "20 X=1/0",
+    "100 PRINT \"[H]\"",
+    "110 PRINT \"[I]\"",
+    "RUN",
+    "[H]",
+    "[I]",
+    "No RESUME in 110",
+    "<prompt>",
+    "PRINT ERR;ERL",
+    "21  110",
+    "<prompt>"
+   ],
+   [
+    "<prompt>",
+    "10 ON ERROR GOTO 100",
+    "20 X=1/0:Y=1/0:PRINT \"[B]\":END",
+    "100 PRINT \"[H]\":ON ERROR GOTO 200:RES",
+    "UME NEXT",
+    "200 PRINT \"[I]\":RESUME NEXT",
+    "RUN",
+    "[H]",
+    "[I]",
+    "[B]",
+    "<prompt>"
+   ],
+   [
+    "<prompt>",
+    "10 ON ERROR GOTO 100",
+    "20 X=1/D:PRINT \"[B]\":END",
+    "100 D=1:ON ERROR GOTO 0",
+    "RUN",
+    "Division by zero in 20",
+    "<prompt>"
+   ],
+   [
+    "<prompt>",
+    "10 ON ERROR GOTO 100",
+    "20 D=0",
+    "30 X=1/D:PRINT \"[\";ERR;ERL;\"]\":END",
+    "100 D=1:RESUME",
+    "RUN",
+    "[ 0  30 ]",
+    "<prompt>"
+   ],
+   [
+    "<prompt>",
+    "10 ON ERROR GOTO 100",
+    "20 X=1/0",
+    "30 PRINT \"[C]\"",
+    "40 PRINT \"[\";ERR;ERL;\"]\":END",
+    "100 RESUME 40",
+    "RUN",
+    "[ 0  20 ]",
+    "<prompt>"
+   ],
+   [
+    "<prompt>",
+    "10 PRINT ERR;ERL",
+    "20 X=1/0",
+    "RUN",
+    "0  0",
+    "Division by zero in 20",
+    "<prompt>",
+    "RUN",
+    "11  20",
+    "Division by zero in 20",
+    "<prompt>"
+   ],
+   [
+    "<prompt>",
+    "10 X=1/0",
+    "RUN",
+    "Division by zero in 10",
+    "<prompt>",
+    "CLEAR",
+    "<prompt>",
+    "PRINT ERR;ERL",
+    "11  10",
+    "<prompt>"
+   ],
+   [
+    "<prompt>",
+    "10 X=1/0",
+    "RUN",
+    "Division by zero in 10",
+    "<prompt>",
+    "NEW",
+    "<prompt>",
+    "PRINT ERR;ERL",
+    "11  10",
+    "<prompt>"
+   ],
+   [
+    "<prompt>",
+    "10 X=1/0",
+    "RUN",
+    "Division by zero in 10",
+    "<prompt>",
+    "20 REM",
+    "PRINT ERR;ERL",
+    "11  10",
+    "<prompt>"
+   ],
+   [
+    "<prompt>",
+    "10 ON ERROR GOTO 100",
+    "20 X=1/0",
+    "30 PRINT \"[C]\"",
+    "100 PRINT \"[H]\"",
+    "RUN",
+    "[H]",
+    "No RESUME in 100",
+    "<prompt>",
+    "RESUME NEXT",
+    "RESUME without error",
+    "<prompt>"
+   ],
+   [
+    "<prompt>",
+    "10 ON ERROR GOTO 100",
+    "20 X=1/0:PRINT \"[B]\":END",
+    "100 Y=1/0:RESUME NEXT",
+    "RUN",
+    "Division by zero in 100",
+    "<prompt>",
+    "RESUME NEXT",
+    "RESUME without error",
+    "<prompt>"
+   ],
+   [
+    "<prompt>",
+    "10 ON ERROR GOTO 100",
+    "20 GOSUB 50:PRINT \"[R]\":END",
+    "50 X=1/0:PRINT \"[S]\":RETURN",
+    "100 RESUME NEXT",
+    "RUN",
+    "[S]",
+    "[R]",
+    "<prompt>"
+   ],
+   [
+    "<prompt>",
+    "10 ON ERROR GOTO 100",
+    "20 X=1/0:PRINT \"[B]\"",
+    "30 RETURN",
+    "100 GOSUB 200:PRINT \"[X]\":END",
+    "200 RESUME NEXT",
+    "RUN",
+    "[B]",
+    "[X]",
+    "<prompt>"
+   ],
+   [
+    "<prompt>",
+    "10 ON ERROR GOTO 100",
+    "20 X=1/0",
+    "30 NEXT:PRINT \"[N]\"",
+    "100 FOR I=1 TO 2:RESUME NEXT",
+    "RUN",
+    "RESUME without error in 100",
+    "<prompt>"
+   ],
+   [
+    "<prompt>",
+    "10 ON ERROR GOTO 100",
+    "20 FOR I=1 TO 3:X=1/0:PRINT I;:NEXT",
+    "30 PRINT \"[E]\":END",
+    "100 RESUME NEXT",
+    "RUN",
+    "1  2  3 [E]",
+    "<prompt>"
+   ],
+   [
+    "<prompt>",
+    "10 ON ERROR GOTO 30",
+    "20 GOTO 40",
+    "30 RESUME NEXT",
+    "40 X=1/0",
+    "RUN",
+    "<prompt>"
+   ],
+   [
+    "<prompt>",
+    "10 ON ERROR GOTO 100",
+    "20 END",
+    "100 PRINT \"[H]\";:RESUME NEXT",
+    "RUN",
+    "<prompt>",
+    "PRINT \"[A]\";:X=1/0",
+    "[A][H]",
+    "<prompt>"
+   ],
+   [
+    "<prompt>",
+    "10 ON ERROR GOTO 100",
+    "20 END",
+    "100 D=1:RESUME",
+    "RUN",
+    "<prompt>",
+    "D=0:PRINT 1/D:PRINT \"[T]\"",
+    "1",
+    "[T]",
+    "<prompt>"
+   ],
+   [
+    "<prompt>",
+    "10 ON ERROR GOTO 100",
+    "20 END",
+    "30 PRINT \"[C]\":END",
+    "100 RESUME 30",
+    "RUN",
+    "<prompt>",
+    "PRINT 1/0:PRINT \"[T]\"",
+    "[C]",
+    "<prompt>"
+   ],
+   [
+    "<prompt>",
+    "10 ON ERROR GOTO 100",
+    "20 END",
+    "100 PRINT ERR;ERL;:RESUME NEXT",
+    "RUN",
+    "<prompt>",
+    "ERROR 7:PRINT \"[T]\"",
+    "7  65535 [T]",
+    "<prompt>"
+   ],
+   [
+    "<prompt>",
+    "10 ON ERROR GOTO 100",
+    "20 X=1/0:PRINT \"[B]\":END",
+    "100 RESUME NEXT:PRINT \"[Z]\"",
+    "RUN",
+    "[B]",
+    "<prompt>"
+   ],
+   [
+    "<prompt>",
+    "10 ON ERROR GOTO 100",
+    "20 X=1/0:PRINT \"[B]\":END",
+    "100 RESUME A",
+    "RUN",
+    "Syntax error in 100",
+    "<prompt>"
+   ],
+   [
+    "<prompt>",
+    "10 ON ERROR GOTO 100",
+    "20 ON ERROR GOTO",
+    "30 X=1/0",
+    "100 PRINT \"[H]\":RESUME NEXT",
+    "RUN",
+    "Division by zero in 30",
+    "<prompt>"
+   ],
+   [
+    "<prompt>",
+    "10 ON ERROR GOTO 100",
+    "20 ON ERROR GOTO A",
+    "30 X=1/0",
+    "100 PRINT \"[H]\":RESUME NEXT",
+    "RUN",
+    "Syntax error in 20",
+    "<prompt>"
+   ],
+   [
+    "<prompt>",
+    "10 ERROR 40000",
+    "RUN",
+    "Overflow in 10",
+    "<prompt>"
+   ],
+   [
+    "<prompt>",
+    "10 ERROR -32769",
+    "RUN",
+    "Overflow in 10",
+    "<prompt>"
+   ],
+   [
+    "<prompt>",
+    "10 ERROR 300,1",
+    "RUN",
+    "Illegal function call in 10",
+    "<prompt>"
+   ],
+   [
+    "<prompt>",
+    "10 ON ERROR GOTO 100",
+    "20 ERROR 22",
+    "100 PRINT \"[H]\";ERR:END",
+    "RUN",
+    "[H] 22",
+    "<prompt>"
+   ],
+   [
+    "<prompt>",
+    "10 ON ERROR GOTO 100",
+    "20 X=1/0:PRINT \"[B]\":END",
+    "100 ON ERROR GOTO 0",
+    "RUN",
+    "Division by zero in 20",
+    "<prompt>",
+    "PRINT ERR;ERL",
+    "11  20",
+    "<prompt>",
+    "CONT",
+    "Division by zero in 20",
+    "<prompt>"
+   ]
+  ],
+  "zb": [
+   [
+    "<prompt>",
+    "10 ON ERROR GOTO 100",
+    "20 X=1/0",
+    "100 PRINT \"[H]\"",
+    "110 PRINT \"[I]\"",
+    "RUN",
+    "[H]",
+    "[I]",
+    "No RESUME in 110",
+    "<prompt>",
+    "PRINT ERR;ERL",
+    "21  110",
+    "<prompt>"
+   ],
+   [
+    "<prompt>",
+    "10 ON ERROR GOTO 100",
+    "20 X=1/0:Y=1/0:PRINT \"[B]\":END",
+    "100 PRINT \"[H]\":ON ERROR GOTO 200:RES",
+    "UME NEXT",
+    "200 PRINT \"[I]\":RESUME NEXT",
+    "RUN",
+    "[H]",
+    "[I]",
+    "[B]",
+    "<prompt>"
+   ],
+   [
+    "<prompt>",
+    "10 ON ERROR GOTO 100",
+    "20 X=1/D:PRINT \"[B]\":END",
+    "100 D=1:ON ERROR GOTO 0",
+    "RUN",
+    "Division by zero in 20",
+    "<prompt>"
+   ],
+   [
+    "<prompt>",
+    "10 ON ERROR GOTO 100",
+    "20 D=0",
+    "30 X=1/D:PRINT \"[\";ERR;ERL;\"]\":END",
+    "100 D=1:RESUME",
+    "RUN",
+    "[ 0  30 ]",
+    "<prompt>"
+   ],
+   [
+    "<prompt>",
+    "10 ON ERROR GOTO 100",
+    "20 X=1/0",
+    "30 PRINT \"[C]\"",
+    "40 PRINT \"[\";ERR;ERL;\"]\":END",
+    "100 RESUME 40",
+    "RUN",
+    "[ 0  20 ]",
+    "<prompt>"
+   ],
+   [
+    "<prompt>",
+    "10 PRINT ERR;ERL",
+    "20 X=1/0",
+    "RUN",
+    "0  0",
+    "Division by zero in 20",
+    "<prompt>",
+    "RUN",
+    "11  20",
+    "Division by zero in 20",
+    "<prompt>"
+   ],
+   [
+    "<prompt>",
+    "10 X=1/0",
+    "RUN",
+    "Division by zero in 10",
+    "<prompt>",
+    "CLEAR",
+    "<prompt>",
+    "PRINT ERR;ERL",
+    "11  10",
+    "<prompt>"
+   ],
+   [
+    "<prompt>",
+    "10 X=1/0",
+    "RUN",
+    "Division by zero in 10",
+    "<prompt>",
+    "NEW",
+    "<prompt>",
+    "PRINT ERR;ERL",
+    "11  10",
+    "<prompt>"
+   ],
+   [
+    "<prompt>",
+    "10 X=1/0",
+    "RUN",
+    "Division by zero in 10",
+    "<prompt>",
+    "20 REM",
+    "PRINT ERR;ERL",
+    "11  10",
+    "<prompt>"
+   ],
+   [
+    "<prompt>",
+    "10 ON ERROR GOTO 100",
+    "20 X=1/0",
+    "30 PRINT \"[C]\"",
+    "100 PRINT \"[H]\"",
+    "RUN",
+    "[H]",
+    "No RESUME in 100",
+    "<prompt>",
+    "RESUME NEXT",
+    "RESUME without error",
+    "<prompt>"
+   ],
+   [
+    "<prompt>",
+    "10 ON ERROR GOTO 100",
+    "20 X=1/0:PRINT \"[B]\":END",
+    "100 Y=1/0:RESUME NEXT",
+    "RUN",
+    "Division by zero in 100",
+    "<prompt>",
+    "RESUME NEXT",
+    "RESUME without error",
+    "<prompt>"
+   ],
+   [
+    "<prompt>",
+    "10 ON ERROR GOTO 100",
+    "20 GOSUB 50:PRINT \"[R]\":END",
+    "50 X=1/0:PRINT \"[S]\":RETURN",
+    "100 RESUME NEXT",
+    "RUN",
+    "[S]",
+    "[R]",
+    "<prompt>"
+   ],
+   [
+    "<prompt>",
+    "10 ON ERROR GOTO 100",
+    "20 X=1/0:PRINT \"[B]\"",
+    "30 RETURN",
+    "100 GOSUB 200:PRINT \"[X]\":END",
+    "200 RESUME NEXT",
+    "RUN",
+    "[B]",
+    "[X]",
+    "<prompt>"
+   ],
+   [
+    "<prompt>",
+    "10 ON ERROR GOTO 100",
+    "20 X=1/0",
+    "30 NEXT:PRINT \"[N]\"",
+    "100 FOR I=1 TO 2:RESUME NEXT",
+    "RUN",
+    "RESUME without error in 100",
+    "<prompt>"
+   ],
+   [
+    "<prompt>",
+    "10 ON ERROR GOTO 100",
+    "20 FOR I=1 TO 3:X=1/0:PRINT I;:NEXT",
+    "30 PRINT \"[E]\":END",
+    "100 RESUME NEXT",
+    "RUN",
+    "1  2  3 [E]",
+    "<prompt>"
+   ],
+   [
+    "<prompt>",
+    "10 ON ERROR GOTO 30",
+    "20 GOTO 40",
+    "30 RESUME NEXT",
+    "40 X=1/0",
+    "RUN",
+    "<prompt>"
+   ],
+   [
+    "<prompt>",
+    "10 ON ERROR GOTO 100",
+    "20 END",
+    "100 PRINT \"[H]\";:RESUME NEXT",
+    "RUN",
+    "<prompt>",
+    "PRINT \"[A]\";:X=1/0",
+    "[A][H]",
+    "<prompt>"
+   ],
+   [
+    "<prompt>",
+    "10 ON ERROR GOTO 100",
+    "20 END",
+    "100 D=1:RESUME",
+    "RUN",
+    "<prompt>",
+    "D=0:PRINT 1/D:PRINT \"[T]\"",
+    "1",
+    "[T]",
+    "<prompt>"
+   ],
+   [
+    "<prompt>",
+    "10 ON ERROR GOTO 100",
+    "20 END",
+    "30 PRINT \"[C]\":END",
+    "100 RESUME 30",
+    "RUN",
+    "<prompt>",
+    "PRINT 1/0:PRINT \"[T]\"",
+    "[C]",
+    "<prompt>"
+   ],
+   [
+    "<prompt>",
+    "10 ON ERROR GOTO 100",
+    "20 END",
+    "100 PRINT ERR;ERL;:RESUME NEXT",
+    "RUN",
+    "<prompt>",
+    "ERROR 7:PRINT \"[T]\"",
+    "7  65535 [T]",
+    "<prompt>"
+   ],
+   [
+    "<prompt>",
+    "10 ON ERROR GOTO 100",
+    "20 X=1/0:PRINT \"[B]\":END",
+    "100 RESUME NEXT:PRINT \"[Z]\"",
+    "RUN",
+    "[B]",
+    "<prompt>"
+   ],
+   [
+    "<prompt>",
+    "10 ON ERROR GOTO 100",
+    "20 X=1/0:PRINT \"[B]\":END",
+    "100 RESUME A",
+    "RUN",
+    "Syntax error in 100",
+    "<prompt>"
+   ],
+   [
+    "<prompt>",
+    "10 ON ERROR GOTO 100",
+    "20 ON ERROR GOTO",
+    "30 X=1/0",
+    "100 PRINT \"[H]\":RESUME NEXT",
+    "RUN",
+    "Division by zero in 30",
+    "<prompt>"
+   ],
+   [
+    "<prompt>",
+    "10 ON ERROR GOTO 100",
+    "20 ON ERROR GOTO A",
+    "30 X=1/0",
+    "100 PRINT \"[H]\":RESUME NEXT",
+    "RUN",
+    "Syntax error in 20",
+    "<prompt>"
+   ],
+   [
+    "<prompt>",
+    "10 ERROR 40000",
+    "RUN",
+    "Overflow in 10",
+    "<prompt>"
+   ],
+   [
+    "<prompt>",
+    "10 ERROR -32769",
+    "RUN",
+    "Overflow in 10",
+    "<prompt>"
+   ],
+   [
+    "<prompt>",
+    "10 ERROR 300,1",
+    "RUN",
+    "Illegal function call in 10",
+    "<prompt>"
+   ],
+   [
+    "<prompt>",
+    "10 ON ERROR GOTO 100",
+    "20 ERROR 22",
+    "100 PRINT \"[H]\";ERR:END",
+    "RUN",
+    "[H] 22",
+    "<prompt>"
+   ],
+   [
+    "<prompt>",
+    "10 ON ERROR GOTO 100",
+    "20 X=1/0:PRINT \"[B]\":END",
+    "100 ON ERROR GOTO 0",
+    "RUN",
+    "Division by zero in 20",
+    "<prompt>",
+    "PRINT ERR;ERL",
+    "11  20",
+    "<prompt>",
+    "CONT",
+    "Division by zero in 20",
+    "<prompt>"
+   ]
+  ]
  }
 }

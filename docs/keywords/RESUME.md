@@ -6,10 +6,11 @@ SPDX-License-Identifier: BSD-2-Clause
 
 # `RESUME` — leave an error handler and carry on
 
-> **Spec:** DRAFT 1 (2026-11-25) — 21 cases measured on the Philips VG-8020 (BASIC's reference) and on
+> **Spec:** DRAFT 1 (2026-11-25) — 39 cases measured on the Philips VG-8020 (BASIC's reference) and on
 > zerobas, by typed BASIC ([`kerr.py`](../../probes/basic/spec/kerr.py), with ERROR's, ERR's, ERL's and RESUME's
-> cases together; it reads the screen); every rule is executable and every recorded output is read by one. Not
-> yet reviewed ([the keyword plan](spec-plan.md)).
+> cases together; it reads the screen); every rule is executable and every recorded output is read by one. Goldfish
+> pass 1 acted on (2026-11-25: every rule pinned by a control of its own, 18 more cases); not yet
+> re-reviewed ([the keyword plan](spec-plan.md)).
 >
 > **Status (2026-11-25):** level 3 — happy path ✓ · reasonable time ✓ · common
 > errors ✓ (D-RESUMEMISS fixed 2026-11-25) · RAM usage not yet proven · every error ✗ (D-ONERRVAR).
@@ -22,7 +23,7 @@ SPDX-License-Identifier: BSD-2-Clause
 at the statement that failed (to try it again), at the statement after it, or
 at a line you name. It is the other half of `ON ERROR GOTO`, which is why that
 statement is described here too. zerobas behaves like the Philips VG-8020 in
-every case we have measured.
+every case we have measured but one, `ON ERROR GOTO A` (see Differences).
 
 ## Syntax
 
@@ -151,32 +152,51 @@ included. Run file [`scratchpad/KER_run1.out`](../../scratchpad/KER_run1.out) (J
   37: `10 ON ERROR GOTO 100` / `20 X=1/0` / `30 PRINT "[C]":END` / `100 PRINT "[H]":RUN 30` / `RUN` / `RESUME`
   38: `10 ON ERROR GOTO 100` / `20 X=1/0` / `100 PRINT "[H]":END` / `RUN` / `PRINT 1/0:PRINT "[T]"`
   39: `10 ON ERROR GOTO 100` / `20 END` / `100 PRINT "[H]":END` / `RUN` / `RESUME`
+- **[KER FY *i*]** (RESUME, goldfish pass 1), the lines typed after NEW / CLS:
+  0: `10 ON ERROR GOTO 100` / `20 X=1/0` / `100 PRINT "[H]"` / `110 PRINT "[I]"` / `RUN` / `PRINT ERR;ERL`
+  1: `10 ON ERROR GOTO 100` / `20 X=1/0:Y=1/0:PRINT "[B]":END` / `100 PRINT "[H]":ON ERROR GOTO 200:RESUME NEXT` / `200 PRINT "[I]":RESUME NEXT` / `RUN`
+  2: `10 ON ERROR GOTO 100` / `20 X=1/D:PRINT "[B]":END` / `100 D=1:ON ERROR GOTO 0` / `RUN`
+  9: `10 ON ERROR GOTO 100` / `20 X=1/0` / `30 PRINT "[C]"` / `100 PRINT "[H]"` / `RUN` / `RESUME NEXT`
+  10: `10 ON ERROR GOTO 100` / `20 X=1/0:PRINT "[B]":END` / `100 Y=1/0:RESUME NEXT` / `RUN` / `RESUME NEXT`
+  11: `10 ON ERROR GOTO 100` / `20 GOSUB 50:PRINT "[R]":END` / `50 X=1/0:PRINT "[S]":RETURN` / `100 RESUME NEXT` / `RUN`
+  12: `10 ON ERROR GOTO 100` / `20 X=1/0:PRINT "[B]"` / `30 RETURN` / `100 GOSUB 200:PRINT "[X]":END` / `200 RESUME NEXT` / `RUN`
+  13: `10 ON ERROR GOTO 100` / `20 X=1/0` / `30 NEXT:PRINT "[N]"` / `100 FOR I=1 TO 2:RESUME NEXT` / `RUN`
+  14: `10 ON ERROR GOTO 100` / `20 FOR I=1 TO 3:X=1/0:PRINT I;:NEXT` / `30 PRINT "[E]":END` / `100 RESUME NEXT` / `RUN`
+  15: `10 ON ERROR GOTO 30` / `20 GOTO 40` / `30 RESUME NEXT` / `40 X=1/0` / `RUN`
+  16: `10 ON ERROR GOTO 100` / `20 END` / `100 PRINT "[H]";:RESUME NEXT` / `RUN` / `PRINT "[A]";:X=1/0`
+  17: `10 ON ERROR GOTO 100` / `20 END` / `100 D=1:RESUME` / `RUN` / `D=0:PRINT 1/D:PRINT "[T]"`
+  18: `10 ON ERROR GOTO 100` / `20 END` / `30 PRINT "[C]":END` / `100 RESUME 30` / `RUN` / `PRINT 1/0:PRINT "[T]"`
+  20: `10 ON ERROR GOTO 100` / `20 X=1/0:PRINT "[B]":END` / `100 RESUME NEXT:PRINT "[Z]"` / `RUN`
+  21: `10 ON ERROR GOTO 100` / `20 X=1/0:PRINT "[B]":END` / `100 RESUME A` / `RUN`
+  22: `10 ON ERROR GOTO 100` / `20 ON ERROR GOTO` / `30 X=1/0` / `100 PRINT "[H]":RESUME NEXT` / `RUN`
+  23: `10 ON ERROR GOTO 100` / `20 ON ERROR GOTO A` / `30 X=1/0` / `100 PRINT "[H]":RESUME NEXT` / `RUN`
+  28: `10 ON ERROR GOTO 100` / `20 X=1/0:PRINT "[B]":END` / `100 ON ERROR GOTO 0` / `RUN` / `PRINT ERR;ERL` / `CONT`
 
-**Controls** ([`kerr_controls.py`](../../probes/basic/spec/kerr_controls.py)): each changes ONE law of the interpreter
-and runs over the reference's cases: “RESUME NEXT always goes to the next line” is FALSE on 2 of the 8 cases R-RESUME-FORMS selects (e.g. KER FX 21); “RESUME to a missing line stops silently -- zerobas's” is FALSE on 1 of the 8 cases R-RESUME-FORMS selects (e.g. KER FX 25); “RESUME's own error is trapped too” is FALSE on 1 of the 8 cases R-RESUME-HANDLER selects (e.g. KER FX 39); “END inside a handler disarms ON ERROR” is FALSE on 1 of the 8 cases R-RESUME-HANDLER selects (e.g. KER FX 38); “an error typed at the prompt never reaches a handler” is FALSE on 2 of the 8 cases R-RESUME-HANDLER selects (e.g. KER FX 36); “an error inside the handler enters it again” is FALSE on 1 of the 8 cases R-RESUME-HANDLER selects (e.g. KER FX 29); “GOTO 0 inside a handler only disarms” is FALSE on 2 of the 5 cases R-RESUME-ONERROR selects (e.g. KER FX 30); “a missing handler line is found only at the error” is FALSE on 1 of the 5 cases R-RESUME-ONERROR selects (e.g. KER FX 31); “a non-number after GOTO is error 2 -- zerobas's” is FALSE on 1 of the 5 cases R-RESUME-ONERROR selects (e.g. KER FX 34).
+**Controls** ([`kerr_controls.py`](../../probes/basic/spec/kerr_controls.py)): each changes ONE law of the interpreter and runs over the reference's cases; every rule has at least one of its own: “RESUME NEXT always goes to the next line” is FALSE on 4 of the 14 cases R-RESUME-FORMS selects (e.g. KER FX 21); “RESUME to a missing line stops -- zerobas's, which hung” is FALSE on 1 of the 14 cases R-RESUME-FORMS selects (e.g. KER FX 25); “RESUME's own error is trapped too” is FALSE on 3 of the 11 cases R-RESUME-HANDLER selects (e.g. KER FX 39); “END inside a handler disarms ON ERROR” is FALSE on 1 of the 11 cases R-RESUME-HANDLER selects (e.g. KER FX 38); “an error typed at the prompt never reaches a handler” is FALSE on 2 of the 11 cases R-RESUME-HANDLER selects (e.g. KER FX 36); “an error inside the handler enters it again” is FALSE on 2 of the 11 cases R-RESUME-HANDLER selects (e.g. KER FX 29); “an untrapped stop leaves the handler active” is FALSE on 2 of the 11 cases R-RESUME-HANDLER selects (e.g. KER FY 9); “RESUME drops the frames opened since the error” is FALSE on 2 of the 4 cases R-RESUME-FRAMES selects (e.g. KER FY 12); “GOTO 0 inside a handler only disarms” is FALSE on 4 of the 10 cases R-RESUME-ONERROR selects (e.g. KER FX 30); “a missing handler line is found only at the error” is FALSE on 1 of the 10 cases R-RESUME-ONERROR selects (e.g. KER FX 31); “a non-number after GOTO is error 2 at once -- zerobas's” is FALSE on 2 of the 10 cases R-RESUME-ONERROR selects (e.g. KER FX 34).
 
 <!-- RULES BEGIN -->
 <!-- GENERATED by tools/spec_rules.py from probes/basic/spec/resume_rules.py -- do not edit; `python3 tools/spec_rules.py probes/basic/spec/resume_rules.py --write` -->
 
-**3 rules; 3 hold on the reference. Of the 176 recorded outputs (each case's normalised screen (prompts as <prompt>, the echo of the typed lines, the output, the messages)): 176 read by a rule's check, 0 declared NOT evidence (below), 0 unread.**
+**4 rules; 4 hold on the reference. Of the 343 recorded outputs (each case's normalised screen (prompts as <prompt>, the echo of the typed lines, the output, the messages)): 343 read by a rule's check, 0 declared NOT evidence (below), 0 unread.**
 
 #### 1. Where it goes on
 
 | rule | cases | reference | zerobas |
 |---|---|---|---|
-| **R-RESUME-FORMS** RESUME and RESUME 0 run the failing statement again (the handler having fixed the cause); RESUME NEXT runs the statement after it -- on the same line after a `:`, else the next line; a `:` inside a string does not count; RESUME n goes to line n, and a missing n is error 8 in the handler's line, untrapped. RESUME with no error is error 22 (RESUME without error). | 8 | ✓ | ✓ |
+| **R-RESUME-FORMS** RESUME and RESUME 0 run the failing statement again (the handler having fixed the cause); RESUME NEXT runs the statement after it -- on the same line after a `:`, else the next line; a `:` inside a string does not count; RESUME n goes to line n, and a missing n is error 8 in the handler's line, untrapped, and a non-number (`RESUME A`) error 2 there. RESUME with no error is error 22 (RESUME without error). RESUME NEXT after the program's -- or a typed line's -- last statement simply ends the run; RESUME and RESUME n work for an error typed at the prompt too (retry, or a jump into the program). Statements after RESUME on its line never run. | 14 | ✓ | ✓ |
 
 #### 2. The handler
 
 | rule | cases | reference | zerobas |
 |---|---|---|---|
-| **R-RESUME-HANDLER** A handler is entered by any error while it is armed and none is active -- one typed at the prompt too (RESUME NEXT then goes on along the typed line), and after an earlier handler ended with END; NOT RESUME's own error, and not an error inside the active handler (that one stops the program). After RESUME the handler catches the next error again. A handler that runs off the end of the program stops with `No RESUME` in the last line that ran (ERR 21, ERL that line); RUN inside it clears it. | 8 | ✓ | ✓ |
+| **R-RESUME-HANDLER** A handler is entered by any error while it is armed and none is active -- one typed at the prompt too (RESUME NEXT then goes on along the typed line), and after an earlier handler ended with END; NOT RESUME's own error, and not an error inside the active handler (that one stops the program). After RESUME the handler catches the next error again. A handler that runs off the end of the program stops with `No RESUME` in the last line that ran (ERR 21, ERL that line). Any untrapped stop -- No RESUME, an error inside the handler -- finishes the handler: a typed RESUME is then error 22. RUN inside it clears it. | 11 | ✓ | ✓ |
+| **R-RESUME-FRAMES** RESUME leaves the GOSUB / FOR stack as it is: an error inside a subroutine RESUMEs NEXT and the RETURN still works; a GOSUB made in the handler outlives the handler's RESUME (a later RETURN goes back into the handler); a FOR opened in the handler is found by a NEXT after RESUME (which then runs the handler's RESUME again: error 22); an error in a FOR body RESUMEs inside the loop. | 4 | ✓ | ✓ |
 
 #### 3. ON ERROR GOTO
 
 | rule | cases | reference | zerobas |
 |---|---|---|---|
-| **R-RESUME-ONERROR** ON ERROR GOTO n arms line n -- a missing n is error 8 at once; ON ERROR GOTO 0 disarms, and so does a non-number after GOTO (`ON ERROR GOTO A` is GOTO 0). Inside the active handler, GOTO 0 re-raises the error that entered it, untrapped, with its own line; GOTO n there arms n and goes on. | 5 | ✓ | ✗ 1: KER FX 34 |
+| **R-RESUME-ONERROR** ON ERROR GOTO n arms line n -- a missing n is error 8 at once; ON ERROR GOTO 0 disarms, and so does a non-number after GOTO (`ON ERROR GOTO A` is GOTO 0). Inside the active handler, GOTO 0 re-raises the error that entered it -- untrapped, with its own line, and with the failing statement as CONT's resume point; it is a re-raise, not a re-run (a fixed cause still stops). GOTO n there arms n for the next error. ON ERROR GOTO acts on its number FIRST and checks the rest after: `ON ERROR GOTO A` outside a handler is error 2 with the trap already off, untrapped. | 10 | ✓ | ✗ 1: KER FX 34 |
 
 <!-- RULES END -->
 
@@ -186,10 +206,10 @@ and runs over the reference's cases: “RESUME NEXT always goes to the next line
   [D-ONERRVAR](../../todo/open/D-ONERRVAR.md)): a non-number after GOTO is GOTO 0 on the reference
   (inside a handler it re-raises the original error); zerobas says `Syntax error`.
 
-Two rungs are not yet proven. **Every error**: the set of errors `RESUME`
-itself can raise has not been measured, because the tool that enumerates error
-sets reads each error through an `ON ERROR` handler, and it got no reading for
-any `RESUME` case on the VG-8020. **RAM usage**: the RAM comparison has not yet
+**Every error** is now read on the screen (the older tool read errors through an
+`ON ERROR` handler and got nothing for `RESUME`): `RESUME 99` is 8 and `RESUME A`
+2, both in the handler's line, untrapped; `RESUME` with no error is 22 (KER FX 25,
+FY 21, FX 26). The one difference left is `ON ERROR GOTO A` (above). **RAM usage**: the RAM comparison has not yet
 been able to rate `RESUME`'s test programs.
 
 ## On later generations (MSX2, MSX2+)

@@ -84,7 +84,55 @@ FX = [
      "a typed error after a handler ended with END"),
     ("RESUME", [H, "20 END", '100 PRINT "[H]":END', "RUN", "RESUME"], "a typed RESUME with a handler armed"),
 ]
-GROUPS = {"FX": FX}
+
+# GROUP FY -- goldfish pass 1 (scratchpad/REVIEW-m2-gkwerr.md): the cases that separate the rules' rivals
+FY = [
+    ("RESUME", [H, "20 X=1/0", '100 PRINT "[H]"', '110 PRINT "[I]"', "RUN", "PRINT ERR;ERL"],
+     "No RESUME names the last line that ran"),
+    ("RESUME", [H, '20 X=1/0:Y=1/0:PRINT "[B]":END', '100 PRINT "[H]":ON ERROR GOTO 200:RESUME NEXT',
+                '200 PRINT "[I]":RESUME NEXT', "RUN"], "ON ERROR GOTO n in a handler arms n for the next error"),
+    ("RESUME", [H, '20 X=1/D:PRINT "[B]":END', "100 D=1:ON ERROR GOTO 0", "RUN"], "GOTO 0 re-raises, not re-runs"),
+    ("ERR", [H, "20 D=0", '30 X=1/D:PRINT "[";ERR;ERL;"]":END', "100 D=1:RESUME", "RUN"], "RESUME clears ERR"),
+    ("ERR", [H, "20 X=1/0", '30 PRINT "[C]"', '40 PRINT "[";ERR;ERL;"]":END', "100 RESUME 40", "RUN"],
+     "RESUME n clears ERR"),
+    ("ERR", ["10 PRINT ERR;ERL", "20 X=1/0", "RUN", "RUN"], "ERR and ERL across RUN"),
+    ("ERR", ["10 X=1/0", "RUN", "CLEAR", "PRINT ERR;ERL"], "ERR and ERL across CLEAR"),
+    ("ERR", ["10 X=1/0", "RUN", "NEW", "PRINT ERR;ERL"], "ERR and ERL across NEW"),
+    ("ERR", ["10 X=1/0", "RUN", "20 REM", "PRINT ERR;ERL"], "ERR and ERL across an edit"),
+    ("RESUME", [H, "20 X=1/0", '30 PRINT "[C]"', '100 PRINT "[H]"', "RUN", "RESUME NEXT"],
+     "a typed RESUME after No RESUME"),
+    ("RESUME", [H, '20 X=1/0:PRINT "[B]":END', "100 Y=1/0:RESUME NEXT", "RUN", "RESUME NEXT"],
+     "a typed RESUME after an error in the handler"),
+    ("RESUME", [H, '20 GOSUB 50:PRINT "[R]":END', '50 X=1/0:PRINT "[S]":RETURN', "100 RESUME NEXT", "RUN"],
+     "an error inside a GOSUB, RESUME NEXT, RETURN"),
+    ("RESUME", [H, '20 X=1/0:PRINT "[B]"', "30 RETURN", '100 GOSUB 200:PRINT "[X]":END', "200 RESUME NEXT", "RUN"],
+     "a GOSUB in the handler outlives its RESUME"),
+    ("RESUME", [H, "20 X=1/0", '30 NEXT:PRINT "[N]"', "100 FOR I=1 TO 2:RESUME NEXT", "RUN"],
+     "a FOR opened in the handler"),
+    ("RESUME", [H, "20 FOR I=1 TO 3:X=1/0:PRINT I;:NEXT", '30 PRINT "[E]":END', "100 RESUME NEXT", "RUN"],
+     "an error inside a FOR body"),
+    ("RESUME", ["10 ON ERROR GOTO 30", "20 GOTO 40", "30 RESUME NEXT", "40 X=1/0", "RUN"],
+     "RESUME NEXT after the program's last statement"),
+    ("RESUME", [H, "20 END", '100 PRINT "[H]";:RESUME NEXT', "RUN", 'PRINT "[A]";:X=1/0'],
+     "RESUME NEXT after a typed line's last statement"),
+    ("RESUME", [H, "20 END", "100 D=1:RESUME", "RUN", 'D=0:PRINT 1/D:PRINT "[T]"'], "RESUME retries a typed statement"),
+    ("RESUME", [H, "20 END", '30 PRINT "[C]":END', "100 RESUME 30", "RUN", 'PRINT 1/0:PRINT "[T]"'],
+     "RESUME n from a typed error"),
+    ("ERROR", [H, "20 END", "100 PRINT ERR;ERL;:RESUME NEXT", "RUN", 'ERROR 7:PRINT "[T]"'],
+     "a typed ERROR, the handler, then the typed line goes on"),
+    ("RESUME", [H, '20 X=1/0:PRINT "[B]":END', '100 RESUME NEXT:PRINT "[Z]"', "RUN"], "statements after RESUME"),
+    ("RESUME", [H, '20 X=1/0:PRINT "[B]":END', "100 RESUME A", "RUN"], "RESUME and a variable"),
+    ("RESUME", [H, "20 ON ERROR GOTO", "30 X=1/0", '100 PRINT "[H]":RESUME NEXT', "RUN"], "a bare ON ERROR GOTO"),
+    ("RESUME", [H, "20 ON ERROR GOTO A", "30 X=1/0", '100 PRINT "[H]":RESUME NEXT', "RUN"],
+     "ON ERROR GOTO A outside a handler"),
+    ("ERROR", ["10 ERROR 40000", "RUN"], "ERROR 40000"),
+    ("ERROR", ["10 ERROR -32769", "RUN"], "ERROR -32769"),
+    ("ERROR", ["10 ERROR 300,1", "RUN"], "a code out of range, then a comma"),
+    ("ERROR", [H, "20 ERROR 22", '100 PRINT "[H]";ERR:END', "RUN"], "ERROR 22 reaches the handler"),
+    ("RESUME", [H, '20 X=1/0:PRINT "[B]":END', "100 ON ERROR GOTO 0", "RUN", "PRINT ERR;ERL", "CONT"],
+     "after the GOTO 0 re-raise: ERR, ERL and CONT"),
+]
+GROUPS = {"FX": FX, "FY": FY}
 
 
 def measure(group):
