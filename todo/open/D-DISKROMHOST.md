@@ -145,6 +145,8 @@
       🧭 JOOST 2026-11-25 on (d): "guard first" -- a few bytes in INIT that check the claim landed where the fixed
       work-area addresses assume, and decline to install (rather than corrupt another cartridge's RAM) when it did
       not. The full base-addressed rewrite (~2.5 KB, estimated) stays filed for later.
+      📋 The readiness map for the C-BIOS port: [docs/disk/port-readiness.md](../../docs/disk/port-readiness.md) (2026-11-25):
+      the disk ROM has 0 B usable, so the guard needs room carved first.
       ✅ STEP 4 (e) for (b) + (c) (2026-11-25): the disk collection (scratchpad/diskcorpus_run.py, 143 images) on
       0f5e72f1f against the last recorded run (scratchpad/diskcorpus_iffread.out): NO image worse (🔮 "none worse":
       HIT); BOTH-RUN 98 -> 99, UNSETTLED 19 -> 17; YOUMAKOR, xak2eng3 / 4 / 5 UNSETTLED -> BOTH-RUN, and TestameB

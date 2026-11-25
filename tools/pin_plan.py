@@ -831,6 +831,9 @@ def check(im: Image, pins: list[Pin], rom_path: str, budget: int | None,
             hs = [(a, n) for a, n in rows if lo <= a < hi and n]
             print(f"    measure: {name + ' pin pads':23s}= {sum(n for _, n in hs)} B free "
                   f"in front of pins ({', '.join(f'{n} B at ${a:04X}' for a, n in hs) or 'none'})")
+            if sum(n for _, n in hs) < 256:     # Joost 2026-11-25: a filling ROM must announce itself
+                print(f"⚠️  LOW ROOM: the main ROM's {name} has {sum(n for _, n in hs)} B free (< 256) -- carve before "
+                      f"adding (re-run `make basic-reloc`)")
         if fails:
             print(f"FAIL: {fails} pin(s) wrong -- run `make pin-check`", file=sys.stderr)
         return 1 if fails else 0

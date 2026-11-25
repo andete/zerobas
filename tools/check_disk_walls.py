@@ -68,6 +68,18 @@ def runs(b: bytes, fill: int, minlen: int):
     return out
 
 
+LOW_ROOM = 256          # below this, say so LOUDLY (Joost 2026-11-25: the disk ROM went from ~9 KB free in
+                        # September to 0 B usable by 2026-11-23, and nobody noticed -- the figure was only ever
+                        # printed among the gate's other lines)
+
+
+def low_room(usable: int) -> None:
+    """a warning, not a failure: the gate stays green, the line stands out in every run"""
+    if usable < LOW_ROOM:
+        print(f"⚠️  LOW ROOM: the disk ROM has {usable} B usable (< {LOW_ROOM}) -- a new feature or fix there must "
+              f"carve its own space first (re-run `make basic-reloc`; never quote this figure)")
+
+
 def main() -> int:
     rom = sys.argv[1] if len(sys.argv) > 1 else "build/disk.rom"
     minlen = int(sys.argv[2]) if len(sys.argv) > 2 else 16
@@ -111,6 +123,8 @@ def main() -> int:
     for n, start, end, nxt, room in rows[:6]:
         print(f"      ${start:04X}-${end - 1:04X}  {n:5d} B fill   "
               f"next pin ${nxt:04X}   room-before-pin {room} B")
+    usable = sum(min(n, room) for n, _, _, _, room in rows)
+    low_room(usable)
     if not rows:        # D-IFFREAD2 (2026-11-14): a FULL ROM is a reading, not a crash
         print(f"    measure: largest usable hole = 0 B (no 0x00 run >= {minlen} B)")
         return 0

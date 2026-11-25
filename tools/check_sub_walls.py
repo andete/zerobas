@@ -170,6 +170,8 @@ def main(argv) -> int:
     for title, label, end, free, scan, where in rows:
         print(f"    measure: {title} free       = {free} B "
               f"({where}, {label} @ {end:#06x})")
+        if free < 256:      # Joost 2026-11-25: a filling ROM must announce itself (tools/check_disk_walls.py)
+            print(f"⚠️  LOW ROOM: {title} has {free} B free (< 256) -- carve before adding (re-run `make basic-reloc`)")
         # ⚠️ GUARDED ON `>`, NOT `!=`, AND THAT IS NOT PEDANTRY. Knife K6 neutered
         # check 5 and this line printed `-279 B too many: the content ends in -279
         # $FF byte(s)` -- a negative over-report, which is not a smaller finding
