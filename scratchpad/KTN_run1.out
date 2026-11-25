@@ -1,0 +1,480 @@
+{
+ "FX": {
+  "ref": [
+   [
+    "<prompt>",
+    "10 PRINT \"A\"",
+    "20 PRINT \"B\"",
+    "TRON",
+    "<prompt>",
+    "RUN",
+    "[10]A",
+    "[20]B",
+    "<prompt>"
+   ],
+   [
+    "<prompt>",
+    "10 PRINT \"A\":PRINT \"B\"",
+    "TRON",
+    "<prompt>",
+    "RUN",
+    "[10]A",
+    "B",
+    "<prompt>"
+   ],
+   [
+    "<prompt>",
+    "10 GOSUB 30:PRINT \"R\":END",
+    "30 PRINT \"S\":RETURN",
+    "TRON",
+    "<prompt>",
+    "RUN",
+    "[10][30]S",
+    "R",
+    "<prompt>"
+   ],
+   [
+    "<prompt>",
+    "10 FOR I=1 TO 2",
+    "20 NEXT",
+    "TRON",
+    "<prompt>",
+    "RUN",
+    "[10][20][20]",
+    "<prompt>"
+   ],
+   [
+    "<prompt>",
+    "10 TRON:PRINT \"A\"",
+    "20 PRINT \"B\"",
+    "RUN",
+    "A",
+    "[20]B",
+    "<prompt>"
+   ],
+   [
+    "<prompt>",
+    "TRON",
+    "<prompt>",
+    "PRINT \"D\"",
+    "D",
+    "<prompt>"
+   ],
+   [
+    "<prompt>",
+    "10 PRINT \"A\"",
+    "TRON",
+    "<prompt>",
+    "RUN",
+    "[10]A",
+    "<prompt>",
+    "RUN",
+    "[10]A",
+    "<prompt>"
+   ],
+   [
+    "<prompt>",
+    "10 PRINT \"A\"",
+    "20 END",
+    "TRON",
+    "<prompt>",
+    "RUN",
+    "[10]A",
+    "[20]",
+    "<prompt>"
+   ],
+   [
+    "<prompt>",
+    "10 PRINT \"A\"",
+    "TRON",
+    "<prompt>",
+    "NEW",
+    "<prompt>",
+    "10 PRINT \"A\"",
+    "RUN",
+    "A",
+    "<prompt>"
+   ],
+   [
+    "<prompt>",
+    "10 TRON 1",
+    "RUN",
+    "Syntax error in 10",
+    "<prompt>"
+   ],
+   [
+    "<prompt>",
+    "10 PRINT \"A\";",
+    "20 PRINT \"B\"",
+    "TRON",
+    "<prompt>",
+    "RUN",
+    "[10]A[20]B",
+    "<prompt>"
+   ],
+   [
+    "<prompt>",
+    "30000 PRINT \"A\"",
+    "TRON",
+    "<prompt>",
+    "RUN",
+    "[30000]A",
+    "<prompt>"
+   ],
+   [
+    "<prompt>",
+    "10 GOTO 30",
+    "20 PRINT \"X\"",
+    "30 PRINT \"Y\"",
+    "TRON",
+    "<prompt>",
+    "RUN",
+    "[10][30]Y",
+    "<prompt>"
+   ],
+   [
+    "<prompt>",
+    "10 PRINT \"A\"",
+    "20 TROFF:PRINT \"B\"",
+    "30 PRINT \"C\"",
+    "TRON",
+    "<prompt>",
+    "RUN",
+    "[10]A",
+    "[20]B",
+    "C",
+    "<prompt>"
+   ],
+   [
+    "<prompt>",
+    "TROFF",
+    "<prompt>",
+    "10 PRINT \"A\"",
+    "RUN",
+    "A",
+    "<prompt>"
+   ],
+   [
+    "<prompt>",
+    "10 TROFF 1",
+    "RUN",
+    "Syntax error in 10",
+    "<prompt>"
+   ],
+   [
+    "<prompt>",
+    "10 PRINT \"A\"",
+    "TRON",
+    "<prompt>",
+    "RUN",
+    "[10]A",
+    "<prompt>",
+    "TROFF",
+    "<prompt>",
+    "RUN",
+    "A",
+    "<prompt>"
+   ],
+   [
+    "<prompt>",
+    "10 PRINT \"A\":REM PRINT \"B\"",
+    "RUN",
+    "A",
+    "<prompt>"
+   ],
+   [
+    "<prompt>",
+    "10 PRINT \"C\" 'X",
+    "RUN",
+    "C",
+    "<prompt>"
+   ],
+   [
+    "<prompt>",
+    "10 B=0:IF 0 THEN REM ELSE B=1",
+    "20 PRINT \"[\";B;\"]\"",
+    "RUN",
+    "[ 0 ]",
+    "<prompt>"
+   ],
+   [
+    "<prompt>",
+    "10 REM:PRINT \"A\"",
+    "20 PRINT \"B\"",
+    "RUN",
+    "B",
+    "<prompt>"
+   ],
+   [
+    "<prompt>",
+    "10 GOTO 20",
+    "20 REM X",
+    "30 PRINT \"Z\"",
+    "RUN",
+    "Z",
+    "<prompt>"
+   ],
+   [
+    "<prompt>",
+    "10 PRINT \"A\" REM X",
+    "RUN",
+    "A",
+    "Syntax error in 10",
+    "<prompt>"
+   ],
+   [
+    "<prompt>",
+    "REM typed",
+    "<prompt>",
+    "PRINT 1",
+    "1",
+    "<prompt>"
+   ],
+   [
+    "<prompt>",
+    "10 PRINT \"A\":'B:PRINT \"C\"",
+    "RUN",
+    "A",
+    "<prompt>"
+   ]
+  ],
+  "zb": [
+   [
+    "<prompt>",
+    "10 PRINT \"A\"",
+    "20 PRINT \"B\"",
+    "TRON",
+    "<prompt>",
+    "RUN",
+    "[10]A",
+    "[20]B",
+    "<prompt>"
+   ],
+   [
+    "<prompt>",
+    "10 PRINT \"A\":PRINT \"B\"",
+    "TRON",
+    "<prompt>",
+    "RUN",
+    "[10]A",
+    "B",
+    "<prompt>"
+   ],
+   [
+    "<prompt>",
+    "10 GOSUB 30:PRINT \"R\":END",
+    "30 PRINT \"S\":RETURN",
+    "TRON",
+    "<prompt>",
+    "RUN",
+    "[10][30]S",
+    "R",
+    "<prompt>"
+   ],
+   [
+    "<prompt>",
+    "10 FOR I=1 TO 2",
+    "20 NEXT",
+    "TRON",
+    "<prompt>",
+    "RUN",
+    "[10][20][20]",
+    "<prompt>"
+   ],
+   [
+    "<prompt>",
+    "10 TRON:PRINT \"A\"",
+    "20 PRINT \"B\"",
+    "RUN",
+    "A",
+    "[20]B",
+    "<prompt>"
+   ],
+   [
+    "<prompt>",
+    "TRON",
+    "<prompt>",
+    "PRINT \"D\"",
+    "D",
+    "<prompt>"
+   ],
+   [
+    "<prompt>",
+    "10 PRINT \"A\"",
+    "TRON",
+    "<prompt>",
+    "RUN",
+    "[10]A",
+    "<prompt>",
+    "RUN",
+    "[10]A",
+    "<prompt>"
+   ],
+   [
+    "<prompt>",
+    "10 PRINT \"A\"",
+    "20 END",
+    "TRON",
+    "<prompt>",
+    "RUN",
+    "[10]A",
+    "[20]",
+    "<prompt>"
+   ],
+   [
+    "<prompt>",
+    "10 PRINT \"A\"",
+    "TRON",
+    "<prompt>",
+    "NEW",
+    "<prompt>",
+    "10 PRINT \"A\"",
+    "RUN",
+    "A",
+    "<prompt>"
+   ],
+   [
+    "<prompt>",
+    "10 TRON 1",
+    "RUN",
+    "Syntax error in 10",
+    "<prompt>"
+   ],
+   [
+    "<prompt>",
+    "10 PRINT \"A\";",
+    "20 PRINT \"B\"",
+    "TRON",
+    "<prompt>",
+    "RUN",
+    "[10]A[20]B",
+    "<prompt>"
+   ],
+   [
+    "<prompt>",
+    "30000 PRINT \"A\"",
+    "TRON",
+    "<prompt>",
+    "RUN",
+    "[30000]A",
+    "<prompt>"
+   ],
+   [
+    "<prompt>",
+    "10 GOTO 30",
+    "20 PRINT \"X\"",
+    "30 PRINT \"Y\"",
+    "TRON",
+    "<prompt>",
+    "RUN",
+    "[10][30]Y",
+    "<prompt>"
+   ],
+   [
+    "<prompt>",
+    "10 PRINT \"A\"",
+    "20 TROFF:PRINT \"B\"",
+    "30 PRINT \"C\"",
+    "TRON",
+    "<prompt>",
+    "RUN",
+    "[10]A",
+    "[20]B",
+    "C",
+    "<prompt>"
+   ],
+   [
+    "<prompt>",
+    "TROFF",
+    "<prompt>",
+    "10 PRINT \"A\"",
+    "RUN",
+    "A",
+    "<prompt>"
+   ],
+   [
+    "<prompt>",
+    "10 TROFF 1",
+    "RUN",
+    "Syntax error in 10",
+    "<prompt>"
+   ],
+   [
+    "<prompt>",
+    "10 PRINT \"A\"",
+    "TRON",
+    "<prompt>",
+    "RUN",
+    "[10]A",
+    "<prompt>",
+    "TROFF",
+    "<prompt>",
+    "RUN",
+    "A",
+    "<prompt>"
+   ],
+   [
+    "<prompt>",
+    "10 PRINT \"A\":REM PRINT \"B\"",
+    "RUN",
+    "A",
+    "<prompt>"
+   ],
+   [
+    "<prompt>",
+    "10 PRINT \"C\" 'X",
+    "RUN",
+    "C",
+    "<prompt>"
+   ],
+   [
+    "<prompt>",
+    "10 B=0:IF 0 THEN REM ELSE B=1",
+    "20 PRINT \"[\";B;\"]\"",
+    "RUN",
+    "[ 0 ]",
+    "<prompt>"
+   ],
+   [
+    "<prompt>",
+    "10 REM:PRINT \"A\"",
+    "20 PRINT \"B\"",
+    "RUN",
+    "B",
+    "<prompt>"
+   ],
+   [
+    "<prompt>",
+    "10 GOTO 20",
+    "20 REM X",
+    "30 PRINT \"Z\"",
+    "RUN",
+    "Z",
+    "<prompt>"
+   ],
+   [
+    "<prompt>",
+    "10 PRINT \"A\" REM X",
+    "RUN",
+    "A",
+    "Syntax error in 10",
+    "<prompt>"
+   ],
+   [
+    "<prompt>",
+    "REM typed",
+    "<prompt>",
+    "PRINT 1",
+    "1",
+    "<prompt>"
+   ],
+   [
+    "<prompt>",
+    "10 PRINT \"A\":'B:PRINT \"C\"",
+    "RUN",
+    "A",
+    "<prompt>"
+   ]
+  ]
+ }
+}

@@ -626,3 +626,12 @@ Predictions from the pages: 37 of 38 held; the miss -- `ON ERROR GOTO A` is GOTO
 error RESUME.md claimed (that was zerobas's behaviour). A modelling fork (KST FY 3: after a handler ENDed, a typed
 RESUME is not trapped) was decided by two added cases: RESUME's own error is never trapped; END does not disarm.
 zerobas: two differences -- D-RESUMEMISS (TIER 3: `RESUME 99` to a missing line HANGS) and D-ONERRVAR (TIER 6).
+
+### The errors region's last unit (2026-11-25): TRON, TROFF, REM -- region 6 complete
+
+[ktron.py](../../probes/basic/spec/ktron.py), 25 SCREEN cases (run file [scratchpad/KTN_run1.out](../../scratchpad/KTN_run1.out);
+`KTR_run1.out` was taken). The shared small BASIC gained the trace (`[n]`, no new line of its own, when a line is
+entered from its top), REM / the apostrophe as the rest of the line, IF ... ELSE and GOTO; kstop's 53 and kerr's 40
+screens are still predicted. [ktron_controls.py](../../probes/basic/spec/ktron_controls.py): 11 one-law rivals.
+Predictions, taken from the pages: 25 of 25 held; zerobas agrees on all 25. **Region 6 (errors) is complete at
+DRAFT 1**: DEFINT / DEFSNG / DEFDBL / DEFSTR, ERROR / ERR / ERL / RESUME, TRON / TROFF / REM.

@@ -56,16 +56,27 @@ class Stop(Exception):
     pass
 
 
-def split(text):
+def split(text, alt=frozenset()):
+    """a line's statements; a REM -- or an apostrophe, which needs no colon before it -- takes the REST of the line,
+    colons and all, as one statement"""
     out, cur, q = [], "", False
-    for ch in text:
+    i = 0
+    while i < len(text):
+        ch = text[i]
         if ch == '"':
             q = not q
+        if not q and ch == "'" and "apostrophe-needs-colon" not in alt:
+            if cur.strip():
+                out.append(cur.strip())
+            return out + ["REM" + text[i + 1:]]
+        if not q and not cur.strip() and text.startswith("REM", i) and "rem-keeps-colon" not in alt:
+            return out + [text[i:]]
         if ch == ":" and not q:
             out.append(cur.strip())
             cur = ""
         else:
             cur += ch
+        i += 1
     return out + [cur.strip()]
 
 
@@ -82,6 +93,7 @@ class Basic:
         self.direct = []              # the statements of the line being typed: points ("D", i)
         self.last = None              # the last program line that ran
         self.disarmed = False
+        self.trace = False            # TRON
         self.reset()
 
     def reset(self):
@@ -161,13 +173,13 @@ class Basic:
         line, i = pt
         if line == "D":
             return self.direct[i] if i < len(self.direct) else None
-        return split(self.prog[line])[i]
+        return split(self.prog[line], self.alt)[i]
 
     def next_point(self, pt):
         line, i = pt
         if line == "D":                                  # a statement typed at the prompt
             return ("D", i + 1)
-        if i + 1 < len(split(self.prog[line])):
+        if i + 1 < len(split(self.prog[line], self.alt)):
             return (line, i + 1)
         later = [k for k in self.lines() if k > line]
         return (later[0], 0) if later else "END"
@@ -182,6 +194,14 @@ class Basic:
                 return
             if line != "D":
                 self.last = line
+                entered = (i == 0 or "trace-per-statement" in self.alt
+                           or ("trace-on-return" in self.alt and getattr(self, "_from", None) != line))
+                if entered and self.trace:
+                    if "trace-newline" in self.alt:
+                        self.newline()
+                    self.out(f"[{line}]")                # a line entered from its top: traced, no new line
+            elif self.trace and "trace-typed" in self.alt and i == 0:
+                self.out("[65535]")
             try:
                 to = self.stmt(st, pt)
             except Err as e:
@@ -216,6 +236,7 @@ class Basic:
                 return
             if line == "D" and "direct-blocks-cont" in self.alt and not st.startswith("CONT"):
                 self.cont = None
+            self._from = line
             pt = self.next_point(pt) if to is None else to
         if pt == "END" and self.handler is not None:     # a handler ran off the end of the program
             self.err, self.erl = 21, self.last
@@ -237,8 +258,24 @@ class Basic:
             self.out(self.value(m.group(2)))
             self.newline()
             return None
+        if s in ("TRON", "TROFF"):
+            self.trace = s == "TRON"
+            if s == "TRON" and "tron-line-traced" in self.alt and pt[0] != "D":
+                self.out(f"[{pt[0]}]")                   # (the rival: the TRON line traced as well)
+            if s == "TROFF" and "troff-line-untraced" in self.alt and pt[0] != "D":
+                self.cur = self.cur.replace(f"[{pt[0]}]", "")
+            return None
+        if s.startswith("TRON") or s.startswith("TROFF"):
+            raise Err(2)                                 # anything after them
         if s.startswith("PRINT"):
             body = s[5:].strip()
+            m = re.fullmatch(r'"([^"]*)"\s*(\S.*)', body)
+            if m and not m.group(2).startswith(";"):     # a literal, then something that is not an item
+                self.out(m.group(1))
+                if "rem-after-stmt-ok" in self.alt and m.group(2).startswith("REM"):
+                    self.newline()
+                    return None
+                raise Err(2)
             items = [x for x in re.split(r";", body)]
             for x in items:
                 if x.strip():
@@ -310,6 +347,8 @@ class Basic:
                 raise Stop
             self.run_from(start)
             raise Stop
+        if s.startswith("GOTO"):
+            return self.first(int(s[4:]))
         if s.startswith("GOSUB"):
             self.stack.append(("G", self.next_point(pt)))
             return self.first(int(s[5:]))
@@ -396,15 +435,24 @@ class Basic:
             self.vars[s[5:].strip()] = int(self.data.pop(0))
             return None
         if s.startswith("DATA") or s.startswith("REM"):
-            return None
+            if s.startswith("DATA") or "rem-keeps-colon" in self.alt:
+                return None
+            return self.next_line(pt)
         if s.startswith("VPOKE "):
             a, v = s[6:].split(",")
             self.vram[int(a)] = self.value(v)
             return None
         if s.startswith("IF "):
-            m = re.fullmatch(r"IF (\w+)=(\d+) THEN (.+)", s)
-            if self.value(m.group(1)) == int(m.group(2)):
-                return self.stmt(m.group(3), pt)
+            m = re.fullmatch(r"IF (\w+)(?:=(\d+))? THEN (.+)", s)
+            v = self.value(m.group(1))
+            true = (v == int(m.group(2))) if m.group(2) else v != 0
+            then, _, other = m.group(3).partition(" ELSE ")
+            if then.startswith("REM") and "else-past-rem" not in self.alt:
+                then, other = m.group(3), ""             # a REM swallows the ELSE too
+            if true:
+                return self.stmt(then, pt)
+            if other:
+                return self.stmt(other, pt)
             return self.next_line(pt)
         if s.startswith("OPEN "):
             self.files.add(int(s.split("#")[1]))
@@ -415,6 +463,8 @@ class Basic:
                 self.cont = None
             return None
         if s == "NEW":
+            if "new-keeps-trace" not in self.alt:
+                self.trace = False
             self.prog = {}
             self.reset()
             self.cont = None

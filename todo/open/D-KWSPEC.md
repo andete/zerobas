@@ -92,3 +92,7 @@
       (40 screen cases, scratchpad/KER_run1.out); kstop_model.py's small BASIC is now the one interpreter for screen
       probes; kerr_controls.py: 13 one-law rivals. Filed D-RESUMEMISS (TIER 3, a hang) and D-ONERRVAR (TIER 6). NEXT:
       D-RESUMEMISS (tier 3 ranks first), then TRON / TROFF / REM.
+      D-RESUMEMISS FIXED (2026-11-25, size-neutral). **Errors region, last unit (2026-11-25): TRON / TROFF / REM at
+      DRAFT 1** from probes/basic/spec/ktron.py (25 screen cases, scratchpad/KTN_run1.out); 11 one-law controls;
+      zerobas agrees on all 25. REGION 6 IS COMPLETE AT DRAFT 1. NEXT: region 7 (program: NEW LIST LLIST DELETE RENUM
+      AUTO DATA READ RESTORE DIM ERASE CLEAR), and a goldfish pass over region 6.
