@@ -320,3 +320,7 @@
             for t in caps)` puts `T120` before `T45`, so the 2026-11-11 third sample at 120 s was
             never the one read as last: that row set's UNSETTLED reading rests on the 45 s sample.
             Sort by the number.
+      📏 2026-11-25 (after D-DISKROMHOST step 4 (b) HOOK_SLOT and (c) the H.RUNC claim, 0f5e72f1f;
+      [`AE_s4_diskcorpus.out`](../../scratchpad/AE_s4_diskcorpus.out)): BOTH-RUN 99, FILES-DIFF 8, FILES-EMPTY 2,
+      FILES-SAME 11, UNSETTLED 17, ZB-ONLY 6 -- no row down; YOUMAKOR, xak2eng3 / 4 / 5 UNSETTLED -> BOTH-RUN; TestameB
+      UNSETTLED -> ZB-ONLY (the CF-3300 crashes on it, above).

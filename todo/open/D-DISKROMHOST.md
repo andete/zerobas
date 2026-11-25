@@ -142,3 +142,8 @@
       with CTRL held on the CF-3300 (its DOS-time HIMEM). Side note: openMSX's get_screen reads nothing on zerobas
       after BASIC at A> (the VRAM text is there: the banner, "ZB", the output) -- a probe artefact, not a defect.
       LEFT of step 4: (d) the work area addressed from a base recorded in SLTWRK (host independence); (e) the disk corpus.
+      ✅ STEP 4 (e) for (b) + (c) (2026-11-25): the disk collection (scratchpad/diskcorpus_run.py, 143 images) on
+      0f5e72f1f against the last recorded run (scratchpad/diskcorpus_iffread.out): NO image worse (🔮 "none worse":
+      HIT); BOTH-RUN 98 -> 99, UNSETTLED 19 -> 17; YOUMAKOR, xak2eng3 / 4 / 5 UNSETTLED -> BOTH-RUN, and TestameB
+      UNSETTLED -> ZB-ONLY -- the CF-3300 crashes on it (D-DISKRUN, 2026-10-23), so zerobas alone running it is the
+      expected reading (scratchpad/AE_s4_diskcorpus.out).
