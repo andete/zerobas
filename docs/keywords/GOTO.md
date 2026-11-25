@@ -11,7 +11,7 @@ SPDX-License-Identifier: BSD-2-Clause
 > together); every rule is executable and every recorded output is read by one. Not yet reviewed ([the keyword
 > plan](spec-plan.md)).
 >
-> **Status (2026-11-25):** level 0 — happy path ✗ (`GO TO` with a space: D-GOTOSPACE) · reasonable time ✓ · common
+> **Status (2026-11-25):** level 3 — happy path ✓ · reasonable time ✓ · common
 > errors ✓ · RAM usage not yet proven · every error ✓. No recorded
 > difference since the `IF … GOTO` form was fixed on 2026-10-24.
 > Speed is deliberately left out of these docs until on-par speed is
@@ -135,7 +135,7 @@ reference's cases: “`GO TO` is no keyword (a Syntax error) -- zerobas's” is 
 | rule | cases | reference | zerobas |
 |---|---|---|---|
 | **R-GOTO-JUMP** GOTO n continues at line n: the rest of its own line and every line in between are skipped; a GOTO back to its own line loops; a GOTO inside a subroutine leaves the GOSUB pending, so a RETURN on the line it reaches comes back after the GOSUB. | 4 | ✓ | ✓ |
-| **R-GOTO-GOTO** `GO TO` written with exactly ONE space is GOTO -- also after THEN; two spaces, or `GO` alone, are error 2 (Syntax error). | 4 | ✓ | ✗ 2: KGS FX 7, KGS FX 28 |
+| **R-GOTO-GOTO** `GO TO` written with exactly ONE space is GOTO -- also after THEN; two spaces, or `GO` alone, are error 2 (Syntax error). | 4 | ✓ | ✓ |
 
 #### 2. Errors
 
@@ -147,11 +147,7 @@ reference's cases: “`GO TO` is no keyword (a Syntax error) -- zerobas's” is 
 
 ## Differences from the reference
 
-- **`GO TO` with one space** (rule R-GOTO-GOTO, cases KGS FX 7, 28; [D-GOTOSPACE](../../todo/open/D-GOTOSPACE.md)):
-  `GO TO <line>` -- also after THEN -- jumps on the VG-8020 and is `Syntax error` on zerobas. Only that one form: two
-  spaces, `GO SUB` and `GO` alone are `Syntax error` on both.
-
-A plain `GOTO` with no line number is `Syntax error` on both machines; inside `IF`, see [`IF`](IF.md). The one rung
+None known in behaviour (`GO TO` with one space is GOTO since 2026-11-25, D-GOTOSPACE). A plain `GOTO` with no line number is `Syntax error` on both machines; inside `IF`, see [`IF`](IF.md). The one rung
 not yet proven is **RAM usage**.
 
 ## On later generations (MSX2, MSX2+)

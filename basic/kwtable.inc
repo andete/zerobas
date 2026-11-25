@@ -155,6 +155,11 @@ kwtable:
                 db      3,"REM",1,REM_TOKEN
                 ; Step B control flow (spec-controlflow.md; MSX2 TH Table 2.20).
                 db      4,"GOTO",1,GOTO_TOKEN
+                ; D-GOTOSPACE (2026-11-25): `GO TO` with exactly ONE space is GOTO's token on the VG-8020
+                ; (a typed `10 GO TO 20` stores $89 then the space; also after THEN), while two spaces,
+                ; `GO SUB` and `GO` alone are Syntax errors there (probes/basic/spec/kgosub.py, KGS FX 7 /
+                ; 26-29). AFTER "GOTO", so LIST's linear scan (detok_kw) still finds GOTO's own name first.
+                db      5,"GO TO",1,GOTO_TOKEN
                 db      5,"GOSUB",1,GOSUB_TOKEN
                 db      6,"RETURN",1,RETURN_TOKEN
                 db      2,"IF",1,IF_TOKEN

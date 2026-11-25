@@ -87,7 +87,7 @@ SUB_BASE = 0x0000
 # that matched no expected delta would be the finding.
 # Previous pins: 1058 B / 334b29c4… at b5f4135 (D-LPTVERB, +17 = LPRINT 9 + LPOS
 # 8); 1041 B / 8f120510… at 9bfcfb9 (2026-08-05), kwtable @ $2CD2.
-KWTABLE_SIZE = 1189   # D-ATTRFN 2026-09-08: +8 B, the ATTR$ ($E9) entry — the
+KWTABLE_SIZE = 1197   # D-GOTOSPACE 2026-11-25: +8 B, the `GO TO` entry (after GOTO). D-ATTRFN 2026-09-08: +8 B, the ATTR$ ($E9) entry — the
                       # FUNCTION member of the same do-nothing group, oracle-
                       # sourced like the rest. Was 1151 after D-DONOTHING3's +18 B
                       # (SET $D2 / IPL $D5 / CMD $D7, 6 B each), and 1133 before
@@ -98,7 +98,7 @@ KWTABLE_SIZE = 1189   # D-ATTRFN 2026-09-08: +8 B, the ATTR$ ($E9) entry — the
 # db 3,"LOC",2,PEEK_PREFIX,LOC_TOKEN -- $FF $AC, oracle-taken).
 # 5db92614… was the same 1166 B with the LOC row BEFORE LOCATE -- which crunched
 # LOCATE as LOC+ATE and reddened eleven gates. The row sits after LOCATE now.
-KWTABLE_SHA = "edc7079611a7efb05a0a666f43b61bdfece4f2b44d88f5ec81f4b6ecc8e73010"
+KWTABLE_SHA = "dd7d7d08d3ec6de4babf3a90269166cd6b430fca57d40118e1b69f3fc96e085f"
 
 
 def load_syms(path):

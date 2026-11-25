@@ -4,32 +4,32 @@
 ; Clean-room: computed mechanically from this project's own basic/kwtable.inc (its
 ; header gives the tokens' provenance: oracle-sourced, byte-identity verified) and
 ; basic/sysvars.inc's token equates. No reference ROM byte, no disassembly.
-; 161 entries, 1189 B; 113 single-byte tokens indexed.
+; 162 entries, 1197 B; 113 single-byte tokens indexed.
 KW_BUCKET       equ     16
 kw_ord:
-                db      $FF,$37,$2E,$31,$32,$07,$85,$33,$3E,$28,$35,$2B,$34,$29,$2A,$27   ; $80..$8F
-                db      $38,$3B,$3F,$47,$36,$39,$55,$44,$25,$3A,$22,$23,$56,$4C,$48,$4D   ; $90..$9F
-                db      $50,$FF,$9F,$9E,$9D,$86,$87,$8B,$49,$4A,$4B,$41,$40,$42,$43,$08   ; $A0..$AF
-                db      $06,$0C,$0B,$0A,$09,$24,$05,$03,$0D,$0E,$02,$04,$92,$4F,$94,$93   ; $B0..$BF
-                db      $8E,$8D,$8F,$90,$8C,$4E,$53,$95,$96,$59,$3D,$8A,$51,$21,$A0,$00   ; $C0..$CF
-                db      $01,$13,$1D,$1C,$1B,$1E,$14,$1F,$9B,$2F,$2C,$64,$30,$45,$46,$65   ; $D0..$DF
-                db      $5D,$89,$88,$73,$3C,$74,$FF,$58,$61,$20,$12,$52,$75,$91,$FF,$FF   ; $E0..$EF
-                db      $FF,$FF,$FF,$FF,$FF,$FF,$5A,$5B,$5C,$5F,$60,$5E,$FF,$FF,$FF,$FF   ; $F0..$FF
+                db      $FF,$38,$2F,$32,$33,$07,$86,$34,$3F,$28,$36,$2C,$35,$2A,$2B,$27   ; $80..$8F
+                db      $39,$3C,$40,$48,$37,$3A,$56,$45,$25,$3B,$22,$23,$57,$4D,$49,$4E   ; $90..$9F
+                db      $51,$FF,$A0,$9F,$9E,$87,$88,$8C,$4A,$4B,$4C,$42,$41,$43,$44,$08   ; $A0..$AF
+                db      $06,$0C,$0B,$0A,$09,$24,$05,$03,$0D,$0E,$02,$04,$93,$50,$95,$94   ; $B0..$BF
+                db      $8F,$8E,$90,$91,$8D,$4F,$54,$96,$97,$5A,$3E,$8B,$52,$21,$A1,$00   ; $C0..$CF
+                db      $01,$13,$1D,$1C,$1B,$1E,$14,$1F,$9C,$30,$2D,$65,$31,$46,$47,$66   ; $D0..$DF
+                db      $5E,$8A,$89,$74,$3D,$75,$FF,$59,$62,$20,$12,$53,$76,$92,$FF,$FF   ; $E0..$EF
+                db      $FF,$FF,$FF,$FF,$FF,$FF,$5B,$5C,$5D,$60,$61,$5F,$FF,$FF,$FF,$FF   ; $F0..$FF
 KW2_LO          equ     $81   ; $FF-prefixed tokens: second bytes $81..$B0
 KW2_N           equ     48
 kw_ord2:
-                db      $67,$68,$69,$77,$78,$76,$7D,$84,$81,$80,$7F,$82,$83,$7E,$71,$57   ; $FF $81..
-                db      $62,$66,$6A,$6B,$6C,$6D,$26,$54,$72,$6F,$6E,$63,$70,$7A,$7B,$7C   ; $FF $91..
-                db      $79,$97,$98,$99,$9A,$11,$FF,$16,$19,$1A,$0F,$9C,$10,$15,$17,$18   ; $FF $A1..
+                db      $68,$69,$6A,$78,$79,$77,$7E,$85,$82,$81,$80,$83,$84,$7F,$72,$58   ; $FF $81..
+                db      $63,$67,$6B,$6C,$6D,$6E,$26,$55,$73,$70,$6F,$64,$71,$7B,$7C,$7D   ; $FF $91..
+                db      $7A,$98,$99,$9A,$9B,$11,$FF,$16,$19,$1A,$0F,$9D,$10,$15,$17,$18   ; $FF $A1..
 kw_bkt:
                 dw      kwtable + 0   ; entry 0: BLOAD
                 dw      kwtable + 119   ; entry 16: LOF
                 dw      kwtable + 234   ; entry 32: ATTR$
-                dw      kwtable + 347   ; entry 48: STEP
-                dw      kwtable + 459   ; entry 64: DEFINT
-                dw      kwtable + 583   ; entry 80: WIDTH
-                dw      kwtable + 691   ; entry 96: IMP
-                dw      kwtable + 815   ; entry 112: BIN$
-                dw      kwtable + 940   ; entry 128: LOG
-                dw      kwtable + 1054   ; entry 144: PRESET
-                dw      kwtable + 1180   ; entry 160: MOTOR
+                dw      kwtable + 350   ; entry 48: TO
+                dw      kwtable + 459   ; entry 64: CLEAR
+                dw      kwtable + 583   ; entry 80: COLOR
+                dw      kwtable + 693   ; entry 96: EQV
+                dw      kwtable + 815   ; entry 112: OCT$
+                dw      kwtable + 941   ; entry 128: EXP
+                dw      kwtable + 1055   ; entry 144: PSET
+                dw      kwtable + 1181   ; entry 160: TRON
