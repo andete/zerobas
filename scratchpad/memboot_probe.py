@@ -30,6 +30,7 @@ after time SECS {
   binary scan [debug read_block memory 0xF39A [expr {0xFD9A - 0xF39A}]] H* d
   set f [open $::env(LOGF) w]
   puts $f "SYSDATA $d"
+  flush $f   ;# D-BOOTCELLS step 3: on zerobas get_screen below can hang; the data is out first
   puts $f "SCREEN [string map {"\n" " | "} [string trim [get_screen]]]"
   close $f
   exit

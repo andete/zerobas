@@ -65,4 +65,47 @@
       edge absolute: STK_EDGE 131->129, STK_STORE 141->135 (also re-based off FCB #0 onto STKTOP), STK_EVAL 115->113,
       STK_ALLOC 88->86 (dimedge 14/14). STILL OPEN: (a) the VG-8020's FRETOP reads MEMSIZ + 1 after `CLEAR n,addr`
       (not after `CLEAR n` or MAXFILES; re-checked, reproducible) -- zerobas reads MEMSIZ; (b) FILTAB's pointer TABLE
-      contents (its bytes are reserved, still unwritten); (c) plan steps (3) and (4).
+      contents (its bytes are reserved, still unwritten); (c) plan step (4) (step (3): below).
+
+      ✅ **STEP (3) DONE 2026-11-25, 29 of the 30 bytes** (six commits, one cell group each). RE-MEASURED FIRST
+      (`memboot_probe.py` + `sysdata_diff.py`): the list was the one above, FRETOP already agreeing.
+      📏 WHERE THEY COULD GO, decided by measurement, not by a delta between names: FRE and HIMEM rule out RAM below
+      HIMEM, and $F39A-$FD99 has no unnamed free byte that is not a reference cell. So the hosts are the work-area
+      bytes MSX1 BASIC does not define: TRPTBL's reserved tail past its 18 entries, and the MSX2-only bytes of the
+      MSX1 RS2IQ, $FAF5-$FB02 (DPPAGE .. LOGOPR; $FB03 up is the RS-232C area, DRVINF, left alone). On the VG-8020
+      both read 0 through a boot, a program RUN (FOR / GOSUB / READ / DEF FN), CLEAR 300,&HC000, MAXFILES=3 / 0,
+      FILES (diskless), PLAY, SCREEN 2 + LINE / CIRCLE / DRAW / PAINT, KEY / INTERVAL / STRIG traps, ON ERROR, NEW
+      (twelve snapshots, controls moving: MEMSIZ, the PLAY cells, GRPACX, TRPTBL's head):
+      [`AE_bootcells3_hosts.out`](../../scratchpad/AE_bootcells3_hosts.out) by
+      [`bootcells3_hosts_probe.py`](../../scratchpad/bootcells3_hosts_probe.py). zerobas already had DRAW's
+      TRANSIENT cells in most of those bytes, so each group is a SWAP: the state cells take the reserved bytes,
+      the transients take the PARM1 / PARM2 / CONLO / SUBFLG bytes the state cells left (where the reference itself
+      keeps only residue) -- no byte gains a second user. GFX_DSP / GFX_DTMP took the two hosts inside the DEF FN
+      shadow slots ($F7A9, $F7AC): both live only inside one DRAW tenant activation.
+      | group | from | to |
+      |---|---|---|
+      | SUBSLOT / SUBSLOT_OK | SLTWRK $FD09 / $FD0A | LOGOPR $FB02 / TRPTBL $FC88 (trap_init's fill now stops at TRAPSVC) |
+      | CSP CTLTOP TSP CTLLIM GSP FSP | PARM1 $F712-$F719, $F703-$F706 | TRPTBL $FC8A-$FC95 |
+      | RL_HL / RL_ROW0 / RL_COL0 | PARM2 $F7A9-$F7AD | $FAFE-$FB01 |
+      | CSR_ADDR / CSR_CHAR / CSR_ON | PARM1 $F72C, $F734, $F735 | $FAF5, $FAF7, $FAFD |
+      | POOLSIZE / TXTCEIL | CONLO $F66A-$F66D | $FAF9-$FAFC |
+      | PRGEND / DATASTATE | PARM1 $F6E8 / SUBFLG $F6A5 | TRPTBL $FC96 / $FC98 |
+      BEFORE / AFTER: [`AE_bootcells3_diff_before.out`](../../scratchpad/AE_bootcells3_diff_before.out),
+      [`AE_bootcells3_diff_after.out`](../../scratchpad/AE_bootcells3_diff_after.out). Every moved cell's value now
+      shows only in the reserved bytes (ref 0 there); PARM1 / PARM2 / CONLO / SUBFLG / SLTWRK $FD09-$FD0A hold the
+      VG-8020's values after boot. Equates only (plus trap_init's fill length, the same instruction): the five walls
+      of `make basic-reloc` read the same before and after. The RUN entry pinned at $73AC stores PRGEND, so
+      tools/pin_plan.py expects the new operand there.
+      🔴 LEFT: **KEYARG** ($F856, ARG's last byte, FE after boot, 1 B). The bytes do not add up: 30 B of state against
+      29 reserved bytes, because DRAW's GFX_DVAL ($FC99) keeps its overlap with DISKOP_ERR (RTYCNT $FC9A) and so
+      frees only one host byte for the two it needs. KEYARG is TRANSIENT (written right before each keystr tenant
+      call), so what differs is a leftover, not live state. It needs 1 byte, or a store of 0 after the call (a
+      code change). Also still in SLTWRK, all 0 after boot so not in the diff: SUBSLOT2 $FD0B (an unused equate),
+      SUB_PING $FD0C and SUB_INT_DELTA $FD0D (self-test cells), STRPTR $FD0E-$FD0F (transient, in the disk ABI) --
+      5 B more if SLTWRK is to be empty.
+      ⚠️ THE HOSTS' OWN RISK: an RS-232 cartridge (RS2IQ is its queue on an MSX1) or an MSX1 kanji / ROMA-KANA
+      extension (CHRCNT / ROMA / MODE) would write $FAF5-$FB02; nothing on the VG-8020 does.
+      🔧 APPARATUS: `memboot_probe.py`'s zerobas run hangs in `get_screen` (180 s timeout) after the SYSDATA line is
+      written but before it is flushed -- the zb log is cut at 4096 B and `sysdata_diff.py` dies on it. The probe now
+      flushes before `get_screen`, so the data survives; why `get_screen` hangs on zerobas is not looked at.
+

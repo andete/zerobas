@@ -1,0 +1,55 @@
+# D-BOOTCELLS step 3 AFTER (groups 1-6): VG-8020 vs zerobas NODISK, plain power-on, BASIC's Ok, $F39A-$FD99
+cell      name                ref                      zerobas
+$F3EC   2  GFX_SN              C300                     0000
+$F3F5   1  GFX_CPHASE          FF                       00
+$F3F6   1  SCNCNT              01                       02
+$F663   1  FACTYP              03                       00
+$F67A   1  TEMPPOOL            04                       00
+$F698   1  RVDESC              04                       00
+$F6AF   1  SAVTXT              0F                       00
+$F6C8   2  DATAPTR             0080                     0000
+$F74C   1  FOR_STK_END         E4                       00
+$F7F6   8  FAC                 00007AF600000000         0000000000000000
+$F856   1  KEYARG              00                       FE
+$FAF5   1  CSR_ADDR            00                       A2
+$FAF7   1  CSR_CHAR            00                       20
+$FAF9   1  POOLSIZE            00                       C8
+$FAFB   1  TXTCEIL             00                       80
+$FAFD   1  CSR_ON              00                       01
+$FAFE   2  RL_HL               0000                     5EF5
+$FB00   1  RL_ROW0             00                       05
+$FB01   1  RL_COL0             00                       01
+$FB02   1  SUBSLOT             00                       8B
+$FC18   2  GFX_SPATN           FFFF                     0000
+$FC88   1  SUBSLOT_OK          00                       01
+$FC8A   2  CSP                 0000                     A0F0
+$FC8C   2  CTLTOP              0000                     A0F0
+$FC8E   2  TSP                 0000                     A0F0
+$FC90   2  CTLLIM              0000                     0580
+$FC92   2  GSP                 0000                     A0F0
+$FC94   2  FSP                 0000                     A0F0
+$FC96   1  PRGEND              00                       01
+$FC98   1  DATASTATE           00                       03
+$FC9E   1  JIFFY               1F                       57
+
+66 differing byte(s) in cells zerobas does not name:
+  $F3EF-$F3EF  ref C3  zb 00
+  $F3F7-$F3F7  ref 01  zb 38
+  $F40F-$F40F  ref 3A  zb 00
+  $F41E-$F41E  ref 3A  zb 00
+  $F55D-$F55D  ref 2C  zb 00
+  $F5F5-$F5F5  ref 00  zb F6
+  $F67B-$F67C  ref D73F  zb 0000
+  $F699-$F69A  ref D73F  zb 0000
+  $F6A8-$F6A8  ref 80  zb 00
+  $F6B0-$F6B0  ref F4  zb 00
+  $F74D-$F74D  ref F6  zb 00
+  $F753-$F753  ref 00  zb 56
+  $F7C6-$F7CB  ref 203238383135  zb 000000000000
+  $FAFC-$FAFC  ref 00  zb F3
+  $FBCB-$FBCC  ref F420  zb 0000
+  $FC1A-$FC3F  ref FFFFFFFFFFFF75746F202020676F746F  zb 00000000000000000000000000000000
+  $FC97-$FC97  ref 00  zb 80
+  $FCA2-$FCA3  ref E1FD  zb 0000
+  $FCC4-$FCC4  ref 00  zb 80
+  $FCC8-$FCC8  ref 0F  zb 00
