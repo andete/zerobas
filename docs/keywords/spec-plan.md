@@ -529,3 +529,21 @@ included; ELSE belongs to the nearest unmatched IF and runs its statements plus 
 nothing or a colon is no error; a missing line after THEN is error 8 only when taken. Predictions scored: the false
 IF's skip (hit), ELSE's nearest IF (hit), a string condition is 13 (hit). Left of the flow region: END, STOP, CONT,
 RUN -- they stop or restart the program that records, so they need a screen-based harness.
+
+### The flow region's last unit (2026-11-25): END, STOP, CONT, RUN -- the region complete
+
+These stop or restart the program, so a program cannot record them: [kstop.py](../../probes/basic/spec/kstop.py) is
+the first keyword probe that reads the SCREEN (omsx_repl's capture), normalised -- lines stripped, the prompt ("Ok" /
+"ZB", a deliberate difference) one token, the key line dropped -- and a rule reads a case's RESPONSE: the screen
+without the prompts and without the echo of what was typed, cut at the line width (37, not 40: the first model missed
+the two wrapped echoes). 19 cases; run file [scratchpad/KSP_run1.out](../../scratchpad/KSP_run1.out) (JSON); model
+[kstop_model.py](../../probes/basic/spec/kstop_model.py), controls
+[kstop_controls.py](../../probes/basic/spec/kstop_controls.py) (7 rivals, each FALSE on some case). tools/spec_live.py
+gained a hook for such probes: a probe module with `live_copy(run_file, td)` re-measures its own run file. Four pages at
+DRAFT 1; zerobas agrees on all 19. Measured: END drops the rest of its line and a pending GOSUB, silently, and CONT
+after END goes on after it; STOP prints `Break in n` (in direct mode `Break`), CONT goes on after it -- inside a GOSUB
+the RETURN still works, inside a FOR the loop goes on, a variable changed while stopped is seen; CONT before anything
+ran or after a program line changed prints `Can't CONTINUE`, a direct statement in between does not block it, and
+after an ERROR it runs the failing statement again (predicted "Can't CONTINUE": a miss); RUN clears the variables, RUN
+n starts at n, a missing n is `Undefined line number`. **The flow region (GOTO GOSUB RETURN IF FOR NEXT END STOP CONT
+RUN) is complete at DRAFT 1.**

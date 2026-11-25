@@ -64,3 +64,7 @@
       **Flow, third unit (2026-11-25): IF at DRAFT 1** from probes/basic/spec/kif.py (32 cases, scratchpad/KIF_run1.out;
       plan §6 "The flow region's third unit"); kif_controls.py: 5 rivals FALSE; zerobas agrees on every case. NEXT: END /
       STOP / CONT / RUN (a screen-based harness: they stop or restart the recording program).
+      **Flow, last unit (2026-11-25): END / STOP / CONT / RUN at DRAFT 1** from probes/basic/spec/kstop.py, the first
+      SCREEN-reading keyword probe (19 cases, scratchpad/KSP_run1.out; tools/spec_live.py's new `live_copy` hook re-runs
+      it); kstop_controls.py: 7 rivals FALSE; zerobas agrees on all 19. THE FLOW REGION IS COMPLETE AT DRAFT 1. NEXT:
+      the goldfish review passes over the flow pages, then region 6 (errors: ERR ERL ERROR RESUME TRON TROFF REM DEF*).

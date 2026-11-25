@@ -194,6 +194,18 @@ def is_kw_run(run_file):
     return os.path.basename(run_file) in kw_probes()
 
 
+def own_live(run_file):
+    """a keyword probe that is NOT on the RAM-record harness (kstop.py reads the screen, 2026-11-25) re-measures its own
+    run file: it defines `live_copy(run_file, td)` -> the live copy's path, or None for no reading"""
+    import importlib
+    if not is_kw_run(run_file):
+        return None
+    if KW_SPEC not in sys.path:
+        sys.path.insert(0, KW_SPEC)
+    probe = importlib.import_module(kw_probes()[os.path.basename(run_file)])
+    return probe if hasattr(probe, "live_copy") else None
+
+
 def kw_live_group(run_file, group):
     """zerobas's capture of one group of a keyword run file, re-typed on the current build (hex), or None"""
     import importlib
@@ -263,13 +275,15 @@ def main(argv):
         for d in dirs.values():
             os.makedirs(d)
         # a keyword run file is re-typed GROUP by group (one boot each), so its groups are the pool's tasks
-        tasks = [(f, g) for f in order if is_kw_run(f) for g in kw_groups(f)]
+        tasks = [(f, g) for f in order if is_kw_run(f) and not own_live(f) for g in kw_groups(f)]
         with concurrent.futures.ThreadPoolExecutor(max_workers=jobs) as ex:
             kw = dict(zip(tasks, ex.map(lambda t: kw_live_group(*t), tasks)))
             bios = [f for f in order if not is_kw_run(f)]
             lives_of = dict(zip(bios, ex.map(lambda f: live_run(f, dirs[f]), bios)))
         for f in order:
-            if is_kw_run(f):
+            if own_live(f):
+                lives_of[f] = own_live(f).live_copy(f, dirs[f])
+            elif is_kw_run(f):
                 caps = {g: kw[(f, g)] for g in kw_groups(f)}
                 lives_of[f] = None if any(v is None for v in caps.values()) else kw_assemble(f, caps, dirs[f])
         lives = [lives_of[f] for f in order]
