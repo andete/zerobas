@@ -345,9 +345,14 @@ SLTTBL3         equ     $FCC8   ; SLTTBL[3]: RAM mirror of slot-3 secondary-slot
 ; sits at THIS work-area pointer and its base $067A (the kernel size) below it
 ; -- stock work area $DD0E -> kernel $D606; our old $E780 -> kernel $E106, straight
 ; onto our $E29A+ scratch (the §8.19 collision). NOT DRVTBL+1/HIMEM (§8.20/§8.23).
-; So we return the STOCK's $DD0E: the kernel lands at $D6xx, below our scratch, and
-; the 128-byte work area DOS fills ($DD0E-$DD8E) is clear of both kernel and scratch.
-GETWRK_AREA     equ     $DD0E   ; MSX-DOS work-area base returned by $4030 (128 B reserved);
+; So we return the STOCK's $DD0E: the kernel lands at $D606 (MSX-DOS's top of program memory, $0006, is
+; $D606 on the CF-3300, the VG-8020 + HBD-F1 and here), below our scratch.
+; 🔴 CORRECTED 2026-11-25 (D-RAMATLAS, docs/ram-atlas.md): this comment said "the 128-byte work area DOS
+; fills ($DD0E-$DD8E)". MSX-DOS does not fill it: on the references that band is written by their DISK ROM
+; and main ROM (the driver's own work area, at H.RUNC and under DOS; it differs between the CF-3300 and the
+; HBD-F1 -- class 3), and on zerobas nothing writes it at all, because our driver keeps its variables from
+; $E8AD up. Only the ADDRESS matters here: it places the kernel.
+GETWRK_AREA     equ     $DD0E   ; MSX-DOS work-area base returned by $4030 (the address places the kernel);
                                 ; = the stock value so MSXDOS's kernel lands below our scratch
 ; --- MSX-DOS-1 kernel continuation entry $50A9 (a3 §8.26/§8.27) -------------
 ; After publishing its BDOS vector the relocated kernel does `CALL $50A9` (page 1 =

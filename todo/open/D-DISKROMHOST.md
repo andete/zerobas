@@ -124,3 +124,10 @@
       not exist; what is left of (c) is only HIMEM under MSX-DOS ($DE77 here, $DF93 on the CF-3300). $DF86-$E8AC is
       claimed and never written. GETWRK_AREA ($DD0E) is never written, where the references write that band -- (a)
       continues there.
+      GETWRK_AREA EXPLAINED (2026-11-25, the atlas): $DD0E is the address the $4030 entry and DRVTBL+3 hand MSXDOS.SYS,
+      which places its kernel $067A below it ($0006 = $D606 on all three machines). On the references the band
+      after it is written by their disk ROM and main ROM (the driver's own work area; class 3, the CF-3300 and the
+      HBD-F1 differ there), never by MSX-DOS itself; zerobas's driver keeps its variables from $E8AD, so nothing
+      writes the band here -- correct, not a gap. disk/init.asm's comment ("the 128-byte work area DOS fills") was
+      wrong and is corrected (no byte changed). So on zerobas $DCB5-$DDAD and $DF86-$E8AC are claimed and unused:
+      room for (d) -- the work area addressed from a base -- without moving anything visible.
