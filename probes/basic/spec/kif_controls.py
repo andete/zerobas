@@ -4,7 +4,7 @@
 """The CONTROLS of kif_model's rules (docs/spec-method.md §3a: a rule must be shown able to fail). Each control is
 a rival rule the probe separates, run over the same reference cases; it must be FALSE on some of them.
 
-    python3 probes/basic/spec/kgosub_controls.py      (exit 1 when a control finds no case against it)
+    python3 probes/basic/spec/kif_controls.py      (exit 1 when a control finds no case against it)
 """
 import os
 import sys
@@ -18,11 +18,18 @@ def alt(*a):
 
 
 CONTROLS = {
-    "IF": [("R-IF-LINE", "a false IF skips only THEN's statement", alt("false-skips-then-only")),
-           ("R-IF-ELSE", "an ELSE belongs to the OUTER IF", alt("else-outer")),
-           ("R-IF-ELSE", "ELSE runs only its own statement", alt("else-one-stmt")),
-           ("R-IF-TRUTH", "a fraction or a tiny number is false (truncated to 0)", alt("fraction-false")),
-           ("R-IF-EMPTY", "THEN followed by nothing is a Syntax error", alt("then-empty-syntax"))],
+    "IF": [("R-IF-TRUTH", "a fraction is false (cut to its whole part)", alt("fraction-false")),
+           ("R-IF-TRUTH", "a string comparison is always true", alt("string-compare-true")),
+           ("R-IF-TRUTH", "any non-zero byte makes a number true", alt("any-byte")),
+           ("R-IF-LINE", "a false IF skips only THEN's statement", alt("false-skips-then-only")),
+           ("R-IF-JUMP", "a missing line is error 8 even when not taken", alt("missing-line-always-8")),
+           ("R-IF-JUMP", "IF ... GOTO needs a line number", alt("goto-needs-number")),
+           ("R-IF-ELSE", "an ELSE reached by a true IF runs its part too", alt("else-as-stmt-runs")),
+           ("R-IF-ELSE", "only an IF directly after THEN / ELSE opens a level", alt("nest-after-then-only")),
+           ("R-IF-ELSE", "a constant's byte can be taken for IF / ELSE", alt("byte-scan")),
+           ("R-IF-EMPTY", "THEN followed by nothing is a Syntax error", alt("empty-then-syntax")),
+           ("R-IF-ERRORS", "RESUME NEXT goes on only at the next `:`", alt("resume-colon-only")),
+           ("R-IF-ERRORS", "a condition that failed counts as false", alt("error-counts-false"))],
 }
 
 

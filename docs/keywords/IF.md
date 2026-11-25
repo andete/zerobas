@@ -6,9 +6,10 @@ SPDX-License-Identifier: BSD-2-Clause
 
 # `IF` — run part of a line only when a condition holds
 
-> **Spec:** DRAFT 1 (2026-11-25) — 32 cases measured on the Philips VG-8020 (BASIC's reference) and on
+> **Spec:** DRAFT 1 (2026-11-25) — 60 cases measured on the Philips VG-8020 (BASIC's reference) and on
 > zerobas, by typed BASIC ([`kif.py`](../../probes/basic/spec/kif.py)); every rule is executable and every recorded
-> output is read by one. Not yet reviewed ([the keyword plan](spec-plan.md)).
+> output is read by one. Goldfish pass 1 acted on (2026-11-25: the model is now an interpreter, 28 more
+> cases); not yet re-reviewed ([the keyword plan](spec-plan.md)).
 >
 > **Status (2026-10-24):** level 3 — happy path ✓ · reasonable time ✓ · common
 > errors ✓ · RAM usage not yet proven · every error ✓. No recorded
@@ -23,7 +24,7 @@ the `THEN` part when it is true (not zero), the `ELSE` part when it is false.
 Either part can be statements or just a line number to jump to. `THEN` and
 `ELSE` are covered here: they only ever appear inside an `IF`, and have no
 pages of their own. zerobas behaves like the Philips VG-8020 in every case we
-have measured but one.
+have measured.
 
 ## Syntax
 
@@ -60,8 +61,9 @@ IF <condition> GOTO <line number> [ELSE <statements> | <line number>]
 | `IF "A" THEN 30`, `IF "A" GOTO 30` | 13 `Type mismatch` |
 | `IF 1 GOTO` (no line number) | accepted: `GOTO` without a line number works as `THEN` |
 
-The whole set of errors `IF` raises is {2, 8, 13} for `THEN` and `GOTO` and
-{8, 13} for `ELSE`, the same on both machines.
+Besides its condition's own errors (`IF 1/0`: 11), `IF` raises 2, 8 and 13, the
+same on both machines: 13 for a string condition, 8 for a missing line a taken
+jump names, 2 for a malformed IF and for junk after `ELSE`.
 
 ## Example
 
@@ -106,12 +108,16 @@ Reference: the Philips VG-8020's MSX BASIC. Ours: zerobas on the diskless machin
 The tables are generated from the checks, so a sentence here cannot say more than the data does.
 
 **Evidence.** One probe, [`probes/basic/spec/kif.py`](../../probes/basic/spec/kif.py) (kgosub.py's frame on the shared
-RAM-record harness [`ramrec.py`](../../probes/basic/spec/ramrec.py)), typed on both machines; run file
+RAM-record harness [`ramrec.py`](../../probes/basic/spec/ramrec.py)), typed on both machines as two programs, groups FX
+(the first run's cases) and FY (goldfish pass 1's separating cases); run file
 [`scratchpad/KIF_run1.out`](../../scratchpad/KIF_run1.out) (2026-11-25). Each case is a block of 30 lines: line n sets
 WP% to 1 and runs the IF under test, each part a case wants to see marks a bit (`(mark) k` below is `WP%=WP% OR k`),
 and line n+1 -- reached only by FALLING THROUGH line n -- goes straight to the record, so a false IF that skipped the
-rest of its line cannot run the case's target lines (n+5 ..). The record holds the first and last error, a counter
-and WP%.
+rest of its line cannot run the case's target lines (n+5 ..). Line n ends `:GOTO n+25` except in the few cases that
+must END at THEN or ELSE. The record holds the first and last error, a counter and WP%. The error handler keeps the
+first error WITHOUT an IF (`WE=WE-(WE=0)*ERR`; the first run's used IF, the keyword under test -- FX re-measured
+byte-identical under the new one). The model, [`kif_model.py`](../../probes/basic/spec/kif_model.py), is an
+INTERPRETER of the laws the rules state; it holds no per-case answer.
 - **[KIF FX *i*]**:
   0: `WP%=1:IF 1 THEN (mark) 2:(mark) 4`
   1: `WP%=1:IF 0 THEN (mark) 2:(mark) 4`
@@ -119,13 +125,13 @@ and WP%.
   3: `WP%=1:IF .5 THEN (mark) 2`
   4: `WP%=1:IF 1E-30 THEN (mark) 2`
   5: `WP%=1:WK=0:IF WK THEN (mark) 2`
-  6: `WP%=1:IF 1 THEN n+5` (line n+5: `(mark) 4`)
-  7: `WP%=1:IF 0 THEN n+5` (line n+5: `(mark) 4`)
-  8: `WP%=1:IF 1 GOTO n+5` (line n+5: `(mark) 4`)
-  9: `WP%=1:IF 0 GOTO n+5:(mark) 2` (line n+5: `(mark) 4`)
+  6: `WP%=1:IF 1 THEN {L5}`; line n+5: `(mark) 4`
+  7: `WP%=1:IF 0 THEN {L5}`; line n+5: `(mark) 4`
+  8: `WP%=1:IF 1 GOTO {L5}`; line n+5: `(mark) 4`
+  9: `WP%=1:IF 0 GOTO {L5}:(mark) 2`; line n+5: `(mark) 4`
   10: `WP%=1:IF 1 THEN (mark) 2 ELSE (mark) 4`
   11: `WP%=1:IF 0 THEN (mark) 2 ELSE (mark) 4`
-  12: `WP%=1:IF 0 THEN (mark) 2 ELSE n+5` (line n+5: `(mark) 8`)
+  12: `WP%=1:IF 0 THEN (mark) 2 ELSE {L5}`; line n+5: `(mark) 8`
   13: `WP%=1:IF 0 THEN (mark) 2 ELSE (mark) 4:(mark) 8`
   14: `WP%=1:IF 1 THEN (mark) 2 ELSE (mark) 4:(mark) 8`
   15: `WP%=1:IF 1 THEN IF 0 THEN (mark) 2 ELSE (mark) 4`
@@ -140,40 +146,68 @@ and WP%.
   24: `WP%=1:IF 1/0 THEN (mark) 2:(mark) 4`
   25: `WP%=1:IF 1 THEN 65000`
   26: `WP%=1:IF 0 THEN 65000:(mark) 2`
-  27: `WP%=1:GOTO n+5` (line n+5: `WN%=WN%+1:IF WN%<3 THEN n+5`)
+  27: `WP%=1:GOTO {L5}`; line n+5: `WN%=WN%+1:IF WN%<3 THEN {L5}`
   28: `WP%=1:FOR I=1 TO 3:IF I=2 THEN (mark) 2:NEXT`
   29: `WP%=1:FOR I=1 TO 3:WN%=WN%+1:IF I=9 THEN (mark) 2:NEXT`
   30: `WP%=1:IF 1 THEN (mark) 2 ELSE 65000`
   31: `WP%=1:IF 1 THEN:(mark) 2`
+- **[KIF FY *i*]** (goldfish pass 1):
+  0: `WP%=1:IF 1 THEN IF 0 THEN (mark) 2 ELSE (mark) 4 ELSE (mark) 8`
+  1: `WP%=1:IF 0 THEN (mark) 2:IF 1 THEN (mark) 4 ELSE (mark) 8`
+  2: `WP%=1:IF 0 THEN (mark) 2 ELSE IF 0 THEN (mark) 4 ELSE (mark) 8`
+  3: `WP%=1:IF 0 THEN WK=139 ELSE (mark) 4`
+  4: `WP%=1:IF 0 THEN WK=161:(mark) 2 ELSE (mark) 4`
+  5: `WP%=1:IF 1 THEN` (no `:GOTO` appended)
+  6: `WP%=1:IF 0 THEN:(mark) 2`
+  7: `WP%=1:IF 1 GOTO 65000`
+  8: `WP%=1:IF 0 GOTO 65000:(mark) 2`
+  9: `WP%=1:IF 0 THEN (mark) 2 ELSE 65000`
+  10: `WP%=1:IF "B"<"A" THEN (mark) 2`
+  11: `WP%=1:WK=1:POKE VARPTR(WK),0:IF WK THEN (mark) 2`
+  12: `WP%=1:WK%=0:IF WK% THEN (mark) 2`
+  13: `WP%=1:IF .1# THEN (mark) 2`
+  14: `WP%=1:IF -.5 THEN (mark) 2`
+  15: `WP%=1:IF 1/0 THEN (mark) 2 ELSE (mark) 4:(mark) 8`
+  16: `WP%=1:IF "A"<5 THEN (mark) 2 ELSE (mark) 4:(mark) 8`
+  17: `WP%=1:IF "A" THEN (mark) 2`
+  18: `WP%=1:IF 1 GOTO "A"`
+  19: `WP%=1:IF 1 GOTO` (no `:GOTO` appended)
+  20: `WP%=1:IF 0 THEN {L5} ELSE {L10}`; line n+5: `(mark) 4`; line n+10: `(mark) 8`
+  21: `WP%=1:IF 1 THEN {L5} ELSE (mark) 2`; line n+5: `(mark) 4`
+  22: `WP%=1:IF 0 GOTO {L5} ELSE (mark) 4`; line n+5: `(mark) 8`
+  23: `WP%=1:IF 1 GOTO (mark) 2`
+  24: `WP%=1:IF 0 THEN (mark) 2 ELSE` (no `:GOTO` appended)
+  25: `WP%=1:IF 0 THEN (mark) 2 ELSE ,`
+  26: `WP%=1:FOR I=1 TO 3:IF I<9 THEN WN%=WN%+1:NEXT`
+  27: `WP%=1:IF THEN {L5}`; line n+5: `(mark) 4`
 
-**Controls** ([`kif_controls.py`](../../probes/basic/spec/kif_controls.py)): each is a rival rule run over the
-reference's cases: “a false IF skips only THEN's statement” is FALSE on 3 of the 5 cases R-IF-LINE selects (e.g. KIF FX 1); “an ELSE belongs to the OUTER IF” is FALSE on 2 of the 9 cases R-IF-ELSE selects (e.g. KIF FX 15); “ELSE runs only its own statement” is FALSE on 1 of the 9 cases R-IF-ELSE selects (e.g. KIF FX 13); “a fraction or a tiny number is false (truncated to 0)” is FALSE on 2 of the 5 cases R-IF-TRUTH selects (e.g. KIF FX 3); “THEN followed by nothing is a Syntax error” is FALSE on 1 of the 2 cases R-IF-EMPTY selects (e.g. KIF FX 21).
+**Controls** ([`kif_controls.py`](../../probes/basic/spec/kif_controls.py)): each changes ONE law of the interpreter model and runs over the reference's cases: “a fraction is false (cut to its whole part)” is FALSE on 4 of the 10 cases R-IF-TRUTH selects (e.g. KIF FX 3); “a string comparison is always true” is FALSE on 1 of the 10 cases R-IF-TRUTH selects (e.g. KIF FY 10); “any non-zero byte makes a number true” is FALSE on 1 of the 10 cases R-IF-TRUTH selects (e.g. KIF FY 11); “a false IF skips only THEN's statement” is FALSE on 4 of the 6 cases R-IF-LINE selects (e.g. KIF FX 1); “a missing line is error 8 even when not taken” is FALSE on 2 of the 15 cases R-IF-JUMP selects (e.g. KIF FX 26); “IF ... GOTO needs a line number” is FALSE on 2 of the 15 cases R-IF-JUMP selects (e.g. KIF FY 19); “an ELSE reached by a true IF runs its part too” is FALSE on 4 of the 14 cases R-IF-ELSE selects (e.g. KIF FX 10); “only an IF directly after THEN / ELSE opens a level” is FALSE on 1 of the 14 cases R-IF-ELSE selects (e.g. KIF FY 1); “a constant's byte can be taken for IF / ELSE” is FALSE on 2 of the 14 cases R-IF-ELSE selects (e.g. KIF FY 3); “THEN followed by nothing is a Syntax error” is FALSE on 4 of the 5 cases R-IF-EMPTY selects (e.g. KIF FX 21); “RESUME NEXT goes on only at the next `:`” is FALSE on 2 of the 10 cases R-IF-ERRORS selects (e.g. KIF FY 15); “a condition that failed counts as false” is FALSE on 3 of the 10 cases R-IF-ERRORS selects (e.g. KIF FX 24).
 
 <!-- RULES BEGIN -->
 <!-- GENERATED by tools/spec_rules.py from probes/basic/spec/if_rules.py -- do not edit; `python3 tools/spec_rules.py probes/basic/spec/if_rules.py --write` -->
 
-**6 rules; 6 hold on the reference. Of the 128 recorded outputs (each case's first and last error, WN% (a counter) and WP% (the bits of the parts of the line that ran)): 128 read by a rule's check, 0 declared NOT evidence (below), 0 unread.**
+**6 rules; 6 hold on the reference. Of the 240 recorded outputs (each case's first and last error, WN% (a counter) and WP% (the bits of the parts of the line that ran)): 240 read by a rule's check, 0 declared NOT evidence (below), 0 unread.**
 
 #### 1. Truth
 
 | rule | cases | reference | zerobas |
 |---|---|---|---|
-| **R-IF-TRUTH** Any non-zero number is true -- -1, .5, 1E-30 -- and 0 (also a variable holding 0) false; a string comparison is a number like any other ("A"<"B" is true). | 5 | ✓ | ✓ |
+| **R-IF-TRUTH** A number is true unless it is zero -- -1, .5, -.5, 1E-30, a double are true; 0, an integer 0 and a variable holding 0 are false, and so is a number whose EXPONENT byte is zero whatever its digits (POKEd). A comparison is a number like any other ("A"<"B" true, "B"<"A" false). | 10 | ✓ | ✓ |
 
 #### 2. THEN, ELSE and the rest of the line
 
 | rule | cases | reference | zerobas |
 |---|---|---|---|
-| **R-IF-LINE** A true IF runs THEN's statements AND the rest of the line; a false IF skips the WHOLE rest of the line -- every statement after it, a GOTO and a NEXT included (a loop on one line ends there). | 5 | ✓ | ✓ |
-| **R-IF-JUMP** THEN n, and IF ... GOTO n, jump to line n when true (also back to the IF's own line); a missing line is only an error when the jump is taken (error 8). | 7 | ✓ | ✓ |
-| **R-IF-ELSE** ELSE runs when the IF is false -- its statements and every statement after them on the line, or a jump to ELSE n -- and none of it when true. An ELSE belongs to the NEAREST unmatched IF: IF a THEN IF b THEN x ELSE y runs y only when a is true and b false, and a second ELSE belongs to the outer IF. | 9 | ✓ | ✓ |
-| **R-IF-EMPTY** THEN followed by nothing, or by a colon, is no error. | 2 | ✓ | ✓ |
+| **R-IF-LINE** A true IF runs THEN's statements AND the rest of the line (a NEXT behind it included); a false IF skips the WHOLE rest of the line -- every statement after it, a GOTO and a NEXT included (a loop on one line ends there). | 6 | ✓ | ✓ |
+| **R-IF-JUMP** THEN n, ELSE n and IF ... GOTO n jump to line n when taken (also back to the IF's own line); a missing line is error 8 only when the jump is taken. `IF c GOTO` with no line number after it is THEN: what follows runs as a statement (nothing at all is no error). | 15 | ✓ | ✓ |
+| **R-IF-ELSE** ELSE runs when the IF is false -- its statements and the rest of the line after them, or a jump to ELSE n. When the IF is true, the first ELSE reached ends the line. A false IF finds its ELSE by counting: every IF further on opens a level -- after a colon or inside ELSE's part too -- and every ELSE closes one; a constant is never taken for a token (`WK=139`, `WK=161`). | 14 | ✓ | ✓ |
+| **R-IF-EMPTY** THEN or ELSE followed by nothing, or by a colon, is no error -- true or false. | 5 | ✓ | ✓ |
 
 #### 3. Errors
 
 | rule | cases | reference | zerobas |
 |---|---|---|---|
-| **R-IF-ERRORS** A string as the condition is error 13 (Type mismatch); no THEN, or no condition, error 2; the condition's own error is that error (1/0: 11), and RESUME NEXT then carries on after THEN's statement. | 4 | ✓ | ✓ |
+| **R-IF-ERRORS** A string as the condition is error 13 (Type mismatch), and so is a comparison of a string with a number; no THEN, no condition, junk after ELSE or a string after GOTO is error 2; the condition's own error is that error (1/0: 11). RESUME NEXT then goes on at the next `:` OR ELSE after the error -- and an ELSE reached that way ends the line, so neither part runs. | 10 | ✓ | ✓ |
 
 <!-- RULES END -->
 
@@ -190,7 +224,7 @@ None known in behaviour. The one rung not yet proven is **RAM usage**.
 - [A] Direct mode: every case ran inside a program.
 - [A] IF with a relational chain and AND / OR conditions (the operators pages cover the values; the branch here is
   only "non-zero").
-- [A] ELSE directly after THEN n (`IF 0 THEN 100 ELSE 200` measured; `IF 1 THEN 100 ELSE ...` with a missing 100 not).
+- [A] ELSE directly after THEN n with a missing THEN line, taken (`IF 1 THEN 99 ELSE ...`).
 
 ## What we found, and how
 

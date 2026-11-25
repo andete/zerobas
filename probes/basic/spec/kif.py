@@ -9,7 +9,8 @@ ran), WN% counts, and the first and last errors are kept.
 
 THE RECORD (6 bytes per case, from $C001): E, F, N (2), P (2) -- kgosub.py's.
 
-THE GROUP (case ids "KIF FX <i>"): FX, every case of IF.
+THE GROUPS (case ids "KIF FX <i>", "KIF FY <i>"): FX, the first run's cases of IF; FY, goldfish pass 1's separating
+cases. The error handler (line 800) keeps the first error without using IF.
 
     python3 probes/basic/spec/kif.py [--out scratchpad/KIF_run1.out]"""
 import os
@@ -23,7 +24,7 @@ import ramrec  # noqa: E402
 
 REC = 6
 RUN = "KIF_run1.out"
-GAPS = {"FX": 4000.0}
+GAPS = {"FX": 4000.0, "FY": 4000.0}
 G = "ON -(WN%>20) GOTO {R}"
 O = "WP%=WP% OR "
 
@@ -64,6 +65,42 @@ FX = [
     ("IF", "WP%=1:IF 1 THEN:" + O + "2", {}, "THEN followed by a colon"),
 ]
 
+# GROUP FY -- goldfish pass 1 (scratchpad/REVIEW-m2-gkwif.md): the cases that separate the rules' rivals. A subs key
+# "noend" leaves line n WITHOUT the appended `:GOTO n+25` (it falls through to n+1, which records): the only way a
+# line can END at THEN or ELSE.
+FY = [
+    ("IF", "WP%=1:IF 1 THEN IF 0 THEN " + O + "2 ELSE " + O + "4 ELSE " + O + "8", {},
+     "two ELSEs: outer true, inner false"),
+    ("IF", "WP%=1:IF 0 THEN " + O + "2:IF 1 THEN " + O + "4 ELSE " + O + "8", {}, "an IF after a colon in THEN's part"),
+    ("IF", "WP%=1:IF 0 THEN " + O + "2 ELSE IF 0 THEN " + O + "4 ELSE " + O + "8", {}, "an IF inside ELSE's part"),
+    ("IF", "WP%=1:IF 0 THEN WK=139 ELSE " + O + "4", {}, "a constant whose byte is IF's token"),
+    ("IF", "WP%=1:IF 0 THEN WK=161:" + O + "2 ELSE " + O + "4", {}, "a constant whose byte is ELSE's token"),
+    ("IF", "WP%=1:IF 1 THEN", {"noend": 1}, "THEN at the end of the line"),
+    ("IF", "WP%=1:IF 0 THEN:" + O + "2", {}, "a false IF, THEN followed by a colon"),
+    ("IF", "WP%=1:IF 1 GOTO 65000", {}, "IF ... GOTO a missing line"),
+    ("IF", "WP%=1:IF 0 GOTO 65000:" + O + "2", {}, "IF ... GOTO a missing line, false"),
+    ("IF", "WP%=1:IF 0 THEN " + O + "2 ELSE 65000", {}, "ELSE to a missing line, taken"),
+    ("IF", 'WP%=1:IF "B"<"A" THEN ' + O + "2", {}, "a false string comparison"),
+    ("IF", "WP%=1:WK=1:POKE VARPTR(WK),0:IF WK THEN " + O + "2", {}, "a zero exponent byte, the digits not zero"),
+    ("IF", "WP%=1:WK%=0:IF WK% THEN " + O + "2", {}, "an integer 0"),
+    ("IF", "WP%=1:IF .1# THEN " + O + "2", {}, "a double"),
+    ("IF", "WP%=1:IF -.5 THEN " + O + "2", {}, "a negative fraction"),
+    ("IF", "WP%=1:IF 1/0 THEN " + O + "2 ELSE " + O + "4:" + O + "8", {}, "the condition's error, then ELSE"),
+    ("IF", 'WP%=1:IF "A"<5 THEN ' + O + "2 ELSE " + O + "4:" + O + "8", {}, "a mixed comparison, then ELSE"),
+    ("IF", 'WP%=1:IF "A" THEN ' + O + "2", {}, "a string literal as the condition"),
+    ("IF", 'WP%=1:IF 1 GOTO "A"', {}, "IF ... GOTO a string"),
+    ("IF", "WP%=1:IF 1 GOTO", {"noend": 1}, "IF ... GOTO with no number"),
+    ("IF", "WP%=1:IF 0 THEN {L5} ELSE {L10}", {5: O + "4", 10: O + "8"}, "THEN n ELSE m, false"),
+    ("IF", "WP%=1:IF 1 THEN {L5} ELSE " + O + "2", {5: O + "4"}, "THEN n ELSE statements, true"),
+    ("IF", "WP%=1:IF 0 GOTO {L5} ELSE " + O + "4", {5: O + "8"}, "IF ... GOTO ... ELSE, false"),
+    ("IF", "WP%=1:IF 1 GOTO " + O + "2", {}, "IF ... GOTO a statement"),
+    ("IF", "WP%=1:IF 0 THEN " + O + "2 ELSE", {"noend": 1}, "ELSE at the end of the line"),
+    ("IF", "WP%=1:IF 0 THEN " + O + "2 ELSE ,", {}, "ELSE followed by junk"),
+    ("IF", "WP%=1:FOR I=1 TO 3:IF I<9 THEN WN%=WN%+1:NEXT", {}, "a NEXT behind a true IF"),
+    ("IF", "WP%=1:IF THEN {L5}", {5: O + "4"}, "no condition, a line number"),
+]
+GROUPS = {"FX": FX, "FY": FY}
+
 
 def _lines(n, main, subs):
     m = {f"L{k}": n + k for k in (5, 10, 15, 20)}
@@ -73,26 +110,28 @@ def _lines(n, main, subs):
     fmt = lambda t: t.format(**m)    # noqa: E731
     # line n+1: reached only by FALLING THROUGH line n (a false IF skips the rest of its line, the GOTO n+25 included),
     # so it goes straight to the record -- a fall-through must not run the case's target lines
-    out = [(n, fmt(main) + f":GOTO {n + 25}"), (n + 1, f"GOTO {n + 25}")]
-    for k, t in sorted(subs.items()):
+    out = [(n, fmt(main) + ("" if "noend" in subs else f":GOTO {n + 25}")), (n + 1, f"GOTO {n + 25}")]
+    for k, t in sorted((k, t) for k, t in subs.items() if k != "noend"):
         out.append((n + k, fmt(t)))
     return out
 
 
 def program(group="FX"):
-    lines = ["10 CLEAR 300,&HBF00:POKE &HC000,0:GOTO 2000", "800 IF WE=0 THEN WE=ERR", "810 WF=ERR:RESUME NEXT"]
+    # the handler keeps the FIRST error WITHOUT an IF (goldfish pass 1: the apparatus must not use the keyword under
+    # test): -(WE=0) is 1 only while WE is still 0
+    lines = ["10 CLEAR 300,&HBF00:POKE &HC000,0:GOTO 2000", "800 WE=WE-(WE=0)*ERR", "810 WF=ERR:RESUME NEXT"]
     cases = []
     n = 2000
-    for i, (kw, main, subs, why) in enumerate(FX):
+    for i, (kw, main, subs, why) in enumerate(GROUPS[group]):
         base = 0xC001 + REC * i
         body = _lines(n, main, subs)
         body[0] = (n, "CLEAR 300,&HBF00:ON ERROR GOTO 800:WE=0:WF=0:WN%=0:WP%=0:WK=0:I=0:" + body[0][1])
         lines += [f"{k} {t}" for k, t in body]
         lines.append(f"{n + 25} ON ERROR GOTO 0:POKE {base},WE:POKE {base + 1},WF:POKE {base + 2},WN% AND 255:"
                      f"POKE {base + 3},WN%\\256 AND 255:POKE {base + 4},WP% AND 255:POKE {base + 5},WP%\\256 AND 255")
-        cases.append((f"KIF FX {i}", dict(kw=kw, stmt=main, subs=subs, why=why)))
+        cases.append((f"KIF {group} {i}", dict(kw=kw, stmt=main, subs=subs, why=why, base=n)))
         n += 30
-    lines.append(f"{n} POKE &HC001+{REC * len(FX)},&HC3:POKE &HC000,&H5A:END")
+    lines.append(f"{n} POKE &HC001+{REC * len(cases)},&HC3:POKE &HC000,&H5A:END")
     assert 1 + REC * len(cases) + 1 <= 0xF380 - ramrec.BASE
     return lines + ["RUN"], cases
 
@@ -104,7 +143,11 @@ def decode(hexs, n):
     return [dict(e=r[0], f=r[1], n=r[2] | r[3] << 8, p=r[4] | r[5] << 8) for r in rs], None
 
 
-def load(group="FX", run=RUN):
+def load(group=None, run=RUN):
+    """the cases of one group, or (group None) of every group, in GROUPS' order"""
+    if group is None:
+        parts = [load(g, run) for g in GROUPS]
+        return {who: [c for p in parts for c in p[who]] for who in ("ref", "zb")}
     sec = ramrec.read_section(os.path.join(ROOT, "scratchpad", run), group)
     _, cases = program(group)
     out = {}
@@ -120,23 +163,25 @@ def main(argv):
     path = os.path.join(ROOT, "scratchpad", RUN)
     if "--out" in argv:
         path = os.path.join(ROOT, argv[argv.index("--out") + 1])
-    lines, cases = program()
+    groups = [g for g in GROUPS if g in argv] or list(GROUPS)
     if "--lines" in argv:
-        print("\n".join(lines))
+        print("\n".join(program(groups[0])[0]))
         return 0
-    cap = ramrec.measure(lines, len(cases), REC, GAPS["FX"])
-    bad = []
-    for who in ("ref", "zb"):
-        recs, why = decode(cap[who], len(cases))
-        if recs is None:
-            bad.append(f"{who}: {why}")
-    text = open(path).read() if os.path.exists(path) else ""
-    open(path, "w").write(ramrec.write_section(text, "FX", cap, len(cases), bad))
-    print(f"FX: {len(cases)} cases; {'; '.join(bad) or 'both complete'}", flush=True)
-    if not bad:
-        ref, zb = (decode(cap[w], len(cases))[0] for w in ("ref", "zb"))
-        diff = [cases[i][0] for i in range(len(cases)) if ref[i] != zb[i]]
-        print(f"  {len(diff)} cases differ" + (": " + ", ".join(diff[:12]) if diff else ""), flush=True)
+    for group in groups:
+        lines, cases = program(group)
+        cap = ramrec.measure(lines, len(cases), REC, GAPS[group])
+        bad = []
+        for who in ("ref", "zb"):
+            recs, why = decode(cap[who], len(cases))
+            if recs is None:
+                bad.append(f"{who}: {why}")
+        text = open(path).read() if os.path.exists(path) else ""
+        open(path, "w").write(ramrec.write_section(text, group, cap, len(cases), bad))
+        print(f"{group}: {len(cases)} cases; {'; '.join(bad) or 'both complete'}", flush=True)
+        if not bad:
+            ref, zb = (decode(cap[w], len(cases))[0] for w in ("ref", "zb"))
+            diff = [cases[i][0] for i in range(len(cases)) if ref[i] != zb[i]]
+            print(f"  {len(diff)} cases differ" + (": " + ", ".join(diff[:12]) if diff else ""), flush=True)
     print(f"wrote {os.path.relpath(path, ROOT)}")
     return 0
 

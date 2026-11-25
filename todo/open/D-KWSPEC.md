@@ -81,3 +81,6 @@
       rework for GOTO / GOSUB / RETURN, IF, END / STOP / CONT / RUN.
       **GOTO / GOSUB / RETURN reworked (2026-11-25)**: kgosub_model.py an interpreter, 13 one-law controls, group FY
       (21 cases, all predictions held; plan §6). Filed D-GOSUBFRAME (TIER 6). NEXT: IF, then END / STOP / CONT / RUN.
+      **IF reworked (2026-11-25)**: kif_model.py an interpreter, 12 one-law controls, group FY (28 cases; 26
+      predictions held, the 2 misses became stated laws), an IF-free error handler. zerobas agrees on all 60. NEXT:
+      END / STOP / CONT / RUN, the last of the four.

@@ -579,6 +579,15 @@ split at 65529). All 21 predictions for FY held. The frame keeps its GOTO on pur
 the record frame's own check, never a plausible record) -- stated on the pages. zerobas: one new difference,
 D-GOSUBFRAME (a GOSUB to a missing line pushes a frame).
 
+**IF reworked (2026-11-25), the third.** [kif_model.py](../../probes/basic/spec/kif_model.py) is an interpreter that
+walks the line character by character (statements end at `:` or ELSE; a false IF counts IF / ELSE levels to find its
+ELSE; a true IF's first reached ELSE ends the line); [kif_controls.py](../../probes/basic/spec/kif_controls.py) holds
+12 one-law rivals. [kif.py](../../probes/basic/spec/kif.py) gained group FY (28 cases, among them lines that END at
+THEN / ELSE, which the appended `:GOTO` had made unreachable) and an error handler without IF (FX re-measured
+byte-identical). FY predictions: 26 of 28 held; the misses are two laws now stated -- RESUME NEXT after an error in the
+condition goes on at the next `:` OR ELSE (so `IF 1/0 THEN a ELSE b:c` runs neither part), and `IF c GOTO` without a
+number is THEN. zerobas agrees on all 60.
+
 ### The errors region's first unit (2026-11-25): DEFINT, DEFSNG, DEFDBL, DEFSTR -- the first interpreter model
 
 [kdeftype.py](../../probes/basic/spec/kdeftype.py), 58 cases on the RAM-record harness (run file
