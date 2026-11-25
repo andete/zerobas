@@ -689,7 +689,7 @@ built under the working rule from the start. Two stale page sentences corrected 
 [kdim.py](../../probes/basic/spec/kdim.py), 42 SCREEN cases (run file [scratchpad/KDM_run1.out](../../scratchpad/KDM_run1.out)),
 taken from the three pages' claims: bounds from 0, the default bound 10, two dimensions, the 65535-byte check before
 free memory, DIM's errors and its one-by-one making, ERASE's suffix-as-name and one-by-one removal, CLEAR's resets,
-CLEAR n / FRE of an empty string, a bare CLEAR and a moved top keeping the size, CLEAR's errors, a refused CLEAR
+CLEAR n / FRE of an empty string, a bare CLEAR keeping the size (CLEAR n,top sets n), CLEAR's errors, a refused CLEAR
 changing nothing. The memory-limit cases sit far from the edge, so no expectation depends on a free-memory figure.
 Every page claim held; zerobas agrees on all 42. The small BASIC gained arrays (dim / element), ERASE and CLEAR
 n,top, and lost two bugs its new cases exposed (PRINT's item scanner split inside parentheses; ERASE left the old
@@ -706,3 +706,15 @@ keeping the CONT point. Every page claim held; zerobas agrees on all 39. The sma
 and output that wraps at 37 (a listed line of 38 characters showed it -- the TRON reviewer had predicted the model
 would miss exactly that). 17 controls, every rule pinned. AUTO (CTRL+STOP) and LLIST (a printer) need their own
 harness; their pages' Open lists say so. Region 7 is complete at DRAFT 1 but for those two.
+
+### Goldfish pass 1 over the program region (2026-11-25)
+
+Three reviewers (scratchpad/REVIEW-m2-gkwdata.md, -gkwdim.md, -gkwlist.md; ~130 findings). **DIM / ERASE / CLEAR
+reworked first** -- its rules stated two wrong things: R-CLEAR-ERRORS said Overflow "past 65535" (it is past 32767:
+CLEAR 32768 is 6 -- kerr's ERROR-bound mistake made again) and R-CLEAR-SIZE said "moving the top keeps the size" (its
+own FX 33 sets n). kdim.py gained group FY (27 cases: CLEAR's bound and argument order, a top that leaves no room, the
+string space and arrays sharing memory, CLEAR in a GOSUB, two arrays that do not fit, A# = A, two significant
+characters, the 65535-byte edge for 2-, 4- and 3-byte elements, DIM's bound edge, bound 10 in every dimension and
+after ERASE, a negative subscript (5, not 9 -- the one law not predicted), the wrong subscript count, a fractional
+bound). zerobas agrees on all 27. The small BASIC now keys arrays by two characters and the TYPE, and counts ONE
+memory budget (the string space plus every array). 14 controls, every rule pinned.

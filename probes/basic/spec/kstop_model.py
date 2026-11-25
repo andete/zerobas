@@ -92,6 +92,7 @@ def split(text, alt=frozenset()):
 class Basic:
     def __init__(self, alt):
         self.alt = alt
+        Basic._alt = alt
         self.prog = {}
         self.vram = {}
         self.screen = ["<prompt>"]
@@ -560,8 +561,9 @@ class Basic:
                 n = n.strip()
                 if not re.fullmatch(r"[A-Z]\w*[%$!#]?", n):
                     raise Err(2)
+                n = self.aname(n)
                 if n not in self.arrays and "erase-any-type" in self.alt:
-                    n = next((a for a in self.arrays if a.rstrip("%$!#") == n.rstrip("%$!#")), n)
+                    n = next((a for a in self.arrays if a[:-1] == n[:-1]), n)
                 if n not in self.arrays:
                     if "erase-all-or-nothing" in self.alt:
                         self.arrays, self.elems = before
@@ -645,7 +647,8 @@ class Basic:
             return None
         if s.startswith("CLEAR") and s != "CLEAR":
             args = s[5:].strip()
-            size, comma, top = args.partition(",")
+            parts = args.split(",")
+            size, comma, top = parts[0], ("," if len(parts) > 1 else ""), (parts[1] if len(parts) > 1 else "")
             if not size.strip():
                 raise Err(2)                             # `CLEAR,`
             if comma and not top.strip():
@@ -658,12 +661,14 @@ class Basic:
                 raise Err(13)
             if n < 0:
                 raise Err(5)
-            if n > 32767 and "clear-bound-65535" not in self.alt or n > 65535:
-                raise Err(6)
+            if n > (65535 if "clear-bound-65535" in self.alt else 32767):
+                raise Err(6)                             # an integer: past 32767 is Overflow
             if t is not None and not 0x8000 <= t <= 0xF380:
                 raise Err(5)
-            if n > self.FREE:
-                raise Err(7)
+            if n > self.MEM or (t is not None and n > t - 0x8000 and "clear-top-unchecked" not in self.alt):
+                raise Err(7)                             # the size must fit, and fit below the top
+            if len(parts) > 2:
+                raise Err(2)                             # a third argument -- only once the size was accepted
             self.strsize = n                             # checked FIRST: a refused CLEAR changes nothing
             self._sized = True
             s = "CLEAR"
@@ -742,9 +747,29 @@ class Basic:
             return None
         raise Err(2)
 
-    FREE = 28000                     # free memory, roughly, on a 32 K machine: no case sits near it (kdim.py)
+    MEM = 29000                      # the memory the string space and the arrays share on a 32 K machine (between
+                                     # the reference's CLEAR 28000, accepted, and CLEAR 30000, refused)
+
+    @staticmethod
+    def aname(name):
+        """an array's identity: two significant characters and the TYPE (no suffix and no DEF is double: A is A#)"""
+        if "array-suffix-names" in getattr(Basic, "_alt", ()):
+            return name                                  # (the rival: the name as written is the identity)
+        t = name[-1] if name[-1] in "%$!#" else "#"
+        return name.rstrip("%$!#")[:2] + t
+
+    def used(self):
+        size = {"%": 2, "$": 3, "!": 4, "#": 8}
+        total = 0
+        for k, dims in self.arrays.items():
+            n = 1
+            for b in dims:
+                n *= b + 1
+            total += n * size[k[-1]]
+        return total
 
     def dim(self, name, bounds):
+        name = self.aname(name)
         """make array `name`: each bound an integer 0..32767 (a string: 13; negative: 5; too large: 6); the elements
         must fit 65535 BYTES (else 9) -- checked BEFORE free memory (else 7)"""
         if name in self.arrays:
@@ -765,12 +790,16 @@ class Basic:
             n *= b + 1
         if n * size > 65535 and "dim-memory-first" not in self.alt:
             raise Err(9)
-        if n * size > self.FREE or ("dim-memory-first" in self.alt and n * size > 65535 and n * size > self.FREE):
-            raise Err(7)
+        if n * size > self.MEM - self.strsize - self.used():
+            raise Err(7)                                 # the string space and the arrays already made count
         self.arrays[name] = tuple(bs)
 
     def element(self, name, idx):
-        """the element's key; an undeclared array is made with bound 10 in every dimension"""
+        """the element's key; an undeclared array is made with bound 10 in every dimension; a negative subscript is
+        error 5, past a bound or the wrong number of subscripts error 9"""
+        name = self.aname(name)
+        if any(i < 0 for i in idx) and "neg-subscript-9" not in self.alt:
+            raise Err(5)
         if name not in self.arrays:
             self.dim(name, [9 if "auto-bound-9" in self.alt else 10] * len(idx))
         dims = self.arrays[name]

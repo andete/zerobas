@@ -20,7 +20,9 @@ def alt(*a):
 
 CONTROLS = {
     "DIM": [("R-DIM-BOUNDS", "an undeclared array has bound 9", alt("auto-bound-9")),
-            ("R-DIM-SIZE", "free memory is checked before the 65535-byte limit", alt("dim-memory-first")),
+            ("R-DIM-BOUNDS", "a negative subscript is error 9", alt("neg-subscript-9")),
+            ("R-DIM-SIZE", "there is no 65535-byte limit, only free memory", alt("dim-memory-first")),
+            ("R-DIM-NAMES", "the name as written (suffix and all) is the identity", alt("array-suffix-names")),
             ("R-DIM-FORMS", "a DIM that fails makes none of its arrays", alt("dim-all-or-nothing"))],
     "ERASE": [("R-ERASE-REMOVE", "an ERASE that fails erases none of its names", alt("erase-all-or-nothing")),
               ("R-ERASE-ERRORS", "ERASE ignores the type suffix", alt("erase-any-type"))],
@@ -28,7 +30,9 @@ CONTROLS = {
               ("R-CLEAR-RESET", "CLEAR keeps READ's position", alt("clear-keeps-data-ptr")),
               ("R-CLEAR-SIZE", "a bare CLEAR goes back to 200 bytes", alt("bare-clear-resets-size")),
               ("R-CLEAR-ERRORS", "a refused CLEAR has already cleared the variables", alt("refused-clear-partial")),
-              ("R-CLEAR-ERRORS", "a comma and no top is error 2", alt("clear-comma-syntax"))],
+              ("R-CLEAR-ERRORS", "a comma and no top is error 2", alt("clear-comma-syntax")),
+              ("R-CLEAR-ERRORS", "Overflow only past 65535", alt("clear-bound-65535")),
+              ("R-CLEAR-ERRORS", "the top is not checked against the size", alt("clear-top-unchecked"))],
 }
 
 

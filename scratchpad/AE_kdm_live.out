@@ -1,4 +1,6 @@
+  live KNL_run1.out FX: zerobas as committed
   live KDM_run1.out FX: zerobas as committed
+  live KDM_run1.out FY: zerobas as committed
   live KDA_run1.out FX: zerobas as committed
   live KER_run1.out FX: zerobas as committed
   live KER_run1.out FY: zerobas as committed
@@ -6,7 +8,11 @@
   live KSP_run1.out FY: zerobas as committed
   live KTN_run1.out FX: zerobas as committed
   live KTN_run1.out FY: zerobas as committed
-OK   docs/keywords/DIM.md: 3 rules, 0 failing on zerobas (live, 1 run file(s))
+OK   docs/keywords/NEW.md: 2 rules, 0 failing on zerobas (live, 1 run file(s))
+OK   docs/keywords/LIST.md: 4 rules, 0 failing on zerobas (live, 1 run file(s))
+OK   docs/keywords/DELETE.md: 3 rules, 0 failing on zerobas (live, 1 run file(s))
+OK   docs/keywords/RENUM.md: 4 rules, 0 failing on zerobas (live, 1 run file(s))
+OK   docs/keywords/DIM.md: 4 rules, 0 failing on zerobas (live, 1 run file(s))
 OK   docs/keywords/ERASE.md: 2 rules, 0 failing on zerobas (live, 1 run file(s))
 OK   docs/keywords/CLEAR.md: 3 rules, 0 failing on zerobas (live, 1 run file(s))
 OK   docs/keywords/DATA.md: 2 rules, 0 failing on zerobas (live, 1 run file(s))
@@ -24,5 +30,5 @@ OK   docs/keywords/TRON.md: 2 rules, 0 failing on zerobas (live, 1 run file(s))
 OK   docs/keywords/TROFF.md: 1 rules, 0 failing on zerobas (live, 1 run file(s))
 OK   docs/keywords/REM.md: 1 rules, 0 failing on zerobas (live, 1 run file(s))
 ===== spec-live: ALL PAGES AGREE =====
-refcache: 8 hit, 0 miss, 8 of the hits were ZEROBAS readings
+refcache: 10 hit, 0 miss, 10 of the hits were ZEROBAS readings
 rc=0

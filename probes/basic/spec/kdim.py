@@ -73,7 +73,38 @@ FX = [
     ("CLEAR", ["10 A=5:ON ERROR GOTO 90:CLEAR -1", "20 END", '90 PRINT "[";A;"]":END', "RUN"],
      "a refused CLEAR changes nothing"),
 ]
-GROUPS = {"FX": FX}
+
+# GROUP FY -- goldfish pass 1 (scratchpad/REVIEW-m2-gkwdim.md): the cases that separate the rules' rivals
+FY = [
+    ("CLEAR", ["10 CLEAR 32768", "RUN"], "CLEAR 32768"),
+    ("CLEAR", ["10 CLEAR 40000", "RUN"], "CLEAR 40000"),
+    ("CLEAR", ["10 CLEAR 65535", "RUN"], "CLEAR 65535"),
+    ("CLEAR", ["10 CLEAR 200,&H8050", "RUN"], "a top that leaves no room"),
+    ("CLEAR", ["10 CLEAR -1,2,3", "RUN"], "a negative size, then too many arguments"),
+    ("CLEAR", ["10 CLEAR 70000,2,3", "RUN"], "a size past 65535, then too many arguments"),
+    ("CLEAR", ["10 CLEAR 20000:DIM A%(6000)", "RUN"], "the string space and an array share memory"),
+    ("CLEAR", ['10 GOSUB 30:PRINT "R":END', "30 CLEAR:RETURN", "RUN"], "CLEAR inside a GOSUB"),
+    ("DIM", ["10 DIM A%(10000),B%(10000)", "RUN"], "two arrays that do not fit together"),
+    ("DIM", ["10 DIM A#(2):ERASE A:PRINT \"[E]\"", "RUN"], "A# and A are one array with no DEF"),
+    ("DIM", ["10 A#(3)=1:PRINT A(3)", "RUN"], "A#(3) is A(3) with no DEF"),
+    ("DIM", ["10 DIM AB1(2),AB2(2)", "RUN"], "two significant characters"),
+    ("DIM", ["10 DIM A%(32766)", "RUN"], "65534 bytes of integers"),
+    ("DIM", ["10 DIM A%(32767)", "RUN"], "65536 bytes of integers"),
+    ("DIM", ["10 DIM A!(16382)", "RUN"], "65532 bytes of singles"),
+    ("DIM", ["10 DIM A!(16383)", "RUN"], "65536 bytes of singles"),
+    ("DIM", ["10 DIM A$(21844)", "RUN"], "65535 bytes of strings"),
+    ("DIM", ["10 DIM A$(21845)", "RUN"], "65538 bytes of strings"),
+    ("DIM", ["10 DIM A(32768)", "RUN"], "a bound of 32768"),
+    ("DIM", ["10 B(10,10)=1:PRINT B(10,10)", "RUN"], "bound 10 in every dimension"),
+    ("DIM", ["10 B(0,11)=1", "RUN"], "past bound 10 in the second dimension"),
+    ("DIM", ["10 DIM A(2):ERASE A:A(10)=1:PRINT A(10)", "RUN"], "after ERASE the default bound is 10 again"),
+    ("DIM", ["10 DIM A%(2):A%(1)=-1.7:PRINT A%(1)", "RUN"], "an integer element cuts towards zero"),
+    ("DIM", ['10 DIM A:DIM A(2):PRINT "[D]"', "RUN"], "DIM A makes nothing"),
+    ("DIM", ["10 A(-1)=1", "RUN"], "a negative subscript"),
+    ("DIM", ["10 DIM A(2):A(1,1)=1", "RUN"], "the wrong number of subscripts"),
+    ("DIM", ["10 DIM A(2.7):A(2)=1:A(3)=1", "RUN"], "a fractional bound is cut"),
+]
+GROUPS = {"FX": FX, "FY": FY}
 
 
 

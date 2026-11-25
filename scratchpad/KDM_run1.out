@@ -622,5 +622,393 @@
     "<prompt>"
    ]
   ]
+ },
+ "FY": {
+  "ref": [
+   [
+    "<prompt>",
+    "10 CLEAR 32768",
+    "RUN",
+    "Overflow in 10",
+    "<prompt>"
+   ],
+   [
+    "<prompt>",
+    "10 CLEAR 40000",
+    "RUN",
+    "Overflow in 10",
+    "<prompt>"
+   ],
+   [
+    "<prompt>",
+    "10 CLEAR 65535",
+    "RUN",
+    "Overflow in 10",
+    "<prompt>"
+   ],
+   [
+    "<prompt>",
+    "10 CLEAR 200,&H8050",
+    "RUN",
+    "Out of memory in 10",
+    "<prompt>"
+   ],
+   [
+    "<prompt>",
+    "10 CLEAR -1,2,3",
+    "RUN",
+    "Illegal function call in 10",
+    "<prompt>"
+   ],
+   [
+    "<prompt>",
+    "10 CLEAR 70000,2,3",
+    "RUN",
+    "Overflow in 10",
+    "<prompt>"
+   ],
+   [
+    "<prompt>",
+    "10 CLEAR 20000:DIM A%(6000)",
+    "RUN",
+    "Out of memory in 10",
+    "<prompt>"
+   ],
+   [
+    "<prompt>",
+    "10 GOSUB 30:PRINT \"R\":END",
+    "30 CLEAR:RETURN",
+    "RUN",
+    "RETURN without GOSUB in 30",
+    "<prompt>"
+   ],
+   [
+    "<prompt>",
+    "10 DIM A%(10000),B%(10000)",
+    "RUN",
+    "Out of memory in 10",
+    "<prompt>"
+   ],
+   [
+    "<prompt>",
+    "10 DIM A#(2):ERASE A:PRINT \"[E]\"",
+    "RUN",
+    "[E]",
+    "<prompt>"
+   ],
+   [
+    "<prompt>",
+    "10 A#(3)=1:PRINT A(3)",
+    "RUN",
+    "1",
+    "<prompt>"
+   ],
+   [
+    "<prompt>",
+    "10 DIM AB1(2),AB2(2)",
+    "RUN",
+    "Redimensioned array in 10",
+    "<prompt>"
+   ],
+   [
+    "<prompt>",
+    "10 DIM A%(32766)",
+    "RUN",
+    "Out of memory in 10",
+    "<prompt>"
+   ],
+   [
+    "<prompt>",
+    "10 DIM A%(32767)",
+    "RUN",
+    "Subscript out of range in 10",
+    "<prompt>"
+   ],
+   [
+    "<prompt>",
+    "10 DIM A!(16382)",
+    "RUN",
+    "Out of memory in 10",
+    "<prompt>"
+   ],
+   [
+    "<prompt>",
+    "10 DIM A!(16383)",
+    "RUN",
+    "Subscript out of range in 10",
+    "<prompt>"
+   ],
+   [
+    "<prompt>",
+    "10 DIM A$(21844)",
+    "RUN",
+    "Out of memory in 10",
+    "<prompt>"
+   ],
+   [
+    "<prompt>",
+    "10 DIM A$(21845)",
+    "RUN",
+    "Subscript out of range in 10",
+    "<prompt>"
+   ],
+   [
+    "<prompt>",
+    "10 DIM A(32768)",
+    "RUN",
+    "Overflow in 10",
+    "<prompt>"
+   ],
+   [
+    "<prompt>",
+    "10 B(10,10)=1:PRINT B(10,10)",
+    "RUN",
+    "1",
+    "<prompt>"
+   ],
+   [
+    "<prompt>",
+    "10 B(0,11)=1",
+    "RUN",
+    "Subscript out of range in 10",
+    "<prompt>"
+   ],
+   [
+    "<prompt>",
+    "10 DIM A(2):ERASE A:A(10)=1:PRINT A(1",
+    "0)",
+    "RUN",
+    "1",
+    "<prompt>"
+   ],
+   [
+    "<prompt>",
+    "10 DIM A%(2):A%(1)=-1.7:PRINT A%(1)",
+    "RUN",
+    "-1",
+    "<prompt>"
+   ],
+   [
+    "<prompt>",
+    "10 DIM A:DIM A(2):PRINT \"[D]\"",
+    "RUN",
+    "[D]",
+    "<prompt>"
+   ],
+   [
+    "<prompt>",
+    "10 A(-1)=1",
+    "RUN",
+    "Illegal function call in 10",
+    "<prompt>"
+   ],
+   [
+    "<prompt>",
+    "10 DIM A(2):A(1,1)=1",
+    "RUN",
+    "Subscript out of range in 10",
+    "<prompt>"
+   ],
+   [
+    "<prompt>",
+    "10 DIM A(2.7):A(2)=1:A(3)=1",
+    "RUN",
+    "Subscript out of range in 10",
+    "<prompt>"
+   ]
+  ],
+  "zb": [
+   [
+    "<prompt>",
+    "10 CLEAR 32768",
+    "RUN",
+    "Overflow in 10",
+    "<prompt>"
+   ],
+   [
+    "<prompt>",
+    "10 CLEAR 40000",
+    "RUN",
+    "Overflow in 10",
+    "<prompt>"
+   ],
+   [
+    "<prompt>",
+    "10 CLEAR 65535",
+    "RUN",
+    "Overflow in 10",
+    "<prompt>"
+   ],
+   [
+    "<prompt>",
+    "10 CLEAR 200,&H8050",
+    "RUN",
+    "Out of memory in 10",
+    "<prompt>"
+   ],
+   [
+    "<prompt>",
+    "10 CLEAR -1,2,3",
+    "RUN",
+    "Illegal function call in 10",
+    "<prompt>"
+   ],
+   [
+    "<prompt>",
+    "10 CLEAR 70000,2,3",
+    "RUN",
+    "Overflow in 10",
+    "<prompt>"
+   ],
+   [
+    "<prompt>",
+    "10 CLEAR 20000:DIM A%(6000)",
+    "RUN",
+    "Out of memory in 10",
+    "<prompt>"
+   ],
+   [
+    "<prompt>",
+    "10 GOSUB 30:PRINT \"R\":END",
+    "30 CLEAR:RETURN",
+    "RUN",
+    "RETURN without GOSUB in 30",
+    "<prompt>"
+   ],
+   [
+    "<prompt>",
+    "10 DIM A%(10000),B%(10000)",
+    "RUN",
+    "Out of memory in 10",
+    "<prompt>"
+   ],
+   [
+    "<prompt>",
+    "10 DIM A#(2):ERASE A:PRINT \"[E]\"",
+    "RUN",
+    "[E]",
+    "<prompt>"
+   ],
+   [
+    "<prompt>",
+    "10 A#(3)=1:PRINT A(3)",
+    "RUN",
+    "1",
+    "<prompt>"
+   ],
+   [
+    "<prompt>",
+    "10 DIM AB1(2),AB2(2)",
+    "RUN",
+    "Redimensioned array in 10",
+    "<prompt>"
+   ],
+   [
+    "<prompt>",
+    "10 DIM A%(32766)",
+    "RUN",
+    "Out of memory in 10",
+    "<prompt>"
+   ],
+   [
+    "<prompt>",
+    "10 DIM A%(32767)",
+    "RUN",
+    "Subscript out of range in 10",
+    "<prompt>"
+   ],
+   [
+    "<prompt>",
+    "10 DIM A!(16382)",
+    "RUN",
+    "Out of memory in 10",
+    "<prompt>"
+   ],
+   [
+    "<prompt>",
+    "10 DIM A!(16383)",
+    "RUN",
+    "Subscript out of range in 10",
+    "<prompt>"
+   ],
+   [
+    "<prompt>",
+    "10 DIM A$(21844)",
+    "RUN",
+    "Out of memory in 10",
+    "<prompt>"
+   ],
+   [
+    "<prompt>",
+    "10 DIM A$(21845)",
+    "RUN",
+    "Subscript out of range in 10",
+    "<prompt>"
+   ],
+   [
+    "<prompt>",
+    "10 DIM A(32768)",
+    "RUN",
+    "Overflow in 10",
+    "<prompt>"
+   ],
+   [
+    "<prompt>",
+    "10 B(10,10)=1:PRINT B(10,10)",
+    "RUN",
+    "1",
+    "<prompt>"
+   ],
+   [
+    "<prompt>",
+    "10 B(0,11)=1",
+    "RUN",
+    "Subscript out of range in 10",
+    "<prompt>"
+   ],
+   [
+    "<prompt>",
+    "10 DIM A(2):ERASE A:A(10)=1:PRINT A(1",
+    "0)",
+    "RUN",
+    "1",
+    "<prompt>"
+   ],
+   [
+    "<prompt>",
+    "10 DIM A%(2):A%(1)=-1.7:PRINT A%(1)",
+    "RUN",
+    "-1",
+    "<prompt>"
+   ],
+   [
+    "<prompt>",
+    "10 DIM A:DIM A(2):PRINT \"[D]\"",
+    "RUN",
+    "[D]",
+    "<prompt>"
+   ],
+   [
+    "<prompt>",
+    "10 A(-1)=1",
+    "RUN",
+    "Illegal function call in 10",
+    "<prompt>"
+   ],
+   [
+    "<prompt>",
+    "10 DIM A(2):A(1,1)=1",
+    "RUN",
+    "Subscript out of range in 10",
+    "<prompt>"
+   ],
+   [
+    "<prompt>",
+    "10 DIM A(2.7):A(2)=1:A(3)=1",
+    "RUN",
+    "Subscript out of range in 10",
+    "<prompt>"
+   ]
+  ]
  }
 }
