@@ -663,3 +663,12 @@ statement again; RESUME leaves the GOSUB / FOR stack alone. The shared small BAS
 review found -- "a string literal followed by anything but `;` is error 2" (PRINT "A","B" is legal) -- for a real item
 parser; RESUME's own error is untrapped because it is a RESUME, not because its code is 22; a run that never returns
 leaves no prompt. 20 controls, every rule pinned.
+
+**TRON / TROFF / REM reworked -- goldfish pass 1 over region 6 is acted on in full.** [ktron.py](../../probes/basic/spec/ktron.py)
+gained group FY (17 cases: a line jumping to itself, a loop inside one line, RETURN to a line start, the trace through
+a handler, CONT, a typed GOTO, ON n GOTO / THEN n targets, a traced REM line, an error after the trace, TROFF inside a
+program, REM inside DATA, an apostrophe in a string and after THEN, `GOTO 30 REM X`, a non-default ELSE sentinel,
+PRINT with a comma). All 17 predictions held; zerobas agrees on all. The small BASIC learned ON n GOTO, THEN n, string
+READ, and lost an empty-THEN bug its own new case exposed. 13 controls, every rule pinned; the kstop, kerr, ktron and
+kdeftype controls all enforce "a control of its own" now. Each page has its own Open list (one paragraph had been
+copied across all three).

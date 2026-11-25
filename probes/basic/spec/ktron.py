@@ -51,7 +51,29 @@ FX = [
     ("REM", ["REM typed", "PRINT 1"], "a typed REM"),
     ("REM", ['10 PRINT "A":\'B:PRINT "C"', "RUN"], "the apostrophe after a colon"),
 ]
-GROUPS = {"FX": FX}
+
+# GROUP FY -- goldfish pass 1 (scratchpad/REVIEW-m2-gkwtron.md): the cases that separate the rules' rivals
+FY = [
+    ("TRON", ["10 I=I+1:IF I=1 THEN GOTO 10", "TRON", "RUN"], "a line that jumps to itself"),
+    ("TRON", ['10 FOR I=1 TO 2:PRINT "A";:NEXT', "TRON", "RUN"], "a loop inside one line"),
+    ("TRON", ["10 GOSUB 30", '20 PRINT "R":END', "30 RETURN", "TRON", "RUN"], "RETURN to the start of a line"),
+    ("TRON", ["10 ON ERROR GOTO 100", '20 X=1/0:PRINT "B"', "30 END", "100 RESUME NEXT", "TRON", "RUN"],
+     "the trace through an error handler"),
+    ("TRON", ['10 STOP:PRINT "A"', '20 PRINT "B"', "TRON", "RUN", "CONT"], "CONT after STOP with the trace on"),
+    ("TRON", ['10 PRINT "A"', "TRON", "GOTO 10"], "a typed GOTO"),
+    ("TRON", ["10 ON 2 GOTO 20,30", '20 PRINT "X"', '30 PRINT "Y"', "TRON", "RUN"], "an ON n GOTO target"),
+    ("TRON", ["10 IF 1 THEN 30", '20 PRINT "X"', '30 PRINT "Y"', "TRON", "RUN"], "an IF ... THEN n target"),
+    ("TRON", ["10 REM X", '20 PRINT "B"', "TRON", "RUN"], "a REM line is traced"),
+    ("TRON", ["10 X=1/0", "TRON", "RUN"], "an error message after the trace"),
+    ("TROFF", ["10 TROFF", '20 PRINT "A"', "TRON", "RUN", "RUN"], "TROFF in a program, then RUN again"),
+    ("REM", ["10 READ A$:PRINT A$", "20 DATA X REM Y", "RUN"], "REM inside DATA"),
+    ("REM", ['10 PRINT "A\'B"', "RUN"], "an apostrophe inside a string"),
+    ("REM", ["10 IF 1 THEN 'X", '20 PRINT "B"', "RUN"], "an apostrophe after THEN"),
+    ("REM", ["10 GOTO 30 REM X", '20 PRINT "X"', '30 PRINT "Y"', "RUN"], "REM after a GOTO's line number"),
+    ("REM", ["10 B=5:IF 0 THEN REM ELSE B=1", "20 PRINT B", "RUN"], "REM swallows an ELSE (a sentinel 5)"),
+    ("REM", ['10 PRINT "A","B"', "RUN"], "PRINT with a comma is no error"),
+]
+GROUPS = {"FX": FX, "FY": FY}
 
 
 def measure(group):

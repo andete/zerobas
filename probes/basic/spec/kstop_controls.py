@@ -57,6 +57,10 @@ def main():
             print(f"{rid:16s} {what[:62]:62s} FALSE on {len(false):3d} of {len(sel):<3d}"
                   f"{'  e.g. ' + false[0] if false else '  <-- NO CASE AGAINST IT'}")
             rc |= not false
+        bare = sorted(set(rules) - {rid for rid, _, _ in ctl})    # every rule pinned by a control of its own
+        for rid in bare:
+            print(f"{rid:16s} 🔴 NO CONTROL OF ITS OWN")
+        rc |= bool(bare)
     return rc
 
 

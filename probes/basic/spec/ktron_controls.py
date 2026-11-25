@@ -29,7 +29,9 @@ CONTROLS = {
     "REM": [("R-REM-LINE", "a colon ends a REM", alt("rem-keeps-colon")),
             ("R-REM-LINE", "an ELSE after REM still counts", alt("else-past-rem")),
             ("R-REM-LINE", "the apostrophe needs a colon before it", alt("apostrophe-needs-colon")),
-            ("R-REM-LINE", "REM after a statement needs no colon", alt("rem-after-stmt-ok"))],
+            ("R-REM-LINE", "REM after a statement needs no colon", alt("rem-after-stmt-ok")),
+            ("R-REM-LINE", "a REM inside DATA ends the item", alt("data-stops-at-rem")),
+            ("R-REM-LINE", "an apostrophe inside a string starts a comment", alt("apostrophe-in-string"))],
 }
 
 
@@ -44,6 +46,10 @@ def main():
             print(f"{rid:18s} {what[:62]:62s} FALSE on {len(false):3d} of {len(sel):<3d}"
                   f"{'  e.g. ' + false[0] if false else '  <-- NO CASE AGAINST IT'}")
             rc |= not false
+        bare = sorted(set(rules) - {rid for rid, _, _ in ctl})    # every rule pinned by a control of its own
+        for rid in bare:
+            print(f"{rid:18s} 🔴 NO CONTROL OF ITS OWN")
+        rc |= bool(bare)
     return rc
 
 

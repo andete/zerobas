@@ -74,7 +74,7 @@ def split(text, alt=frozenset()):
         ch = text[i]
         if ch == '"':
             q = not q
-        if not q and ch == "'" and "apostrophe-needs-colon" not in alt:
+        if (not q or "apostrophe-in-string" in alt) and ch == "'" and "apostrophe-needs-colon" not in alt:
             if cur.strip():
                 out.append(cur.strip())
             return out + ["REM" + text[i + 1:]]
@@ -391,7 +391,15 @@ class Basic:
             self.run_from(start)
             raise Stop
         if s.startswith("GOTO"):
-            return self.first(int(s[4:]))
+            m = re.match(r"\s*(\d+)", s[4:])               # the digits; anything after them is never read
+            if not m:
+                raise Err(2)
+            return self.first(int(m.group(1)))
+        m = re.fullmatch(r"ON (\S+) GOTO ([\d,]+)", s) if not s.startswith("ON ERROR") else None
+        if m:
+            k = int(self.value(m.group(1)))
+            targets = m.group(2).split(",")
+            return self.first(int(targets[k - 1])) if 1 <= k <= len(targets) else None
         if s.startswith("GOSUB"):
             self.stack.append(("G", self.next_point(pt)))
             return self.first(int(s[5:]))
@@ -486,7 +494,11 @@ class Basic:
             if self.data is None:
                 self.data = [x.strip() for k in self.lines() for st in split(self.prog[k]) if st.startswith("DATA ")
                              for x in st[5:].split(",")]
-            self.vars[s[5:].strip()] = int(self.data.pop(0))
+            name = s[5:].strip()
+            item = self.data.pop(0)
+            if "data-stops-at-rem" in self.alt:
+                item = item.split(" REM")[0]
+            self.vars[name] = item if name.endswith("$") else int(item)
             return None
         if s.startswith("DATA") or s.startswith("REM"):
             if s.startswith("DATA") or "rem-keeps-colon" in self.alt:
@@ -497,12 +509,16 @@ class Basic:
             self.vram[int(a)] = self.value(v)
             return None
         if s.startswith("IF "):
-            m = re.fullmatch(r"IF (\w+)(?:=(\d+))? THEN (.+)", s)
+            m = re.fullmatch(r"IF (\w+)(?:=(\d+))? THEN ?(.*)", s)
             v = self.value(m.group(1))
             true = (v == int(m.group(2))) if m.group(2) else v != 0
             then, _, other = m.group(3).partition(" ELSE ")
+            if then.strip().isdigit():
+                then = "GOTO " + then.strip()            # THEN n is a jump
+            if not then.strip():
+                then = "REM"                             # an empty THEN (the rest of the line was a comment)
             if then.startswith("REM") and "else-past-rem" not in self.alt:
-                then, other = m.group(3), ""             # a REM swallows the ELSE too
+                other = ""                               # a REM swallows the ELSE too
             if true:
                 return self.stmt(then, pt)
             if other:

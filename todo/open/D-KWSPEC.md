@@ -100,3 +100,6 @@
       findings). WORKING RULE (proposed to Joost): every rule needs a one-law control FALSE on its own cases (plan §6).
       DEF types reworked (group FY, 33 cases; the ran byte; 18 controls, every rule pinned). NEXT: ERROR / RESUME,
       then TRON / TROFF / REM (a wrong PRINT law in the shared BASIC first), then region 7.
+      ERROR / RESUME reworked (FY 29 cases; five laws learned) and TRON / TROFF / REM reworked (FY 17 cases, all held):
+      GOLDFISH PASS 1 OVER REGION 6 IS ACTED ON IN FULL (plan §6). NEXT: region 7 (program: NEW LIST LLIST DELETE
+      RENUM AUTO DATA READ RESTORE DIM ERASE CLEAR).

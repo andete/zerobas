@@ -476,5 +476,347 @@
     "<prompt>"
    ]
   ]
+ },
+ "FY": {
+  "ref": [
+   [
+    "<prompt>",
+    "10 I=I+1:IF I=1 THEN GOTO 10",
+    "TRON",
+    "<prompt>",
+    "RUN",
+    "[10][10]",
+    "<prompt>"
+   ],
+   [
+    "<prompt>",
+    "10 FOR I=1 TO 2:PRINT \"A\";:NEXT",
+    "TRON",
+    "<prompt>",
+    "RUN",
+    "[10]AA",
+    "<prompt>"
+   ],
+   [
+    "<prompt>",
+    "10 GOSUB 30",
+    "20 PRINT \"R\":END",
+    "30 RETURN",
+    "TRON",
+    "<prompt>",
+    "RUN",
+    "[10][30][20]R",
+    "<prompt>"
+   ],
+   [
+    "<prompt>",
+    "10 ON ERROR GOTO 100",
+    "20 X=1/0:PRINT \"B\"",
+    "30 END",
+    "100 RESUME NEXT",
+    "TRON",
+    "<prompt>",
+    "RUN",
+    "[10][20][100]B",
+    "[30]",
+    "<prompt>"
+   ],
+   [
+    "<prompt>",
+    "10 STOP:PRINT \"A\"",
+    "20 PRINT \"B\"",
+    "TRON",
+    "<prompt>",
+    "RUN",
+    "[10]",
+    "Break in 10",
+    "<prompt>",
+    "CONT",
+    "A",
+    "[20]B",
+    "<prompt>"
+   ],
+   [
+    "<prompt>",
+    "10 PRINT \"A\"",
+    "TRON",
+    "<prompt>",
+    "GOTO 10",
+    "[10]A",
+    "<prompt>"
+   ],
+   [
+    "<prompt>",
+    "10 ON 2 GOTO 20,30",
+    "20 PRINT \"X\"",
+    "30 PRINT \"Y\"",
+    "TRON",
+    "<prompt>",
+    "RUN",
+    "[10][30]Y",
+    "<prompt>"
+   ],
+   [
+    "<prompt>",
+    "10 IF 1 THEN 30",
+    "20 PRINT \"X\"",
+    "30 PRINT \"Y\"",
+    "TRON",
+    "<prompt>",
+    "RUN",
+    "[10][30]Y",
+    "<prompt>"
+   ],
+   [
+    "<prompt>",
+    "10 REM X",
+    "20 PRINT \"B\"",
+    "TRON",
+    "<prompt>",
+    "RUN",
+    "[10][20]B",
+    "<prompt>"
+   ],
+   [
+    "<prompt>",
+    "10 X=1/0",
+    "TRON",
+    "<prompt>",
+    "RUN",
+    "[10]",
+    "Division by zero in 10",
+    "<prompt>"
+   ],
+   [
+    "<prompt>",
+    "10 TROFF",
+    "20 PRINT \"A\"",
+    "TRON",
+    "<prompt>",
+    "RUN",
+    "[10]A",
+    "<prompt>",
+    "RUN",
+    "A",
+    "<prompt>"
+   ],
+   [
+    "<prompt>",
+    "10 READ A$:PRINT A$",
+    "20 DATA X REM Y",
+    "RUN",
+    "X REM Y",
+    "<prompt>"
+   ],
+   [
+    "<prompt>",
+    "10 PRINT \"A'B\"",
+    "RUN",
+    "A'B",
+    "<prompt>"
+   ],
+   [
+    "<prompt>",
+    "10 IF 1 THEN 'X",
+    "20 PRINT \"B\"",
+    "RUN",
+    "B",
+    "<prompt>"
+   ],
+   [
+    "<prompt>",
+    "10 GOTO 30 REM X",
+    "20 PRINT \"X\"",
+    "30 PRINT \"Y\"",
+    "RUN",
+    "Y",
+    "<prompt>"
+   ],
+   [
+    "<prompt>",
+    "10 B=5:IF 0 THEN REM ELSE B=1",
+    "20 PRINT B",
+    "RUN",
+    "5",
+    "<prompt>"
+   ],
+   [
+    "<prompt>",
+    "10 PRINT \"A\",\"B\"",
+    "RUN",
+    "A             B",
+    "<prompt>"
+   ]
+  ],
+  "zb": [
+   [
+    "<prompt>",
+    "10 I=I+1:IF I=1 THEN GOTO 10",
+    "TRON",
+    "<prompt>",
+    "RUN",
+    "[10][10]",
+    "<prompt>"
+   ],
+   [
+    "<prompt>",
+    "10 FOR I=1 TO 2:PRINT \"A\";:NEXT",
+    "TRON",
+    "<prompt>",
+    "RUN",
+    "[10]AA",
+    "<prompt>"
+   ],
+   [
+    "<prompt>",
+    "10 GOSUB 30",
+    "20 PRINT \"R\":END",
+    "30 RETURN",
+    "TRON",
+    "<prompt>",
+    "RUN",
+    "[10][30][20]R",
+    "<prompt>"
+   ],
+   [
+    "<prompt>",
+    "10 ON ERROR GOTO 100",
+    "20 X=1/0:PRINT \"B\"",
+    "30 END",
+    "100 RESUME NEXT",
+    "TRON",
+    "<prompt>",
+    "RUN",
+    "[10][20][100]B",
+    "[30]",
+    "<prompt>"
+   ],
+   [
+    "<prompt>",
+    "10 STOP:PRINT \"A\"",
+    "20 PRINT \"B\"",
+    "TRON",
+    "<prompt>",
+    "RUN",
+    "[10]",
+    "Break in 10",
+    "<prompt>",
+    "CONT",
+    "A",
+    "[20]B",
+    "<prompt>"
+   ],
+   [
+    "<prompt>",
+    "10 PRINT \"A\"",
+    "TRON",
+    "<prompt>",
+    "GOTO 10",
+    "[10]A",
+    "<prompt>"
+   ],
+   [
+    "<prompt>",
+    "10 ON 2 GOTO 20,30",
+    "20 PRINT \"X\"",
+    "30 PRINT \"Y\"",
+    "TRON",
+    "<prompt>",
+    "RUN",
+    "[10][30]Y",
+    "<prompt>"
+   ],
+   [
+    "<prompt>",
+    "10 IF 1 THEN 30",
+    "20 PRINT \"X\"",
+    "30 PRINT \"Y\"",
+    "TRON",
+    "<prompt>",
+    "RUN",
+    "[10][30]Y",
+    "<prompt>"
+   ],
+   [
+    "<prompt>",
+    "10 REM X",
+    "20 PRINT \"B\"",
+    "TRON",
+    "<prompt>",
+    "RUN",
+    "[10][20]B",
+    "<prompt>"
+   ],
+   [
+    "<prompt>",
+    "10 X=1/0",
+    "TRON",
+    "<prompt>",
+    "RUN",
+    "[10]",
+    "Division by zero in 10",
+    "<prompt>"
+   ],
+   [
+    "<prompt>",
+    "10 TROFF",
+    "20 PRINT \"A\"",
+    "TRON",
+    "<prompt>",
+    "RUN",
+    "[10]A",
+    "<prompt>",
+    "RUN",
+    "A",
+    "<prompt>"
+   ],
+   [
+    "<prompt>",
+    "10 READ A$:PRINT A$",
+    "20 DATA X REM Y",
+    "RUN",
+    "X REM Y",
+    "<prompt>"
+   ],
+   [
+    "<prompt>",
+    "10 PRINT \"A'B\"",
+    "RUN",
+    "A'B",
+    "<prompt>"
+   ],
+   [
+    "<prompt>",
+    "10 IF 1 THEN 'X",
+    "20 PRINT \"B\"",
+    "RUN",
+    "B",
+    "<prompt>"
+   ],
+   [
+    "<prompt>",
+    "10 GOTO 30 REM X",
+    "20 PRINT \"X\"",
+    "30 PRINT \"Y\"",
+    "RUN",
+    "Y",
+    "<prompt>"
+   ],
+   [
+    "<prompt>",
+    "10 B=5:IF 0 THEN REM ELSE B=1",
+    "20 PRINT B",
+    "RUN",
+    "5",
+    "<prompt>"
+   ],
+   [
+    "<prompt>",
+    "10 PRINT \"A\",\"B\"",
+    "RUN",
+    "A             B",
+    "<prompt>"
+   ]
+  ]
  }
 }
