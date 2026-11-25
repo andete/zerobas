@@ -103,3 +103,18 @@
       a reference at some moment, exact matching is impossible -- ask Joost with the numbers. Settled with it: the DOS
       block below the claim at MSX-DOS start is what the CF-3300 does (closed: matches); the 1-byte CF-3300 / HBD-F1
       difference is the drivers' own work-area sizes, and the CF-3300 (the DISK build's reference) is matched.
+      ✅ STEP 4 (a), FIRST PART + (b) DONE (2026-11-25): scratchpad/claimuse_probe.py -- every write to the INIT claim
+      $F195-$F37F through an MSX-DOS session + BASIC at A> + a file write, and Disk BASIC from a data disk + a file
+      write. zerobas's DISK machine (AE_claimuse_zb.out): its disk ROM writes 47 B there, all named cells; 293 B are
+      written by nothing -- among them the whole of DRVA_DPB ($F195, 18 B: IX points there for MSXDOS.SYS, but nothing
+      writes it in these runs; to explain in (a)'s next part). The references (AE_claimuse_cf.out / AE_claimuse_hbd.out;
+      clean room: the address, the time and the writer's page@slot only, writes after 1.0 s): the WHOLE range is
+      written by the disk ROM side (the cartridge's slot, and the main ROM's page 1 on its behalf) -- the disk ROM's own
+      work area, cleared and filled. 🔴 So inside $F195-$F37F the classes CANNOT be decided by comparing the
+      references' values: that range holds their RAM-resident code, which the clean room never reads; only the
+      published MSX-DOS cells and the fixed addresses MSXDOS.SYS calls (already at the reference addresses) are class 1
+      there, the rest is class 3. (b): HOOK_SLOT $ED6A -> $F1C8, a byte nothing wrote before (disk/equates.inc): now
+      written only by our INIT (AE_claimuse_zb2.out); the DOS session 20 / 20 (AE_hs_dossession.out); the VG-8020 +
+      zerobas's disk cartridge boots MSX-DOS 1.03 (AE_hs_vg8020.out).
+      ➡️ NEXT: (a) second part -- the claim at each moment against what zerobas uses there (H.RUNC's $DE77-$F194:
+      the buffers, the layout rebuild's cells, the DOS block), then (c).

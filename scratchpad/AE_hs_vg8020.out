@@ -1,0 +1,20 @@
+### Philips_VG_8020 + zerobas-disk, disk msxdos103-cmd111.dsk, 20.0 s, keys ''
+HSTKE 1.1908 SP=F09C byte0=C9
+HRUNC 1.1909 SP=F09A HIMEM=F380
+HSTKE 1.1923 SP=F09C byte0=C9
+SYM init 4.9521 SP=F08E HIMEM=F380
+HRUNC 4.9582 SP=F09A HIMEM=F195
+SYM hrunc_h 4.9584 SP=F094 HIMEM=F195
+SYM init_p2 5.2599 SP=F094 HIMEM=DE77
+SYM boot_disk_go 5.2622 SP=F094 HIMEM=DE77
+SYM dos_handoff 5.2893 SP=F092 HIMEM=DE77
+HIT0100 6.717 SCRMOD=0 LINLEN=37 HIMEM=DE77
+HIT0100 11.637 SCRMOD=0 LINLEN=37 HIMEM=DE77
+=== SCREEN 19.5 s HIMEM=DE77 H.RUNC-all-RET=1 H.RUNC-byte0=c9
+  |  MSX-DOS version 1.03                  
+  |  Copyright 1984 by Microsoft           
+  |  COMMAND version 1.11                  
+  |  Current date is Sun 1984-01-01        
+  |  Enter new date:                       
+hits0100 2
+

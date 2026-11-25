@@ -1,0 +1,5 @@
+## run dos: Philips_VG_8020 + Sony_HBD-F1, test.dsk, 70 s -- 491 distinct addresses written in $F195-$F37F
+  $F195-$F37F  491 B  first   10.214 s by 1@0 1@1
+## run basic: Philips_VG_8020 + Sony_HBD-F1, test720.dsk, 40 s -- 491 distinct addresses written in $F195-$F37F
+  $F195-$F37F  491 B  first   10.214 s by 1@0 1@1
+## never written in either run: 0 B

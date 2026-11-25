@@ -1,0 +1,24 @@
+ROW boot      '(wait)'                                 differs (the start-up screen: scored by dosmode-acceptance)
+ROW date      ''                                       differs (the start-up screen: scored by dosmode-acceptance)
+ROW mode      'MODE 40'                                SAME
+ROW dir       'DIR'                                    SAME
+ROW dirw      'DIR /W'                                 SAME
+ROW type      'TYPE HELLO.TXT'                         SAME
+ROW copy      'COPY HELLO.TXT COPY1.TXT'               SAME
+ROW dircopy   'DIR COPY1.TXT'                          SAME
+ROW ren       'REN COPY1.TXT COPY2.TXT'                SAME
+ROW dirren    'DIR COPY?.TXT'                          SAME
+ROW concat    'COPY HELLO.TXT+HELLO.TXT CAT.TXT'       SAME
+ROW typecat   'TYPE CAT.TXT'                           SAME
+ROW del       'DEL COPY2.TXT'                          SAME
+ROW dirdel    'DIR COPY?.TXT'                          SAME
+ROW delnone   'DEL NOSUCH.TXT'                         SAME
+ROW typenone  'TYPE NOSUCH.TXT'                        SAME
+ROW verify    'VERIFY ON'                              SAME
+ROW datecmd   'DATE'                                   SAME
+ROW dateset   '11-23-87'                               SAME
+ROW rem       'REM A REMARK'                           SAME
+ROW bad       'NOSUCHCMD'                              SAME
+ROW disk      (the directory and file bytes after)     SAME
+
+PASS: MSX-DOS commands typed at A> (20/20)

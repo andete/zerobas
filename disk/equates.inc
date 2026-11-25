@@ -335,10 +335,17 @@ FAT_FILESIZE    equ     $ECBB   ; file size in bytes (4-byte LE)
 FAT_NUMFATS     equ     $ED67   ; number of FAT copies (byte; from BPB +16) (1 B)
 FAT_SECPERFAT   equ     $ED68   ; sectors per FAT copy (word; from BPB +22)
 ; This ROM's own slot byte, captured from A at INIT entry (disk/PROVENANCE.md
-; §INIT) and used to build the HPHYD CALLF operand. Own-choice free page-3 RAM
-; in the $E95D gap (after FAT_SECPERFAT's word $E925-$E926; $E55D, before WBUF
-; $E560, until D-FATFLOOR moved the block +$400).
-HOOK_SLOT       equ     $ED6A   ; our slot byte for the HPHYD inter-slot hook (1)
+; §INIT) and used to build the HPHYD CALLF operand, H.RUNC's and the $F37D
+; bridge's inter-slot calls. D-DISKROMHOST step 4 (b), 2026-11-25: INSIDE the RAM
+; INIT claims ($F195 up, INIT_HIMEM), so a cartridge scanned after ours cannot
+; write over it before H.RUNC -- at $ED6A it lay below that claim until H.RUNC's.
+; $F1C8: written by nothing on the DISK machine through an MSX-DOS session,
+; BASIC at A> and a Disk BASIC file write (scratchpad/claimuse_probe.py,
+; AE_claimuse_zb.out); no named cell (DRVA_DPB ends $F1A7, W50A9_RET_DE $F1AA,
+; RES_PRINT starts $F1C9). On both references the whole of $F195-$F37F is the
+; disk ROM's own work area (AE_claimuse_cf.out / AE_claimuse_hbd.out), so this is
+; ours to arrange.
+HOOK_SLOT       equ     $F1C8   ; our slot byte for the HPHYD inter-slot hook (1)
 ; BDOS_SRCHIDX (M19) — persistent root-directory search cursor for the runtime
 ; SFIRST ($11) / SNEXT ($12) dir-search entries ($4FB8/$5006). Absolute 0-based
 ; index of the NEXT root-dir entry to examine: SFIRST sets it to (first-match+1),

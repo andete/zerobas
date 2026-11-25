@@ -24,6 +24,12 @@ sys.path.insert(0, os.path.join(ROOT, "tools"))
 import openmsx_paths  # noqa: E402
 
 MACHINE = os.environ.get("CLAIMUSE_MACHINE", "C-BIOS_MSX1_EU_REPACK_DISK")
+EXT = os.environ.get("CLAIMUSE_EXT")          # e.g. Sony_HBD-F1 on Philips_VG_8020
+# A REFERENCE (anything but a zerobas machine): CLEAN ROOM -- kept are the ADDRESS written, the time and the writing
+# code's page@slot (derived inside the callback, as scratchpad/nmsram_probe.py does); no PC value is recorded and no
+# value is read (this range holds the reference's RAM-resident code). Writes before 1.0 s (the main ROM clearing its
+# work area at start-up) are left out, so what remains is the disk ROM's and MSX-DOS's own use.
+REF = not MACHINE.startswith("C-BIOS_")
 LO, HI = 0xF195, 0xF37F
 RUNS = {
     "dos": (os.path.expanduser("~/Documents/msx/msx/disks/test.dsk"), 70,
@@ -40,18 +46,29 @@ set throttle off
 catch { set sound_driver null }
 set ::seen [dict create]
 proc slotof {pg} { lassign [get_selected_slot $pg] ps ss; if {$ss eq "X"} {return "$ps"} ; return "$ps-$ss" }
+set ::disk [dict create]
 proc on_w {} {
   set a $::wp_last_address
-  if {![dict exists $::seen $a]} {
-    set pc [reg pc]
-    dict set ::seen $a [list [format %.4f [machine_info time]] "[expr {$pc >> 14}]@[slotof [expr {$pc >> 14}]]" [format %04X $pc]]
+  if {$::env(REF) eq "1"} {
+    if {[machine_info time] < 1.0 || [dict exists $::seen $a]} { return }
+    set pg [expr {[reg pc] >> 14}]
+    dict set ::seen $a [list [format %.4f [machine_info time]] "$pg@[slotof $pg]" 0000]
+    return
   }
+  set pc [reg pc]
+  set who "[expr {$pc >> 14}]@[slotof [expr {$pc >> 14}]]"
+  set rec [list [format %.4f [machine_info time]] $who [format %04X $pc]]
+  if {![dict exists $::seen $a]} { dict set ::seen $a $rec }
+  if {[string match "*@3-1" $who] && ![dict exists $::disk $a]} { dict set ::disk $a $rec }
 }
-debug set_watchpoint write_mem {LO HI} {} on_w
-KEYS
-after time SECS {
+debug set_watchpoint write_mem {@LO@ @HI@} {} on_w
+@KEYS@
+after time @SECS@ {
   set f [open $::env(LOGF) w]
-  foreach a [lsort -integer [dict keys $::seen]] { puts $f "[format %04X $a] [dict get $::seen $a]" }
+  foreach a [lsort -integer [dict keys $::seen]] {
+    set d [expr {[dict exists $::disk $a] ? [dict get $::disk $a] : "- - -"}]
+    puts $f "[format %04X $a] [dict get $::seen $a] $d"
+  }
   close $f
   exit
 }
@@ -103,24 +120,36 @@ def main():
         shutil.copyfile(disk, dsk)
         keytcl = "\n".join(f'after time {t} {{ type "{k}" }}' for t, k in keys)
         tcl = probe_tmp.tmp(f"claimuse_{run}.tcl")
-        open(tcl, "w").write(TCL.replace("LO", f"0x{LO:04X}").replace("HI", f"0x{HI:04X}")
-                             .replace("KEYS", keytcl).replace("SECS", str(secs)))
+        open(tcl, "w").write(TCL.replace("@LO@", f"0x{LO:04X}").replace("@HI@", f"0x{HI:04X}")
+                             .replace("@KEYS@", keytcl).replace("@SECS@", str(secs)))
         log = probe_tmp.tmp(f"claimuse_{run}.log")
         if os.path.exists(log):
             os.unlink(log)
-        cmd = [openmsx_paths.find_openmsx_binary(), "-machine", MACHINE, "-diska", dsk, "-script", tcl]
-        subprocess.run(omsx_preflight.guarded(cmd), env=dict(os.environ, LOGF=log), stdout=subprocess.DEVNULL,
+        cmd = ([openmsx_paths.find_openmsx_binary(), "-machine", MACHINE] + (["-ext", EXT] if EXT else [])
+               + ["-diska", dsk, "-script", tcl])
+        subprocess.run(omsx_preflight.guarded(cmd), env=dict(os.environ, LOGF=log, REF="1" if REF else "0"),
+                       stdout=subprocess.DEVNULL,
                        stderr=subprocess.DEVNULL, timeout=600)
         rows = [ln.split() for ln in open(log)] if os.path.exists(log) else []
-        print(f"## run {run}: {MACHINE}, {os.path.basename(disk)}, {secs} s -- {len(rows)} distinct addresses written "
+        print(f"## run {run}: {MACHINE}{' + ' + EXT if EXT else ''}, {os.path.basename(disk)}, {secs} s -- {len(rows)} distinct addresses written "
               f"in ${LO:04X}-${HI:04X}")
         first = {int(r[0], 16): r for r in rows}
         used |= set(first)
+        if REF:
+            for s, e in ranges(sorted(first)):
+                who = sorted({first[a][2] for a in range(s, e + 1)})
+                print(f"  ${s:04X}-${e:04X} {e - s + 1:4d} B  first {float(first[s][1]):8.3f} s by {' '.join(who)}")
+            continue
         for s, e in ranges(sorted(first)):
             r = first[s]
             pc = int(r[3], 16)
             t = tab.get("disk.sym" if r[2].endswith("@3-1") else "basic-reloc.sym", [])   # the disk ROM: slot 3-1
             print(f"  ${s:04X}-${e:04X} {e - s + 1:4d} B  first {float(r[1]):8.3f} s by {r[2]} {name(t, pc)}")
+        dk = {int(r[0], 16): r for r in rows if r[5] != "-"}
+        print(f"  -- of them written by the DISK ROM (slot 3-1) at any time: {len(dk)}")
+        for s, e in ranges(sorted(dk)):
+            r = dk[s]
+            print(f"     ${s:04X}-${e:04X} {e - s + 1:4d} B  first {float(r[4]):8.3f} s {name(tab.get('disk.sym', []), int(r[6], 16))}")
     free = [a for a in range(LO, HI + 1) if a not in used]
     print(f"## never written in either run: {len(free)} B")
     for s, e in ranges(free):

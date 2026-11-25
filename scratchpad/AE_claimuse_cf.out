@@ -1,0 +1,5 @@
+## run dos: National_CF-3300, test.dsk, 70 s -- 491 distinct addresses written in $F195-$F37F
+  $F195-$F37F  491 B  first    6.901 s by 1@0 1@3-1
+## run basic: National_CF-3300, test720.dsk, 40 s -- 491 distinct addresses written in $F195-$F37F
+  $F195-$F37F  491 B  first    6.901 s by 1@0 1@3-1
+## never written in either run: 0 B
