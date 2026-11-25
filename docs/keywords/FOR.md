@@ -6,8 +6,13 @@ SPDX-License-Identifier: BSD-2-Clause
 
 # `FOR` — start a counted loop
 
-> **Status (2026-10-09):** level 3 — happy path ✓ · reasonable time ✓ · common
-> errors ✓ · RAM usage not yet proven · every error ✓. No known divergence.
+> **Spec:** DRAFT 1 (2026-11-25) — 35 cases measured on the Philips VG-8020 (BASIC's reference) and on
+> zerobas, by typed BASIC ([`kfor.py`](../../probes/basic/spec/kfor.py), with FOR's and NEXT's cases together);
+> every rule is executable and every recorded output is read by one. Not yet reviewed ([the keyword plan](spec-plan.md)).
+>
+> **Status (2026-11-25):** level 2 — happy path ✓ · reasonable time ✓ · common
+> errors ✗ (a FOR that fails still pushes its frame: D-FORFRAME) · RAM usage not yet proven · every error ✗
+> (D-FORINTLIM, D-FORSTEP0).
 > Speed is deliberately left out of these docs until on-par speed is
 > established for every keyword.
 
@@ -92,13 +97,127 @@ Run on the VG-8020 and on zerobas on 2026-10-09; both print exactly this
 ([`kwdoc_for.out`](../../scratchpad/kwdoc_for.out), from
 [`kwdoc_examples.py`](../../scratchpad/kwdoc_examples.py)).
 
+## The specification
+
+Reference: the Philips VG-8020's MSX BASIC. Ours: zerobas on the diskless machine
+(`C-BIOS_MSX1_EU_REPACK_NODISK`).
+
+**How to read the rules below.** Every rule is a sentence AND a check
+([`probes/basic/spec/for_rules.py`](../../probes/basic/spec/for_rules.py), model in
+[`kfor_model.py`](../../probes/basic/spec/kfor_model.py), run by
+[`tools/spec_rules.py`](../../tools/spec_rules.py); [docs/spec-method.md](../spec-method.md) §3a,
+[the keyword plan](spec-plan.md)) over the measured cases it names.
+- **reference:** ✓ means the check holds on EVERY case it selects of the VG-8020's run.
+- **zerobas:** the cases where zerobas fails it, which are its differences.
+
+The tables are generated from the checks, so a sentence here cannot say more than the data does.
+
+**Evidence.** One probe, [`probes/basic/spec/kfor.py`](../../probes/basic/spec/kfor.py) (on the shared RAM-record
+harness [`ramrec.py`](../../probes/basic/spec/ramrec.py)), typed on both machines; run file
+[`scratchpad/KFR_run1.out`](../../scratchpad/KFR_run1.out) (2026-11-25; zerobas's side on that day's build). Every case
+is its own line and starts from nothing (`CLEAR`, `ON ERROR` set again); the body counts its runs in WN%; the next line
+records the FIRST error (the statement's own), the LAST error (RESUME NEXT carries on along the line, so after a failed
+FOR its body and NEXT still run), the runs and the loop variable's bytes. A loop that could run for ever carries a
+guard, `ON -(WN%>20) GOTO <the record line>` -- not `IF ... THEN`, whose false test would skip the NEXT after it on the
+same line -- so 21 runs read "it did not stop". Three probe faults were caught while building it, each by a run that
+read wrong on both machines: the last error alone recorded, the IF guard, and a VARPTR of a variable that does not
+exist (error 5 on both machines).
+- **[KFR FX *i*]** (FOR):
+  0: `FOR I=1 TO 3:WN%=WN%+1:<guard>:NEXT`
+  1: `FOR I=1 TO 1:WN%=WN%+1:<guard>:NEXT`
+  2: `FOR I=3 TO 1:WN%=WN%+1:<guard>:NEXT`
+  3: `FOR I=3 TO 1 STEP -1:WN%=WN%+1:<guard>:NEXT`
+  4: `FOR I=1 TO 3 STEP -1:WN%=WN%+1:<guard>:NEXT`
+  5: `FOR I=1 TO 3 STEP 0:WN%=WN%+1:<guard>:NEXT`
+  6: `FOR I=3 TO 1 STEP 0:WN%=WN%+1:<guard>:NEXT`
+  7: `FOR I=0 TO 1 STEP .1:WN%=WN%+1:<guard>:NEXT`
+  8: `FOR I!=0 TO 1 STEP .1:WN%=WN%+1:<guard>:NEXT`
+  9: `FOR I#=0 TO 1 STEP .1#:WN%=WN%+1:<guard>:NEXT`
+  10: `FOR I%=1 TO 3:WN%=WN%+1:<guard>:NEXT`
+  11: `FOR I%=32765 TO 32767:WN%=WN%+1:<guard>:NEXT`
+  12: `FOR I%=-32766 TO -32768 STEP -1:WN%=WN%+1:<guard>:NEXT`
+  13: `FOR I%=1 TO 3 STEP .5:WN%=WN%+1:<guard>:NEXT`
+  14: `FOR I%=1 TO 3.7:WN%=WN%+1:<guard>:NEXT`
+  15: `FOR I%=1.6 TO 3:WN%=WN%+1:<guard>:NEXT`
+  16: `FOR I%=1 TO 40000:WN%=WN%+1:<guard>:NEXT`
+  17: `FOR I=1 TO 3:WN%=WN%+1:<guard>:I=5:NEXT`
+  18: `WL=3:FOR I=1 TO WL:WN%=WN%+1:<guard>:WL=1:NEXT`
+  19: `WS=1:FOR I=1 TO 5 STEP WS:WN%=WN%+1:<guard>:WS=2:NEXT`
+  20: `FOR I=1 TO 2:FOR J=1 TO 3:WN%=WN%+1:<guard>:NEXT J,I`
+  21: `FOR I=1 TO 2:FOR J=1 TO 3:WN%=WN%+1:<guard>:NEXT:NEXT`
+  23: `FOR I=1 TO 2:FOR I=1 TO 3:WN%=WN%+1:<guard>:NEXT I`
+  24: `FOR I=1 TO 2`
+  25: `FOR A$="A" TO "B":WN%=WN%+1:<guard>:NEXT`
+  26: `FOR I=1 TO "A":WN%=WN%+1:<guard>:NEXT`
+  27: `FOR I=1`
+  28: `FOR I=1 TO`
+  29: `FOR I TO 3`
+  30: `FOR 1=1 TO 3`
+  31: `FOR Q(1)=1 TO 3:WN%=WN%+1:<guard>:NEXT`
+  32: `FOR I=1 TO 3 STEP:WN%=WN%+1:<guard>:NEXT`
+  33: `FOR I=1/0 TO 3:WN%=WN%+1:<guard>:NEXT`
+  34: `FOR I=1 TO 1/0:WN%=WN%+1:<guard>:NEXT`
+  42: `FOR I=1 TO 2 STEP "A":WN%=WN%+1:<guard>:NEXT`
+
+**Controls** ([`kfor_controls.py`](../../probes/basic/spec/kfor_controls.py)): each is a rival rule run over the
+reference's cases: “a start past the limit skips the body (0 runs)” is FALSE on 2 of the 5 cases R-FOR-RUNS selects (e.g. KFR FX 2); “STEP 0 with the start past the limit runs once -- zerobas's” is FALSE on 1 of the 2 cases R-FOR-STEP0 selects (e.g. KFR FX 6); “the limit re-read at every NEXT” is FALSE on 1 of the 3 cases R-FOR-ONCE selects (e.g. KFR FX 18); “the step re-read at every NEXT” is FALSE on 1 of the 3 cases R-FOR-ONCE selects (e.g. KFR FX 19); “an integer variable ROUNDS start and limit” is FALSE on 2 of the 4 cases R-FOR-INT selects (e.g. KFR FX 14); “an integer variable keeps a fractional STEP” is FALSE on 1 of the 4 cases R-FOR-INT selects (e.g. KFR FX 13); “a failed FOR keeps its frame -- zerobas's” is FALSE on 3 of the 8 cases R-FOR-NOFRAME selects (e.g. KFR FX 26).
+
+<!-- RULES BEGIN -->
+<!-- GENERATED by tools/spec_rules.py from probes/basic/spec/for_rules.py -- do not edit; `python3 tools/spec_rules.py probes/basic/spec/for_rules.py --write` -->
+
+**9 rules; 9 hold on the reference. Of the 140 recorded outputs (each case's first and last error, the body's runs (WN%, 21 = the probe's guard ended a loop that did not stop) and the loop variable's bytes after it): 140 read by a rule's check, 0 declared NOT evidence (below), 0 unread.**
+
+#### 1. The loop
+
+| rule | cases | reference | zerobas |
+|---|---|---|---|
+| **R-FOR-RUNS** FOR stores the start in the variable and the body runs AT LEAST ONCE; NEXT adds STEP (default 1) and runs the body again while the variable has not passed the limit in STEP's direction. FOR I=1 TO 3 runs 3 times and leaves I 4; FOR I=1 TO 1 once (I 2); FOR I=3 TO 1 once (I 4); FOR I=3 TO 1 STEP -1 3 times (I 0); FOR I=1 TO 3 STEP -1 once (I 0). | 5 | ✓ | ✓ |
+| **R-FOR-FRACTION** A fractional STEP adds in the variable's own type: FOR I=0 TO 1 STEP .1 runs 11 times and ends at 1.1, for a double, a single or a double literal step alike. | 3 | ✓ | ✓ |
+| **R-FOR-STEP0** STEP 0 never ends -- also when the start is already past the limit (FOR I=3 TO 1 STEP 0); the probe's guard stops both. | 2 | ✓ | ✗ 1: KFR FX 6 |
+| **R-FOR-ONCE** The limit and STEP are evaluated once, at FOR: changing L or S in the body changes nothing (FOR I=1 TO L with L=1 in the body still runs 3 times; STEP S with S=2 still steps 1, 5 runs). Changing the VARIABLE does count: I=5 in the body ends the loop after one run with I 6. | 3 | ✓ | ✓ |
+| **R-FOR-NEST** Loops nest: FOR I / FOR J closed by NEXT J,I or by two bare NEXTs run 6 bodies; a second FOR on the same variable replaces the first's frame (3 runs, not 6); a FOR without NEXT is no error (the body runs 0 times after it: the line ends). | 4 | ✓ | ✓ |
+
+#### 2. An integer loop variable
+
+| rule | cases | reference | zerobas |
+|---|---|---|---|
+| **R-FOR-INT** An integer variable TRUNCATES the start, the limit and the step: FOR I%=1.6 TO 3 and FOR I%=1 TO 3.7 both run 3 times (I% 4); STEP .5 is 0 and never ends. FOR I%=1 TO 3 leaves I% 4. | 4 | ✓ | ✓ |
+| **R-FOR-OVERFLOW** Stepping an integer variable past 32767 or below -32768 is error 6 (Overflow) at NEXT, the variable keeping its last value (3 runs: I% 32767, or -32768); a LIMIT an integer variable cannot hold is error 6 at the FOR itself (FOR I%=1 TO 40000), and no frame is pushed. | 3 | ✓ | ✗ 1: KFR FX 16 |
+
+#### 3. Errors
+
+| rule | cases | reference | zerobas |
+|---|---|---|---|
+| **R-FOR-ERRORS** A string variable, limit or STEP is error 13 (Type mismatch); no TO, no `=`, a number or an array element as the variable error 2 (Syntax error); nothing after TO or after STEP error 24 (Missing operand); an error in the start or the limit is that error (1/0: 11). A shape error ends the line there (no body runs); the others leave the line running on (R-FOR-NOFRAME). | 11 | ✓ | ✗ 3: KFR FX 26, KFR FX 32, KFR FX 42 |
+| **R-FOR-NOFRAME** A FOR that fails pushes NO frame: after RESUME NEXT the body runs once and its NEXT is error 1 (NEXT without FOR), the variable as the failed FOR left it. | 8 | ✓ | ✗ 4: KFR FX 16, KFR FX 26, KFR FX 32, KFR FX 42 |
+
+<!-- RULES END -->
+
 ## Differences from the reference
 
-None known.
+- **A FOR that fails still pushes its frame** (rules R-FOR-NOFRAME and R-FOR-ERRORS; cases KFR FX 26, 32,
+  42; [D-FORFRAME](../../todo/open/D-FORFRAME.md)). After `FOR I=1 TO "A"`, `FOR I=1 TO 3 STEP` or `FOR I=1 TO 2 STEP
+  "A"` and RESUME NEXT, the reference's NEXT is NEXT without FOR; zerobas's iterates -- and with STEP missing or a
+  string the step is 0, so the program hangs.
+- **A limit an integer variable cannot hold** (rule R-FOR-OVERFLOW, case KFR FX 16;
+  [D-FORINTLIM](../../todo/open/D-FORINTLIM.md)): `FOR I%=1 TO 40000` is Overflow at the FOR there; zerobas loops.
+- **STEP 0 with the start past the limit** (rule R-FOR-STEP0, case KFR FX 6; [D-FORSTEP0](../../todo/open/D-FORSTEP0.md)):
+  `FOR I=3 TO 1 STEP 0` never ends there; zerobas runs the body once.
 
-The one rung not yet proven is **RAM usage**. The loop's record on the stack
-was rebuilt at the reference's own size, 25 bytes, in September 2026 (below);
-the cell-by-cell RAM comparison has not yet proven the rung.
+The rung not yet proven is **RAM usage**. The loop's record on the stack was rebuilt at the reference's own size, 25
+bytes, in September 2026; the cell-by-cell RAM comparison has not yet proven the rung.
+
+## On later generations (MSX2, MSX2+)
+
+[A] Not measured yet: the probe has not run on the MSX2 / MSX2+ references (spec-method §4).
+
+## Open (not measured)
+
+- [A] Direct mode: every case ran inside a program.
+- [A] FOR inside GOSUB and GOSUB inside FOR, RETURN out of a loop, a loop left by GOTO and entered again many times
+  (the frame's reuse), the nesting depth against free memory -- the flow region's next units.
+- [A] A double loop variable beyond the integer range (`FOR A=56700 TO 56702`), DEFINT / DEFSTR'd names.
+- [A] STEP 0 with the start equal to the limit.
 
 ## What we found, and how
 

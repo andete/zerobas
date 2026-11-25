@@ -53,3 +53,7 @@
       there, not here), D-RNDZERO (TIER 6, state 0's result bytes), and RND("A" (D-ARGTYPEORDER, noted). The maths
       region's 12 keywords are all at DRAFT 1. NEXT: the review passes on the strings and maths pages (spec-method
       §6), RND's included; a keyword probe in spec_live (plan §7.1); then the conversion region (plan §2 row 3).
+      **Flow, first unit (2026-11-25): FOR / NEXT at DRAFT 1** from probes/basic/spec/kfor.py (43 cases,
+      scratchpad/KFR_run1.out; plan §6 "The flow region's first unit"); kfor_controls.py: 8 rivals FALSE. Filed:
+      D-FORFRAME (TIER 3, a failed FOR keeps its frame -- a hang under RESUME NEXT), D-FORINTLIM, D-FORSTEP0,
+      D-NEXTCREATE (TIER 6). NEXT: the flow region's next unit (GOTO / GOSUB / RETURN; FOR inside GOSUB), and D-FORFRAME.

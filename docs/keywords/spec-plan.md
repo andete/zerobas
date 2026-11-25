@@ -483,3 +483,21 @@ Missing:
 4. **A tie to the existing denominators:** a rules module could assert that its fixed expressions reach every
    (form, error) pair `kwerrset.py` lists for the keyword, so a spec page cannot miss an error the T6 rung knows.
 5. **The review loop** (spec-method §6) has not run on a keyword page yet; the pilot pages are DRAFT 1.
+
+### The flow region's first unit (2026-11-25): FOR, NEXT
+
+One probe, [kfor.py](../../probes/basic/spec/kfor.py): each case its own line from `CLEAR`, the body counting its runs
+in WN%, the next line recording the FIRST error, the LAST error, the runs and the loop variable; 43 cases; run file
+[scratchpad/KFR_run1.out](../../scratchpad/KFR_run1.out); model [kfor_model.py](../../probes/basic/spec/kfor_model.py),
+controls [kfor_controls.py](../../probes/basic/spec/kfor_controls.py) (8 rivals, each FALSE on some case). Both pages at
+DRAFT 1; every rule holds on the VG-8020 and every recorded output is read. Measured: the body runs AT LEAST ONCE (`FOR
+I=3 TO 1` once, I 4 -- predicted 0 runs: a miss); an integer variable TRUNCATES start, limit and STEP (STEP .5 never
+ends); a limit it cannot hold is Overflow at the FOR; STEP 0 never ends, also with the start past the limit; limit and
+STEP are read once; a FOR that fails pushes NO frame. Four differences, filed: [D-FORFRAME](../../todo/open/D-FORFRAME.md)
+(TIER 3: a failed FOR keeps its frame on zerobas -- with RESUME NEXT and STEP missing the program hangs),
+[D-FORINTLIM](../../todo/open/D-FORINTLIM.md), [D-FORSTEP0](../../todo/open/D-FORSTEP0.md),
+[D-NEXTCREATE](../../todo/open/D-NEXTCREATE.md). **Three probe faults, each caught by a run that read wrong on BOTH
+machines:** recording only the LAST error (RESUME NEXT runs on along the line: a failed FOR's body and NEXT then raise
+NEXT without FOR over the FOR's own error); a guard `IF WN%>20 THEN n` before NEXT (a false IF skips the rest of the
+line, NEXT included: every loop read one run) -- now `ON -(WN%>20) GOTO n`; and a VARPTR of a variable that does not
+exist, which is error 5 on both machines and stopped zerobas's run.
