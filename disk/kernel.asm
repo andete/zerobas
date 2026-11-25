@@ -5887,9 +5887,14 @@ hrunc_h:
                 call    hr_rdmain           ; A = the low byte
                 ld      ixl, a
                 call    calbak              ; CALSLT in the main ROM's slot (disk/driver.asm)
-                ; --- the second claim: the CF-3300's $DE77; CTRL held at power-on, its one-drive
-                ; $E48D (D-BOOTKEYS; read here since step 2b, it was INIT's -- the key is still
-                ; down: the scan and this call are a few ms apart)
+                ; --- the claims, in the CF-3300's moments (D-DISKROMHOST step 4 (c), 2026-11-25;
+                ; docs/ram-atlas.md, scratchpad/AE_diskhost2_ref.out): H.RUNC claims to DOS_RESV_TOP
+                ; ($DF93) -- the HIMEM MSX-DOS runs with -- and only Disk BASIC's start takes the last
+                ; piece, to $DE77 (CTRL held at power-on: the one-drive $E48D, D-BOOTKEYS). Disk BASIC
+                ; starts when init_p2 RETURNS (no disk, a data disk, the date prompt, a BASENT
+                ; restart); MSX-DOS never returns from it, so the DOS path keeps $DF93. CTRL is read
+                ; HERE, before init_p2: the key is still down (the scan and this call are a few ms
+                ; apart), not after a date prompt; its HIMEM waits on the stack.
                 ld      a, 6
                 call    $0141               ; SNSMAT row 6, bit 1 low = CTRL held
                 and     $02
@@ -5903,8 +5908,12 @@ hrh_him:
     IF CTRL_HIMEM > TXTMAX-FCH_CEIL*FCH_STATESZ
                 db      CTRL_HIMEM_ABOVE_THE_ENGINE_TABLE   ; the CTRL boot's too (disk/init.asm)
     ENDIF
-                call    layout_rebuild
-                jp      init_p2
+                push    hl                  ; Disk BASIC's HIMEM, for when init_p2 returns
+                ld      hl, DOS_RESV_TOP
+                call    layout_rebuild      ; the H.RUNC claim: MSX-DOS runs with $DF93
+                call    init_p2             ; MSX-DOS: no return. Otherwise BASIC is next --
+                pop     hl
+                jp      layout_rebuild      ; -- so the last claim, and back to H.RUNC's caller
 ; fat_wclus_x15 -- D-DISKROMHOST step 2b: the run it replaces stood at 2 sites (fat-prim-body.inc)
 fat_wclus_x15:
                 ld      hl, (FWR_CLUS)
@@ -5921,12 +5930,6 @@ dta_put_cnt:
                 ld      hl, (RDBLK_CNT)
                 dec     hl
                 ld      (RDBLK_CNT), hl
-                ret
-; hl_cmp_eoc -- D-DISKROMHOST step 2b: the run it replaces stood at 4 sites (kernel.asm)
-hl_cmp_eoc:
-                ld      de, $0FF8
-                or      a
-                sbc     hl, de
                 ret
 ; op_lfiles -- D-DISKROMHOST step 2b: the run it replaces stood at 5 sites (kernel.asm)
 op_lfiles:
@@ -8038,6 +8041,13 @@ mulacc_cmp:
 fmt_bkey:
                 ld      ix,chget_getbyte
                 jp      calbak
+; hl_cmp_eoc -- D-DISKROMHOST step 2b: the run it replaces stood at 4 sites (kernel.asm). MOVED here, into the pad
+; in front of the $77B8 pin, by step 4 (c) (2026-11-25): hrunc_h needed its 7 bytes in the $75A5 region.
+hl_cmp_eoc:
+                ld      de, $0FF8
+                or      a
+                sbc     hl, de
+                ret
                 ds      $77B8 - $, $00
                 jp      k_77B8          ; $77B8
 ; --- S10.D: the RANDOM record engine's chain walk, in the free region between the

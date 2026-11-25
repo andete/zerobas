@@ -92,7 +92,16 @@ SAVSTK, FILTAB with its two table words, NULBUF; FRETOP is left to BASIC's next 
 | National CF-3300 | $F1BF, then $F195 | $F195 ($EEAF) | $DF93 (5 steps) | $DF93 | $DE77, FRE(0) 23430 |
 | VG-8020 + Sony HBD-F1 | $F1C0, then $F196 | $F196 ($EEB0) | $DF94 (5 steps) | $DF94 | $DE78, FRE(0) 23431 |
 | VG-8020 + zerobas, before | $DE77, no rebuild | $DE77 ($F09A) | -- | $DE77 | $DE77, FRE(0) 28815 |
-| VG-8020 + zerobas, after | $F195 + rebuild | $F195 ($F09A) | $DE77 + rebuild | $DE77 | $DE77, FRE(0) 23430 |
+| VG-8020 + zerobas, step 2b | $F195 + rebuild | $F195 ($F09A) | $DE77 + rebuild | $DE77 | $DE77, FRE(0) 23430 |
+| zerobas, step 4 (c) (2026-11-25) | $F195 + rebuild | $F195 | $DF93 + rebuild | $DF93 | $DE77 + rebuild, FRE(0) 23430 |
+
+Since D-DISKROMHOST step 4 (c) zerobas's H.RUNC claim stops at $DF93 -- the HIMEM MSX-DOS runs with on the CF-3300 --
+and the last piece, to $DE77, is taken only when Disk BASIC starts: when the boot comes back from its MSX-DOS attempt
+(no disk, a data disk, the date prompt) or from MSX-DOS's `BASIC` command (BASENT). Measured on the DISK machine: MSX-DOS
+starts with HIMEM $DF93 ([AE_c_dosstart.out](../../scratchpad/AE_c_dosstart.out)); after `BASIC` at A> HIMEM $DE77,
+`FRE(0)` 23430, `FRE("")` 200, the CF-3300's three; a plain boot still equals the CF-3300 in HIMEM, FRE and the layout
+cells ([AE_c_fre.out](../../scratchpad/AE_c_fre.out)). (CTRL held at power-on: the one-drive $E48D for Disk BASIC as
+before; MSX-DOS with CTRL held is not measured on the CF-3300.)
 
 The cartridge, not the host, moves SP: it is below the new STKTOP inside the INIT and in each H.RUNC step, and with
 our cartridge (which moves none) the VG-8020 enters H.RUNC at SP $F09A with STKTOP at $EEB5. Each reference also

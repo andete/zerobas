@@ -1,0 +1,17 @@
+### C-BIOS_MSX1_EU_REPACK_DISK + none, disk msxdos103-cmd111.dsk, 20.0 s, keys ''
+SYM init 2.6541 SP=F092 HIMEM=F380
+HRUNC 2.6597 SP=F090 HIMEM=F195
+SYM hrunc_h 2.6599 SP=F086 HIMEM=F195
+SYM init_p2 2.6872 SP=F082 HIMEM=DF93
+SYM boot_disk_go 2.6880 SP=F082 HIMEM=DF93
+SYM dos_handoff 2.7162 SP=F080 HIMEM=DF93
+HIT0100 4.335 SCRMOD=0 LINLEN=37 HIMEM=DF93
+HIT0100 9.440 SCRMOD=0 LINLEN=37 HIMEM=DF93
+=== SCREEN 19.5 s HIMEM=DF93 H.RUNC-all-RET=1 H.RUNC-byte0=c9
+  |  MSX-DOS version 1.03                  
+  |  Copyright 1984 by Microsoft           
+  |  COMMAND version 1.11                  
+  |  Current date is Sun 1984-01-01        
+  |  Enter new date:                       
+hits0100 2
+

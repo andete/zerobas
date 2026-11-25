@@ -14,7 +14,7 @@ SPDX-License-Identifier: BSD-2-Clause
 
 > **Power-on:** the main ROM's writes before any cartridge's INIT are left out of the rows (they are the RAM test and clear, not a use of the RAM). Addresses of the range the main ROM writes at boot, per run: VG plain 12235, VGHBD dos 12235, VGHBD basic 12235, CF dos 12235, CF basic 12235, ZBND plain 3476, ZBD dos 3437, ZBD basic 3437.
 
-711 rows.
+715 rows.
 
 | range | B | VG plain | VGHBD dos | VGHBD basic | CF dos | CF basic | ZBND plain | ZBD dos | ZBD basic | zerobas |
 |---|---:|---|---|---|---|---|---|---|---|---|
@@ -111,9 +111,9 @@ SPDX-License-Identifier: BSD-2-Clause
 | `$DBF8-$DBFD` | 6 |   | D:DR B:DR |   | D:DR B:DR |   |   | D:DR B:DR |   |  |
 | `$DBFE-$DBFF` | 2 |   | D:R B:R |   | D:R B:R |   |   | D:R B:R |   |  |
 | `$DC00-$DC60` | 97 |   | D:R |   | D:R |   |   | D:R |   |  |
-| `$DC61-$DC61` | 1 |   | D:R |   | D:R | B:D |   | H:D D:R | H:D |  |
-| `$DC62-$DC62` | 1 |   | D:R B:D |   | D:R | B:D |   | H:D D:R | H:D |  |
-| `$DC63-$DC64` | 2 |   | D:R B:D |   | H:D D:R | H:D B:D |   | H:D D:R | H:D |  |
+| `$DC61-$DC61` | 1 |   | D:R |   | D:R | B:D |   | D:R | B:D |  |
+| `$DC62-$DC62` | 1 |   | D:R B:D |   | D:R | B:D |   | D:R | B:D |  |
+| `$DC63-$DC64` | 2 |   | D:R B:D |   | H:D D:R | H:D B:D |   | D:R | B:D |  |
 | `$DC65-$DC65` | 1 |   | D:R B:D |   | H:D D:R | H:D B:MD |   | D:R |   |  |
 | `$DC66-$DC66` | 1 |   | D:R B:MD |   | H:D D:R | H:D |   | D:R |   |  |
 | `$DC67-$DC68` | 2 |   | D:R |   | H:D D:R | H:D |   | D:R |   |  |
@@ -141,29 +141,31 @@ SPDX-License-Identifier: BSD-2-Clause
 | `$DCA6-$DCB3` | 14 |   | H:D | H:D | H:D | H:D |   |   |   |  |
 | `$DCB4-$DCB4` | 1 |   | H:D | H:D |   |   |   |   |   |  |
 | `$DCB5-$DD61` | 173 |   |   |   |   |   |   |   |   | GETWRK_AREA |
-| `$DD62-$DD67` | 6 |   |   |   | D:D |   |   |   |   | (in GETWRK_AREA) |
-| `$DD68-$DD6B` | 4 |   | H:D D:D |   | D:D |   |   |   |   | (in GETWRK_AREA) |
-| `$DD6C-$DD6D` | 2 |   | H:D D:D |   | D:MDR |   |   |   |   | (in GETWRK_AREA) |
-| `$DD6E-$DD6E` | 1 |   | H:MD D:MD |   | D:MR | B:MD |   |   |   | (in GETWRK_AREA) |
-| `$DD6F-$DD6F` | 1 |   | H:MD D:MD B:MD |   | D:MR |   |   |   |   | (in GETWRK_AREA) |
-| `$DD70-$DD71` | 2 |   | H:MR D:MR |   | D:M |   |   |   |   | (in GETWRK_AREA) |
-| `$DD72-$DD73` | 2 |   | H:M D:M |   | D:M |   |   |   |   | (in GETWRK_AREA) |
-| `$DD74-$DD74` | 1 |   | H:MR D:MR |   | D:M |   |   |   |   | (in GETWRK_AREA) |
-| `$DD75-$DD75` | 1 |   | H:MR D:MR |   | D:M | B:MD |   |   |   | (in GETWRK_AREA) |
-| `$DD76-$DD76` | 1 |   | H:M D:M B:MD |   | D:M |   |   |   |   | (in GETWRK_AREA) |
-| `$DD77-$DD77` | 1 |   | H:M D:M |   | D:M |   |   |   |   | (in GETWRK_AREA) |
-| `$DD78-$DD79` | 2 |   | H:M D:M |   | D:MR |   |   |   |   | (in GETWRK_AREA) |
-| `$DD7A-$DD7B` | 2 |   | H:M D:M |   | H:D D:MDR B:D | H:D |   |   |   | (in GETWRK_AREA) |
-| `$DD7C-$DD7D` | 2 |   | H:M D:M |   | H:D D:MD B:D | H:D |   |   |   | (in GETWRK_AREA) |
-| `$DD7E-$DD81` | 4 |   | H:MD D:MD | H:D B:D | H:D D:MD B:D | H:D |   |   |   | (in GETWRK_AREA) |
-| `$DD82-$DD82` | 1 |   | H:MD D:MD | H:D B:D | H:D D:MD B:MD | H:D |   |   |   | (in GETWRK_AREA) |
-| `$DD83-$DD83` | 1 |   | H:MD D:MD | B:D | H:D D:MD B:MD | H:D |   |   |   | (in GETWRK_AREA) |
-| `$DD84-$DD85` | 2 |   | H:MD D:MD | B:MD | H:MR D:MR B:MR | H:MR |   |   |   | (in GETWRK_AREA) |
-| `$DD86-$DD87` | 2 |   | H:MR D:MR | B:MR | H:M D:M B:M | H:M |   |   |   | (in GETWRK_AREA) |
-| `$DD88-$DD88` | 1 |   | H:M D:M | B:M | H:MD D:M B:M | H:MD |   |   |   | (in GETWRK_AREA) |
-| `$DD89-$DD89` | 1 |   | H:MD D:M | H:D B:M | H:M D:M B:M | H:M |   |   |   | (in GETWRK_AREA) |
-| `$DD8A-$DD8B` | 2 |   | H:MR D:MR | B:MR | H:M D:M B:M | H:M |   |   |   | (in GETWRK_AREA) |
-| `$DD8C-$DD8F` | 4 |   | H:M D:M | B:M | H:M D:M B:M | H:M |   |   |   | (in GETWRK_AREA) |
+| `$DD62-$DD67` | 6 |   |   |   | D:D |   |   |   |   |  |
+| `$DD68-$DD6B` | 4 |   | H:D D:D |   | D:D |   |   |   |   |  |
+| `$DD6C-$DD6D` | 2 |   | H:D D:D |   | D:MDR |   |   |   |   |  |
+| `$DD6E-$DD6E` | 1 |   | H:MD D:MD |   | D:MR | B:MD |   |   |   |  |
+| `$DD6F-$DD6F` | 1 |   | H:MD D:MD B:MD |   | D:MR |   |   |   |   |  |
+| `$DD70-$DD71` | 2 |   | H:MR D:MR |   | D:M |   |   |   |   |  |
+| `$DD72-$DD73` | 2 |   | H:M D:M |   | D:M |   |   |   |   |  |
+| `$DD74-$DD74` | 1 |   | H:MR D:MR |   | D:M |   |   |   |   |  |
+| `$DD75-$DD75` | 1 |   | H:MR D:MR |   | D:M | B:MD |   |   |   |  |
+| `$DD76-$DD76` | 1 |   | H:M D:M B:MD |   | D:M |   |   |   |   |  |
+| `$DD77-$DD77` | 1 |   | H:M D:M |   | D:M |   |   |   |   |  |
+| `$DD78-$DD79` | 2 |   | H:M D:M |   | D:MR |   |   |   |   |  |
+| `$DD7A-$DD7B` | 2 |   | H:M D:M |   | H:D D:MDR B:D | H:D |   |   |   |  |
+| `$DD7C-$DD7C` | 1 |   | H:M D:M |   | H:D D:MD B:D | H:D |   |   |   |  |
+| `$DD7D-$DD7D` | 1 |   | H:M D:M |   | H:D D:MD B:D | H:D |   | H:D | H:D |  |
+| `$DD7E-$DD80` | 3 |   | H:MD D:MD | H:D B:D | H:D D:MD B:D | H:D |   | H:D | H:D |  |
+| `$DD81-$DD81` | 1 |   | H:MD D:MD | H:D B:D | H:D D:MD B:D | H:D |   |   |   |  |
+| `$DD82-$DD82` | 1 |   | H:MD D:MD | H:D B:D | H:D D:MD B:MD | H:D |   |   |   |  |
+| `$DD83-$DD83` | 1 |   | H:MD D:MD | B:D | H:D D:MD B:MD | H:D |   |   |   |  |
+| `$DD84-$DD85` | 2 |   | H:MD D:MD | B:MD | H:MR D:MR B:MR | H:MR |   |   |   |  |
+| `$DD86-$DD87` | 2 |   | H:MR D:MR | B:MR | H:M D:M B:M | H:M |   |   |   |  |
+| `$DD88-$DD88` | 1 |   | H:M D:M | B:M | H:MD D:M B:M | H:MD |   |   |   |  |
+| `$DD89-$DD89` | 1 |   | H:MD D:M | H:D B:M | H:M D:M B:M | H:M |   |   |   |  |
+| `$DD8A-$DD8B` | 2 |   | H:MR D:MR | B:MR | H:M D:M B:M | H:M |   |   |   |  |
+| `$DD8C-$DD8F` | 4 |   | H:M D:M | B:M | H:M D:M B:M | H:M |   |   |   |  |
 | `$DD90-$DD91` | 2 |   | H:M D:M | B:M | H:MR D:MR B:MR | H:MR |   |   |   |  |
 | `$DD92-$DDA1` | 16 |   | H:M D:M | B:M | H:M D:M B:M | H:M |   |   |   |  |
 | `$DDA2-$DDA7` | 6 |   | H:R D:R | B:R | H:M D:M B:M | H:M |   |   |   |  |
@@ -360,18 +362,20 @@ SPDX-License-Identifier: BSD-2-Clause
 | `$EFFE-$F018` | 27 |   | H:D | B:D | H:D D:D |   |   | H:D | H:D | P1_BLIT |
 | `$F019-$F021` | 9 |   | H:D | B:D | H:D D:D |   |   |   |   | FLD_END |
 | `$F022-$F022` | 1 |   | H:D | B:D | H:D D:D |   |   | H:D | H:D | DSK_CURDRV |
-| `$F023-$F049` | 39 |   | H:D | B:D | H:D D:D |   |   |   |   |  |
-| `$F04A-$F055` | 12 |   | H:D | B:D | H:D D:D |   |   |   | H:M |  |
-| `$F056-$F057` | 2 |   | H:D | B:D | H:D D:D |   |   |   | H:M B:M |  |
-| `$F058-$F065` | 14 |   | H:D | B:D | H:D D:D |   |   | H:M | H:M B:M |  |
-| `$F066-$F06D` | 8 |   | H:D | B:D | H:D D:D |   |   | H:M | H:MD B:M |  |
-| `$F06E-$F077` | 10 | B:M | H:D | B:D | H:D D:D |   |   | H:M | H:MD B:M |  |
-| `$F078-$F079` | 2 | B:M | H:D | B:D | H:D D:D |   |   | H:M | H:MD |  |
-| `$F07A-$F07B` | 2 | B:M | H:D | B:D | H:D D:D |   | b:S | H:MDR | H:MDR | GP_SEC |
+| `$F023-$F045` | 35 |   | H:D | B:D | H:D D:D |   |   |   |   |  |
+| `$F046-$F051` | 12 |   | H:D | B:D | H:D D:D |   |   |   | H:M |  |
+| `$F052-$F057` | 6 |   | H:D | B:D | H:D D:D |   |   |   | H:M B:M |  |
+| `$F058-$F061` | 10 |   | H:D | B:D | H:D D:D |   |   | H:M | H:M B:M |  |
+| `$F062-$F06D` | 12 |   | H:D | B:D | H:D D:D |   |   | H:M | H:MD B:M |  |
+| `$F06E-$F073` | 6 | B:M | H:D | B:D | H:D D:D |   |   | H:M | H:MD B:M |  |
+| `$F074-$F075` | 2 | B:M | H:D | B:D | H:D D:D |   |   | H:M | H:MD |  |
+| `$F076-$F079` | 4 | B:M | H:D | B:D | H:D D:D |   |   | H:MD | H:MD |  |
+| `$F07A-$F07B` | 2 | B:M | H:D | B:D | H:D D:D |   | b:S | H:DR | H:MDR | GP_SEC |
 | `$F07C-$F07D` | 2 | B:M | H:D | B:D | H:D D:D |   | b:S | H:MD | H:MD | GP_WITHIN |
 | `$F07E-$F07F` | 2 | B:M | H:D | B:D | H:D D:D |   | b:S B:M | H:MD | H:MD | GP_CLUS |
-| `$F080-$F083` | 4 | B:M | H:D | B:D | b:D H:D D:D | b:D | b:S B:M | H:MD | H:MD | GP_CLIDX, GP_SECINCL |
-| `$F084-$F085` | 2 | B:M | b:D H:D | b:D B:D | b:D H:D D:D | b:D | b:S B:M | H:D | H:D | GP_PHYS |
+| `$F080-$F081` | 2 | B:M | H:D | B:D | b:D H:D D:D | b:D | b:S B:M | H:MD | H:MD | GP_CLIDX |
+| `$F082-$F083` | 2 | B:M | H:D | B:D | b:D H:D D:D | b:D | b:S B:M | H:MD | H:MD B:D | GP_SECINCL |
+| `$F084-$F085` | 2 | B:M | b:D H:D | b:D B:D | b:D H:D D:D | b:D | b:S B:M | H:D | H:D B:D | GP_PHYS |
 | `$F086-$F087` | 2 | B:M | b:D H:D | b:D B:D | b:R H:D D:D | b:R | b:R B:M | H:R | H:R |  |
 | `$F088-$F089` | 2 | B:M | b:D H:D | b:D B:D | H:D D:D |   | B:M | H:M | H:M | GP_FLAGS |
 | `$F08A-$F08B` | 2 | B:M | b:D H:D | b:D B:D | H:D D:D |   | b:S B:M | H:M | H:M B:M |  |
@@ -554,8 +558,8 @@ SPDX-License-Identifier: BSD-2-Clause
 | `$F666-$F667` | 2 |   |   |   |   |   |   |   |   | TGT_ADDR |
 | `$F668-$F668` | 1 |   | B:M |   |   | B:M |   |   |   | (in TGT_ADDR) |
 | `$F669-$F671` | 9 |   |   |   |   |   |   |   |   | GFX_SSIZE, PU_FMTD, GFX_DDX, GFX_R, GFX_ASPS |
-| `$F672-$F673` | 2 |   | I:D H:D B:D | I:D H:D | I:D H:D | I:D H:D B:D |   | I:D H:D | I:D H:D B:M | MEMSIZ |
-| `$F674-$F675` | 2 |   | I:D H:D B:D | I:D H:D | I:D H:D | I:D H:D B:D | b:S | I:D H:D | I:D H:D B:S | STKTOP |
+| `$F672-$F673` | 2 |   | I:D H:D B:D | I:D H:D | I:D H:D | I:D H:D B:D |   | I:D H:D | I:D H:D B:MD | MEMSIZ |
+| `$F674-$F675` | 2 |   | I:D H:D B:D | I:D H:D | I:D H:D | I:D H:D B:D | b:S | I:D H:D | I:D H:D B:DS | STKTOP |
 | `$F676-$F677` | 2 |   | I:M B:D | I:M | I:M | I:M B:D |   |   |   | TXTTAB |
 | `$F678-$F679` | 2 |   | B:M |   |   | B:M |   |   | B:M | TEMPPT |
 | `$F67A-$F67C` | 3 |   | B:M |   |   | B:M |   |   |   | TEMPPOOL |
@@ -573,7 +577,7 @@ SPDX-License-Identifier: BSD-2-Clause
 | `$F6AC-$F6AC` | 1 |   | I:D | I:D | I:D | I:D |   |   | B:M | (in AU_NUM/RN_NEW/USRC_KEY) |
 | `$F6AD-$F6AE` | 2 |   |   |   |   |   |   |   |   | AU_INC/RN_INC/USRC_AFTER |
 | `$F6AF-$F6B0` | 2 |   | B:M |   |   | B:M |   |   |   | SAVTXT |
-| `$F6B1-$F6B2` | 2 |   | I:D H:D B:MD | I:D H:D | I:D H:D | I:D H:D B:MD |   | I:D H:D | I:D H:D | SAVSTK |
+| `$F6B1-$F6B2` | 2 |   | I:D H:D B:MD | I:D H:D | I:D H:D | I:D H:D B:MD |   | I:D H:D | I:D H:D B:D | SAVSTK |
 | `$F6B3-$F6B8` | 6 |   |   |   |   |   |   |   |   | ERRLIN, DOT, ERRRESUME_TXT |
 | `$F6B9-$F6BB` | 3 |   | B:M |   |   | B:M |   |   |   | ONELIN, ONEFLG |
 | `$F6BC-$F6BF` | 4 |   |   |   |   |   |   |   |   | FN_RESUME, CONTLINE |
@@ -607,7 +611,7 @@ SPDX-License-Identifier: BSD-2-Clause
 | `$F856-$F856` | 1 |   |   |   |   |   |   |   | B:M | KEYARG |
 | `$F857-$F85E` | 8 |   | B:M |   |   | B:M |   |   |   | RNDX, RND_SEED |
 | `$F85F-$F85F` | 1 |   | B:D |   |   | B:D |   |   |   | MAXF |
-| `$F860-$F863` | 4 |   | I:D H:D B:D | I:D H:D | I:D H:D | I:D H:D B:D |   | I:D H:D | I:D H:D B:M | FILTAB, NULBUF |
+| `$F860-$F863` | 4 |   | I:D H:D B:D | I:D H:D | I:D H:D | I:D H:D B:D |   | I:D H:D | I:D H:D B:MD | FILTAB, NULBUF |
 | `$F864-$F864` | 1 |   | B:M |   |   | B:M |   |   | B:M | PRDEST |
 | `$F865-$F865` | 1 |   | B:M |   |   | B:M |   |   |   |  |
 | `$F866-$F87B` | 22 |   |   |   |   |   |   |   |   | CAS_WANT/TSV_NAME, SCAN_K, CAS_WANT_ON, CAS_HDRNAME, CAS_HDRID, CAS_VERIFY, CAS_VMIS |
@@ -651,7 +655,7 @@ SPDX-License-Identifier: BSD-2-Clause
 | `$FC18-$FC1F` | 8 |   | D:M B:M | B:M | D:M B:M | B:M |   |   |   | GFX_SPATN |
 | `$FC20-$FC3F` | 32 |   | B:M |   |   | B:M |   |   |   | (in GFX_SPATN) |
 | `$FC40-$FC49` | 10 |   |   |   |   |   |   |   |   |  |
-| `$FC4A-$FC4B` | 2 |   | b:D I:D H:D B:D | b:D I:D H:D | b:D I:D H:D | b:D I:D H:D B:D |   | b:D H:D | b:D H:D B:M | HIMEM |
+| `$FC4A-$FC4B` | 2 |   | b:D I:D H:D B:D | b:D I:D H:D | b:D I:D H:D | b:D I:D H:D B:D |   | b:D H:D | b:D H:D B:MD | HIMEM |
 | `$FC4C-$FC88` | 61 |   | B:M |   |   | B:M |   | I:M | I:M | ZTRAP, ZINTVAL, ZINTCNT, TRAPENA, TRAPSVC, SUBSLOT_OK |
 | `$FC89-$FC89` | 1 |   | B:M |   |   | B:M |   |   |   | STOPHOLD |
 | `$FC8A-$FC8B` | 2 |   | B:M |   |   | B:M | b:S |   | B:MS | CSP |

@@ -131,3 +131,14 @@
       writes the band here -- correct, not a gap. disk/init.asm's comment ("the 128-byte work area DOS fills") was
       wrong and is corrected (no byte changed). So on zerobas $DCB5-$DDAD and $DF86-$E8AC are claimed and unused:
       room for (d) -- the work area addressed from a base -- without moving anything visible.
+      ✅ STEP 4 (c) DONE (2026-11-25): disk/kernel.asm hrunc_h claims to DOS_RESV_TOP ($DF93) and rebuilds the layout,
+      CALLS init_p2, and only when it returns -- Disk BASIC starts: no disk, a data disk, the date prompt, a BASENT
+      restart -- takes the last piece (DISK_HIMEM $DE77, or CTRL's $E48D read before init_p2 while the key is down)
+      and rebuilds again; MSX-DOS never returns. MSX-DOS now runs with HIMEM $DF93 as on the CF-3300
+      (scratchpad/AE_c_dosstart.out); a plain boot still equals the CF-3300 (AE_c_fre.out); `BASIC` at A> gives
+      $DE77 / 23430 / 200 on both. Bytes: +8 in the $75A5 region, from hl_cmp_eoc (7 B) moved into the pad before the
+      $77B8 pin and 1 of the 2 B before $75A5. The atlas gate caught the change ($DD7D-$DD80, the $DF93 layout's
+      FILTAB table, now written at H.RUNC -- as the CF-3300 writes that band) and was re-measured. Not measured: MSX-DOS
+      with CTRL held on the CF-3300 (its DOS-time HIMEM). Side note: openMSX's get_screen reads nothing on zerobas
+      after BASIC at A> (the VRAM text is there: the banner, "ZB", the output) -- a probe artefact, not a defect.
+      LEFT of step 4: (d) the work area addressed from a base recorded in SLTWRK (host independence); (e) the disk corpus.
