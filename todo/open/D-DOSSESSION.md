@@ -22,3 +22,11 @@
       deterministic), and prints the listing it compared on agreement, so the agreement can be read
       (scratchpad/AE_dossession_dates.out: HELLO.TXT $14A5 = 1990-05-05, CAT.TXT -- COPY a+b -- the current $0821 on
       both, MSXDOS.SYS its own); 20 / 20. LEFT: (a) BASIC and FORMAT typed at A>.
+      ✅ (a) DONE 2026-11-25 (scratchpad/AE_dossession_basic.out, 21 / 21): BASIC typed at A> -- its screen differs by
+      design (zerobas's banner, "ZB"), so the row after it is scored by its values, HIMEM / FRE(0) / FRE(""): DE77 23430
+      200 on both. FORMAT at A> is fmtdos-acceptance's (D-DOSFORMAT). 🔴 AND A ROW SET THAT AGREED FOR THE WRONG REASON:
+      `dateset` typed "11-23-87", which both machines answer "Invalid date" (their order is Y-M-D), so REM and the
+      unknown command were typed INTO the still-open date prompt and agreed there since 2026-11-23. Now "87-11-23", and
+      every agreeing row prints its last two screen lines as a witness (the date taken, "A>REM A REMARK", "Bad command
+      or file name"). D-DOSSESSION's own scope is done; what is left is the disk pages' rules for BASIC / FORMAT
+      (D-DISKCONTRACT).

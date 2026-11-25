@@ -20,6 +20,7 @@ Exit 0 all agree; 1 a divergence; 2 no reading / no DOS disk.
 usage: disk_probe_dossession.py [DOSDISK]
 """
 import hashlib
+import re
 import os
 import shutil
 import signal
@@ -60,10 +61,21 @@ SESSION = [
     ("typenone", "TYPE NOSUCH.TXT", 5),
     ("verify", "VERIFY ON", 4),
     ("datecmd", "DATE", 4),
-    ("dateset", "11-23-87", 4),
+    # 🔴 2026-11-25: this was "11-23-87", which both machines answer "Invalid date" (their order is Y-M-D,
+    # "Current date is Sun 1984-01-01") -- so the date prompt stayed open and the rows after it (REM, an unknown
+    # command) were typed INTO it, and agreed for that reason. The date now in the machines' order:
+    ("dateset", "87-11-23", 4),
     ("rem", "REM A REMARK", 3),
     ("bad", "NOSUCHCMD", 5),
+    # D-DOSSESSION (a), 2026-11-25: BASIC typed at A> hands over to Disk BASIC (BASENT). Its screen differs by
+    # design (zerobas's banner and "ZB" prompt, basic/repl.asm), so the row after it is compared by its VALUES:
+    # HIMEM, FRE(0), FRE("") -- the RAM Disk BASIC gets after MSX-DOS (D-DISKROMHOST step 4 (c)).
+    ("basic", "BASIC", 12),
+    ("basicmem", 'PRINT "M";HEX$(PEEK(&HFC4A)+256*PEEK(&HFC4B));FRE(0);FRE("")', 5),
 ]
+# rows whose screen is not compared, only the numbers after an "M" (see "basic" above)
+VALUE_ROWS = ("basicmem",)
+UNSCORED = ("basic",)
 
 
 def tcl(out):
@@ -106,7 +118,7 @@ def tcl(out):
         "  incr ::tries",
         "  set s [screen]",
         "  if {$s eq $::last} { incr ::still } else { set ::still 0; set ::last $s }",
-        "  set prompt [expr {$tag in {boot datecmd} ? 1 : [atprompt]}]",
+        "  set prompt [expr {$tag in {boot datecmd basic basicmem} ? 1 : [atprompt]}]",
         "  if {($prompt && $::still >= 4) || $::tries > 240} { snap $tag; next; return }",
         "  after time 0.25 poll }",
         "next", ""])
@@ -227,6 +239,16 @@ def main():
         if cf is None:
             verdict = "NO-REFERENCE"
             blind.append(tag)
+        elif tag in UNSCORED:
+            verdict = "printed (Disk BASIC's banner: zerobas's own by design; the next row is scored)"
+        elif tag in VALUE_ROWS:
+            pick = lambda v: next((m.group(1).split() for r in reversed(v[1])        # the margin differs: strip
+                                   for m in [re.match(r"M([0-9A-F]{4}\s+-?\d+\s+\d+)$", r.strip())] if m),
+                                  None) if v else None
+            a, b = pick(cf), pick(zb)
+            verdict = f"SAME (values {a})" if a and a == b else "DIVERGES"
+            if verdict == "DIVERGES":
+                bad.append(tag)
         elif cf == zb:
             verdict = "SAME"
         elif tag in SCORED_ELSEWHERE:
@@ -235,6 +257,9 @@ def main():
             verdict = "DIVERGES"
             bad.append(tag)
         print(f"ROW {tag:9s} {typed if typed is not None else '(wait)'!r:40s} {verdict}", flush=True)
+        if verdict.startswith("SAME") and cf:   # a witness: what the agreement was ON (2026-11-25: for a month
+            for r in [r for r in cf[1] if r.strip()][-2:]:   # REM / NOSUCHCMD agreed INSIDE an open date prompt)
+                print(f"   == {r}")
         if verdict == "DIVERGES":
             for side, v in (("CF", cf), ("ZB", zb)):
                 print(f"   {side} {v[0] if v else None}")
@@ -254,7 +279,7 @@ def main():
     if blind:
         print(f"\nINSTRUMENT FAULT: the CF-3300 gave no reading on {', '.join(blind)}")
         return 2
-    n = len(SESSION) + 1 - len(SCORED_ELSEWHERE)
+    n = len(SESSION) + 1 - len(SCORED_ELSEWHERE) - len(UNSCORED)
     print(f"\n{'PASS' if not bad else 'FAIL'}: MSX-DOS commands typed at A> ({n - len(bad)}/{n})")
     return 1 if bad else 0
 
