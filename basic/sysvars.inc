@@ -1764,8 +1764,13 @@ SVT_SP          equ     $F7C2 ; 2 B: the sub-ROM SAVE tenant's SP at dispatch, s
 ; usable floor, which is why every earlier row, each spanning the pair, agreed.
 ; POOLSIZE / TXTCEIL -> CONLO $F66A..$F66D (the reference's CHRGTR constant
 ; scratch, idle on zerobas AND C-BIOS: scratchpad/pubfree_map.py); FRETOP -> the
-; published FRETOP, the same job. MEMSIZ / STKTOP stay free for their own values.
-POOLSIZE        equ     $F66A   ; 2 B: the size CLEAR recorded. Written ONLY by
+; published FRETOP, the same job. MEMSIZ / STKTOP stay free for their own values. (CONLO
+; was their home until D-BOOTCELLS step 3, below.)
+; 🔁 D-BOOTCELLS step 3 (2026-11-25): POOLSIZE / TXTCEIL left CONLO (CHRGTR's numeric
+; constant, which the reference rewrites on every typed constant) for the MSX2-only RS2IQ
+; bytes $FAF9-$FAFC (CHRCNT / ROMA / MODE on an MSX2; constant 0 on the VG-8020:
+; scratchpad/AE_bootcells3_hosts.out). PRINT USING's PU_FMTD and DRAW's GFX_DDX took CONLO.
+POOLSIZE        equ     $FAF9   ; 2 B: the size CLEAR recorded. Written ONLY by
                                 ; `CLEAR <n>`; initialised to 200 at cold boot and
                                 ; deliberately NOT reset by NEW / RUN / bare CLEAR /
                                 ; `CLEAR ,himem` -- all four keep the current size
@@ -2336,7 +2341,7 @@ GFX_DFB         equ     $FCBB   ; $FCBB: 1 = B (blank move) prefix pending (1)
 GFX_DFN         equ     $F735     ; $F735: 1 = N (no-update) prefix pending (1)
                                   ; D-WSZERO S8: (pinned: was GFX_DFB + 1)
 GFX_DARG        equ     $F72C           ; $F72C: last parsed argument (int16 LE) (2)
-GFX_DDX         equ     $FAFB           ; $FAFB: this command's dx (int16) (2)
+GFX_DDX         equ     $F66C           ; $F66C: this command's dx (int16) (2)
 GFX_DDY         equ     $F7BA           ; $F7BA: ...dy (2)
 GFX_DTX         equ     $F410           ; $F410: move target X (2)
 GFX_DTY         equ     $F412           ; $F412: ...Y (2)
@@ -2601,7 +2606,7 @@ TXTMAX          equ     $E7AD   ; NOT-A-CELL: the text ceiling (= the workspace 
 ; [TXTMAX, TXTMAX_NODISK)). It was $ECF8 before; the rows that load over the old
 ; window keep that span frozen (probes/basic/basic_probe_wszero.py).
 TXTMAX_NODISK   equ     $F380  ; NOT-A-CELL: the diskless build's text ceiling
-TXTCEIL         equ     $F66C   ; the text ceiling boot chose: TXTMAX or TXTMAX_NODISK (2 B)
+TXTCEIL         equ     $FAFB   ; the text ceiling boot chose: TXTMAX or TXTMAX_NODISK (2 B)
 ; 🏛️ D-CASFCB (2026-10-13): the cassette buffer is the CHANNEL's own record
 ; buffer (block + FCH_HDRSZ), as on the VG-8020 (scratchpad/casbuf_probe.out):
 ; #0's for SAVE / LOAD / MERGE / the file search, #n's for OPEN "CAS:" AS #n.
@@ -4212,7 +4217,7 @@ GP_FLAGS        equ     $F088   ; DISK-ONLY: bit0 = extend (PUT allocates; GET d
 ; -- a literal in the program text -- and cannot move) or an owned temp-stack
 ; entry (str_snapshot_arg), which the GC keeps current and only the next
 ; statement pops. See basic/printusing.asm pu_hold_fmt.
-PU_FMTD         equ     $FAF9   ; -> the format's [len][ptr] descriptor (2)
+PU_FMTD         equ     $F66A   ; -> the format's [len][ptr] descriptor (2)
 PU_FDESC        equ     BUFTX   ; [len][ptr] copy for a format that cannot move (3)
                                 ; D-WSZERO S14d: BUF, statement-exclusive (PRINT USING) (was $F08D)
 ; $F022: DISK-ONLY DSK_CURDRV (disk/equates.inc, D-DSKIB 2026-10-27) -- the current logical drive
@@ -6057,8 +6062,8 @@ MSGESC_SUB      equ     6       ; body = this byte alone -> the sub-ROM tenant
     IF GFX_VLEN + 1 > $F41C
                 db      S11_SPRITE_LENGTH_OVERRAN_INTO_CURLIN
     ENDIF
-    IF GFX_SSIZE + 1 > POOLSIZE
-                db      S11_SPRITE_SIZE_OVERRAN_INTO_POOLSIZE
+    IF GFX_SSIZE + 1 > PU_FMTD
+                db      S11_SPRITE_SIZE_OVERRAN_INTO_PU_FMTD
     ENDIF
     IF GFX_SFLAGS + 1 > $F959
                 db      S11_SPRITE_FLAGS_OVERRAN_INTO_QUETAB

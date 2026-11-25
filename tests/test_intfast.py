@@ -245,7 +245,9 @@ class Pair:
         # the driver itself differs (it calls each image's own leaf address); and
         # TXTCEIL is LAYOUT, not output: msxtest seeds it with each tree's own TXTMAX,
         # and TXTMAX moved after the old tree (D-BOOTKEYS CTRL RAM, 2026-10-27).
-        lay = {self.new.sym["TXTCEIL"], self.new.sym["TXTCEIL"] + 1}
+        # And the CELL moved after it too (D-BOOTCELLS step 3, CONLO -> $FAFB), so each
+        # tree's own TXTCEIL is masked.
+        lay = {m.sym["TXTCEIL"] + k for m in (self.old, self.new) for k in (0, 1)}
         return [i for i in list(range(0x8000, lo)) + list(range(hi, 0x10000))
                 if a[i] != b[i] and not STUB <= i < STG + 32 and i not in lay]
 

@@ -395,8 +395,8 @@ extents the standard already fixes would be noise, not rigour.
 | `$F665` | 2 B | `basic` | `GFX_G8V` | $F665: written value (int16 LE) (2) |  |
 | `$F667` | 2 B | `basic` | `TGT_ADDR` | $F667: element address, or 0 = scalar (2) |  |
 | `$F669` | 1 B | `basic` | `GFX_SSIZE` | $F669: SCREEN's sprite-size argument while a mode |  |
-| `$F66A` | 2 B | `basic` | `POOLSIZE` | 2 B: the size CLEAR recorded. Written ONLY by |  |
-| `$F66C` | 2 B | `basic` | `TXTCEIL` | the text ceiling boot chose: TXTMAX or TXTMAX_NODISK (2 B) |  |
+| `$F66A` | 2 B | `basic` | `PU_FMTD` | -> the format's [len][ptr] descriptor (2) |  |
+| `$F66C` | 2 B | `basic` | `GFX_DDX` | $F66C: this command's dx (int16) (2) |  |
 | `$F66E` | 2 B | `basic` | `GFX_R` | radius (int16, >=0 -- resident guards G4-rneg) (2) |  |
 | `$F670` | 2 B | `basic` | `GFX_ASPS` | 8.8 minor scale S, round(minor_ratio*256); 256=no scale (2) |  |
 | `$F672` | 2 B | `basic` | `MEMSIZ` | MS-BASIC: top of string space = HIMEM - ((MAXF+1)*267 + 2), kept live (heap_cells, D-BOOTCELLS) (2) |  |
@@ -649,8 +649,8 @@ extents the standard already fixes would be noise, not rigour.
 | `$FAF5` | 2 B | `basic` | `CSR_ADDR` | VRAM address of the cell the cursor covers (2 B) |  |
 | `$FAF7` | 1 B | `basic` | `CSR_CHAR` | the character it covers, put back on removal (1 B) |  |
 | `$FAF8` |  | `basic` | `EXBRSA` |  |  |
-| `$FAF9` | 2 B | `basic` | `PU_FMTD` | -> the format's [len][ptr] descriptor (2) |  |
-| `$FAFB` | 2 B | `basic` | `GFX_DDX` | $FAFB: this command's dx (int16) (2) |  |
+| `$FAF9` | 2 B | `basic` | `POOLSIZE` | 2 B: the size CLEAR recorded. Written ONLY by |  |
+| `$FAFB` | 2 B | `basic` | `TXTCEIL` | the text ceiling boot chose: TXTMAX or TXTMAX_NODISK (2 B) |  |
 | `$FAFD` | 1 B | `basic` | `CSR_ON` | 1 while the cursor is shown, else 0 (1 B) |  |
 | `$FAFE` | 2 B | `basic` | `RL_HL` | main -> tenant: the write cursor (LINEBUF, or AUTO's preset) (2) |  |
 | `$FB00` | 1 B | `basic` | `RL_ROW0` | the row where input began (1-based; 0 once scrolled off) (1) |  |
