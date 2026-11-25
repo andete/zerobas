@@ -100,6 +100,15 @@ that was measured (the wraps, the scroll, the edges).
     items;
   - **the cases no rule covers:** measured but not stated. It is a count, and the page's open
     list must account for every one.
+- **Every rule has a CONTROL of its own (Joost, 2026-11-25).** A control is a rival rule -- one law
+  of the model changed -- run over the reference's cases; it must be FALSE on at least one case the
+  rule itself selects. With a model that predicts a whole record (an interpreter: the keyword
+  specs' small BASIC), a rule's check is the whole model, so its ✓ says only that the model agrees
+  on the cases it selects; the rule's own control is what pins its SENTENCE. A crash of the model
+  under a rival reads FALSE, never an exception. Each `*_controls.py` fails the run when a rule has
+  no control of its own. (Every goldfish pass over the keyword regions 5-7 found ✓s that tested no
+  sentence; the controls written in answer caught three wrong rules: CLEAR's and ERROR's Overflow
+  bound, "moving the top keeps the size".)
 - **Coverage is FIELD-LEVEL.** Each case group declares its recorded outputs (`OUTPUTS`). While a
   check runs, the case records which outputs, and which list entries, it reads. An output no check
   reads is uncovered. A case merely SELECTED by a rule that reads none of its behaviour does not

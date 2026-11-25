@@ -17,3 +17,5 @@
       ➡️ When picked up: the fold of `sn_kernel` (sub/fp_sin.asm) -- f - 1/2 or f - 1 taken with more digits than the
       14-digit p has (not yet read). Joost's 2026-07-13 accuracy ruling covers the final approximation, not the
       reduction D-TANBIG chose to copy; whether this is to be copied too is the question to settle first.
+      🧭 JOOST 2026-11-25: "copy the reference's reduction" -- the 14-digit p = x * 0.15915494309190 and its fraction,
+      the folds included, as D-TANBIG did for large angles; the printed digits must equal the VG-8020's.

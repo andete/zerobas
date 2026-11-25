@@ -1,4 +1,4 @@
-- [ ] 🎯 **D-NMSHOST — ZEROBAS WITHOUT ITS DISK ROM HOSTS A DISK INTERFACE CARTRIDGE AND RUNS MSX-DOS (the host half of the disk contract)**
+- [x] 🎯 **D-NMSHOST — ZEROBAS WITHOUT ITS DISK ROM HOSTS A DISK INTERFACE CARTRIDGE AND RUNS MSX-DOS (the host half of the disk contract)**
       🔁 **TARGET SWITCHED (Joost 2026-11-24: "lets just switch to the sony"): the cartridge is now the Sony HBD-F1
       (`-ext Sony_HBD-F1`), the reference the VG-8020 with the same cartridge; probe scratchpad/dosref_probe.py.** The
       NMS 1200 boots no MSX-DOS in openMSX on any host (step 16); the steps below that name it stand as history.
@@ -205,4 +205,7 @@
       filed as D-BOOTCELLS. The same diff WITH the NMS 1200 (nmshost_probe.py's SYSDATA) is skewed on zerobas: its
       0.5 ms PC sample caught the cartridge's first code only after its first HIMEM write -- not a reliable INIT-time
       snapshot. The host-contract items for C-BIOS were handed over to C-BIOS separately (Joost's request).
-
+      ✅ CLOSED 2026-11-25 (Joost: "close it"): zerobas NODISK hosts the Sony HBD-F1 and runs MSX-DOS as the VG-8020 +
+      HBD-F1 does (host contract items 1-4 met; step 17's COMMAND.COM session identical line for line but the date
+      order, the locale's). The NMS 1200 not booting MSX-DOS is the cartridge's v6 ROM or openMSX's emulation of it,
+      on the reference too; Joost raised it with the openMSX people in person.

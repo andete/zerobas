@@ -6,3 +6,6 @@
       zerobas prints `[X]`. ⚠️ END.md's "Open files stay open" was measured on the CF-3300 (a disk file): the two
       references may DIFFER, or a disk file and `CRT:` may. Measure END + a disk file on the VG-8020 + Sony HBD-F1 and
       the CF-3300 before fixing; if the references split on a capability, the ruling for splits is Joost's.
+      🧭 JOOST 2026-11-25: "yes, measure that" -- END with a DISK file open on the VG-8020 + Sony HBD-F1 and on the
+      CF-3300 (probes/disk/disk_probe_dosmode.py's launcher takes `-ext`); not yet started (Joost: "don't do it now").
+      Which machine zerobas follows if they truly split is still to be ruled.

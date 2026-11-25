@@ -44,6 +44,9 @@
       banner, WRRES's port write was never shown (now is), BLTVD drops the dots past the right edge itself, all four
       disk BLTs write $F571-$F572. One DECISION is open on CHKSLZ: what the subject's acceptance test checks, since
       the references disagree and none returns cleanly.
+      🧭 JOOST 2026-11-25 on CHKSLZ: (a) -- it is NOT a callable service (the references disagree and two never
+      return); the acceptance test checks nothing beyond C-BIOS not crashing, and C-BIOS's immediate "find the sub-ROM"
+      return stays as a harmless extra.
       GOLDFISH PASS 1 over the 61 OLDER pages (9 fresh reviewers, scratchpad/REVIEW-m2-g*.md; 8 isolated fixers) done
       11-23 the same evening: every page now carries a "Goldfish pass 1" status line; no finding rejected outright;
       most separating cases MEASURED (new probes xspr3, xsubgc2, xsubmv2, xsubbox2, xsubgpp2, xsubscan2, xva3, xmode2,

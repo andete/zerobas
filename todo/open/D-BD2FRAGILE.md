@@ -98,3 +98,8 @@
       reveal it too. What zerobas CAN do cleanly is make its own behaviour stable -- pin $68C3's current content (or a
       deliberate stub there) so no layout change can turn it into a reset again. That is a safeguard, not fidelity:
       Joost decides whether to take it, and whether anything about the reference's landing point may be measured.
+      🧭 JOOST 2026-11-25 (the Chuckie Egg half): UNSUPPORTED -- the game calls ENASLT with SP = $000A and its RET pops
+      the BIOS ROM's own bytes at $0010-$0011 as a return address; that is undefined on any machine. No safeguard, no
+      measuring of the reference's landing, and NO size-neutral constraint on main page 1 any more: a layout change
+      may make it reset, and the tape corpus records that as a known, accepted failure, not a regression. Boulder
+      Dash II (the other half of this item) stays autonomous.

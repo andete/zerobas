@@ -85,9 +85,9 @@ error code, before statements with machine state, and the devices last. Disk com
   purely presentational split ships the VG-8020's value (Joost, 2026-09-04).
 - **Later generations** (spec-method §2.6): an MSX2's BASIC is a different ROM with more statements; each rule is
   re-measured there before a page may claim it. Until then the page's "On later generations" section is one `[A]`.
-- **Question for Joost:** the BIOS loop's 2026-11-19 ruling kept BASIC's cassette STATEMENTS out of the fix pass.
-  Are `CLOAD` / `CSAVE` / `MOTOR` and the `CAS:` forms of region 13 in D-KWSPEC's spec work, with their differences
-  filed and not fixed?
+- **Cassette statements (Joost, 2026-11-25: "I don't see a reason to treat them different").** `CLOAD`, `CSAVE`,
+  `MOTOR` and the `CAS:` forms of region 13 are specified like every other keyword, and their differences follow the
+  same rules as any other keyword's.
 
 ## 3. The harnesses
 
@@ -640,8 +640,8 @@ DRAFT 1**: DEFINT / DEFSNG / DEFDBL / DEFSTR, ERROR / ERR / ERL / RESUME, TRON /
 
 Three reviewers (scratchpad/REVIEW-m2-gkwdeft.md, -gkwerr.md, -gkwtron.md; about 140 findings). The structural finding,
 in all three: with an INTERPRETER model every rule's check is the whole model, so a rule's ✓ says only that the model
-agrees on the cases the rule selects -- not that its own SENTENCE was tested. **Working rule from here on (proposed to
-Joost, not yet ruled): every rule must have at least one one-law control that is FALSE on its own selection**; that
+agrees on the cases the rule selects -- not that its own SENTENCE was tested. **Rule from here on (Joost RULED 2026-11-25; now in
+docs/spec-method.md §3a): every rule must have at least one one-law control that is FALSE on its own selection**; that
 control is what pins the sentence. kdeftype_controls.py enforces it (a rule with no control of its own fails the run);
 the other units follow as they are reworked. Also from the pass: a model that crashes under a rival law reads FALSE,
 never an exception (kdeftype_model, kstop_model).
