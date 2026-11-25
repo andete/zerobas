@@ -103,3 +103,6 @@
       ERROR / RESUME reworked (FY 29 cases; five laws learned) and TRON / TROFF / REM reworked (FY 17 cases, all held):
       GOLDFISH PASS 1 OVER REGION 6 IS ACTED ON IN FULL (plan §6). NEXT: region 7 (program: NEW LIST LLIST DELETE
       RENUM AUTO DATA READ RESTORE DIM ERASE CLEAR).
+      **Program region, first unit (2026-11-25): DATA / READ / RESTORE at DRAFT 1** from probes/basic/spec/kdata.py
+      (29 screen cases, scratchpad/KDA_run1.out); every page claim held, zerobas agrees on all 29; 11 controls, every
+      rule pinned. NEXT: NEW / LIST / DELETE / RENUM / AUTO (the program text) and DIM / ERASE / CLEAR.

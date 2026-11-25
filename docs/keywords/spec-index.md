@@ -10,7 +10,7 @@ SPDX-License-Identifier: BSD-2-Clause
 
 Every keyword page, the region the spec loop takes it in, and how far its page has become a SPECIFICATION: measured rules, each checked against the reference machine's cases ([the plan](spec-plan.md), [the method](../spec-method.md)). A page that is not yet a spec is a "user page": it says what the keyword does and was checked by its example, but its sentences are not yet executable rules. The reference is the Philips VG-8020; disk statements, the National CF-3300.
 
-**65 of 150 keyword pages are specs; 0 are FINAL.**
+**68 of 150 keyword pages are specs; 0 are FINAL.**
 
 | keyword | region | harness | reference | page | open (not measured) | differences (TODO items, from the page) |
 |---|---|---|---|---|---|---|
@@ -85,9 +85,9 @@ Every keyword page, the region the spec loop takes it in, and how far its page h
 | `DELETE` | [program](../concepts/program-text.md) | screen + program text | VG-8020 | [user page](DELETE.md) | — | — |
 | `RENUM` | [program](../concepts/program-text.md) | screen + program text | VG-8020 | [user page](RENUM.md) | — | — |
 | `AUTO` | [program](../concepts/program-text.md) | screen + program text | VG-8020 | [user page](AUTO.md) | — | — |
-| `DATA` | [program](../concepts/program-text.md) | screen + program text | VG-8020 | [user page](DATA.md) | — | — |
-| `READ` | [program](../concepts/program-text.md) | screen + program text | VG-8020 | [user page](READ.md) | — | — |
-| `RESTORE` | [program](../concepts/program-text.md) | screen + program text | VG-8020 | [user page](RESTORE.md) | — | — |
+| `DATA` | [program](../concepts/program-text.md) | screen + program text | VG-8020 | [DRAFT 1](DATA.md) | 2 | — |
+| `READ` | [program](../concepts/program-text.md) | screen + program text | VG-8020 | [DRAFT 1](READ.md) | 2 | — |
+| `RESTORE` | [program](../concepts/program-text.md) | screen + program text | VG-8020 | [DRAFT 1](RESTORE.md) | 2 | — |
 | `DIM` | [program](../concepts/program-text.md) | screen + program text | VG-8020 | [user page](DIM.md) | — | D-DIMRESERVE |
 | `ERASE` | [program](../concepts/program-text.md) | screen + program text | VG-8020 | [user page](ERASE.md) | — | — |
 | `CLEAR` | [program](../concepts/program-text.md) | screen + program text | VG-8020 | [user page](CLEAR.md) | — | — |

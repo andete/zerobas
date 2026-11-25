@@ -105,14 +105,21 @@ class Basic:
         self.trace = False            # TRON
         self.reset()
 
-    def reset(self):
+    def reset(self, why=""):
+        if why and f"{why}-keeps-data-ptr" in self.alt:
+            keep = self.data, getattr(self, "dptr", 0)
+        else:
+            keep = None
         if "reset-clears-err" in self.alt:
             self.err, self.erl = 0, 0
         self.vars, self.arrays = {}, set()
-        self.data = None
+        self.bounds = {}
+        self.data = None              # RUN, CLEAR, NEW and an edit take READ back to the first item
         self.onerr = None
         self.handler = None           # the failing point while an error handler runs
         self.stack = []
+        if keep is not None:          # (a rival law: CLEAR / an edit keeps READ's position)
+            self.data, self.dptr = keep
 
     # -- the screen ---------------------------------------------------------------------------------------------
     def out(self, s):
@@ -216,6 +223,7 @@ class Basic:
             try:
                 to = self.stmt(st, pt)
             except Err as e:
+                line = getattr(e, "line", line)          # a DATA item's error names the DATA line
                 self.err, self.erl = e.n, (65535 if line == "D" else line)
                 if line == "D" and "typed-erl-zero" in self.alt:
                     self.erl = 0
@@ -485,20 +493,58 @@ class Basic:
                 raise Err(2)                             # the code is refused before anything after it is looked at
             raise Err(v)
         if s.startswith("DIM "):
-            name = s[4:].split("(")[0]
+            name, _, bound = s[4:].partition("(")
             if name in self.arrays:
                 raise Err(10)
             self.arrays.add(name)
+            self.bounds[name] = int(bound.rstrip(")"))
             return None
         if s.startswith("READ "):
+            if direct and "direct-read-restarts" in self.alt and not getattr(self, "_dread", False):
+                self.data, self._dread = None, True
             if self.data is None:
-                self.data = [x.strip() for k in self.lines() for st in split(self.prog[k]) if st.startswith("DATA ")
-                             for x in st[5:].split(",")]
-            name = s[5:].strip()
-            item = self.data.pop(0)
-            if "data-stops-at-rem" in self.alt:
-                item = item.split(" REM")[0]
-            self.vars[name] = item if name.endswith("$") else int(item)
+                self.data, self.dptr = self.data_items(), 0
+            for name in s[5:].split(","):
+                name = name.strip()
+                if self.dptr >= len(self.data):
+                    raise Err(4)                         # Out of DATA, also in the middle of a READ
+                dline, item = self.data[self.dptr]
+                self.dptr += 1
+                if "data-stops-at-rem" in self.alt:
+                    item = item.split(" REM")[0]
+                m = re.fullmatch(r"(\w+)\((\d+)\)", name)
+                if m:
+                    if int(m.group(2)) > self.bounds.get(m.group(1), 10) and "subscript-unchecked" not in self.alt:
+                        raise Err(9)
+                    continue
+                if name.endswith("$"):
+                    self.vars[name] = item
+                    continue
+                if item.strip() == "" and "data-empty-error" in self.alt:
+                    raise Err(2)
+                if item.strip() == "":
+                    v = 0                                # an empty item reads as 0 into a number
+                else:
+                    try:
+                        v = float(item) if not re.fullmatch(r"-?\d+", item.strip()) else int(item)
+                    except ValueError:
+                        e = Err(2)                       # text into a number: a Syntax error IN THE DATA LINE
+                        if "data-error-read-line" not in self.alt:
+                            e.line = dline
+                        raise e
+                if name.endswith("%") and not -32768 <= v <= 32767 and "read-int-no-overflow" not in self.alt:
+                    raise Err(6)
+                self.vars[name] = v
+            return None
+        if s.startswith("RESTORE"):
+            arg = s[7:].strip()
+            self.data, self.dptr = self.data_items(), 0
+            if arg and not arg.isdigit() and "restore-var-syntax" in self.alt:
+                raise Err(2)
+            if arg and "restore-n-ignored" not in self.alt:
+                if not arg.isdigit() or int(arg) not in self.prog:
+                    raise Err(8)                         # a missing line -- and ANYTHING else after RESTORE -- is 8
+                self.dptr = next((i for i, (ln, _) in enumerate(self.data) if ln >= int(arg)), len(self.data))
             return None
         if s.startswith("DATA") or s.startswith("REM"):
             if s.startswith("DATA") or "rem-keeps-colon" in self.alt:
@@ -528,7 +574,7 @@ class Basic:
             self.files.add(int(s.split("#")[1]))
             return None
         if s == "CLEAR":
-            self.reset()
+            self.reset("clear")
             if "clear-keeps-cont" not in self.alt:
                 self.cont = None
             return None
@@ -544,6 +590,32 @@ class Basic:
             self.vars[m.group(1)] = self.value(m.group(2))
             return None
         raise Err(2)
+
+    def data_items(self):
+        """the program's DATA items in order, as (line, text): leading spaces skipped, trailing spaces kept, quotes
+        protecting `,` and `:` (an unterminated quote runs to the end of the line), an empty item empty"""
+        out = []
+        for ln in self.lines():
+            for st in split(self.prog[ln], self.alt):
+                if not st.startswith("DATA"):
+                    continue
+                t, i = st[4:], 0
+                while True:
+                    while i < len(t) and t[i] == " ":
+                        i += 1
+                    if i < len(t) and t[i] == '"':
+                        j = t.find('"', i + 1)
+                        j = len(t) if j < 0 else j
+                        out.append((ln, t[i:j + 1] if "data-quotes-kept" in self.alt else t[i + 1:j]))
+                        k = t.find(",", j)
+                    else:
+                        k = t.find(",", i)
+                        it = t[i:] if k < 0 else t[i:k]
+                        out.append((ln, it.rstrip() if "data-trim-trailing" in self.alt else it))
+                    if k < 0:
+                        break
+                    i = k + 1
+        return out
 
     def next_line(self, pt):
         later = [k for k in self.lines() if k > pt[0]]
@@ -569,7 +641,7 @@ class Basic:
             else:
                 del self.prog[n]
             if "edit-keeps-vars" not in self.alt:
-                self.reset()
+                self.reset("edit")
             if "edit-keeps-cont" not in self.alt:
                 self.cont = None
             return

@@ -672,3 +672,14 @@ PRINT with a comma). All 17 predictions held; zerobas agrees on all. The small B
 READ, and lost an empty-THEN bug its own new case exposed. 13 controls, every rule pinned; the kstop, kerr, ktron and
 kdeftype controls all enforce "a control of its own" now. Each page has its own Open list (one paragraph had been
 copied across all three).
+
+### The program region's first unit (2026-11-25): DATA, READ, RESTORE
+
+[kdata.py](../../probes/basic/spec/kdata.py), 29 SCREEN cases (run file [scratchpad/KDA_run1.out](../../scratchpad/KDA_run1.out)),
+taken from the three pages' own claims: DATA's item cutting (spaces, quotes protecting `,` and `:`, an unterminated
+quote, empty items), a bad item's Syntax error in the DATA line, Out of DATA mid-READ, the position across RUN / CLEAR /
+an edit / a direct READ, RESTORE n to a line with and without DATA, `RESTORE X` and `RESTORE,` (8). Every page claim
+held; zerobas agrees on all 29. The small BASIC gained real DATA cutting and one READ pointer
+(kstop / kerr / ktron screens still predicted). 11 controls, every rule pinned by one of its own -- the first unit
+built under the working rule from the start. Two stale page sentences corrected (READ's Overflow row, RESTORE's
+"not yet measured").
