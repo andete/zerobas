@@ -2304,8 +2304,8 @@ GFX_CS_M2       equ     GFX_CS_M1 + 4   ; $F5AD: r*r for the same compare (4)
                                         ; GFX_PSP at +8 made the missing width visible.)
 ; (GFX_DBUF, the 256 B frame buffer at GFX_PSTK, and GFX_DFREE, its fill cursor,
 ; RETIRED by D-DRAWINPLACE: the frames are the strings' own bodies.)
-GFX_DPTR        equ     $FC8A           ; $FC8A: parse cursor in the current frame (2)
-GFX_DEND        equ     $FC8C           ; $FC8C: one past the current frame's last byte (2)
+GFX_DPTR        equ     $F712           ; $F712: parse cursor in the current frame (2)
+GFX_DEND        equ     $F714           ; $F714: one past the current frame's last byte (2)
 GFX_DFTOP       equ     BUFTX + 24           ; $F57F: X-frame stack depth (1)
                                 ; D-WSZERO S14d: BUF, DRAW (was $ED38)
 GFX_DFCAP       equ     8               ; max X nesting (own-design cap, D-G6-4)
@@ -2314,11 +2314,11 @@ GFX_DFSTK       equ     GFX_DFTOP + 1   ; $F580: saved [ptr][end] per outer fram
                                 ; COMES FIRST ON PURPOSE (D-RAMGATE): with only
                                 ; "4 B each" the map read the WIDTH as 4 and
                                 ; reported this array's own 28 B as a free run.
-GFX_DCMD        equ     $FC8E                     ; $FC8E: current command's start cursor,
+GFX_DCMD        equ     $F716                     ; $F716: current command's start cursor,
                                         ; the rewind point for a substitution (2)
-GFX_DSUBN       equ     $FC90           ; $FC90: substitutions RESOLVED for this command (1)
-GFX_DSUBI       equ     $FC91           ; $FC91: substitutions SEEN so far this re-parse (1)
-GFX_DSUB        equ     $FC92           ; $FC92: the resolved values, 2 slots (M takes two) (4)
+GFX_DSUBN       equ     $F718           ; $F718: substitutions RESOLVED for this command (1)
+GFX_DSUBI       equ     $F719           ; $F719: substitutions SEEN so far this re-parse (1)
+GFX_DSUB        equ     $F703           ; $F703: the resolved values, 2 slots (M takes two) (4)
 GFX_DSUBLEN     equ     $FC96           ; $FC96: slot 0's string length (X only) (1)
 GFX_DREQ        equ     $FC97           ; $FC97: tenant->resident: 0 = done, 1 = resolve an
                                         ; int, 2 = resolve a string (1)
@@ -4411,8 +4411,15 @@ CAS_VMIS        equ     $F879   ; sticky: 1 = a verify mismatch was seen (1) -- 
 ; That is not a convenience: D-CTLCROSS (§12) measured that BOTH references
 ; refuse to match a `FOR` frame lying below a live GOSUB frame, and this is the
 ; invariant that reproduces it with no per-frame type tag and no walk.
-GSP             equ     $F703   ; newest GOSUB frame's address; == CTLTOP if none (2)
-FSP             equ     $F705   ; the FOR run's FLOOR: FOR frames are [CSP,FSP) (2)
+; 🔁 D-BOOTCELLS step 3 (2026-11-25): the pool's six pointers left PARM1 ($F703-$F706,
+; $F712-$F719: the reference's DEF FN parameter area, 0 there after boot, A0F0 / 0580
+; here) for TRPTBL's reserved tail $FC8A-$FC95 -- past the 18 entries MSX1 BASIC
+; defines, constant 0 on the VG-8020 through boot / RUN / CLEAR / MAXFILES / FILES /
+; PLAY / graphics / traps (scratchpad/AE_bootcells3_hosts.out) -- in the same order
+; (CSP CTLTOP TSP CTLLIM GSP FSP). DRAW's transient parse cells, which sat there,
+; took the PARM1 bytes in exchange: the reference itself leaves residue in PARM1.
+GSP             equ     $FC92   ; newest GOSUB frame's address; == CTLTOP if none (2)
+FSP             equ     $FC94   ; the FOR run's FLOOR: FOR frames are [CSP,FSP) (2)
 ; D-FORFLOAT (docs/spec-basic-forfloat.md): a FOR frame is 25 B, the reference's
 ; own size (docs/reference-stack-frames.md §2), laid out
 ;   [name1][name0][type] [limit: type + 8] [step: type + 8] [CURLINE:2] [body:2]
@@ -4442,7 +4449,7 @@ FOR_SIGN        equ     FOR_CUR + 25    ; NEXT's scratch: the step's sign byte (
 ; D-CTLPOOL: $E050.. held GOSUB_STK (8 x 6 B). The array is retired; these six
 ; bytes are the pool's own pointers and $E058..$E080 was FREE (addresses as of
 ; that slice: D-RAMSHIFT moved the block +$0B00 on 2026-10-13).
-CSP             equ     $F712   ; the pool's allocation frontier, descending (2)
+CSP             equ     $FC8A   ; the pool's allocation frontier, descending (2)
 ; --- CTL_STACK_MARGIN: what the pool leaves for the MACHINE STACK ------------
 ; D-SPMERGE cut 2. `SP` now descends from the pool's frontier, so the frontier
 ; cannot be allowed down to `CTLLIM` -- the next expression the evaluator
@@ -4604,9 +4611,9 @@ STK_ALLOC_RESERVE equ   86
 ; no bound any more: SL_CEIL is STKTOP less this reserve, and STKTOP (= CTLTOP)
 ; sits 2 B below the old CTLTOP. Old edge CTLTOP_old + 4 - 141 = STKTOP - 135.
 STK_STORE_RESERVE equ   135
-CTLTOP          equ     $F714   ; the pool's TOP = strheap_varceil(), cached (2)
-TSP             equ     $F716   ; newest trap SERVICE record; valid iff TRAPSVC != 0 (2)
-CTLLIM          equ     $F718   ; the pool's collision FLOOR = ARYEND+2 (2). Written (2 B)
+CTLTOP          equ     $FC8C   ; the pool's TOP = strheap_varceil(), cached (2)
+TSP             equ     $FC8E   ; newest trap SERVICE record; valid iff TRAPSVC != 0 (2)
+CTLLIM          equ     $FC90   ; the pool's collision FLOOR = ARYEND+2 (2). Written (2 B)
                                 ; sub-side by strheap_ctllim at the two allocator
                                 ; success paths and at reset; read by the main ROM's
                                 ; ctl_alloc on every push. ARYEND needs an array-chain
@@ -6022,8 +6029,12 @@ MSGESC_SUB      equ     6       ; body = this byte alone -> the sub-ROM tenant
     IF SUBSLOT > $FB02
                 db      BOOTCELLS_SUBSLOT_PAST_THE_MSX2_ONLY_BYTES
     ENDIF
-    IF GFX_Y2 + 2 > CSP
-                db      S11_LINE_ENDPOINTS_OVERRAN_INTO_CSP
+; ...and the control pool's six pointers inside TRPTBL's reserved tail, below GFX_DVAL.
+    IF CSP <= SUBSLOT_OK || FSP + 2 > GFX_DVAL
+                db      BOOTCELLS_CONTROL_POOL_LEFT_THE_TRPTBL_TAIL
+    ENDIF
+    IF GFX_Y2 + 2 > GFX_DPTR
+                db      S11_LINE_ENDPOINTS_OVERRAN_INTO_GFX_DPTR
     ENDIF
     IF GFX_CYC + 2 > FN_BASE
                 db      S11_CIRCLE_CELLS_OVERRAN_INTO_THE_FN_FRAME

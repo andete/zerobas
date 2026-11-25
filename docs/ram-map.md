@@ -468,18 +468,18 @@ extents the standard already fixes would be noise, not rigour.
 | `$F6FF` | 1 B | `basic` | `ENDFLAG` | 1 = END/STOP reached, stop the run (1 B) |  |
 | `$F700` | 2 B | `basic` | `RESUMEPTR` | mid-line resume token pointer (2) |  |
 | `$F702` | 1 B | `basic` | `RESUMEFLAG` | 1 = resume at RESUMEPTR (set by RETURN / NEXT) (1 B) |  |
-| `$F703` | 2 B | `basic` | `GSP` | newest GOSUB frame's address; == CTLTOP if none (2) |  |
-| `$F705` | 2 B | `basic` | `FSP` | the FOR run's FLOOR: FOR frames are [CSP,FSP) (2) |  |
+| `$F703` | 4 B | `basic` | `GFX_DSUB` | $F703: the resolved values, 2 slots (M takes two) (4) |  |
 | `$F707` | 1 B | `basic` | `SEQ_EOF` | seqio tenant -> main: 1 = the TAPE channel is at its end (D-EOFCAS; S10.C) (1 B) |  |
 | `$F708` | 2 B | `basic` | `ARY_CUR` | [D-ARR-C] the text cursor, parked across the engine call (2) |  |
 | `$F70A` | 2 B | `basic` | `GFX_X1` | LINE endpoint 1 X (int16 LE) -- resident marshals, tenant reads |  |
 | `$F70C` | 2 B | `basic` | `GFX_Y1` | LINE endpoint 1 Y (int16 LE) |  |
 | `$F70E` | 2 B | `basic` | `GFX_X2` | LINE endpoint 2 X (int16 LE) |  |
 | `$F710` | 2 B | `basic` | `GFX_Y2` | LINE endpoint 2 Y (int16 LE) |  |
-| `$F712` | 2 B | `basic` | `CSP` | the pool's allocation frontier, descending (2) |  |
-| `$F714` | 2 B | `basic` | `CTLTOP` | the pool's TOP = strheap_varceil(), cached (2) |  |
-| `$F716` | 2 B | `basic` | `TSP` | newest trap SERVICE record; valid iff TRAPSVC != 0 (2) |  |
-| `$F718` | 2 B | `basic` | `CTLLIM` | the pool's collision FLOOR = ARYEND+2 (2). Written (2 B) |  |
+| `$F712` | 2 B | `basic` | `GFX_DPTR` | $F712: parse cursor in the current frame (2) |  |
+| `$F714` | 2 B | `basic` | `GFX_DEND` | $F714: one past the current frame's last byte (2) |  |
+| `$F716` | 2 B | `basic` | `GFX_DCMD` | $F716: current command's start cursor, |  |
+| `$F718` | 1 B | `basic` | `GFX_DSUBN` | $F718: substitutions RESOLVED for this command (1) |  |
+| `$F719` | 1 B | `basic` | `GFX_DSUBI` | $F719: substitutions SEEN so far this re-parse (1) |  |
 | `$F71A` | 2 B | `basic` | `SL_CEIL` | store_line: the ceiling a store stays below (2 B) |  |
 | `$F71C` | 16 B | `basic` | `FCH_MODES` | 16 B ($F71C..$F72B) |  |
 | `$F71C` | 16 B | `disk` | `FCH_MODES` | 16 B ($F71C..$F72B) |  |
@@ -688,12 +688,12 @@ extents the standard already fixes would be noise, not rigour.
 | `$FC87` | 1 B | `basic` | `TRAPSVC` | 1 B: count of live SERVICING entries == depth of the |  |
 | `$FC88` | 1 B | `basic` | `SUBSLOT_OK` | 1 = a CD sub-ROM was found and recorded, else 0 (1 B) |  |
 | `$FC89` | 1 B | `basic` | `STOPHOLD` | (TRPTBL tail, D-WSZERO) D-STOPTAP: frames Ctrl-STOP has been held (1) |  |
-| `$FC8A` | 2 B | `basic` | `GFX_DPTR` | $FC8A: parse cursor in the current frame (2) |  |
-| `$FC8C` | 2 B | `basic` | `GFX_DEND` | $FC8C: one past the current frame's last byte (2) |  |
-| `$FC8E` | 2 B | `basic` | `GFX_DCMD` | $FC8E: current command's start cursor, |  |
-| `$FC90` | 1 B | `basic` | `GFX_DSUBN` | $FC90: substitutions RESOLVED for this command (1) |  |
-| `$FC91` | 1 B | `basic` | `GFX_DSUBI` | $FC91: substitutions SEEN so far this re-parse (1) |  |
-| `$FC92` | 4 B | `basic` | `GFX_DSUB` | $FC92: the resolved values, 2 slots (M takes two) (4) |  |
+| `$FC8A` | 2 B | `basic` | `CSP` | the pool's allocation frontier, descending (2) |  |
+| `$FC8C` | 2 B | `basic` | `CTLTOP` | the pool's TOP = strheap_varceil(), cached (2) |  |
+| `$FC8E` | 2 B | `basic` | `TSP` | newest trap SERVICE record; valid iff TRAPSVC != 0 (2) |  |
+| `$FC90` | 2 B | `basic` | `CTLLIM` | the pool's collision FLOOR = ARYEND+2 (2). Written (2 B) |  |
+| `$FC92` | 2 B | `basic` | `GSP` | newest GOSUB frame's address; == CTLTOP if none (2) |  |
+| `$FC94` | 2 B | `basic` | `FSP` | the FOR run's FLOOR: FOR frames are [CSP,FSP) (2) |  |
 | `$FC96` | 1 B | `basic` | `GFX_DSUBLEN` | $FC96: slot 0's string length (X only) (1) |  |
 | `$FC97` | 1 B | `basic` | `GFX_DREQ` | $FC97: tenant->resident: 0 = done, 1 = resolve an |  |
 | `$FC98` | 1 B | `basic` | `GFX_DRESUME` | $FC98: resident->tenant: 1 = resuming (1) |  |
