@@ -570,6 +570,15 @@ compare predicted one run) and **a second FOR on the same variable stacks a new 
 past the limit". zerobas: 11 cases differ, all filed -- D-FORINTLIM widened (start / limit / step conversion),
 D-FORSTEP0 pinned, and two new items, D-NEXTFRAME (a failed NEXT J drops the open frame) and D-FORCOMMA.
 
+**GOTO / GOSUB / RETURN reworked (2026-11-25), the second.** [kgosub_model.py](../../probes/basic/spec/kgosub_model.py)
+is an interpreter over the case's own lines (the line number read digit by digit across spaces and only within 65529,
+`GO TO` as the tokenizer's synonym, ONE stack for GOSUB and FOR, RETURN's check for a GOSUB before anything else);
+[kgosub_controls.py](../../probes/basic/spec/kgosub_controls.py) holds 13 one-law rivals, each FALSE on some case.
+[kgosub.py](../../probes/basic/spec/kgosub.py) gained group FY, 21 separating cases (absolute lines 6553 / 7000 for the
+split at 65529). All 21 predictions for FY held. The frame keeps its GOTO on purpose (a wrong frame jump is refused by
+the record frame's own check, never a plausible record) -- stated on the pages. zerobas: one new difference,
+D-GOSUBFRAME (a GOSUB to a missing line pushes a frame).
+
 ### The errors region's first unit (2026-11-25): DEFINT, DEFSNG, DEFDBL, DEFSTR -- the first interpreter model
 
 [kdeftype.py](../../probes/basic/spec/kdeftype.py), 58 cases on the RAM-record harness (run file

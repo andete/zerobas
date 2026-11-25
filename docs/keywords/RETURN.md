@@ -6,12 +6,13 @@ SPDX-License-Identifier: BSD-2-Clause
 
 # `RETURN` — come back from a subroutine
 
-> **Spec:** DRAFT 1 (2026-11-25) — 9 cases measured on the Philips VG-8020 (BASIC's reference) and on
+> **Spec:** DRAFT 1 (2026-11-25) — 16 cases measured on the Philips VG-8020 (BASIC's reference) and on
 > zerobas, by typed BASIC ([`kgosub.py`](../../probes/basic/spec/kgosub.py), with GOTO's, GOSUB's and RETURN's cases
-> together); every rule is executable and every recorded output is read by one. Not yet reviewed ([the keyword
+> together); every rule is executable and every recorded output is read by one. Goldfish pass 1 acted on
+> (2026-11-25: the model is now an interpreter, 7 more cases); not yet re-reviewed ([the keyword
 > plan](spec-plan.md)).
 >
-> **Status (2026-10-09):** level 3 — happy path ✓ · reasonable time ✓ · common
+> **Status (2026-11-25):** level 3 — happy path ✓ · reasonable time ✓ · common
 > errors ✓ · RAM usage not yet proven · every error ✓. No known divergence.
 > Speed is deliberately left out of these docs until on-par speed is
 > established for every keyword.
@@ -47,7 +48,8 @@ RETURN <line number>
   keeps those that were open before the `GOSUB`.
 - **It cannot be used to leave an `ON ERROR` handler.** A handler is not
   entered through `GOSUB`, so `RETURN` there is error 3 on both reference
-  machines — use `RESUME`.
+  machines — use `RESUME` (an older measurement; the spec probe has no
+  such case yet, see Open).
 - **`RETURN` at the end of an `ON KEY`/`ON INTERVAL`/... `GOSUB` handler**
   also switches that trap back on.
 
@@ -102,44 +104,57 @@ Reference: the Philips VG-8020's MSX BASIC. Ours: zerobas on the diskless machin
 The tables are generated from the checks, so a sentence here cannot say more than the data does.
 
 **Evidence.** One probe, [`probes/basic/spec/kgosub.py`](../../probes/basic/spec/kgosub.py) (on the shared RAM-record
-harness [`ramrec.py`](../../probes/basic/spec/ramrec.py)), typed on both machines; run file
-[`scratchpad/KGS_run1.out`](../../scratchpad/KGS_run1.out) (2026-11-25; zerobas's side on that day's build). Each case
-is a block of 30 lines from its base n: line n starts from nothing (`CLEAR`, `ON ERROR` set again), runs the
-statement(s) under test and ends `GOTO n+25`; the case's own target lines sit at n+5 .. n+20; n+25 records the first
-and the last error (RESUME NEXT carries on after one), a counter WN% and WP%, the bits of the lines the case reached
-(1 line n, 2 the rest of line n after a GOSUB, 4 / 8 / 16 lines n+5 / n+10 / n+15) -- so a rule says WHICH lines ran.
-A loop that could run for ever carries the guard `ON -(WN%>20) GOTO n+25` (21 = "did not stop").
+harness [`ramrec.py`](../../probes/basic/spec/ramrec.py)), typed on both machines as two programs, groups FX (the first
+run's cases) and FY (goldfish pass 1's separating cases); run file
+[`scratchpad/KGS_run1.out`](../../scratchpad/KGS_run1.out) (2026-11-25). Each case is a block of 30 lines from its base
+n: line n starts from nothing (`CLEAR`, `ON ERROR` set again), runs the statement(s) under test and ends `GOTO n+25`;
+the case's own target lines sit at n+5 .. n+20 (an FY case may add an ABSOLUTE line, 6553 or 7000, far past every
+case); n+25 records the first and the last error (RESUME NEXT carries on after one), a counter WN% and WP%, the bits
+of the lines the case reached (2 the rest of line n after a GOSUB, 4 / 8 / 16 lines n+5 / n+10 / n+15) -- so a rule
+says WHICH lines ran. A loop that could run for ever carries the guard `ON -(WN%>20) GOTO n+25` (21 = "more than 20").
+**The frame uses GOTO**, the keyword under test, on purpose: a frame GOTO that went wrong would land outside its case,
+and the record frame's own check refuses such a run -- it cannot produce a plausible wrong record. The model,
+[`kgosub_model.py`](../../probes/basic/spec/kgosub_model.py), is an INTERPRETER: it runs each case's lines with the laws
+the rules state (the line number's reading, one stack for GOSUB and FOR, RETURN's order of checks) and holds no
+per-case answer.
 - **[KGS FX *i*]** (RETURN):
-  16: `RETURN`
-  17: `GOSUB n+5:WP%=WP% OR 2` (line n+5: `WP%=WP% OR 4:RETURN n+10`; line n+10: `WP%=WP% OR 8`)
-  18: `GOSUB n+5:WP%=WP% OR 2` (line n+5: `WP%=WP% OR 4:RETURN 65000`)
-  19: `GOSUB n+5:WP%=WP% OR 2` (line n+5: `WP%=WP% OR 4:RETURN:WP%=WP% OR 8`)
-  20: `GOSUB n+5:WP%=WP% OR 2:RETURN` (line n+5: `RETURN`)
-  21: `FOR I=1 TO 2:GOSUB n+5:WN%=WN%+1:NEXT` (line n+5: `RETURN`)
-  22: `GOSUB n+5:WP%=WP% OR 2:NEXT` (line n+5: `FOR I=1 TO 3:WN%=WN%+1:RETURN`)
-  23: `GOSUB n+5:WP%=WP% OR 2` (line n+5: `FOR I=1 TO 3:WN%=WN%+1:<guard>:NEXT:RETURN`)
-  24: `FOR I=1 TO 2:GOSUB n+5:WP%=WP% OR 2` (line n+5: `WN%=WN%+1:<guard>:NEXT`)
+  16: `RETURN` -- RETURN without GOSUB
+  17: `GOSUB {L5}:WP%=WP% OR 2` (line n+10: `WP%=WP% OR 8`; line n+5: `WP%=WP% OR 4:RETURN {L10}`) -- RETURN with a line number
+  18: `GOSUB {L5}:WP%=WP% OR 2` (line n+5: `WP%=WP% OR 4:RETURN 65000`) -- RETURN to a line that does not exist
+  19: `GOSUB {L5}:WP%=WP% OR 2` (line n+5: `WP%=WP% OR 4:RETURN:WP%=WP% OR 8`) -- statements after RETURN
+  20: `GOSUB {L5}:WP%=WP% OR 2:RETURN` (line n+5: `RETURN`) -- a second RETURN once the GOSUB came back
+  21: `FOR I=1 TO 2:GOSUB {L5}:WN%=WN%+1:NEXT` (line n+5: `RETURN`) -- GOSUB inside FOR
+  22: `GOSUB {L5}:WP%=WP% OR 2:NEXT` (line n+5: `FOR I=1 TO 3:WN%=WN%+1:RETURN`) -- RETURN from inside a FOR in the subroutine, then NEXT
+  23: `GOSUB {L5}:WP%=WP% OR 2` (line n+5: `FOR I=1 TO 3:WN%=WN%+1:<guard>:NEXT:RETURN`) -- a whole FOR inside the subroutine
+  24: `FOR I=1 TO 2:GOSUB {L5}:WP%=WP% OR 2` (line n+5: `WN%=WN%+1:<guard>:NEXT`) -- NEXT inside the subroutine for a FOR outside it
+- **[KGS FY *i*]** (RETURN, goldfish pass 1):
+  0: `GOSUB {L5}:WP%=WP% OR 2` (line n+10: `WP%=WP% OR 8:RETURN`; line n+5: `WP%=WP% OR 4:RETURN {L10}`) -- RETURN n closes the subroutine
+  1: `GOSUB {L5}:WP%=WP% OR 2` (line n+5: `WP%=WP% OR 4:RETURN 65000:WN%=WN%+1:RETURN`) -- RETURN n to a missing line closes the subroutine first
+  2: `RETURN 65000` -- RETURN n with nothing open
+  3: `WK=1:RETURN WK` -- RETURN and a variable with nothing open
+  4: `GOSUB {L5}:WP%=WP% OR 2:NEXT I` (line n+5: `FOR I=1 TO 3:FOR J=1 TO 2:RETURN`) -- RETURN drops every FOR opened in the subroutine
+  5: `FOR I=1 TO 2:GOSUB {L5}:WP%=WP% OR 2` (line n+5: `WN%=WN%+1:<guard>:NEXT I`) -- NEXT I in the subroutine for a FOR outside it
+  6: `GOSUB {L5}:WP%=WP% OR 2` (line n+5: `WP%=WP% OR 4:RETURN "A"`) -- RETURN and a string
 
-**Controls** ([`kgosub_controls.py`](../../probes/basic/spec/kgosub_controls.py)): each is a rival rule run over the
-reference's cases: “RETURN keeps the subroutine's FOR frames” is FALSE on 1 of the 2 cases R-RETURN-FRAMES selects (e.g. KGS FX 22); “NEXT in a subroutine reaches a FOR outside it” is FALSE on 1 of the 2 cases R-RETURN-FRAMES selects (e.g. KGS FX 24); “RETURN n ignores n and comes back after the GOSUB” is FALSE on 1 of the 4 cases R-RETURN-BACK selects (e.g. KGS FX 17).
+**Controls** ([`kgosub_controls.py`](../../probes/basic/spec/kgosub_controls.py)): each changes ONE law of the interpreter model and runs over the reference's cases: “RETURN n keeps the subroutine open” is FALSE on 1 of the 5 cases R-RETURN-BACK selects (e.g. KGS FY 0); “RETURN drops only its GOSUB, the FOR frames stay” is FALSE on 2 of the 4 cases R-RETURN-FRAMES selects (e.g. KGS FX 22); “NEXT reaches a FOR below the GOSUB” is FALSE on 2 of the 4 cases R-RETURN-FRAMES selects (e.g. KGS FX 24); “RETURN reads its line number before checking for a GOSUB” is FALSE on 3 of the 7 cases R-RETURN-ERRORS selects (e.g. KGS FY 1); “RETURN n looks the line up before closing” is FALSE on 1 of the 7 cases R-RETURN-ERRORS selects (e.g. KGS FY 1).
 
 <!-- RULES BEGIN -->
 <!-- GENERATED by tools/spec_rules.py from probes/basic/spec/return_rules.py -- do not edit; `python3 tools/spec_rules.py probes/basic/spec/return_rules.py --write` -->
 
-**3 rules; 3 hold on the reference. Of the 36 recorded outputs (each case's first and last error, WN% (a counter; 21 = the probe's guard ended a loop that did not stop) and WP% (the bits of the lines the case reached)): 36 read by a rule's check, 0 declared NOT evidence (below), 0 unread.**
+**3 rules; 3 hold on the reference. Of the 64 recorded outputs (each case's first and last error, WN% (a counter; 21 = the probe's guard ended a loop that did not stop) and WP% (the bits of the lines the case reached)): 64 read by a rule's check, 0 declared NOT evidence (below), 0 unread.**
 
 #### 1. Coming back
 
 | rule | cases | reference | zerobas |
 |---|---|---|---|
-| **R-RETURN-BACK** RETURN continues after its GOSUB; the rest of RETURN's own line is not run. RETURN n continues at line n instead, dropping the GOSUB. A GOSUB inside a FOR returns into the loop, which goes on (2 runs); a whole FOR inside the subroutine runs before RETURN (3 runs). | 4 | ✓ | ✓ |
-| **R-RETURN-FRAMES** RETURN drops every FOR frame opened since its GOSUB: a NEXT after it is error 1 (NEXT without FOR); and a NEXT inside a subroutine does not reach a FOR opened before the GOSUB (error 1). | 2 | ✓ | ✓ |
+| **R-RETURN-BACK** RETURN continues after its GOSUB; the rest of RETURN's own line is not run. RETURN n closes the subroutine and continues at line n (a second RETURN there is error 3). A GOSUB inside a FOR returns into the loop, which goes on; a whole FOR inside the subroutine runs before RETURN. | 5 | ✓ | ✓ |
+| **R-RETURN-FRAMES** GOSUB and FOR share one stack. RETURN drops every FOR frame opened since its GOSUB, however many: a NEXT after it is error 1 (NEXT without FOR); and a NEXT inside a subroutine -- bare or named -- does not reach a FOR opened before the GOSUB (error 1). | 4 | ✓ | ✓ |
 
 #### 2. Errors
 
 | rule | cases | reference | zerobas |
 |---|---|---|---|
-| **R-RETURN-ERRORS** RETURN with no GOSUB pending is error 3 (RETURN without GOSUB) -- also a second RETURN once the GOSUB came back; RETURN n to a line that does not exist is error 8. | 3 | ✓ | ✓ |
+| **R-RETURN-ERRORS** RETURN with no GOSUB pending is error 3 (RETURN without GOSUB), checked BEFORE anything after it is read (`RETURN 65000`, `RETURN WK` with nothing open: 3) -- also a second RETURN once the GOSUB came back. RETURN n to a line that does not exist is error 8 with the subroutine already closed (a RETURN after it is 3); RETURN and a string is error 2. | 7 | ✓ | ✓ |
 
 <!-- RULES END -->
 

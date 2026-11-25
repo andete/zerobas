@@ -6,14 +6,15 @@ SPDX-License-Identifier: BSD-2-Clause
 
 # `GOTO` — jump to a line
 
-> **Spec:** DRAFT 1 (2026-11-25) — 13 cases measured on the Philips VG-8020 (BASIC's reference) and on
+> **Spec:** DRAFT 1 (2026-11-25) — 22 cases measured on the Philips VG-8020 (BASIC's reference) and on
 > zerobas, by typed BASIC ([`kgosub.py`](../../probes/basic/spec/kgosub.py), with GOTO's, GOSUB's and RETURN's cases
-> together); every rule is executable and every recorded output is read by one. Not yet reviewed ([the keyword
+> together); every rule is executable and every recorded output is read by one. Goldfish pass 1 acted on
+> (2026-11-25: the model is now an interpreter, 9 more cases); not yet re-reviewed ([the keyword
 > plan](spec-plan.md)).
 >
 > **Status (2026-11-25):** level 3 — happy path ✓ · reasonable time ✓ · common
 > errors ✓ · RAM usage not yet proven · every error ✓. No recorded
-> difference since the `IF … GOTO` form was fixed on 2026-10-24.
+> difference since `GO TO` with one space was fixed on 2026-11-25 (D-GOTOSPACE).
 > Speed is deliberately left out of these docs until on-par speed is
 > established for every keyword.
 
@@ -35,8 +36,9 @@ The line number is a constant; `GOTO A` and `GOTO "100"` are not allowed.
 
 ## Details
 
-- **Anything after the line number is never reached**, so `GOTO 100 ZZ` is
-  accepted on both machines.
+- **The line number takes every digit, even across a space; anything else
+  after it is never reached**: `GOTO 224 5` is `GOTO 2245`, and `GOTO 100 ZZ` jumps
+  to 100 on both machines.
 - **A line number stops before it would pass 65529.** The digits of
   `GOTO 70000` are read as `GOTO 7000` followed by a stray `0`, so with no
   line 7000 it is `Undefined line number` on both machines
@@ -100,48 +102,64 @@ Reference: the Philips VG-8020's MSX BASIC. Ours: zerobas on the diskless machin
 The tables are generated from the checks, so a sentence here cannot say more than the data does.
 
 **Evidence.** One probe, [`probes/basic/spec/kgosub.py`](../../probes/basic/spec/kgosub.py) (on the shared RAM-record
-harness [`ramrec.py`](../../probes/basic/spec/ramrec.py)), typed on both machines; run file
-[`scratchpad/KGS_run1.out`](../../scratchpad/KGS_run1.out) (2026-11-25; zerobas's side on that day's build). Each case
-is a block of 30 lines from its base n: line n starts from nothing (`CLEAR`, `ON ERROR` set again), runs the
-statement(s) under test and ends `GOTO n+25`; the case's own target lines sit at n+5 .. n+20; n+25 records the first
-and the last error (RESUME NEXT carries on after one), a counter WN% and WP%, the bits of the lines the case reached
-(1 line n, 2 the rest of line n after a GOSUB, 4 / 8 / 16 lines n+5 / n+10 / n+15) -- so a rule says WHICH lines ran.
-A loop that could run for ever carries the guard `ON -(WN%>20) GOTO n+25` (21 = "did not stop").
+harness [`ramrec.py`](../../probes/basic/spec/ramrec.py)), typed on both machines as two programs, groups FX (the first
+run's cases) and FY (goldfish pass 1's separating cases); run file
+[`scratchpad/KGS_run1.out`](../../scratchpad/KGS_run1.out) (2026-11-25). Each case is a block of 30 lines from its base
+n: line n starts from nothing (`CLEAR`, `ON ERROR` set again), runs the statement(s) under test and ends `GOTO n+25`;
+the case's own target lines sit at n+5 .. n+20 (an FY case may add an ABSOLUTE line, 6553 or 7000, far past every
+case); n+25 records the first and the last error (RESUME NEXT carries on after one), a counter WN% and WP%, the bits
+of the lines the case reached (2 the rest of line n after a GOSUB, 4 / 8 / 16 lines n+5 / n+10 / n+15) -- so a rule
+says WHICH lines ran. A loop that could run for ever carries the guard `ON -(WN%>20) GOTO n+25` (21 = "more than 20").
+**The frame uses GOTO**, the keyword under test, on purpose: a frame GOTO that went wrong would land outside its case,
+and the record frame's own check refuses such a run -- it cannot produce a plausible wrong record. The model,
+[`kgosub_model.py`](../../probes/basic/spec/kgosub_model.py), is an INTERPRETER: it runs each case's lines with the laws
+the rules state (the line number's reading, one stack for GOSUB and FOR, RETURN's order of checks) and holds no
+per-case answer.
 - **[KGS FX *i*]** (GOTO):
-  0: `WP%=1:GOTO n+5:WP%=WP% OR 2` (line n+5: `WP%=WP% OR 4`)
-  1: `GOTO n+10` (line n+5: `WP%=WP% OR 4`; line n+10: `WP%=WP% OR 8`)
-  2: `WN%=0:GOTO n+5` (line n+5: `WN%=WN%+1:WP%=WP% OR 4:<guard>:GOTO n+5`)
-  3: `GOTO 65000`
-  4: `GOTO 65530`
-  5: `GOTO`
-  6: `WK=1:GOTO WK`
-  7: `GO TO n+5` (line n+5: `WP%=WP% OR 4`)
-  8: `GOTO n+5 7` (line n+5: `WP%=WP% OR 4`)
-  25: `GOSUB n+5:WP%=WP% OR 2` (line n+5: `WP%=WP% OR 4:GOTO n+10`; line n+10: `WP%=WP% OR 8:RETURN`)
-  27: `GO  TO n+5` (line n+5: `WP%=WP% OR 4`)
-  28: `IF 1 THEN GO TO n+5` (line n+5: `WP%=WP% OR 4`)
-  29: `GO`
+  0: `WP%=1:GOTO {L5}:WP%=WP% OR 2` (line n+5: `WP%=WP% OR 4`) -- a forward GOTO skips the rest of the line
+  1: `GOTO {L10}` (line n+10: `WP%=WP% OR 8`; line n+5: `WP%=WP% OR 4`) -- GOTO skips the lines between
+  2: `WN%=0:GOTO {L5}` (line n+5: `WN%=WN%+1:WP%=WP% OR 4:<guard>:GOTO {L5}`) -- a GOTO loop (the guard ends it)
+  3: `GOTO 65000` -- a line that does not exist
+  4: `GOTO 65530` -- a line number past 65529
+  5: `GOTO` -- no line number
+  6: `WK=1:GOTO WK` -- a variable as the line
+  7: `GO TO {L5}` (line n+5: `WP%=WP% OR 4`) -- GO TO with a space
+  8: `GOTO {L5} 7` (line n+5: `WP%=WP% OR 4`) -- something after the line number
+  25: `GOSUB {L5}:WP%=WP% OR 2` (line n+10: `WP%=WP% OR 8:RETURN`; line n+5: `WP%=WP% OR 4:GOTO {L10}`) -- a GOTO inside a subroutine, RETURN from elsewhere
+  27: `GO  TO {L5}` (line n+5: `WP%=WP% OR 4`) -- GO TO with two spaces
+  28: `IF 1 THEN GO TO {L5}` (line n+5: `WP%=WP% OR 4`) -- GO TO after THEN
+  29: `GO` -- GO alone
+- **[KGS FY *i*]** (GOTO, goldfish pass 1):
+  12: `GOTO {L5a} {L5b}` (line n+5: `WP%=WP% OR 4`) -- GOTO: digits joined across a space
+  13: `GOTO {L5} ZZ` (line n+5: `WP%=WP% OR 4`) -- GOTO: letters after the line number
+  14: `GOTO 65530` (line 6553: `WP%=WP% OR 4:GOTO {R}`) -- GOTO 65530 with a line 6553
+  15: `GOTO 70000` (line 7000: `WP%=WP% OR 8:GOTO {R}`) -- GOTO 70000 with a line 7000
+  16: `IF 1 GO TO {L5}` (line n+5: `WP%=WP% OR 4`) -- GO TO after IF without THEN
+  17: `ON 1 GO TO {L5}` (line n+5: `WP%=WP% OR 4`) -- ON 1 GO TO
+  18: `GO=1:FOR I=GO TO 3:WN%=WN%+1:NEXT` -- a variable GO before TO
+  19: `GOTO -1` -- a negative line
+  20: `GOTO "A"` -- a string as the line
 
-**Controls** ([`kgosub_controls.py`](../../probes/basic/spec/kgosub_controls.py)): each is a rival rule run over the
-reference's cases: “`GO TO` is no keyword (a Syntax error) -- zerobas's” is FALSE on 2 of the 4 cases R-GOTO-GOTO selects (e.g. KGS FX 7); “a line past 65529 is a Syntax error” is FALSE on 1 of the 5 cases R-GOTO-ERRORS selects (e.g. KGS FX 4); “text after the line number is a Syntax error” is FALSE on 1 of the 5 cases R-GOTO-ERRORS selects (e.g. KGS FX 8).
+**Controls** ([`kgosub_controls.py`](../../probes/basic/spec/kgosub_controls.py)): each changes ONE law of the interpreter model and runs over the reference's cases: “a GOTO inside a subroutine drops the GOSUB” is FALSE on 1 of the 4 cases R-GOTO-JUMP selects (e.g. KGS FX 25); “GO TO is not a synonym -- zerobas's before D-GOTOSPACE” is FALSE on 5 of the 7 cases R-GOTO-GOTO selects (e.g. KGS FX 7); “the number stops at a space” is FALSE on 2 of the 6 cases R-GOTO-NUMBER selects (e.g. KGS FX 8); “a number past 65529 is read whole (and is undefined)” is FALSE on 2 of the 6 cases R-GOTO-NUMBER selects (e.g. KGS FY 14); “anything after the number is error 2” is FALSE on 4 of the 6 cases R-GOTO-NUMBER selects (e.g. KGS FX 4).
 
 <!-- RULES BEGIN -->
 <!-- GENERATED by tools/spec_rules.py from probes/basic/spec/goto_rules.py -- do not edit; `python3 tools/spec_rules.py probes/basic/spec/goto_rules.py --write` -->
 
-**3 rules; 3 hold on the reference. Of the 52 recorded outputs (each case's first and last error, WN% (a counter; 21 = the probe's guard ended a loop that did not stop) and WP% (the bits of the lines the case reached)): 52 read by a rule's check, 0 declared NOT evidence (below), 0 unread.**
+**4 rules; 4 hold on the reference. Of the 88 recorded outputs (each case's first and last error, WN% (a counter; 21 = the probe's guard ended a loop that did not stop) and WP% (the bits of the lines the case reached)): 88 read by a rule's check, 0 declared NOT evidence (below), 0 unread.**
 
 #### 1. The jump
 
 | rule | cases | reference | zerobas |
 |---|---|---|---|
 | **R-GOTO-JUMP** GOTO n continues at line n: the rest of its own line and every line in between are skipped; a GOTO back to its own line loops; a GOTO inside a subroutine leaves the GOSUB pending, so a RETURN on the line it reaches comes back after the GOSUB. | 4 | ✓ | ✓ |
-| **R-GOTO-GOTO** `GO TO` written with exactly ONE space is GOTO -- also after THEN; two spaces, or `GO` alone, are error 2 (Syntax error). | 4 | ✓ | ✓ |
+| **R-GOTO-GOTO** `GO TO` written with exactly ONE space is the tokenizer's synonym for GOTO, wherever it stands: at a statement's start, after THEN, after IF without THEN, after ON -- and inside an expression, so `FOR I=GO TO 3` is error 2. Two spaces, or `GO` alone, are error 2. | 7 | ✓ | ✓ |
 
-#### 2. Errors
+#### 2. The line number
 
 | rule | cases | reference | zerobas |
 |---|---|---|---|
-| **R-GOTO-ERRORS** A line that does not exist is error 8 (Undefined line number) -- also a number past 65529 and a number followed by more text (`GOTO n 7`, read as one number); no number, or a variable, is error 2. | 5 | ✓ | ✓ |
+| **R-GOTO-NUMBER** The line number is read digit by digit, spaces between digits skipped (`GOTO 224 5` is GOTO 2245), and only while it stays within 65529: `GOTO 65530` is GOTO 6553, `GOTO 70000` GOTO 7000, the rest never read. Anything after the number is ignored (`GOTO n ZZ` jumps). | 6 | ✓ | ✓ |
+| **R-GOTO-ERRORS** A line that does not exist is error 8 (Undefined line number); no digit where the number belongs -- nothing, a variable, a minus sign, a string -- is error 2. | 5 | ✓ | ✓ |
 
 <!-- RULES END -->
 
@@ -161,6 +179,11 @@ not yet proven is **RAM usage**.
 
 ## What we found, and how
 
+- **`GO TO` with one space was `Syntax error` here** (fixed 2026-11-25, D-GOTOSPACE):
+  the spec probe's first run read `(2,2,0,0)` on zerobas where the VG-8020 jumped (KGS FX 7 and FX 28;
+  the before-run is commit dc78e1990's `KGS_run1.out`). One keyword-table entry makes it the
+  tokenizer's synonym; goldfish pass 1 then measured it after IF without THEN, after ON, and
+  inside `FOR I=GO TO 3` (error 2 on both).
 - **`IF 1 GOTO` with no line number was `Syntax error` here** (fixed
   2026-10-24, D-IFGOTOBARE): on the VG-8020 a `GOTO` after `IF`'s condition
   without a line number works as `THEN` ([`ifgoto_run.out`](../../scratchpad/ifgoto_run.out), [after](../../scratchpad/ifgoto_after.out)).

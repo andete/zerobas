@@ -6,13 +6,14 @@ SPDX-License-Identifier: BSD-2-Clause
 
 # `GOSUB` — call a subroutine
 
-> **Spec:** DRAFT 1 (2026-11-25) — 8 cases measured on the Philips VG-8020 (BASIC's reference) and on
+> **Spec:** DRAFT 1 (2026-11-25) — 13 cases measured on the Philips VG-8020 (BASIC's reference) and on
 > zerobas, by typed BASIC ([`kgosub.py`](../../probes/basic/spec/kgosub.py), with GOTO's, GOSUB's and RETURN's cases
-> together); every rule is executable and every recorded output is read by one. Not yet reviewed ([the keyword
+> together); every rule is executable and every recorded output is read by one. Goldfish pass 1 acted on
+> (2026-11-25: the model is now an interpreter, 5 more cases); not yet re-reviewed ([the keyword
 > plan](spec-plan.md)).
 >
-> **Status (2026-10-16):** level 3 — happy path ✓ · reasonable time ✓ · common
-> errors ✓ · RAM usage not yet proven · every error ✓. No known divergence.
+> **Status (2026-11-25):** level 3 — happy path ✓ · reasonable time ✓ · common
+> errors ✓ · RAM usage not yet proven · every error ✗ (D-GOSUBFRAME).
 > Speed is deliberately left out of these docs until on-par speed is
 > established for every keyword.
 
@@ -36,11 +37,14 @@ The line number is a constant; `GOSUB A` and `GOSUB "100"` are not allowed.
 
 - **`RETURN` comes back to the next statement**, not the next line:
   `GOSUB 100:PRINT "back"` prints `back`.
-- **Anything after the line number in the same statement is ignored.**
-  `GOSUB 100 ZZ` is accepted on both references; the `ZZ` is never run, and
-  a `:` statement after it still runs when the subroutine returns.
+- **The line number is read as GOTO's**: more digits are part of it, even
+  across a space (`GOSUB 230 5` is `GOSUB 2305`); anything else after it is
+  ignored. `GOSUB 100 ZZ` is accepted on both references; the `ZZ` is never
+  run, and a `:` statement after it still runs when the subroutine returns.
 - **Nesting is limited by free memory**, not by a fixed count. A subroutine
-  that keeps calling itself ends in `Out of memory` (error 7).
+  that keeps calling itself ends in `Out of memory` (error 7) -- an older
+  probe's measurement ([`gosubedge_7b.out`](../../scratchpad/gosubedge_7b.out)); the spec
+  probe's guard stops at 21 levels (Open).
 - **`ON n GOSUB 100,200,300`** calls the n-th line in the list. `n` is
   truncated, not rounded (`ON 1.7` takes the first). `ON 0` or an `n` past the
   end of the list does nothing and the program carries on; a negative `n` or
@@ -104,48 +108,61 @@ Reference: the Philips VG-8020's MSX BASIC. Ours: zerobas on the diskless machin
 The tables are generated from the checks, so a sentence here cannot say more than the data does.
 
 **Evidence.** One probe, [`probes/basic/spec/kgosub.py`](../../probes/basic/spec/kgosub.py) (on the shared RAM-record
-harness [`ramrec.py`](../../probes/basic/spec/ramrec.py)), typed on both machines; run file
-[`scratchpad/KGS_run1.out`](../../scratchpad/KGS_run1.out) (2026-11-25; zerobas's side on that day's build). Each case
-is a block of 30 lines from its base n: line n starts from nothing (`CLEAR`, `ON ERROR` set again), runs the
-statement(s) under test and ends `GOTO n+25`; the case's own target lines sit at n+5 .. n+20; n+25 records the first
-and the last error (RESUME NEXT carries on after one), a counter WN% and WP%, the bits of the lines the case reached
-(1 line n, 2 the rest of line n after a GOSUB, 4 / 8 / 16 lines n+5 / n+10 / n+15) -- so a rule says WHICH lines ran.
-A loop that could run for ever carries the guard `ON -(WN%>20) GOTO n+25` (21 = "did not stop").
+harness [`ramrec.py`](../../probes/basic/spec/ramrec.py)), typed on both machines as two programs, groups FX (the first
+run's cases) and FY (goldfish pass 1's separating cases); run file
+[`scratchpad/KGS_run1.out`](../../scratchpad/KGS_run1.out) (2026-11-25). Each case is a block of 30 lines from its base
+n: line n starts from nothing (`CLEAR`, `ON ERROR` set again), runs the statement(s) under test and ends `GOTO n+25`;
+the case's own target lines sit at n+5 .. n+20 (an FY case may add an ABSOLUTE line, 6553 or 7000, far past every
+case); n+25 records the first and the last error (RESUME NEXT carries on after one), a counter WN% and WP%, the bits
+of the lines the case reached (2 the rest of line n after a GOSUB, 4 / 8 / 16 lines n+5 / n+10 / n+15) -- so a rule
+says WHICH lines ran. A loop that could run for ever carries the guard `ON -(WN%>20) GOTO n+25` (21 = "more than 20").
+**The frame uses GOTO**, the keyword under test, on purpose: a frame GOTO that went wrong would land outside its case,
+and the record frame's own check refuses such a run -- it cannot produce a plausible wrong record. The model,
+[`kgosub_model.py`](../../probes/basic/spec/kgosub_model.py), is an INTERPRETER: it runs each case's lines with the laws
+the rules state (the line number's reading, one stack for GOSUB and FOR, RETURN's order of checks) and holds no
+per-case answer.
 - **[KGS FX *i*]** (GOSUB):
-  9: `GOSUB n+5:WP%=WP% OR 2` (line n+5: `WP%=WP% OR 4:RETURN`)
-  10: `GOSUB n+5:WP%=WP% OR 2` (line n+5: `WP%=WP% OR 4:GOSUB n+10:WP%=WP% OR 16:RETURN`; line n+10: `WP%=WP% OR 8:RETURN`)
-  11: `WN%=0:GOSUB n+5` (line n+5: `WN%=WN%+1:IF WN%<5 THEN GOSUB n+5`; line n+10: `RETURN`)
-  12: `GOSUB 65000`
-  13: `GOSUB`
-  14: `GOSUB n+5:WP%=WP% OR 2` (line n+5: `WP%=WP% OR 4`)
-  15: `WN%=0:GOSUB n+5` (line n+5: `WN%=WN%+1:<guard>:GOSUB n+5`)
-  26: `GO SUB n+5:WP%=WP% OR 2` (line n+5: `WP%=WP% OR 4:RETURN`)
+  9: `GOSUB {L5}:WP%=WP% OR 2` (line n+5: `WP%=WP% OR 4:RETURN`) -- GOSUB / RETURN comes back after the GOSUB
+  10: `GOSUB {L5}:WP%=WP% OR 2` (line n+10: `WP%=WP% OR 8:RETURN`; line n+5: `WP%=WP% OR 4:GOSUB {L10}:WP%=WP% OR 16:RETURN`) -- nested GOSUBs
+  11: `WN%=0:GOSUB {L5}` (line n+10: `RETURN`; line n+5: `WN%=WN%+1:IF WN%<5 THEN GOSUB {L5}`) -- recursion five deep, each level falling through to RETURN
+  12: `GOSUB 65000` -- a line that does not exist
+  13: `GOSUB` -- no line number
+  14: `GOSUB {L5}:WP%=WP% OR 2` (line n+5: `WP%=WP% OR 4`) -- a subroutine without RETURN (runs on into the record)
+  15: `WN%=0:GOSUB {L5}` (line n+5: `WN%=WN%+1:<guard>:GOSUB {L5}`) -- unbounded recursion (the guard ends it)
+  26: `GO SUB {L5}:WP%=WP% OR 2` (line n+5: `WP%=WP% OR 4:RETURN`) -- GO SUB with a space
+- **[KGS FY *i*]** (GOSUB, goldfish pass 1):
+  7: `WN%=0:GOSUB {L5}:WP%=WP% OR 2` (line n+10: `WN%=WN%+10:RETURN`; line n+5: `WN%=WN%+1:IF WN%<3 THEN GOSUB {L5}`) -- recursion three deep, the returns counted
+  8: `GOSUB 65000:WN%=WN%+1:RETURN` -- GOSUB to a missing line pushes no frame
+  9: `IF 1 THEN GOSUB {L5}:WP%=WP% OR 2` (line n+5: `RETURN`) -- GOSUB in a THEN clause comes back to it
+  10: `GOSUB {L5a} {L5b}:WP%=WP% OR 2` (line n+5: `WP%=WP% OR 4:RETURN`) -- GOSUB: digits joined across a space
+  11: `GOSUB {L5} ZZ:WP%=WP% OR 2` (line n+5: `WP%=WP% OR 4:RETURN`) -- GOSUB: letters after the line number
 
-**Controls** ([`kgosub_controls.py`](../../probes/basic/spec/kgosub_controls.py)): each is a rival rule run over the
-reference's cases: none yet for this page's rules (each rule here states measured values the model reproduces exactly).
+**Controls** ([`kgosub_controls.py`](../../probes/basic/spec/kgosub_controls.py)): each changes ONE law of the interpreter model and runs over the reference's cases: “a RETURN unwinds every GOSUB” is FALSE on 3 of the 9 cases R-GOSUB-CALL selects (e.g. KGS FX 10); “the number stops at a space” is FALSE on 1 of the 9 cases R-GOSUB-CALL selects (e.g. KGS FY 10); “the frame is pushed before the line is looked up -- zerobas's” is FALSE on 1 of the 4 cases R-GOSUB-ERRORS selects (e.g. KGS FY 8).
 
 <!-- RULES BEGIN -->
 <!-- GENERATED by tools/spec_rules.py from probes/basic/spec/gosub_rules.py -- do not edit; `python3 tools/spec_rules.py probes/basic/spec/gosub_rules.py --write` -->
 
-**2 rules; 2 hold on the reference. Of the 32 recorded outputs (each case's first and last error, WN% (a counter; 21 = the probe's guard ended a loop that did not stop) and WP% (the bits of the lines the case reached)): 32 read by a rule's check, 0 declared NOT evidence (below), 0 unread.**
+**2 rules; 2 hold on the reference. Of the 52 recorded outputs (each case's first and last error, WN% (a counter; 21 = the probe's guard ended a loop that did not stop) and WP% (the bits of the lines the case reached)): 52 read by a rule's check, 0 declared NOT evidence (below), 0 unread.**
 
 #### 1. The call
 
 | rule | cases | reference | zerobas |
 |---|---|---|---|
-| **R-GOSUB-CALL** GOSUB n runs line n on; RETURN continues after the GOSUB, on its own line. GOSUBs nest and recurse (five deep, each level falling through to the RETURN); recursion without a RETURN runs on (the guard stopped it at 21 levels, no error). A subroutine without RETURN simply runs on. | 5 | ✓ | ✓ |
+| **R-GOSUB-CALL** GOSUB n runs line n on; RETURN continues after the GOSUB on its own line -- also inside a THEN clause, whose rest then runs. GOSUBs nest and recurse, each RETURN closing one level (three deep: three RETURNs); recursion without a RETURN runs on (the guard stopped it at 21 levels, no error). A subroutine without RETURN simply runs on. The line number is read as GOTO's (digits joined across a space; letters after it ignored). | 9 | ✓ | ✓ |
 
 #### 2. Errors
 
 | rule | cases | reference | zerobas |
 |---|---|---|---|
-| **R-GOSUB-ERRORS** A line that does not exist is error 8; no line number error 2; `GO SUB` with a space is error 2 (only GO TO has a spelled-out form). | 3 | ✓ | ✓ |
+| **R-GOSUB-ERRORS** A line that does not exist is error 8, and NO frame is pushed (a RETURN after it is error 3); no line number is error 2; `GO SUB` with a space is error 2 (only GO TO has a spelled-out form). | 4 | ✓ | ✗ 1: KGS FY 8 |
 
 <!-- RULES END -->
 
 ## Differences from the reference
 
-None known in behaviour.
+- **A GOSUB to a missing line pushes a frame** (rule R-GOSUB-ERRORS, case KGS FY 8;
+  [D-GOSUBFRAME](../../todo/open/D-GOSUBFRAME.md)): after `GOSUB 65000` (error 8 on both), a
+  RETURN is error 3 on the reference; zerobas's RETURN comes back to the failed GOSUB first.
 
 The one rung not yet proven is **RAM usage**. Each open `GOSUB` now uses 7
 bytes of free memory, as on the VG-8020 (since 2026-10-17; it was 8). A

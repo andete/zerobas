@@ -59,7 +59,7 @@ Every keyword page, the region the spec loop takes it in, and how far its page h
 | `LET` | [operators](../concepts/numbers.md) | RAM record | VG-8020 | [DRAFT 1](LET.md) | 5 | — |
 | `SWAP` | [operators](../concepts/numbers.md) | RAM record | VG-8020 | [DRAFT 1](SWAP.md) | 4 | D-SWAPNEW |
 | `GOTO` | [flow](../concepts/program-text.md) | RAM record + screen | VG-8020 | [DRAFT 1](GOTO.md) | 3 | D-GOTOSPACE |
-| `GOSUB` | [flow](../concepts/program-text.md) | RAM record + screen | VG-8020 | [DRAFT 1](GOSUB.md) | 3 | — |
+| `GOSUB` | [flow](../concepts/program-text.md) | RAM record + screen | VG-8020 | [DRAFT 1](GOSUB.md) | 3 | D-GOSUBFRAME |
 | `RETURN` | [flow](../concepts/program-text.md) | RAM record + screen | VG-8020 | [DRAFT 1](RETURN.md) | 3 | — |
 | `IF` | [flow](../concepts/program-text.md) | RAM record + screen | VG-8020 | [DRAFT 1](IF.md) | 4 | — |
 | `FOR` | [flow](../concepts/program-text.md) | RAM record + screen | VG-8020 | [DRAFT 1](FOR.md) | 4 | D-FORINTLIM, D-FORCOMMA, D-FORSTEP0 |

@@ -2821,6 +2821,7 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
 - [ ] **A FAILING `NEXT I` (NO FOR) CREATES THE VARIABLE I ON THE VG-8020, NOT ON ZEROBAS (D-NEXTCREATE, found 2026...** -> [D-NEXTCREATE](todo/open/D-NEXTCREATE.md) <!-- item:open/D-NEXTCREATE -->
 - [ ] **A FAILED `NEXT J` DROPS THE OPEN FOR FRAME ON ZEROBAS; THE VG-8020 KEEPS IT (D-NEXTFRAME, found 2026-11-25...** -> [D-NEXTFRAME](todo/open/D-NEXTFRAME.md) <!-- item:open/D-NEXTFRAME -->
 - [ ] **`FOR I=1 TO 2 STEP 1,2`: ONE SYNTAX ERROR ON THE VG-8020, TWO ON ZEROBAS (D-FORCOMMA, found 2026-11-25 by D...** -> [D-FORCOMMA](todo/open/D-FORCOMMA.md) <!-- item:open/D-FORCOMMA -->
+- [ ] **`GOSUB 65000` (A MISSING LINE) PUSHES A RETURN FRAME ON ZEROBAS, NONE ON THE VG-8020 (D-GOSUBFRAME, found 2...** -> [D-GOSUBFRAME](todo/open/D-GOSUBFRAME.md) <!-- item:open/D-GOSUBFRAME -->
 - [ ] **A VARIABLE'S ENTRY IS [name0][name1][type][value] ON ZEROBAS, [type][name0][name1][value] ON THE VG-8020 (D...** -> [D-VARLAYOUT](todo/open/D-VARLAYOUT.md) <!-- item:open/D-VARLAYOUT -->
 - [x] **`GO TO 100` (ONE SPACE) IS GOTO ON THE VG-8020 AND A SYNTAX ERROR ON ZEROBAS (D-GOTOSPACE, found 2026-11-25...** -> [D-GOTOSPACE](todo/done/D-GOTOSPACE.md) <!-- item:done/D-GOTOSPACE -->
 - [ ] **`VAL`'S DECIMAL EXPONENT AT ITS 8-BIT EDGES: THE VG-8020 WRAPS PAST 255 DIGITS AND KEEPS THE DIGITS OF A ZE...** -> [D-VALEXP](todo/open/D-VALEXP.md) <!-- item:open/D-VALEXP -->

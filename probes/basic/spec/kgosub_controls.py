@@ -18,12 +18,20 @@ def alt(*a):
 
 
 CONTROLS = {
-    "GOTO": [("R-GOTO-GOTO", "`GO TO` is no keyword (a Syntax error) -- zerobas's", alt("no-goto-space")),
-             ("R-GOTO-ERRORS", "a line past 65529 is a Syntax error", alt("big-line-syntax")),
-             ("R-GOTO-ERRORS", "text after the line number is a Syntax error", alt("trailing-syntax"))],
-    "RETURN": [("R-RETURN-FRAMES", "RETURN keeps the subroutine's FOR frames", alt("return-keeps-for")),
-               ("R-RETURN-FRAMES", "NEXT in a subroutine reaches a FOR outside it", alt("next-crosses-gosub")),
-               ("R-RETURN-BACK", "RETURN n ignores n and comes back after the GOSUB", alt("return-line-ignored"))],
+    "GOTO": [("R-GOTO-JUMP", "a GOTO inside a subroutine drops the GOSUB", alt("goto-drops-gosub")),
+             ("R-GOTO-GOTO", "GO TO is not a synonym -- zerobas's before D-GOTOSPACE", alt("no-goto-space")),
+             ("R-GOTO-NUMBER", "the number stops at a space", alt("no-join")),
+             ("R-GOTO-NUMBER", "a number past 65529 is read whole (and is undefined)", alt("big-undefined")),
+             ("R-GOTO-NUMBER", "anything after the number is error 2", alt("tail-syntax"))],
+    "GOSUB": [("R-GOSUB-CALL", "a RETURN unwinds every GOSUB", alt("return-unwinds-all")),
+              ("R-GOSUB-CALL", "the number stops at a space", alt("no-join")),
+              ("R-GOSUB-ERRORS", "the frame is pushed before the line is looked up -- zerobas's",
+               alt("gosub-frame-first"))],
+    "RETURN": [("R-RETURN-BACK", "RETURN n keeps the subroutine open", alt("return-n-keeps-frame")),
+               ("R-RETURN-FRAMES", "RETURN drops only its GOSUB, the FOR frames stay", alt("return-keeps-for")),
+               ("R-RETURN-FRAMES", "NEXT reaches a FOR below the GOSUB", alt("next-crosses-gosub")),
+               ("R-RETURN-ERRORS", "RETURN reads its line number before checking for a GOSUB", alt("return-line-first")),
+               ("R-RETURN-ERRORS", "RETURN n looks the line up before closing", alt("return-missing-keeps"))],
 }
 
 

@@ -79,3 +79,5 @@
       **FOR / NEXT reworked (2026-11-25)**: kfor_model.py an interpreter, 21 one-law controls, group FY (33 cases;
       plan §6). Filed D-NEXTFRAME, D-FORCOMMA (TIER 6); D-FORINTLIM widened, D-FORSTEP0 pinned. NEXT: the same
       rework for GOTO / GOSUB / RETURN, IF, END / STOP / CONT / RUN.
+      **GOTO / GOSUB / RETURN reworked (2026-11-25)**: kgosub_model.py an interpreter, 13 one-law controls, group FY
+      (21 cases, all predictions held; plan §6). Filed D-GOSUBFRAME (TIER 6). NEXT: IF, then END / STOP / CONT / RUN.
