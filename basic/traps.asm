@@ -406,7 +406,7 @@ ep_out:
 ; trap_init: reset the whole ZTRAP table + all bookkeeping to zero — every trap
 ; OFF, no handler, no pending, counters/gates clear. Called at cold boot (before
 ; any statement runs) and at RUN (re-arm), so garbage RAM can never look like a
-; phantom armed trap. Zeroes ZTRAP..TRAPPEND ($FC4C..$FC88, in TRPTBL since D-WSZERO) in one fill. The edge
+; phantom armed trap. Zeroes ZTRAP..TRAPSVC ($FC4C..$FC87, in TRPTBL since D-WSZERO) in one fill. The edge
 ; shadow needs no byte of its own -- it is bit 6 of each entry (T2 STRIG, T3 KEY and
 ; now T1 STOP), so this same fill clears it. Clobbers A, BC, DE, HL.
 ; D-KEYTRAPREF (2026-11-22): TRAPPEND is ONGSBF ($FBD8) now, just past FNKFLG ($FBCE, 10 B), so a
@@ -416,7 +416,7 @@ trap_init:
                 ld      bc,TRAPPEND-FNKFLG  ; FNKFLG..ONGSBF (= TRAPPEND), 11 B
                 call    ti_fill
                 ld      hl,ZTRAP
-                ld      bc,TRAPSVC+1-ZTRAP  ; ZTRAP..$FC88, as before the move
+                ld      bc,TRAPSVC-ZTRAP    ; ZTRAP..TRAPSVC: $FC88 is SUBSLOT_OK now (D-BOOTCELLS)
 ti_fill:
                 ld      (hl),0
                 ld      d,h

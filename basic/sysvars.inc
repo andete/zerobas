@@ -5156,8 +5156,15 @@ PLF_RA2         equ     $F839   ; ...and for its DIRECT caller's (combine_add/ (
 ; D-WSZERO slice 4: the sub-ROM slot cells live in SLTWRK ($FD09..), the published
 ; per-(slot, page) ROM work area -- the entries of OUR OWN slot 0, pages 0-1. They are
 ; read on every tenant call, so a load over $F106 sent the next call to a garbage slot.
-SUBSLOT         equ     $FD09   ; slot id of zerobas-sub (bit7 exp | 3-2 | 3), 1 (1 B)
-SUBSLOT_OK      equ     $FD0A   ; 1 = a CD sub-ROM was found and recorded, else 0 (1 B)
+; 🔁 D-BOOTCELLS step 3 (2026-11-25): OUT OF SLTWRK. $FD09/$FD0A are SLTWRK's first
+; entries, which the MSX standard hands to whatever ROM owns that (slot, page), and the
+; VG-8020 leaves them 0 after boot (scratchpad/AE_bootcells3_hosts.out: 0 through a boot,
+; a RUN, CLEAR, MAXFILES, FILES, PLAY, graphics and traps). New homes, both measured 0 on
+; the VG-8020 through the same workload: SUBSLOT at LOGOPR $FB02 (an MSX2-only cell inside
+; the MSX1 RS2IQ, which no MSX1 BIOS writes), SUBSLOT_OK at $FC88 (TRPTBL's reserved
+; tail, past the 18 entries MSX1 BASIC defines; trap_init's fill now stops below it).
+SUBSLOT         equ     $FB02   ; slot id of zerobas-sub (bit7 exp | 3-2 | 3), 1 (1 B)
+SUBSLOT_OK      equ     $FC88   ; 1 = a CD sub-ROM was found and recorded, else 0 (1 B)
 DB_CUR          equ     $F5F4   ; wave-3 detok: the DETOKBUF write cursor, held across (2 B)
                                 ; D-WSZERO S14b: BUF, statement-only (was $F123)
                                 ; the whole sub-side walk (the core clobbers DE/HL, so
@@ -6005,6 +6012,15 @@ MSGESC_SUB      equ     6       ; body = this byte alone -> the sub-ROM tenant
     ENDIF
     IF GFX_DSP + 2 > $FB02
                 db      S11_DRAW_CELLS_OVERRAN_THE_RS2IQ_BYTES
+    ENDIF
+; D-BOOTCELLS step 3: SUBSLOT_OK must sit past trap_init's fill (ZTRAP..TRAPSVC), which
+; runs at every clear_vars, and SUBSLOT inside the MSX2-only bytes $FAF5-$FB02 (at
+; $FB03 the RS-232C work area starts).
+    IF SUBSLOT_OK <= TRAPSVC
+                db      BOOTCELLS_SUBSLOT_OK_INSIDE_TRAP_INITS_FILL
+    ENDIF
+    IF SUBSLOT > $FB02
+                db      BOOTCELLS_SUBSLOT_PAST_THE_MSX2_ONLY_BYTES
     ENDIF
     IF GFX_Y2 + 2 > CSP
                 db      S11_LINE_ENDPOINTS_OVERRAN_INTO_CSP

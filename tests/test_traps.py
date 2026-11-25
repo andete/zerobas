@@ -60,7 +60,7 @@ def stop_entry(m):
 def reset_traps(m):
     """Clear the whole ZTRAP window + bookkeeping (mirror trap_init)."""
     z = m.addr("ZTRAP")
-    for a in range(z, m.addr("TRAPSVC") + 2):           # ZTRAP..$FC88, as trap_init
+    for a in range(z, m.addr("TRAPSVC") + 1):           # ZTRAP..TRAPSVC, as trap_init ($FC88 is SUBSLOT_OK)
         m.poke(a, b"\x00")
     for a in range(m.addr("FNKFLG"), m.addr("TRAPPEND") + 1):   # FNKFLG..ONGSBF (= TRAPPEND)
         m.poke(a, b"\x00")

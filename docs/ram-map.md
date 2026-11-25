@@ -655,6 +655,7 @@ extents the standard already fixes would be noise, not rigour.
 | `$FAFD` | 1 B | `basic` | `GFX_DFN` | $FAFD: 1 = N (no-update) prefix pending (1) |  |
 | `$FAFE` |  | `basic` | `GFX_DTMP` | $FAFE: mul/sign scratch (2) -- rotate no longer (D-REREAD sub batch 2) |  |
 | `$FB00` | 2 B | `basic` | `GFX_DSP` | $FB00: tenant entry SP -- an error deep in the (2 B) |  |
+| `$FB02` | 1 B | `basic` | `SUBSLOT` | slot id of zerobas-sub (bit7 exp \| 3-2 \| 3), 1 (1 B) |  |
 | `$FB20` | 1 B | `disk` | `HOKVLD` | bit 0: the EXTBIO hook ($FFCA) is valid, MSX2 TH work area (1 B) |  |
 | `$FB21` | 1 B | `basic` | `DISKSLOT_OK` | nonzero = DISKSLOT valid (1 B; the disk ROM's drive count once INIT ran -- D-DRVCOUNT) |  |
 | `$FB21` | 1 B | `disk` | `DISKSLOT_OK` | nonzero = DISKSLOT valid (1 B; the disk ROM's drive count once INIT ran -- D-DRVCOUNT) |  |
@@ -685,6 +686,7 @@ extents the standard already fixes would be noise, not rigour.
 | `$FC84` | 2 B | `basic` | `ZINTCNT` | 2 B: INTERVAL live down-counter (frames to next fire) |  |
 | `$FC86` | 1 B | `basic` | `TRAPENA` | 1 B: count of traps currently in state ON. Gates the |  |
 | `$FC87` | 1 B | `basic` | `TRAPSVC` | 1 B: count of live SERVICING entries == depth of the |  |
+| `$FC88` | 1 B | `basic` | `SUBSLOT_OK` | 1 = a CD sub-ROM was found and recorded, else 0 (1 B) |  |
 | `$FC89` | 1 B | `basic` | `STOPHOLD` | (TRPTBL tail, D-WSZERO) D-STOPTAP: frames Ctrl-STOP has been held (1) |  |
 | `$FC8A` | 2 B | `basic` | `GFX_DPTR` | $FC8A: parse cursor in the current frame (2) |  |
 | `$FC8C` | 2 B | `basic` | `GFX_DEND` | $FC8C: one past the current frame's last byte (2) |  |
@@ -723,8 +725,6 @@ extents the standard already fixes would be noise, not rigour.
 | `$FCC1` | 1 B | `disk` | `EXPTBL` | expanded-slot flags, 1 byte/primary, bit 7 = expanded |  |
 | `$FCC5` |  | `disk` | `SLTTBL` | SLTTBL base: per-primary mirror of the secondary-slot regs |  |
 | `$FCC8` |  | `disk` | `SLTTBL3` | SLTTBL[3]: RAM mirror of slot-3 secondary-slot register (=SLTTBL+3) |  |
-| `$FD09` | 1 B | `basic` | `SUBSLOT` | slot id of zerobas-sub (bit7 exp \| 3-2 \| 3), 1 (1 B) |  |
-| `$FD0A` | 1 B | `basic` | `SUBSLOT_OK` | 1 = a CD sub-ROM was found and recorded, else 0 (1 B) |  |
 | `$FD0B` | 1 B | `basic` | `SUBSLOT2` | UNUSED: zerobas-sub2's slot id until it was retired (2f) |  |
 | `$FD0C` | 1 B | `basic` | `SUB_PING` | (SLTWRK, D-WSZERO) PING page tag: $C0 (page 0) / $C1 (page 1) (1 B) |  |
 | `$FD0D` | 1 B | `basic` | `SUB_INT_DELTA` | self-test tenant result: JIFFY ticks observed under EI (1) |  |
