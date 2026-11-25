@@ -87,3 +87,14 @@
       does there -- registers / RAM / the screen before and after, never the reference ROM's bytes -- then give zerobas
       that routine at $68C3 and pin it (as D-BASICINT2 pinned Demonia's $72D4). The window sits in basic/save.asm's
       cassette ASCII-header writer, so the pin needs its own placement there.
+      📏 2026-11-25, THE MECHANISM (zerobas's own PCs, a 40-instruction ring before the hit): the game CALLS ENASLT with
+      SP = $000A -- its stack at the bottom of memory, where page 0 is the BIOS ROM while ENASLT runs (C-BIOS's ENASLT,
+      $2488-$24C0, switches pages 2 / 3 to slot 0 on the way). ENASLT's final RET therefore pops ROM BYTES: the word at
+      $0010-$0011 is the RST 10h vector's `C3 68` (`JP $0168`), i.e. $68C3. So $68C3 is not an MS-BASIC routine the game
+      wants -- it is the RST 10h vector's opcode plus the LOW BYTE of its target, read as a return address. On the
+      VG-8020 the same RET pops `C3` plus the low byte of ITS CHRGTR target, landing at some $xxC3 of its own.
+      FOR JOOST (the Chuckie Egg half only; the item stays autonomous for Boulder Dash II): fidelity would need the reference's ROM byte at $0011 (the low byte of an internal,
+      unpublished address): the clean room forbids reading it, and observing the reference's PC after that RET would
+      reveal it too. What zerobas CAN do cleanly is make its own behaviour stable -- pin $68C3's current content (or a
+      deliberate stub there) so no layout change can turn it into a reset again. That is a safeguard, not fidelity:
+      Joost decides whether to take it, and whether anything about the reference's landing point may be measured.
