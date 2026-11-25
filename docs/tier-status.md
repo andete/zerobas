@@ -555,7 +555,7 @@ A keyword's LEVEL is its highest UNBROKEN run of proven rungs from T1: `T1✓ T2
 | — | TIER 4 | 🤖 | the rung's own definition; it is the bar every other item at | T-83DBAC |
 | — | TIER 4 | 🤖 | RAM usage: this item is the measurement the RAM rung is | T-169379 |
 | — | TIER 4 | 🤖 | RAM usage (VG-8020): no program run differs, but a program or extension ROM that PEEKs / uses a | T-723470 |
-| — | TIER 4 | ? | RAM usage (VG-8020): no program run differs today; a PEEK of those bytes, or a cartridge that uses | T-630EA1 |
+| — | TIER 4 | 🙋 | RAM usage (VG-8020): no program run differs today; a PEEK of those bytes, or a cartridge that uses | T-630EA1 |
 | — | TIER 4 | 🤖 | RAM usage (VG-8020) (filed 2026-11-20, from D-PAINTRAMCLASH's measurement). | T-A98481 |
 | `LOAD` | TIER 5 | 🤖 | on-par speed, on `LOAD`. ⏱ **RE-TAGGED 2026-10-10 FROM TIER 2: | T-3A665D |
 | `LOAD` | TIER 5 | 🔭 | on-par speed, on `LOAD`. | T-084697 |

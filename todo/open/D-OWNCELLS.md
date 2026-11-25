@@ -3,7 +3,7 @@
       filed 2026-11-25 from D-BOOTCELLS step 3).**
       🎚️ TIER 4 — RAM usage (VG-8020): no program run differs today; a PEEK of those bytes, or a cartridge that uses
       the MSX1 RS-232C queue ($FAF5 up) or the MSX2-named cells there, sees or clobbers zerobas's state.
-      🙋 **JOOST** — the goal is his (2026-11-25, accepting step 3 for now): "eventually we need to either avoid
+      🙋 **NEEDS-JOOST** — the goal is his (2026-11-25, accepting step 3 for now): "eventually we need to either avoid
       needing them or use the same location or mechanism as the references". Ask him which route before starting.
       WHAT: D-BOOTCELLS step 3 moved zerobas's own state (SUBSLOT / SUBSLOT_OK, the control pool's GSP FSP CSP
       CTLTOP TSP CTLLIM, the line editor's RL_HL / RL_ROW0 / RL_COL0, the block cursor's CSR_ADDR / CSR_CHAR / CSR_ON,

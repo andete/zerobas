@@ -81,3 +81,25 @@
       32 first and the exerciser no longer inherits the start-up screen; all three 0-byte-diff against the CF-3300
       again (scratchpad/AE_dh2_BDOSXC.out, AE_dh2_BDOSXK.out, AE_dh2_BDOSXB.out).
 
+      🏗️ STEP 4 RULED (Joost 2026-11-25, after a zoom-in on the four moments -- INIT, H.RUNC, MSX-DOS start, Disk BASIC
+      start -- measured in scratchpad/AE_diskhost2_ref.out): MATCH THE REFERENCES EXACTLY ON THE OUTSIDE, DO BETTER
+      INSIDE. Outside = what a program sees: HIMEM at each moment, FRE, the layout cells (the CF-3300's: INIT $F380 ->
+      $F1BF -> $F195 with its base in SLTWRK; H.RUNC -> $DF93; MSX-DOS runs with $DF93; Disk BASIC's start takes the
+      last piece, $DF93 -> $DE77). Inside = how zerobas arranges its own state in the RAM it claims. Joost's question
+      ("might something expect certain internal memory data structure shapes?") sorts every structure in three
+      classes, decided by measuring both references: (1) PUBLISHED -- shape and contents kept (DRVTBL, the MSX-DOS 1
+      system cells: RAMAD / MASTERS, the DPB list, the sector / directory buffer pointers; the FCB; FILTAB and the
+      265-byte file blocks that VARPTR(#n) hands a BASIC program -- D-BOOTCELLS step 4; the entries MSXDOS.SYS calls);
+      (2) NOT published but IDENTICAL on the CF-3300 and the HBD-F1 -- kept, to be safe ($0006 = $D606 under DOS);
+      (3) DIFFERENT between the two references -- ours to arrange (the driver's private work area: 1 B apart; the DOS
+      interrupt entry $DDAE / $DDA8; zerobas's own cells). THE PLAN: (a) measure, per moment, what zerobas's disk code
+      uses (tools/ram_map.py's disk cells in the claim) against the reference's claim, and classify the structures;
+      (b) HOOK_SLOT ($ED6A, class 3) into the INIT claim -- today a cartridge scanned after ours could overwrite it
+      before H.RUNC, on a real machine too; (c) H.RUNC claims to $DF93 and Disk BASIC's start takes the rest, the DOS
+      block and Disk BASIC's data on separate addresses (today they share $DE77-$DF92: the DOS block is written over
+      the top of what H.RUNC claimed for Disk BASIC -- unmeasured: BASIC typed at A>); (d) the work area addressed
+      from the base recorded in SLTWRK, not fixed addresses (host independence: a cartridge that claimed RAM before
+      ours); (e) the real-disk corpus (scratchpad/diskcorpus_run.py, D-DISKRUN) after each move. If zerobas needs MORE than
+      a reference at some moment, exact matching is impossible -- ask Joost with the numbers. Settled with it: the DOS
+      block below the claim at MSX-DOS start is what the CF-3300 does (closed: matches); the 1-byte CF-3300 / HBD-F1
+      difference is the drivers' own work-area sizes, and the CF-3300 (the DISK build's reference) is matched.
