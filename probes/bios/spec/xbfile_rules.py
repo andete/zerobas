@@ -27,10 +27,13 @@ RUNS3 = [("XBFILE3_run1.out", "D"), ("XBFILE3_run2.out", "C")]
 FN4 = ["SETDTA4", "FMAKEA", "FCLOSEA", "FMAKEB", "WRSEQB", "FCLOSEB", "FOPENB0", "FOPENB1", "FDELA", "FMAKEC",
        "FMAKEBEX", "FMAKED", "FCLOSEFF"]
 RUNS4 = [("XBFILE4_run1.out", "D"), ("XBFILE4_run2.out", "C")]
+FN5 = ["SETDTA5", "FMAKEE", "WRSEQE", "FCLOSEE", "FOPENE", "FMAKEF", "WRSEQF", "FCLOSEF", "FOPENF", "FCLOSEF2",
+       "FOPENF2"]
+RUNS5 = [("XBFILE5_run1.out", "D"), ("XBFILE5_run2.out", "C")]
 # case 0 (SETDTA) runs on the FCB as start-up left it -- not set up, not evidence: its group records no FCB
 OUTPUTS = {"XB": ["a", "f", "fcb", "dta"], "XB0": ["a", "f", "dta"], "XB2": ["a", "f", "fcb", "dta"],
            "XB20": ["a", "f", "dta"], "XB3": ["a", "f", "fcb", "dta"], "XB4": ["a", "f", "fcb", "dta"],
-           "XB40": ["a", "f", "dta"]}
+           "XB40": ["a", "f", "dta"], "XB5": ["a", "fcb"], "XB50": ["a", "f", "dta"]}
 TEST, NEW, ALLQ = list(b"TEST    TXT"), list(b"NEW     TXT"), list(b"????????TXT")
 _cache = {}
 
@@ -80,6 +83,18 @@ def cases():
             for i, fn in enumerate(FN4):
                 r = b[52 * i: 52 * (i + 1)]
                 c = NS(src="XB40" if i == 0 else "XB4", id=f"XB4 {row}{i:02}", row=row, num=300 + i, fn=fn, a=r[0],
+                       f=r[1], dta=list(r[39:52]))
+                if i:
+                    c.fcb = list(r[2:39])
+                d[who].append(c)
+    for run, row in RUNS5:
+        t = open(os.path.join(ROOT, "scratchpad", run)).read()
+        for who, key in (("ref", "ref"), ("zb", "ours")):
+            b = bytes.fromhex(re.search(rf"CAP {key}\s*:\s*([0-9a-fA-F]+)", t).group(1))
+            b += bytes(max(0, 52 * len(FN5) - len(b)))
+            for i, fn in enumerate(FN5):
+                r = b[52 * i: 52 * (i + 1)]
+                c = NS(src="XB50" if i == 0 else "XB5", id=f"XB5 {row}{i:02}", row=row, num=400 + i, fn=fn, a=r[0],
                        f=r[1], dta=list(r[39:52]))
                 if i:
                     c.fcb = list(r[2:39])
@@ -240,6 +255,21 @@ RULES = [
                                                   "FCLOSEB": c.f == 0x42, "WRSEQB": True}[c.fn]
          and (c.fn not in ("FCLOSEB", "WRSEQB") or c.fcb == fcb(BBB, ext=1, size=0x4000, b24=0, idx=1, c1=2, c2=17,
                                                                 c3=15))),
+    Rule("R-BF-CLOSEDATE", S1, "FCLOSE ($10) of a file WRITTEN since FMAKE / FOPEN writes the FCB's own date (+20) and "
+         "time (+22) into the directory entry: poked after the write as 1990-05-05 12:34:56 ($14A5 / $645C), they are "
+         "what FOPEN reads back. A write stamps the current date into the FCB first -- WRSEQ over that poked date "
+         "leaves +20 $0821 (1984-01-01) and the time 0, and the entry gets those. FCLOSE with nothing written since "
+         "FOPEN writes no date: 1999-12-31 23:59:58 ($279F / $BF7D) poked there stays in the FCB and the entry keeps "
+         "its own. FMAKE stamps $0821 too (R-BF-MAKE); every call answers A 0. (So COMMAND.COM's COPY, which sets the "
+         "source's date in the FCB after its last write, keeps it.)",
+         lambda c: c.src == "XB5",
+         lambda c: c.a == 0 and c.fcb[20:24] == {"FMAKEE": [0x21, 0x08, 0, 0], "WRSEQE": [0x21, 0x08, 0, 0],
+                                                  "FCLOSEE": [0xA5, 0x14, 0x5C, 0x64],
+                                                  "FOPENE": [0xA5, 0x14, 0x5C, 0x64],
+                                                  "FMAKEF": [0x21, 0x08, 0, 0], "WRSEQF": [0x21, 0x08, 0, 0],
+                                                  "FCLOSEF": [0x21, 0x08, 0, 0], "FOPENF": [0x21, 0x08, 0, 0],
+                                                  "FCLOSEF2": [0x9F, 0x27, 0x7D, 0xBF],
+                                                  "FOPENF2": [0x21, 0x08, 0, 0]}[c.fn]),
     Rule("R-BF-SETDTA4", S1, "SETDTA $A800 again answers A $08, F 0 (XBFILE4 sets it, so its DTA checks are real).",
          lambda c: c.src == "XB40", lambda c: (c.a, c.f, c.dta) == (0x08, 0, E5)),
     Rule("R-BF-WORK", S1, "F, and SETDTA's A, are the same on both references in every case (mostly $44 on A 0, $45 on "

@@ -7,3 +7,14 @@
       and file bytes compared after the session -- the National CF-3300 against zerobas's disk machine. Template:
       probes/disk/disk_probe_dosmode.py. The commands that reach zerobas's OWN code (BASIC, FORMAT's H.FORM, the boot)
       get rules on the disk pages.
+      ✅ STEP 1 (2026-11-23 / 11-25): probes/disk/disk_probe_dossession.py, gate `dossession-acceptance` (in the
+      battery since 2026-11-25): DIR, DIR /W, TYPE, COPY, COPY a+b, REN, DEL (and of a missing file), TYPE of a missing
+      file, VERIFY ON, DATE (and setting it), REM, an unknown command -- the screen after each and the disk's directory
+      and file bytes after the session, the CF-3300 against zerobas's disk machine: 20 / 20 SAME
+      (scratchpad/AE_dossession_run4.out). It found D-COPYDATE (fixed 2026-11-25). The session sets MODE 40 first:
+      the start-up screen is the host's ($7D2F; JP SCREEN 1 on the CF-3300, EU TEXT1 here), scored against the
+      VG-8020 + HBD-F1 by dosmode-acceptance, so `boot` / `date` are printed here and scored there.
+      ➡️ LEFT: (a) the commands that reach zerobas's OWN code -- BASIC typed at A> (the hand-over to Disk BASIC) and
+      FORMAT (H.FORM's dialogue) -- with rules on the disk pages; (b) the disk row leaves the directory's date / time
+      out ("neither machine has a clock") -- both machines are deterministic (1984-01-01 or the date the session set),
+      and D-COPYDATE showed the DIR screen was the only witness of a date, so the disk row should compare them too.

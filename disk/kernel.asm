@@ -2255,42 +2255,47 @@ hkm_out:        ld      hl,24
                 ret
 
 
-; close_read -- FCLOSE of a file opened by FOPEN (D-CLOSESTAMP, 2026-10-01). Here,
-; in the hole before the $5FE5 pin, because the one after $75A5 is full. The
-; CF-3300 re-dates a file written while open: FIXD.TXT, dated 0, FOPEN + WRRND
-; inside its size + FCLOSE reads 0821h there, 0000 here
-; (probes/disk/disk_probe_dosdate.py). The FCB says whether a write happened
-; (+24's 40h cleared, fcb_mark_written) and where the entry is (+25, the root
-; index FOPEN filled): sector FIRSTROOT + index / 16, offset (index mod 16) x 32.
-;   in: DE = the FCB (the kernel's copy, $DA40); out: A = $00 ok / $FF I/O error
+; close_read -- FCLOSE of a file written since FOPEN / FMAKE (D-CLOSESTAMP, 2026-10-01;
+; D-COPYDATE, 2026-11-25). The CF-3300 writes the FCB's OWN date and time (+20 / +22)
+; into the entry at FCLOSE, and every write stamps the current date into the FCB first
+; (probes/bios/spec/xbfile5.asm, scratchpad/XB5_cf.out: a date poked AFTER the write
+; reaches the entry, one poked BEFORE it is overwritten by the write, an unwritten close
+; writes nothing). So a plain write still dates the file today (D-CLOSESTAMP: FIXD.TXT,
+; dated 0, FOPEN + WRRND + FCLOSE reads 0821h, probes/disk/disk_probe_dosdate.py), and
+; COMMAND.COM's COPY -- which sets the source's date in the FCB after its last write --
+; keeps it. The FCB says whether a write happened (+24's 40h cleared, fcb_mark_written).
+; cr_chkdir has just written the entry's size and first cluster through fat_dir_update,
+; whose sector is still in FAT_MBUF at FWR_DIROFF: the FCB's time and date go there and
+; the sector goes back (fdir_wrback). One exit for all three ends, A := 0 - carry: the
+; `add hl, de` of 24 to an FCB address leaves the carry clear for "not written", and
+; cr_chkdir's failure and fdir_wrback's I/O error both come with it set.
+;   in: DE = the FCB; out: A = $00 ok / $FF I/O error
 close_read:
                 ld      hl, 24
-                add     hl, de
+                add     hl, de              ; Cy = 0
                 bit     6, (hl)
-                jr      nz, cr_ok           ; not written since FOPEN: nothing to do
+                jr      nz, cr_end          ; not written since FOPEN: nothing to do (A 0)
                 call    cr_chkdir           ; D-BDOSUNOP: the entry must carry the FCB's name;
                                             ; then D-WRBLKDIR's size + first cluster; HL = +25
-                jr      c, cr_err
-                ld      a, (hl)             ; A = the entry's index (+25)
-                call    root_pos            ; DE = its sector, HL = its offset (carve 20)
-                push    hl
-                push    de
-                call    rs_dbuf
-                pop     de
-                pop     hl
-                jr      c, cr_err
-                push    de
-                ld      de, SECTOR_BUF
-                add     hl, de              ; HL -> the entry
-                call    dir_stamp_date      ; as the CF-3300 dates a written file
-                pop     de
-                call    wr_sbuf
-                jr      c, cr_err
-cr_ok:
-                xor     a
-                ret
-cr_err:
-                ld      a, $FF
+                jr      c, cr_end           ; (A $FF)
+                ld      de, -3
+                add     hl, de              ; HL = the FCB + 22 (its time)
+                ex      de, hl
+                ld      hl, (FWR_DIROFF)
+                ld      bc, FAT_MBUF + 22
+                add     hl, bc              ; HL = the entry + 22 (its time)
+                ex      de, hl
+                ldi
+                ldi                         ; entry +22..23 := FCB +22..23, the time
+                dec     hl
+                dec     hl
+                dec     hl
+                dec     hl                  ; HL = the FCB + 20
+                ldi
+                ldi                         ; entry +24..25 := FCB +20..21, the date
+                call    fdir_wrback         ; Cy = an I/O error
+cr_end:
+                sbc     a, a                ; A = $00, or $FF with the carry
                 ret
 
 ; ===== S10.B (2026-10-06): an OUTPUT channel is an MSX-DOS FCB, in this ROM ==

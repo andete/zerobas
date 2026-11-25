@@ -166,7 +166,7 @@ fcbhdr-acceptance putdir-acceptance readflt-acceptance
 recauto-acceptance recbig-acceptance ampb-acceptance pulong-acceptance rg7-acceptance bloadrtail-acceptance wszero-acceptance tapionlead-acceptance basicint-acceptance filesnl-acceptance
 filesbare-acceptance callsystem-acceptance bootkey-acceptance dskib-acceptance boot5e10-acceptance namecase-acceptance cloadverr-acceptance programs-acceptance gcdi-acceptance catcopy-acceptance nodev-acceptance savedev-acceptance pustardol-acceptance putiny-acceptance puneglead-acceptance usrstr-acceptance fullclash-acceptance playeq-acceptance inputcont-acceptance postty-acceptance playarr-acceptance prstr2x-acceptance keyrepaint-acceptance prstrfn-acceptance resnextend-acceptance playqueue-acceptance concat3-acceptance pustype-acceptance relspace-acceptance argspace-acceptance sessions-acceptance
 resnext-acceptance readerl-acceptance
-dosmode-acceptance bootkeys-acceptance
+dosmode-acceptance dossession-acceptance bootkeys-acceptance
 diskfre-acceptance deepexpr-acceptance fcb0-acceptance prec-acceptance dimedge-acceptance loaddi-acceptance wcache-acceptance fdcdi-acceptance geteject-acceptance
 caswbrk-acceptance casrbrk-acceptance subsig-acceptance
 casdirect-acceptance autorun-acceptance listflt-acceptance

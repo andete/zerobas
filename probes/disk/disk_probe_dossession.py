@@ -44,6 +44,7 @@ HELLO = b"HELLO FROM THE SESSION\r\nSECOND LINE\r\n\x1a"
 SESSION = [
     ("boot", None, 14),
     ("date", "", 5),
+    ("mode", "MODE 40", 4),
     ("dir", "DIR", 8),
     ("dirw", "DIR /W", 8),
     ("type", "TYPE HELLO.TXT", 5),
@@ -201,6 +202,13 @@ def render(lines):
     return out
 
 
+# The start-up screen is the host's (the main ROM's $7D2F routine): JP SCREEN 1 / 29 on the CF-3300, EU TEXT1 / 37 on
+# zerobas since D-DISKROMHOST step 2b -- a style split the VG-8020 decides, measured against the VG-8020 + HBD-F1 by
+# dosmode-acceptance. So `boot` and `date` are printed here but scored there, and the session fixes its own screen
+# with MODE 40 (dosmode's mode40 row: identical cells on both machines) before the commands this probe is about.
+SCORED_ELSEWHERE = ("boot", "date")
+
+
 def main():
     if not os.path.isfile(DOS):
         print(f"INSTRUMENT FAULT: no MSX-DOS 1 system disk at {DOS}")
@@ -217,6 +225,8 @@ def main():
             blind.append(tag)
         elif cf == zb:
             verdict = "SAME"
+        elif tag in SCORED_ELSEWHERE:
+            verdict = "differs (the start-up screen: scored by dosmode-acceptance)"
         else:
             verdict = "DIVERGES"
             bad.append(tag)
@@ -237,7 +247,7 @@ def main():
     if blind:
         print(f"\nINSTRUMENT FAULT: the CF-3300 gave no reading on {', '.join(blind)}")
         return 2
-    n = len(SESSION) + 1
+    n = len(SESSION) + 1 - len(SCORED_ELSEWHERE)
     print(f"\n{'PASS' if not bad else 'FAIL'}: MSX-DOS commands typed at A> ({n - len(bad)}/{n})")
     return 1 if bad else 0
 

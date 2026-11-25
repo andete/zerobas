@@ -2834,6 +2834,14 @@ readerl-acceptance: repack-machine
 dosmode-acceptance: repack-machine
 	python3 probes/disk/disk_probe_dosmode.py
 
+# --- dossession-acceptance: MSX-DOS commands typed at A> (D-DOSSESSION) -------
+# DIR, DIR /W, TYPE, COPY (and +), REN, DEL, VERIFY, DATE, an error, on the
+# CF-3300 and zerobas: the screen after each, the disk's directory and files
+# after the session. Found D-COPYDATE (COPY keeps the source's date: FCLOSE
+# writes the FCB's date). Uses the BDOS gates' MSX-DOS disk.
+dossession-acceptance: repack-machine
+	python3 probes/disk/disk_probe_dossession.py
+
 # --- bootkeys-acceptance: SHIFT held at power-on keeps Disk BASIC out (D-BOOTKEYS)
 # The key is pressed from power-on in a Tcl prologue; DSKF(0) answers or is ERR 5.
 bootkeys-acceptance: repack-machine $(DISK_TEST_DSK)
