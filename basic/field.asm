@@ -475,6 +475,13 @@ stmt_table:
     IF (low stmt_table) + 2 * STMT_TABLE_ROWS - 2 > 255
                 db      STMT_TABLE_ROWS_CROSS_A_PAGE__ES_IDX_WOULD_CARRY
     ENDIF
+; for_alloc -- ex_for's frame allocation, moved out of line by D-FORFRAME (2026-11-25) so that ex_for keeps its
+; size: `call check_expr_errors_popbc / call for_alloc` replaced `ld hl,FOR_FRAME / call ctl_alloc` byte for byte
+; (basic/fat.asm). In the shipping build it takes 6 B of the pad in front of the $72D4 pin, so nothing before the
+; pin moves. A tail jump: ctl_alloc's carry and DE reach ex_for's `jp c,ef_over` as before.
+for_alloc:
+                ld      hl,FOR_FRAME
+                jp      ctl_alloc
     IF BASICINT_PINS
 ; 📌 D-BASICINT2 PIN $72D4 (2026-10-16): the reference's tape-byte read, CALLED by
 ; Demonia (HL is its own pointer). Black-box on the VG-8020

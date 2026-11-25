@@ -10,9 +10,9 @@ SPDX-License-Identifier: BSD-2-Clause
 > zerobas, by typed BASIC ([`kfor.py`](../../probes/basic/spec/kfor.py), with FOR's and NEXT's cases together);
 > every rule is executable and every recorded output is read by one. Not yet reviewed ([the keyword plan](spec-plan.md)).
 >
-> **Status (2026-11-25):** level 2 — happy path ✓ · reasonable time ✓ · common
-> errors ✗ (a FOR that fails still pushes its frame: D-FORFRAME) · RAM usage not yet proven · every error ✗
-> (D-FORINTLIM, D-FORSTEP0).
+> **Status (2026-11-25):** level 3 — happy path ✓ · reasonable time ✓ · common
+> errors ✓ (a FOR that fails pushes no frame since D-FORFRAME, 2026-11-25) · RAM usage not yet proven · every
+> error ✗ (D-FORINTLIM, D-FORSTEP0).
 > Speed is deliberately left out of these docs until on-par speed is
 > established for every keyword.
 
@@ -188,19 +188,15 @@ reference's cases: “a start past the limit skips the body (0 runs)” is FALSE
 
 | rule | cases | reference | zerobas |
 |---|---|---|---|
-| **R-FOR-ERRORS** A string variable, limit or STEP is error 13 (Type mismatch); no TO, no `=`, a number or an array element as the variable error 2 (Syntax error); nothing after TO or after STEP error 24 (Missing operand); an error in the start or the limit is that error (1/0: 11). A shape error ends the line there (no body runs); the others leave the line running on (R-FOR-NOFRAME). | 11 | ✓ | ✗ 3: KFR FX 26, KFR FX 32, KFR FX 42 |
-| **R-FOR-NOFRAME** A FOR that fails pushes NO frame: after RESUME NEXT the body runs once and its NEXT is error 1 (NEXT without FOR), the variable as the failed FOR left it. | 8 | ✓ | ✗ 4: KFR FX 16, KFR FX 26, KFR FX 32, KFR FX 42 |
+| **R-FOR-ERRORS** A string variable, limit or STEP is error 13 (Type mismatch); no TO, no `=`, a number or an array element as the variable error 2 (Syntax error); nothing after TO or after STEP error 24 (Missing operand); an error in the start or the limit is that error (1/0: 11). A shape error ends the line there (no body runs); the others leave the line running on (R-FOR-NOFRAME). | 11 | ✓ | ✓ |
+| **R-FOR-NOFRAME** A FOR that fails pushes NO frame: after RESUME NEXT the body runs once and its NEXT is error 1 (NEXT without FOR), the variable as the failed FOR left it. | 8 | ✓ | ✗ 1: KFR FX 16 |
 
 <!-- RULES END -->
 
 ## Differences from the reference
 
-- **A FOR that fails still pushes its frame** (rules R-FOR-NOFRAME and R-FOR-ERRORS; cases KFR FX 26, 32,
-  42; [D-FORFRAME](../../todo/open/D-FORFRAME.md)). After `FOR I=1 TO "A"`, `FOR I=1 TO 3 STEP` or `FOR I=1 TO 2 STEP
-  "A"` and RESUME NEXT, the reference's NEXT is NEXT without FOR; zerobas's iterates -- and with STEP missing or a
-  string the step is 0, so the program hangs.
-- **A limit an integer variable cannot hold** (rule R-FOR-OVERFLOW, case KFR FX 16;
-  [D-FORINTLIM](../../todo/open/D-FORINTLIM.md)): `FOR I%=1 TO 40000` is Overflow at the FOR there; zerobas loops.
+- **A limit an integer variable cannot hold** (rules R-FOR-OVERFLOW and R-FOR-NOFRAME, case KFR FX 16;
+  [D-FORINTLIM](../../todo/open/D-FORINTLIM.md)): `FOR I%=1 TO 40000` is Overflow at the FOR there, and no frame is pushed; zerobas loops.
 - **STEP 0 with the start past the limit** (rule R-FOR-STEP0, case KFR FX 6; [D-FORSTEP0](../../todo/open/D-FORSTEP0.md)):
   `FOR I=3 TO 1 STEP 0` never ends there; zerobas runs the body once.
 

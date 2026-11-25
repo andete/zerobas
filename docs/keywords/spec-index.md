@@ -62,7 +62,7 @@ Every keyword page, the region the spec loop takes it in, and how far its page h
 | `GOSUB` | [flow](../concepts/program-text.md) | RAM record + screen | VG-8020 | [user page](GOSUB.md) | — | — |
 | `RETURN` | [flow](../concepts/program-text.md) | RAM record + screen | VG-8020 | [user page](RETURN.md) | — | — |
 | `IF` | [flow](../concepts/program-text.md) | RAM record + screen | VG-8020 | [user page](IF.md) | — | — |
-| `FOR` | [flow](../concepts/program-text.md) | RAM record + screen | VG-8020 | [DRAFT 1](FOR.md) | 5 | D-FORFRAME, D-FORINTLIM, D-FORSTEP0 |
+| `FOR` | [flow](../concepts/program-text.md) | RAM record + screen | VG-8020 | [DRAFT 1](FOR.md) | 5 | D-FORINTLIM, D-FORSTEP0 |
 | `NEXT` | [flow](../concepts/program-text.md) | RAM record + screen | VG-8020 | [DRAFT 1](NEXT.md) | 3 | D-NEXTCREATE |
 | `END` | [flow](../concepts/program-text.md) | RAM record + screen | VG-8020 | [user page](END.md) | — | — |
 | `STOP` | [flow](../concepts/program-text.md) | RAM record + screen | VG-8020 | [user page](STOP.md) | — | — |

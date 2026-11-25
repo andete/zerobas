@@ -1,0 +1,6 @@
+  live KFR_run1.out FX: 43 cases, 0.1 s
+  live KFR_run1.out: zerobas as committed
+OK   docs/keywords/FOR.md: 9 rules, 3 failing on zerobas (live, 1 run file(s))
+OK   docs/keywords/NEXT.md: 3 rules, 1 failing on zerobas (live, 1 run file(s))
+===== spec-live: ALL PAGES AGREE =====
+refcache: 1 hit, 0 miss, 1 of the hits were ZEROBAS readings

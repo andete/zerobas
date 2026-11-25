@@ -2035,8 +2035,19 @@ ef_nocache:
                 ; a FOR frame is ever pushed without also moving FSP.
                 ; ⚠️ Row a.dep8 (8 nested loops) is still the row that reaches the
                 ; full-pool arm, and K-NA4 is still its knife.
-                ld      hl,FOR_FRAME
-                call    ctl_alloc
+                ; 🔴 D-FORFRAME (2026-11-25): a fault the limit or STEP expression DEFERRED (a string:
+                ; Type mismatch; STEP with nothing: Missing operand -- D-PENDERR's FPERR) is raised
+                ; HERE, before the frame is pushed. It used to surface only after ctl_alloc, so the
+                ; NEXT that RESUME NEXT reached found a frame -- with a 0 step, a loop that never
+                ; ended -- where both references have none (probes/basic/spec/kfor.py, KFR FX 26 /
+                ; 32 / 42; traced: ctl_alloc, then raise_error). The _popbc entry discards the body
+                ; pointer pushed above along with its own return. 📌 SAME SIZE AS THE TWO
+                ; INSTRUCTIONS IT REPLACES (`ld hl,FOR_FRAME / call ctl_alloc`, 6 B): an inline
+                ; 3 B call here shifted the code up to the $6CF3 pin, and Chuckie Egg's machine
+                ; code -- which calls into that stretch -- reset (tape corpus; three NOPs did the
+                ; same). for_alloc lives in front of the $72D4 pin (basic/field.asm).
+                call    check_expr_errors_popbc
+                call    for_alloc           ; HL := FOR_FRAME, ctl_alloc (its carry out)
                 jp      c,ef_over           ; collided with the variable area
                 ex      de,hl               ; DE = the frame base (ldir destination)
                 ld      hl,FOR_CUR          ; push the FOR_FRAME-byte frame
