@@ -109,3 +109,8 @@
       **Program region, second unit (2026-11-25): DIM / ERASE / CLEAR at DRAFT 1** from probes/basic/spec/kdim.py (42
       screen cases, scratchpad/KDM_run1.out); every page claim held, zerobas agrees on all 42; 10 controls, every rule
       pinned. NEXT: NEW / LIST / LLIST / DELETE / RENUM / AUTO (the program text).
+      **Program region, third unit (2026-11-25): NEW / LIST / DELETE / RENUM at DRAFT 1** from probes/basic/spec/
+      klist.py (39 screen cases, scratchpad/KNL_run1.out); every page claim held, zerobas agrees on all 39; 17 controls,
+      every rule pinned. REGION 7 COMPLETE AT DRAFT 1 BUT AUTO (CTRL+STOP) AND LLIST (a printer): each needs its own
+      harness. NEXT: a goldfish pass over region 7, then region 8 (memory: PEEK POKE VARPTR FRE USR FN BASE INP OUT
+      WAIT TIME).

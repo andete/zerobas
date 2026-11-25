@@ -1,0 +1,21 @@
+#!/usr/bin/env python3
+# Copyright (c) 2026 Joost Yervante Damad
+# SPDX-License-Identifier: BSD-2-Clause
+"""docs/keywords/NEW.md's EXECUTABLE RULES (docs/spec-method.md §3a, docs/keywords/spec-plan.md): NEW --
+probes/basic/spec/klist.py (the loader is klist_model; the interpreter is kstop_model's small BASIC)."""
+import os
+import sys
+
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+import klist_model as M  # noqa: E402
+
+PAGE = "docs/keywords/NEW.md"
+OUTPUTS = M.OUTPUTS
+OUTPUTS_DESC = M.OUTPUTS_DESC
+
+
+def cases():
+    return M.load("NEW")
+
+
+RULES = M.rules("NEW")

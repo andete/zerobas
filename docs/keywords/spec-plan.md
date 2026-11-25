@@ -694,3 +694,15 @@ changing nothing. The memory-limit cases sit far from the edge, so no expectatio
 Every page claim held; zerobas agrees on all 42. The small BASIC gained arrays (dim / element), ERASE and CLEAR
 n,top, and lost two bugs its new cases exposed (PRINT's item scanner split inside parentheses; ERASE left the old
 elements). 10 controls, every rule pinned.
+
+### The program region's third unit (2026-11-25): NEW, LIST, DELETE, RENUM
+
+[klist.py](../../probes/basic/spec/klist.py), 39 SCREEN cases (run file [scratchpad/KNL_run1.out](../../scratchpad/KNL_run1.out)),
+taken from the four pages' claims: NEW's erasing (the string space stays; inside a program it stops; `NEW 1` erases
+nothing), LIST's ranges with no range errors, `.`, LIST ending its line without being an edit, numbers relisted in the
+machine's spelling, DELETE's checks before deleting (the high end must exist, the low need not) and its being an edit,
+RENUM's numbering, its rewriting of references but not of text, its report of a missing target, its refusals and its
+keeping the CONT point. Every page claim held; zerobas agrees on all 39. The small BASIC gained LIST / DELETE / RENUM
+and output that wraps at 37 (a listed line of 38 characters showed it -- the TRON reviewer had predicted the model
+would miss exactly that). 17 controls, every rule pinned. AUTO (CTRL+STOP) and LLIST (a printer) need their own
+harness; their pages' Open lists say so. Region 7 is complete at DRAFT 1 but for those two.

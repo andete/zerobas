@@ -1,0 +1,33 @@
+  live KNL_run1.out FX: zerobas as committed
+  live KDM_run1.out FX: zerobas as committed
+  live KDA_run1.out FX: zerobas as committed
+  live KER_run1.out FX: zerobas as committed
+  live KER_run1.out FY: zerobas as committed
+  live KSP_run1.out FX: zerobas as committed
+  live KSP_run1.out FY: zerobas as committed
+  live KTN_run1.out FX: zerobas as committed
+  live KTN_run1.out FY: zerobas as committed
+OK   docs/keywords/NEW.md: 2 rules, 0 failing on zerobas (live, 1 run file(s))
+OK   docs/keywords/LIST.md: 4 rules, 0 failing on zerobas (live, 1 run file(s))
+OK   docs/keywords/DELETE.md: 3 rules, 0 failing on zerobas (live, 1 run file(s))
+OK   docs/keywords/RENUM.md: 4 rules, 0 failing on zerobas (live, 1 run file(s))
+OK   docs/keywords/DIM.md: 3 rules, 0 failing on zerobas (live, 1 run file(s))
+OK   docs/keywords/ERASE.md: 2 rules, 0 failing on zerobas (live, 1 run file(s))
+OK   docs/keywords/CLEAR.md: 3 rules, 0 failing on zerobas (live, 1 run file(s))
+OK   docs/keywords/DATA.md: 2 rules, 0 failing on zerobas (live, 1 run file(s))
+OK   docs/keywords/READ.md: 2 rules, 0 failing on zerobas (live, 1 run file(s))
+OK   docs/keywords/RESTORE.md: 2 rules, 0 failing on zerobas (live, 1 run file(s))
+OK   docs/keywords/ERROR.md: 2 rules, 0 failing on zerobas (live, 1 run file(s))
+OK   docs/keywords/ERR.md: 3 rules, 0 failing on zerobas (live, 1 run file(s))
+OK   docs/keywords/ERL.md: 1 rules, 0 failing on zerobas (live, 1 run file(s))
+OK   docs/keywords/RESUME.md: 4 rules, 1 failing on zerobas (live, 1 run file(s))
+OK   docs/keywords/END.md: 2 rules, 1 failing on zerobas (live, 1 run file(s))
+OK   docs/keywords/STOP.md: 2 rules, 0 failing on zerobas (live, 1 run file(s))
+OK   docs/keywords/CONT.md: 2 rules, 1 failing on zerobas (live, 1 run file(s))
+OK   docs/keywords/RUN.md: 2 rules, 0 failing on zerobas (live, 1 run file(s))
+OK   docs/keywords/TRON.md: 2 rules, 0 failing on zerobas (live, 1 run file(s))
+OK   docs/keywords/TROFF.md: 1 rules, 0 failing on zerobas (live, 1 run file(s))
+OK   docs/keywords/REM.md: 1 rules, 0 failing on zerobas (live, 1 run file(s))
+===== spec-live: ALL PAGES AGREE =====
+refcache: 9 hit, 0 miss, 9 of the hits were ZEROBAS readings
+rc=0

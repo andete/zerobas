@@ -128,8 +128,12 @@ class Basic:
         self.cur += s
 
     def newline(self):
-        if self.cur.strip():
-            self.screen.append(self.cur.strip())
+        t = self.cur.rstrip()
+        while len(t) > WIDTH and "no-output-wrap" not in self.alt:   # output wraps at the line width (37) too
+            self.screen.append(t[:WIDTH].strip())
+            t = t[WIDTH:]
+        if t.strip():
+            self.screen.append(t.strip())
         self.cur = ""
 
     def message(self, s):
@@ -674,9 +678,54 @@ class Basic:
             if "clear-keeps-cont" not in self.alt:
                 self.cont = None
             return None
+        if s.startswith("LIST"):
+            arg = s[4:].strip()
+            if "list-comma-separator" in self.alt and "," in arg:
+                arg = arg.split(",")[0] + "-" + arg.split(",")[1]
+            if "list-n-from" in self.alt and arg.isdigit():
+                arg += "-"
+            lo, hi = self.range(arg, listing=True)
+            if lo > hi and "list-reversed-error" in self.alt:
+                raise Err(5)
+            for ln in self.lines():
+                if lo <= ln <= hi:
+                    self.out(f"{ln} {self.spell(self.prog[ln])}")
+                    self.newline()
+                    self.dot = ln
+            if "list-is-edit" in self.alt:
+                self.reset("edit")
+                self.cont = None
+            if "list-continues-line" in self.alt and direct:
+                return None
+            raise Stop                                   # LIST ends the line, and a running program
+        if s.startswith("DELETE"):
+            lo, hi = self.range(s[6:].strip(), listing=False)
+            for ln in [k for k in self.lines() if lo <= k <= hi]:
+                del self.prog[ln]
+            if "delete-keeps-vars" not in self.alt:
+                self.reset("edit")                       # a program edit: the variables and CONT go
+                self.cont = None
+            raise Stop
+        if s.startswith("RENUM"):
+            self.renum(s[5:].strip())
+            if "renum-is-edit" in self.alt:
+                self.reset("edit")
+                self.cont = None
+            raise Stop
+        if s.startswith("NEW ") and "new-arg-erases" in self.alt:
+            self.prog = {}
+            raise Err(2)
         if s == "NEW":
             if "new-keeps-trace" not in self.alt:
                 self.trace = False
+            if not direct:
+                self.prog, self.cont = {}, None
+                self.reset()
+                if "new-continues" in self.alt:
+                    return None
+                raise Stop                               # inside a program: erased, and it stops
+            if "new-resets-size" in self.alt:
+                self.strsize = 200
             self.prog = {}
             self.reset()
             self.cont = None
@@ -753,6 +802,109 @@ class Basic:
                     if k < 0:
                         break
                     i = k + 1
+        return out
+
+    def range(self, arg, listing):
+        """LIST's / DELETE's line range: n, n-, -n, n-m, `.`; a comma is error 2. DELETE: an open top or nothing is
+        error 5, the high end must exist and the range must not be reversed -- all checked before anything goes."""
+        if "," in arg:
+            raise Err(2)
+        if arg == ".":
+            arg = str(getattr(self, "dot", 0))
+        top = 65529
+        m = re.fullmatch(r"(\d*)\s*(-?)\s*(\d*)", arg)
+        a, dash, b = m.groups()
+        if not listing:
+            if not arg or (dash and not b):
+                raise Err(5)
+            lo, hi = (int(a) if a else 0), int(b or a)
+            if (hi not in self.prog and "delete-high-free" not in self.alt) or lo > hi:
+                raise Err(5)
+            if "delete-low-must-exist" in self.alt and a and lo not in self.prog:
+                raise Err(5)
+            return lo, hi
+        if not arg:
+            return 0, top
+        if not dash:
+            return int(a), int(a)
+        return (int(a) if a else 0), (int(b) if b else top)
+
+    def spell(self, text):
+        """a stored line as LIST shows it: a constant with a fraction or an exponent in the machine's own spelling
+        (`0.5` -> `.5`, `1.5D3` -> `1500#`, more than six digits -> `#`); strings and REM / DATA text as typed"""
+        out, i, q = "", 0, False
+        while i < len(text):
+            c = text[i]
+            if c == '"':
+                q = not q
+            if not q and (text.startswith("REM", i) or text.startswith("DATA", i) or c == "'"):
+                return out + text[i:]
+            m = None if q or (i and (text[i - 1].isalnum())) else re.match(r"\d*\.\d+([DE]\d+)?|\d+[DE]\d+", text[i:])
+            if m and "list-as-typed" not in self.alt:
+                lit = m.group(0)
+                v = float(lit.replace("D", "E"))
+                digits = len(re.sub(r"[^0-9]", "", lit.split("D")[0].split("E")[0]).lstrip("0"))
+                txt = (f"{v:.14g}" if v != int(v) else str(int(v)))
+                txt = txt[1:] if txt.startswith("0.") else txt
+                out += txt + ("#" if "D" in lit or digits > 6 else "")
+                i += len(lit)
+                continue
+            out += c
+            i += 1
+        return out
+
+    def renum(self, arg):
+        """RENUM [new][,[old][,inc]]: an absent new is 10; increment 0, or new numbers that would not stay above the
+        lines left alone, are error 5 and nothing changes. Every reference is rewritten -- GOTO, GOSUB, THEN, ELSE,
+        RESTORE, RUN and ON ... GOTO lists -- not inside strings, REM or DATA; a reference to a missing line is
+        reported (`Undefined line 77 in 5`, its line's OLD number) and left; the variables and CONT stay."""
+        parts = (arg.split(",") + ["", "", ""])[:3]
+        new = int(parts[0]) if parts[0].strip() else (0 if "renum-comma-start-0" in self.alt and arg else 10)
+        lines = self.lines()
+        old = int(parts[1]) if parts[1].strip() else (lines[0] if lines else 0)
+        inc = int(parts[2]) if parts[2].strip() else 10
+        if inc == 0:
+            raise Err(5)
+        moved = [k for k in lines if k >= old]
+        kept = [k for k in lines if k < old]
+        if kept and moved and new <= kept[-1] and "renum-overlap-ok" not in self.alt:
+            raise Err(5)
+        mp = {k: new + i * inc for i, k in enumerate(moved)}
+        full = {k: mp.get(k, k) for k in lines}
+        prog = {}
+        for ln in lines:
+            prog[full[ln]] = self.rerefs(self.prog[ln], full, ln)
+        self.prog = prog
+        if isinstance(self.cont, tuple) and self.cont[0] in full:
+            self.cont = (full[self.cont[0]], self.cont[1])
+
+    def rerefs(self, text, full, ln):
+        out, i, q = "", 0, False
+        while i < len(text):
+            c = text[i]
+            if c == '"' and "renum-touches-text" not in self.alt:
+                q = not q
+            if not q and (text.startswith("REM", i) or text.startswith("DATA", i) or c == "'"):
+                return out + text[i:]
+            m = None if q else re.match(r"(GOTO|GOSUB|THEN|ELSE|RESTORE|RUN)\s*((?:\d+\s*,\s*)*\d+)", text[i:])
+            if m:
+                nums = re.findall(r"\d+", m.group(2))
+                new = []
+                for nstr in nums:
+                    n = int(nstr)
+                    if n in full:
+                        new.append(str(full[n]))
+                    else:
+                        if "renum-missing-error" in self.alt:
+                            raise Err(8)
+                        self.message(f"Undefined line {n} in {ln}")
+                        new.append(nstr)
+                sep = "," if "," in m.group(2) else ""
+                out += m.group(1) + " " + sep.join(new) if " " in m.group(0) else m.group(1) + sep.join(new)
+                i += len(m.group(0))
+                continue
+            out += c
+            i += 1
         return out
 
     def next_line(self, pt):

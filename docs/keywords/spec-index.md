@@ -10,7 +10,7 @@ SPDX-License-Identifier: BSD-2-Clause
 
 Every keyword page, the region the spec loop takes it in, and how far its page has become a SPECIFICATION: measured rules, each checked against the reference machine's cases ([the plan](spec-plan.md), [the method](../spec-method.md)). A page that is not yet a spec is a "user page": it says what the keyword does and was checked by its example, but its sentences are not yet executable rules. The reference is the Philips VG-8020; disk statements, the National CF-3300.
 
-**71 of 150 keyword pages are specs; 0 are FINAL.**
+**75 of 150 keyword pages are specs; 0 are FINAL.**
 
 | keyword | region | harness | reference | page | open (not measured) | differences (TODO items, from the page) |
 |---|---|---|---|---|---|---|
@@ -79,11 +79,11 @@ Every keyword page, the region the spec loop takes it in, and how far its page h
 | `DEFSNG` | [errors](../concepts/errors.md) | RAM record + screen | VG-8020 | [DRAFT 1](DEFSNG.md) | 2 | D-VARLAYOUT |
 | `DEFDBL` | [errors](../concepts/errors.md) | RAM record + screen | VG-8020 | [DRAFT 1](DEFDBL.md) | 2 | D-VARLAYOUT |
 | `DEFSTR` | [errors](../concepts/errors.md) | RAM record + screen | VG-8020 | [DRAFT 1](DEFSTR.md) | 2 | D-VARLAYOUT |
-| `NEW` | [program](../concepts/program-text.md) | screen + program text | VG-8020 | [user page](NEW.md) | — | — |
-| `LIST` | [program](../concepts/program-text.md) | screen + program text | VG-8020 | [user page](LIST.md) | — | — |
+| `NEW` | [program](../concepts/program-text.md) | screen + program text | VG-8020 | [DRAFT 1](NEW.md) | 2 | — |
+| `LIST` | [program](../concepts/program-text.md) | screen + program text | VG-8020 | [DRAFT 1](LIST.md) | 2 | — |
 | `LLIST` | [program](../concepts/program-text.md) | screen + program text | VG-8020 | [user page](LLIST.md) | — | — |
-| `DELETE` | [program](../concepts/program-text.md) | screen + program text | VG-8020 | [user page](DELETE.md) | — | — |
-| `RENUM` | [program](../concepts/program-text.md) | screen + program text | VG-8020 | [user page](RENUM.md) | — | — |
+| `DELETE` | [program](../concepts/program-text.md) | screen + program text | VG-8020 | [DRAFT 1](DELETE.md) | 2 | — |
+| `RENUM` | [program](../concepts/program-text.md) | screen + program text | VG-8020 | [DRAFT 1](RENUM.md) | 2 | — |
 | `AUTO` | [program](../concepts/program-text.md) | screen + program text | VG-8020 | [user page](AUTO.md) | — | — |
 | `DATA` | [program](../concepts/program-text.md) | screen + program text | VG-8020 | [DRAFT 1](DATA.md) | 2 | — |
 | `READ` | [program](../concepts/program-text.md) | screen + program text | VG-8020 | [DRAFT 1](READ.md) | 2 | — |
