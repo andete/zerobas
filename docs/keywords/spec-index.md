@@ -71,7 +71,7 @@ Every keyword page, the region the spec loop takes it in, and how far its page h
 | `ERR` | [errors](../concepts/errors.md) | RAM record + screen | VG-8020 | [DRAFT 1](ERR.md) | 2 | — |
 | `ERL` | [errors](../concepts/errors.md) | RAM record + screen | VG-8020 | [DRAFT 1](ERL.md) | 2 | — |
 | `ERROR` | [errors](../concepts/errors.md) | RAM record + screen | VG-8020 | [DRAFT 1](ERROR.md) | 2 | — |
-| `RESUME` | [errors](../concepts/errors.md) | RAM record + screen | VG-8020 | [DRAFT 1](RESUME.md) | 2 | D-RESUMEMISS, D-ONERRVAR |
+| `RESUME` | [errors](../concepts/errors.md) | RAM record + screen | VG-8020 | [DRAFT 1](RESUME.md) | 2 | D-ONERRVAR |
 | `TRON` | [errors](../concepts/errors.md) | RAM record + screen | VG-8020 | [user page](TRON.md) | — | — |
 | `TROFF` | [errors](../concepts/errors.md) | RAM record + screen | VG-8020 | [user page](TROFF.md) | — | — |
 | `REM` | [errors](../concepts/errors.md) | RAM record + screen | VG-8020 | [user page](REM.md) | — | — |

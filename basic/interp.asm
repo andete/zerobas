@@ -1693,15 +1693,23 @@ ex_resume:
                 ld      a,b
                 or      c
                 jr      z,res_same          ; RESUME 0 == RESUME
-                xor     a
-                ld      (ONEFLG),a          ; leaving the handler -- CURLINE needs no
-                                            ; touch here (rp_goto sets it from GOTOTGT
-                                            ; the moment the branch below executes)
-                jr      goto_resolve        ; shares find_line_bc + the undef check +
-                                            ; GOTOTGT/GOTOFLAG + ret with GOTO's own
-                                            ; tail (program.asm) -- BC already holds
-                                            ; the target line number, exactly what
-                                            ; goto_resolve expects
+                ; 🔴 D-RESUMEMISS (TIER 3): LOOK THE LINE UP FIRST, *THEN* LEAVE THE
+                ; HANDLER. This arm used to clear ONEFLG and then jump to
+                ; goto_resolve, so a missing line raised ERR 8 with no handler
+                ; active -- the still-ARMED trap caught it, the handler ran
+                ; `RESUME 99` again, for ever: zerobas HUNG. The VG-8020 raises 8
+                ; from inside the active handler, untrapped: `Undefined line number
+                ; in 100` (KER FX 25, rule R-RESUME-FORMS). goto_resolve shares
+                ; find_line_bc + the undef check + GOTOTGT/GOTOFLAG with GOTO's own
+                ; tail -- BC already holds the target line number, exactly what it
+                ; expects -- and returns only when the line exists; res_ctx then
+                ; clears ONEFLG and `ret`s. Its CURLINE / HL writes are dead here:
+                ; rp_goto sets CURLINE from GOTOTGT the moment the branch executes.
+                ; 🔴 SIZE-NEUTRAL ON PURPOSE (main page 1, below Chuckie Egg's $68C3
+                ; landing -- D-BD2FRAGILE): 3 + 2 + the pad = the 6 B it replaces.
+                call    goto_resolve
+                jr      res_ctx
+                nop                         ; layout pad, never executed
 ; res_next: RESUME NEXT -> the statement AFTER the erroring one. UNLIKE
 ; res_same, this does NOT call res_ctx: the tenant does that prep itself
 ; (ONEFLG:=0, CURLINE:=erroring CURLINE, reading ERRRESUME directly) since

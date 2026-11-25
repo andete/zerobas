@@ -12,7 +12,7 @@ SPDX-License-Identifier: BSD-2-Clause
 > yet reviewed ([the keyword plan](spec-plan.md)).
 >
 > **Status (2026-11-25):** level 3 — happy path ✓ · reasonable time ✓ · common
-> errors ✗ (D-RESUMEMISS) · RAM usage not yet proven · every error ✗ (D-ONERRVAR).
+> errors ✓ (D-RESUMEMISS fixed 2026-11-25) · RAM usage not yet proven · every error ✗ (D-ONERRVAR).
 > Speed is deliberately left out of these docs until on-par speed is
 > established for every keyword.
 
@@ -164,7 +164,7 @@ and runs over the reference's cases: “RESUME NEXT always goes to the next line
 
 | rule | cases | reference | zerobas |
 |---|---|---|---|
-| **R-RESUME-FORMS** RESUME and RESUME 0 run the failing statement again (the handler having fixed the cause); RESUME NEXT runs the statement after it -- on the same line after a `:`, else the next line; a `:` inside a string does not count; RESUME n goes to line n, and a missing n is error 8 in the handler's line, untrapped. RESUME with no error is error 22 (RESUME without error). | 8 | ✓ | ✗ 1: KER FX 25 |
+| **R-RESUME-FORMS** RESUME and RESUME 0 run the failing statement again (the handler having fixed the cause); RESUME NEXT runs the statement after it -- on the same line after a `:`, else the next line; a `:` inside a string does not count; RESUME n goes to line n, and a missing n is error 8 in the handler's line, untrapped. RESUME with no error is error 22 (RESUME without error). | 8 | ✓ | ✓ |
 
 #### 2. The handler
 
@@ -182,9 +182,6 @@ and runs over the reference's cases: “RESUME NEXT always goes to the next line
 
 ## Differences from the reference
 
-- **RESUME to a missing line hangs** (rule R-RESUME-FORMS, case KER FX 25;
-  [D-RESUMEMISS](../../todo/open/D-RESUMEMISS.md)): `RESUME 99` with no line 99 stops with
-  `Undefined line number in 100` on the reference; zerobas never returns to the prompt.
 - **`ON ERROR GOTO A`** (rule R-RESUME-ONERROR, case KER FX 34;
   [D-ONERRVAR](../../todo/open/D-ONERRVAR.md)): a non-number after GOTO is GOTO 0 on the reference
   (inside a handler it re-raises the original error); zerobas says `Syntax error`.
@@ -206,6 +203,13 @@ been able to rate `RESUME`'s test programs.
 
 ## What we found, and how
 
+- **`RESUME 99` to a missing line hung zerobas** (fixed 2026-11-25, D-RESUMEMISS, found
+  by the spec probe's KER FX 25). The `RESUME <line>` arm left the handler -- cleared
+  the "handler active" flag -- BEFORE it looked the line up, so the missing line's
+  error 8 found the trap still armed and no handler active: the handler ran again,
+  met the same `RESUME 99`, and so on for ever. The VG-8020 looks first, inside the
+  handler, and stops with `Undefined line number in 100`. zerobas now does the same,
+  in the same 6 bytes of main ROM.
 - **`RESUME NEXT` skipped a statement after a `PRINT USING` type error at the
   end of a line** (fixed 2026-11-05, D-RESNEXTEOL; see
   [`PRINT`](PRINT.md)). The error surfaced only once the next line had begun,
