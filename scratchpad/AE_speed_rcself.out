@@ -1,5 +1,5 @@
 🔴 refcache VERIFY MISMATCH on Philips_VG_8020: case(s) [0] differ between the stored reading and a fresh one. The store is WRONG or the machine moved; key 362274f4579d
-🔴 refcache VERIFY MISMATCH on Fake_Direct (direct launch): output(s) [0] differ between the stored reading and a fresh one. The store is WRONG or the machine moved; key a01fd07c8d68
+🔴 refcache VERIFY MISMATCH on Fake_Direct (direct launch): output(s) [0] differ between the stored reading and a fresh one. The store is WRONG or the machine moved; key 5d7e8fb24408
 ⚠️ refcache: C-BIOS_MSX1_EU_REPACK_PLANT: name says zerobas, its ROM bytes say reference -- treated as ZEROBAS (measured, never replayed)
 ⚠️ refcache: Fake_Ref_With_Repo_Rom: name says reference, its ROM bytes say zerobas -- treated as ZEROBAS (measured, never replayed)
 PASS  K0 identical inputs give the same key (green control)  0e2c7666af9a
@@ -10,8 +10,8 @@ PASS  K3 param 'reset' -> MISS  0e2c7666 vs 624245dc
 PASS  K3 param 'boot' -> MISS  0e2c7666 vs b7159049
 PASS  K3 param 'capture' -> MISS  0e2c7666 vs c4a3e3ef
 PASS  K3 param 'sentinel_capture' -> MISS  0e2c7666 vs f35c7e4c
-PASS  K4 one byte of a ROM the machine names -> different identity  0a21b041 vs 1fb33c62
-PASS  K4b restoring the ROM restores the identity (control)  0a21b0418327
+PASS  K4 one byte of a ROM the machine names -> different identity  042f6141 vs f3d26f88
+PASS  K4b restoring the ROM restores the identity (control)  042f61418515
 PASS  K5 a changed harness fingerprint -> MISS  0e2c7666 vs 349b3014
 PASS  K5e another openMSX build -> a different harness fingerprint -> MISS  62a59408 vs 6db7231d
 PASS  K6 refuse to store None
@@ -50,7 +50,7 @@ PASS  KA11 GREEN CONTROL (and only that): maintain() is green on an entry under 
 refcache store: 1 entr(ies), 0.0 MB, oldest 14.0d, cap 14d; pruned 0, kept 1
 🔴 an entry survived the prune at 14.0d > 14d cap
    CAUSE: no unlink failed, so this is NOT the `except OSError` arm. The oldest survivor was under the cap when prune looked and over it when the report did, or it arrived between the two walks.
-     oldest survivor: 14.0000d  /tmp/zerobas/refage-yodxwfky/cc/cccccccccccccccccccccccccccccccccccccccc.json
+     oldest survivor: 14.0000d  /tmp/zerobas/refage-1xjfqfb0/cc/cccccccccccccccccccccccccccccccccccccccc.json
      margin over cap: 0.500s
 PASS  KA12 🔴 THE ARM WITH CONTENT: measure the post-condition a second LATER than the prune -- the shape the code had before D-REFRACE -- and the SAME store goes RED. That is what makes `maintain` capable of failing ITSELF on the calendar, and why one clock reading is now threaded through both walks.
 refcache store: 0 entr(ies), 0.0 MB, oldest 0.0d, cap 14d; pruned 1, kept 0
@@ -62,14 +62,14 @@ PASS  KA15 NEGATIVE: at the REAL clock the same 20-day entry is pruned, so KA15 
 refcache store: 1 entr(ies), 0.0 MB, oldest 28.0d, cap 14d; pruned 0, kept 1
 🔴 an entry survived the prune at 28.0d > 14d cap
    CAUSE: 1 over-cap entr(ies) could NOT be unlinked -- this is the `except OSError` arm, and it is counted in `kept`, which is why it used to look like a young entry:
-     28.00d  PermissionError/13  /tmp/zerobas/refage-yodxwfky/dd/dddddddddddddddddddddddddddddddddddddddd.json
+     28.00d  PermissionError/13  /tmp/zerobas/refage-1xjfqfb0/dd/dddddddddddddddddddddddddddddddddddddddd.json
 PASS  KA14 an over-cap entry that CANNOT be unlinked makes maintain red AND is named in PRUNE_FAILED, so the post-mortem has the path
 PASS  KA14 NEGATIVE: once it IS removable the same entry prunes and PRUNE_FAILED is EMPTY -- so the list means 'could not delete', not merely 'an over-cap entry existed'
-PASS  KD0 GREEN CONTROL: the same launch from ANOTHER temp dir (out, tcl, tape and Tcl-named disk all renamed) gives the SAME key  a01fd07c vs a01fd07c
-PASS  KD1 one byte of an ARGV medium (-cassetteplayer) -> MISS  a01fd07c vs 174ab709
-PASS  KD2 one byte of a medium named ONLY in the Tcl text (`diska {...}`) -> MISS (auto-detected, not declared)  a01fd07c vs 880e67ca
-PASS  KD3 one character of the Tcl -> MISS  a01fd07c vs 6605d4f5
-PASS  KD4 one byte of a ROM the machine names -> MISS, through cached_run's own key  a01fd07c vs fa6e9c38
+PASS  KD0 GREEN CONTROL: the same launch from ANOTHER temp dir (out, tcl, tape and Tcl-named disk all renamed) gives the SAME key  5d7e8fb2 vs 5d7e8fb2
+PASS  KD1 one byte of an ARGV medium (-cassetteplayer) -> MISS  5d7e8fb2 vs 6a5a9a2b
+PASS  KD2 one byte of a medium named ONLY in the Tcl text (`diska {...}`) -> MISS (auto-detected, not declared)  5d7e8fb2 vs 7be6d9a9
+PASS  KD3 one character of the Tcl -> MISS  5d7e8fb2 vs 3c096f52
+PASS  KD4 one byte of a ROM the machine names -> MISS, through cached_run's own key  5d7e8fb2 vs b8f2e0ab
 PASS  KD4b restoring the ROM restores the key (control)
 PASS  KD5 a Tcl that reads the host (clock) is UNCACHEABLE  the Tcl reads the host (clock)
 PASS  KD5 a Tcl that reads the host (rand) is UNCACHEABLE  the Tcl reads the host (rand())

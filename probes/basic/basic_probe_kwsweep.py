@@ -5966,7 +5966,7 @@ def main() -> int:
             k = (machine_for(r[4]), _row_rigs(r[4]))
             if k not in keys:
                 keys.append(k)
-        for mach, rig in keys:
+        def _group(mach, rig):
             idx = [i for i, r in enumerate(sel_rows)
                    if (machine_for(r[4]), _row_rigs(r[4])) == (mach, rig)]
             mkw = dict(kw)
@@ -6046,6 +6046,21 @@ def main() -> int:
                 got = [(g or "") + TAPE_MARK
                        + _tape_readback(tape_out, subject=mach == args.zb_machine)
                        for g in got]
+            return idx, got
+
+        # ⏱ B3 (2026-11-25, gate_time_review): the (machine, rig) groups are independent run_cases calls, so they
+        # run on a small pool -- kwsweep was the critical path of every ROM-change SCOPED run, its groups one after
+        # another. NOT when a hardware rig board is attached and a group drives it: the board has one state.
+        # Results land by row index, so the order of completion cannot reorder a row.
+        hw = RIG["port"] is not None and any(_rigstate_of(rig) is not None for _, rig in keys)
+        jobs = 1 if hw else max(1, int(_os.environ.get("KWSWEEP_JOBS") or 4))
+        if jobs > 1 and len(keys) > 1:
+            import concurrent.futures
+            with concurrent.futures.ThreadPoolExecutor(max_workers=jobs) as ex:
+                done = list(ex.map(lambda k: _group(*k), keys))
+        else:
+            done = [_group(*k) for k in keys]
+        for idx, got in done:
             for i, g in zip(idx, got):
                 out[i] = g
         return out

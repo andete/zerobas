@@ -233,6 +233,37 @@ def source_fingerprint():
     return h.hexdigest()[:16]
 
 
+# ⏱ A5 (2026-11-25, gate_time_review): UNIT-TEST IS PROVABLY INERT ON A DOCS-ONLY CHANGE, AND IS SKIPPED THEN.
+# MEASURED, not assumed: an audit hook on every Python process of a unit-test run (spawned workers included) saw
+# 1125 tracked files opened and NONE under docs/, todo/ or TODO.md (scratchpad/AE_speed_ut_audit.out's run; the
+# reads were probes/ tests/ tools/ the ROM sources build/ the Makefile and two scratchpad/*.json fixtures -- pasmo
+# reads the rest of the ROM sources, which the fingerprint covers whole). So its fingerprint is every tracked file
+# but docs/**, todo/**, TODO.md, any *.md, and scratchpad/ other than *.json; a green unit-test records it, and a
+# STATIC / SCOPED run (the planner passes --skip-proven) skips unit-test when it is unchanged. FULL always runs it.
+# selftest-check does NOT qualify: the same audit saw it open ~650 docs/ and todo/ files.
+UT_FP_FILE = os.path.join(SLOW_PIN_KEEP, "unit_test.fp")
+
+
+def ut_input(f):
+    """is tracked file f an input of unit-test? (the audit's answer, see UT_FP_FILE)"""
+    return not (f.startswith(("docs/", "todo/")) or f == "TODO.md" or f.endswith(".md")
+                or (f.startswith("scratchpad/") and not f.endswith(".json")))
+
+
+def unit_test_fingerprint():
+    h = hashlib.sha256()
+    files = subprocess.run(["git", "-C", ROOT, "ls-files", "-z"], capture_output=True).stdout.split(b"\0")
+    for f in sorted(x.decode() for x in files if x):
+        if not ut_input(f):
+            continue
+        try:
+            with open(os.path.join(ROOT, f), "rb") as fh:
+                h.update(f.encode() + b"\0" + fh.read())
+        except OSError:
+            h.update(f.encode() + b"\0<missing>")
+    return h.hexdigest()[:20]
+
+
 def inert_against_last_green():
     """-> (True, why) when the emulator tier provably cannot move.
 
@@ -419,6 +450,13 @@ def selftest():
     outside = "python3 scratchpad/foo_probe.py --gate\n"
     seen = lambda _ref: True
 
+    # ⏱ A5: unit-test's inputs, as the audit measured them -- docs never, the ROM sources and tests always
+    arm("S-UTSKIP a docs / todo / *.md / scratchpad run-file change is NOT a unit-test input",
+        not any(ut_input(f) for f in ("docs/keywords/IF.md", "todo/open/D-X.md", "TODO.md", "disk/docs/x.md",
+                                       "scratchpad/AE_x.out")))
+    arm("S-UTSKIP NEGATIVE: a ROM source, a test, a tool, a probe, the Makefile, a scratchpad fixture ARE",
+        all(ut_input(f) for f in ("basic/interp.asm", "disk/kernel.asm", "tests/run.py", "tools/x.py",
+                                   "probes/lib/omsx_repl.py", "Makefile", "scratchpad/g4_pointsets.json")))
     arm("S1 a recipe wholly inside the fingerprint is clean",
         unfingerprinted_scripts(lambda t: inside, seen) == set())
     arm("S-STATICEMU no emulator-booting sweep is a STATIC unit",
@@ -822,6 +860,9 @@ def main():
                          "iterating; never records a green battery")
     ap.add_argument("--full", action="store_true",
                     help="run the emulator tier even when it is provably inert")
+    ap.add_argument("--skip-proven", action="store_true",
+                    help="(the planner, below FULL) skip unit-test when its input fingerprint is unchanged since a "
+                         "green unit-test (A5)")
     ap.add_argument("--slow-sweeps", action="store_true",
                     help="run ONLY the daily measurements kwtime / kwram (+ the "
                          "static tier); every other run leaves them out")
@@ -911,6 +952,17 @@ def main():
               flush=True)
 
     # --- D-GATESKIP: is the emulator tier provably unable to move? ----------
+    # ⏱ A5: unit-test's proof (see UT_FP_FILE)
+    ut_fp = unit_test_fingerprint()
+    if a.skip_proven and "unit-test" not in excl:
+        try:
+            ut_prev = open(UT_FP_FILE).read().strip()
+        except OSError:
+            ut_prev = None
+        if ut_prev == ut_fp:
+            excl.add("unit-test")
+            print(f"=== unit-test SKIPPED (A5): its inputs are byte-identical to a green unit-test's ({ut_fp}) -- "
+                  f"no ROM source, test, tool, probe or Makefile change ===", flush=True)
     skip_emu, skip_why = False, ""
     if a.static:
         skip_emu, skip_why = True, "--static: the emulator tier was NOT run"
@@ -1281,6 +1333,13 @@ def main():
     # legitimate it goes in REGENERATED with its reason, the way EXPECT_ARG
     # entries do -- the list cannot quietly grow.
     ok = not (red or not lineerr_ok or pool_writes)
+    if results.get("unit-test", (1,))[0] == 0:          # ⏱ A5: a green unit-test vouches for its fingerprint
+        try:
+            os.makedirs(SLOW_PIN_KEEP, exist_ok=True)
+            with open(UT_FP_FILE, "w") as fh:
+                fh.write(ut_fp + "\n")
+        except OSError:
+            pass
     # --- record the proof, and ONLY from a full, fully green, unexcluded run --
     # ⚠️ A SKIPPED RUN NEVER WRITES THIS. If it did, a chain of skips would end
     # up vouching for nothing but the first link, and the proof would decay into

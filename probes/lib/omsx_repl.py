@@ -1024,6 +1024,9 @@ def _tcl(out_path: str, cases: list[tuple[str, list[str]]],
         + "\n".join(body) + "\n")
 
 
+BOOT_PER_CASE_JOBS = 1     # ⏱ B1 step 2: workers for a boot-per-case run_cases call (a caller may raise it)
+
+
 def run_case(machine: str, mode: str, lines: list[str], **kw) -> str | None:
     """Boot `machine` and drive ONE case (`mode`, `lines`), returning its raw
     SCREEN-0 name-table string (or None on capture failure). THE DEFAULT ENTRY
@@ -2094,13 +2097,26 @@ def _run_cases_impl(machine: str, cases: list[tuple[str, list[str]]], *,
         # and cases 1..n found no marks at all (measured on AUTO's three rows:
         # all six marks under key 0). A single-case call is unchanged (0 stays 0).
         so = kw.pop("settle_out", None)
-        out = []
-        for i, c in enumerate(cases):
+
+        def one_case(i):
             one: dict | None = {} if so is not None else None
-            out.append(run_batch(machine, [c], reset=reset, timeout=to_single,
-                                 holds=[holds[i]] if holds else None,
-                                 verify_delivery=verify_delivery,
-                                 **(dict(kw, settle_out=one) if one is not None else kw))[0])
+            cap = run_batch(machine, [cases[i]], reset=reset, timeout=to_single,
+                            holds=[holds[i]] if holds else None,
+                            verify_delivery=verify_delivery,
+                            **(dict(kw, settle_out=one) if one is not None else kw))[0]
+            return cap, one
+        # ⏱ B1 step 2 (2026-11-25, gate_time_review): the boots of a boot-per-case call are independent, so a caller
+        # may run them on a small pool (BOOT_PER_CASE_JOBS, default 1 = one after another, as always). Results and
+        # each case's settle_out are merged back in CASE ORDER, so nothing downstream can tell.
+        if BOOT_PER_CASE_JOBS > 1 and len(cases) > 1:
+            import concurrent.futures
+            with concurrent.futures.ThreadPoolExecutor(max_workers=BOOT_PER_CASE_JOBS) as ex:
+                got = list(ex.map(one_case, range(len(cases))))
+        else:
+            got = [one_case(i) for i in range(len(cases))]
+        out = []
+        for i, (cap, one) in enumerate(got):
+            out.append(cap)
             for name, per_case in (one or {}).items():
                 if isinstance(per_case, dict):
                     for k0, v in per_case.items():

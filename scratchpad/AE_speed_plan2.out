@@ -1,0 +1,6 @@
+GATE TIER: FULL
+  why: the gate harness changed: Makefile probes/lib/omsx_repl.py probes/lib/probe_refcache.py tools/pick_gates.py tools/run_gates.py
+  hours since the last full green: 0.5 (full once a day, at every hand-off, and on a RAM-address move)
+  ⏱ the 15 daily suites are due (last green 60 h ago): run `make gates-sweeps` ALONE, not beside a battery
+  ⏱ kwtime / kwram are due (last measured 60 h ago, 60 h ago): run `make gates-sweeps` ALONE, not beside a battery
+  excluded-five suites: bdos-acceptance diskbasic-acceptance fat-error-acceptance input-devices-acceptance

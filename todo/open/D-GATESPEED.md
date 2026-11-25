@@ -36,7 +36,19 @@
       ✅ B5: repack-machine is a stamp in build/ (a no-op make 0.06 s); W9's docstring corrected.
       ✅ W2 / W10: the stale timing comments, and the banner names lineerr's shards only when they run.
       ✅ per-unit CPU: run_gates' sh() records each unit's CPU (os.wait4) and prints the top ten + build/_cpu.json.
-      OPEN: A5 fingerprint-skip unit-test / selftest-check on docs-only · B3 shard kwsweep · B4 one host-wide slot
-      budget (A/B) · A6 programs / intarg daily (knife check first) · B1 step 2: split the
+      ✅ A5 (batch 3), unit-test ONLY: an audit hook on every Python process of a unit-test run saw 1125 tracked
+      files opened and none under docs/ / todo/ / TODO.md, so a STATIC / SCOPED run (--skip-proven, from the planner)
+      skips unit-test when every other tracked file is byte-identical to a green unit-test's (run_gates ut_input,
+      S-UTSKIP arms). selftest-check does NOT qualify -- the same audit saw it open ~650 docs/ and todo/ files.
+      ✅ B1 step 2: run_cases' boot-per-case path may run its boots on a small pool (BOOT_PER_CASE_JOBS, default 1);
+      spec-live uses 2: 133 -> 122 s, ALL PAGES AGREE (AE_speed_speclive3.out).
+      ✅ B3, as an inner pool rather than shards: kwsweep's (machine, rig) groups run 4 at a time (serial when a
+      hardware rig board drives a group). The verdict pin is byte-identical to a serial run's but for its
+      `written` stamp; 125 -> 92 s warm (AE_speed_kw_j1.out, AE_speed_kw_j4.out).
+      ⚠️ FULL 2 of batch 2 still missed 435 references (badfnum, programs, lof, sessions, the trap suites) though
+      every one of them hits on a second run alone; FULL 1's entries did not match FULL 2's keys for a reason the
+      overwritten logs no longer show. The next pair of FULL runs re-tests it.
+      OPEN: B4 one host-wide slot budget (A/B) · A6 programs / intarg daily (knife check first) · the 435 misses ·
+      B1 step 3: split the
       own-live probes by group (the long pole is now one probe's serial cases) · check_disk_deps --selftest (30 s,
       a planter, alone) and tier_table --selftest (33 s): why so slow.

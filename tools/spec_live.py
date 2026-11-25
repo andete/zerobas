@@ -311,6 +311,9 @@ def main(argv):
                     order.append(f)
         import concurrent.futures
         jobs = max(1, int(os.environ.get("SPEC_LIVE_JOBS") or 4))
+        # ⏱ B1 step 2: an own-live probe's screen cases boot one per case; let each call run 2 at a time
+        import omsx_repl
+        omsx_repl.BOOT_PER_CASE_JOBS = max(1, int(os.environ.get("SPEC_LIVE_CASE_JOBS") or 2))
         dirs = {f: os.path.join(td, str(i)) for i, f in enumerate(order)}
         for d in dirs.values():
             os.makedirs(d)

@@ -786,10 +786,10 @@ def main(argv):
         print(f"  spec-live scoped to {len(scope)} page(s) (A1): " + " ".join(os.path.basename(m) for m in scope))
         env["SPEC_LIVE_MODS"] = " ".join(scope)
     if mode == "STATIC" and noslive:
-        rc = subprocess.run(["python3", "tools/run_gates.py", "--static", "--exclude", "spec-live"],
+        rc = subprocess.run(["python3", "tools/run_gates.py", "--static", "--skip-proven", "--exclude", "spec-live"],
                             cwd=ROOT, env=env).returncode
     elif mode == "STATIC":
-        rc = subprocess.run(["python3", "tools/run_gates.py", "--static"],
+        rc = subprocess.run(["python3", "tools/run_gates.py", "--static", "--skip-proven"],
                             cwd=ROOT, env=env).returncode
     elif mode == "FULL":
         rc = subprocess.run(["python3", "tools/run_gates.py", "--full"],
@@ -797,7 +797,7 @@ def main(argv):
     else:
         skip = ",".join([t for t in run_gates.EMULATOR if t not in emu] + noslive)
         keep = ",".join(t for t in emu if t in run_gates.DAILY_SUITES)
-        rc = subprocess.run(["python3", "tools/run_gates.py", "--full",
+        rc = subprocess.run(["python3", "tools/run_gates.py", "--full", "--skip-proven",
                              "--exclude", skip, "--keep", keep], cwd=ROOT, env=env).returncode
     for t in x5:
         r = subprocess.run(["make", t], cwd=ROOT, capture_output=True, text=True)
