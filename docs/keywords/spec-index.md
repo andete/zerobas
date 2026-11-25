@@ -10,7 +10,7 @@ SPDX-License-Identifier: BSD-2-Clause
 
 Every keyword page, the region the spec loop takes it in, and how far its page has become a SPECIFICATION: measured rules, each checked against the reference machine's cases ([the plan](spec-plan.md), [the method](../spec-method.md)). A page that is not yet a spec is a "user page": it says what the keyword does and was checked by its example, but its sentences are not yet executable rules. The reference is the Philips VG-8020; disk statements, the National CF-3300.
 
-**68 of 150 keyword pages are specs; 0 are FINAL.**
+**71 of 150 keyword pages are specs; 0 are FINAL.**
 
 | keyword | region | harness | reference | page | open (not measured) | differences (TODO items, from the page) |
 |---|---|---|---|---|---|---|
@@ -88,9 +88,9 @@ Every keyword page, the region the spec loop takes it in, and how far its page h
 | `DATA` | [program](../concepts/program-text.md) | screen + program text | VG-8020 | [DRAFT 1](DATA.md) | 2 | — |
 | `READ` | [program](../concepts/program-text.md) | screen + program text | VG-8020 | [DRAFT 1](READ.md) | 2 | — |
 | `RESTORE` | [program](../concepts/program-text.md) | screen + program text | VG-8020 | [DRAFT 1](RESTORE.md) | 2 | — |
-| `DIM` | [program](../concepts/program-text.md) | screen + program text | VG-8020 | [user page](DIM.md) | — | D-DIMRESERVE |
-| `ERASE` | [program](../concepts/program-text.md) | screen + program text | VG-8020 | [user page](ERASE.md) | — | — |
-| `CLEAR` | [program](../concepts/program-text.md) | screen + program text | VG-8020 | [user page](CLEAR.md) | — | — |
+| `DIM` | [program](../concepts/program-text.md) | screen + program text | VG-8020 | [DRAFT 1](DIM.md) | 2 | D-DIMRESERVE |
+| `ERASE` | [program](../concepts/program-text.md) | screen + program text | VG-8020 | [DRAFT 1](ERASE.md) | 2 | — |
+| `CLEAR` | [program](../concepts/program-text.md) | screen + program text | VG-8020 | [DRAFT 1](CLEAR.md) | 2 | — |
 | `PEEK` | [memory](../concepts/memory-map.md) | RAM record + ports | VG-8020 | [user page](PEEK.md) | — | — |
 | `POKE` | [memory](../concepts/memory-map.md) | RAM record + ports | VG-8020 | [user page](POKE.md) | — | — |
 | `VARPTR` | [memory](../concepts/memory-map.md) | RAM record + ports | VG-8020 | [user page](VARPTR.md) | — | D-FCBSHAPE |

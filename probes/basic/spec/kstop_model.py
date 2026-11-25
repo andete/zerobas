@@ -103,6 +103,7 @@ class Basic:
         self.last = None              # the last program line that ran
         self.disarmed = False
         self.trace = False            # TRON
+        self.strsize = 200            # the string space; CLEAR n sets it, a bare CLEAR / NEW / RUN keep it
         self.reset()
 
     def reset(self, why=""):
@@ -112,8 +113,9 @@ class Basic:
             keep = None
         if "reset-clears-err" in self.alt:
             self.err, self.erl = 0, 0
-        self.vars, self.arrays = {}, set()
-        self.bounds = {}
+        self.vars, self.arrays = {}, {}
+        self.elems = {}
+        self.bounds = self.arrays
         self.data = None              # RUN, CLEAR, NEW and an edit take READ back to the first item
         self.onerr = None
         self.handler = None           # the failing point while an error handler runs
@@ -156,6 +158,8 @@ class Basic:
             return a / b
         if re.fullmatch(r"-?\d+", s):
             return int(s)
+        if re.fullmatch(r"&H[0-9A-F]+", s):
+            return int(s[2:], 16)
         if re.fullmatch(r"-?\d*\.\d+", s):
             return float(s)
         if s == "ERR" or (s == "ERR 1" and "err-tail-ok" in self.alt):
@@ -164,6 +168,12 @@ class Basic:
             return self.erl
         if re.fullmatch(r"[A-Z]\w*\$", s):
             return self.vars.get(s, "")
+        m = re.fullmatch(r"([A-Z]\w*[%$!#]?)\(([^()]*)\)", s)
+        if m and not s.startswith("FRE") and not s.startswith("VPEEK"):
+            k = self.element(m.group(1), [int(self.value(x)) for x in m.group(2).split(",")])
+            return self.elems.get(k, "" if m.group(1).endswith("$") else 0)
+        if s == 'FRE("")':
+            return self.strsize
         if re.fullmatch(r"[A-Z]\w*", s):
             return self.vars.get(s, 0)
         raise Err(2)                                     # a form this BASIC does not read (`ERR 1`)
@@ -323,8 +333,19 @@ class Basic:
                     self.out(body[i + 1:j])
                     i = j + 1
                 else:
-                    m = re.match(r'[^;,"]+', body[i:])
-                    item = m.group(0).rstrip()
+                    j, depth, q = i, 0, False             # an expression: up to `;` `,` or a quote at depth 0
+                    while j < len(body):
+                        c = body[j]
+                        if c == '"' and depth > 0:
+                            q = not q
+                        elif not q and c == "(":
+                            depth += 1
+                        elif not q and c == ")":
+                            depth -= 1
+                        elif not q and depth == 0 and c in ';,"':
+                            break
+                        j += 1
+                    item = body[i:j].rstrip()
                     for kw in (" REM", " ELSE"):
                         if kw in item:
                             item = item[:item.index(kw)]
@@ -492,12 +513,57 @@ class Basic:
             if comma:
                 raise Err(2)                             # the code is refused before anything after it is looked at
             raise Err(v)
-        if s.startswith("DIM "):
-            name, _, bound = s[4:].partition("(")
-            if name in self.arrays:
-                raise Err(10)
-            self.arrays.add(name)
-            self.bounds[name] = int(bound.rstrip(")"))
+        if s.startswith("DIM_ONE"):                       # (the all-or-nothing rival's own pass)
+            s = "DIM" + s[7:]
+            self.alt = self.alt - {"dim-all-or-nothing"}
+            try:
+                return self.stmt(s, pt)
+            finally:
+                self.alt = self.alt | {"dim-all-or-nothing"}
+        if s == "DIM" or s.startswith("DIM "):
+            body = s[3:].strip()
+            if not body:
+                raise Err(2)
+            # several arrays are made one by one: an error leaves the ones before it
+            before = dict(self.arrays)
+            if "dim-all-or-nothing" in self.alt:
+                try:
+                    return self.stmt(s.replace("DIM", "DIM_ONE", 1), pt)
+                except Err:
+                    self.arrays = before
+                    raise
+            for item in re.findall(r"[^,(]+(?:\([^)]*\))?|,", body + ","):
+                if item == ",":
+                    continue
+                item = item.strip()
+                if not item:
+                    raise Err(2)
+                m = re.fullmatch(r"([A-Z]\w*[%$!#]?)(?:\((.*)\))?", item)
+                if not m:
+                    raise Err(2)
+                if m.group(2) is None:
+                    continue                             # a name with no bounds: no error, nothing made
+                self.dim(m.group(1), [self.value(x) for x in m.group(2).split(",")])
+            if body.endswith(","):
+                raise Err(2)
+            return None
+        if s == "ERASE" or s.startswith("ERASE "):
+            names = s[5:].strip()
+            if not names or names.endswith(","):
+                raise Err(2)
+            before = (dict(self.arrays), dict(self.elems))
+            for n in names.split(","):
+                n = n.strip()
+                if not re.fullmatch(r"[A-Z]\w*[%$!#]?", n):
+                    raise Err(2)
+                if n not in self.arrays and "erase-any-type" in self.alt:
+                    n = next((a for a in self.arrays if a.rstrip("%$!#") == n.rstrip("%$!#")), n)
+                if n not in self.arrays:
+                    if "erase-all-or-nothing" in self.alt:
+                        self.arrays, self.elems = before
+                    raise Err(5)                         # an array that does not exist (the suffix is the name)
+                del self.arrays[n]
+                self.elems = {k: v for k, v in self.elems.items() if k[0] != n}
             return None
         if s.startswith("READ "):
             if direct and "direct-read-restarts" in self.alt and not getattr(self, "_dread", False):
@@ -514,8 +580,8 @@ class Basic:
                     item = item.split(" REM")[0]
                 m = re.fullmatch(r"(\w+)\((\d+)\)", name)
                 if m:
-                    if int(m.group(2)) > self.bounds.get(m.group(1), 10) and "subscript-unchecked" not in self.alt:
-                        raise Err(9)
+                    if "subscript-unchecked" not in self.alt:
+                        self.element(m.group(1), [int(m.group(2))])
                     continue
                 if name.endswith("$"):
                     self.vars[name] = item
@@ -573,8 +639,38 @@ class Basic:
         if s.startswith("OPEN "):
             self.files.add(int(s.split("#")[1]))
             return None
+        if s.startswith("CLEAR") and s != "CLEAR":
+            args = s[5:].strip()
+            size, comma, top = args.partition(",")
+            if not size.strip():
+                raise Err(2)                             # `CLEAR,`
+            if comma and not top.strip():
+                raise Err(2 if "clear-comma-syntax" in self.alt else 24)   # `CLEAR 200,`
+            if "refused-clear-partial" in self.alt:
+                self.vars = {}
+            n = self.value(size)
+            t = self.value(top) if top.strip() else None
+            if isinstance(n, str) or isinstance(t, str):
+                raise Err(13)
+            if n < 0:
+                raise Err(5)
+            if n > 32767 and "clear-bound-65535" not in self.alt or n > 65535:
+                raise Err(6)
+            if t is not None and not 0x8000 <= t <= 0xF380:
+                raise Err(5)
+            if n > self.FREE:
+                raise Err(7)
+            self.strsize = n                             # checked FIRST: a refused CLEAR changes nothing
+            self._sized = True
+            s = "CLEAR"
         if s == "CLEAR":
+            if "bare-clear-resets-size" in self.alt and not getattr(self, "_sized", False):
+                self.strsize = 200
+            self._sized = False
+            keep_err = self.onerr
             self.reset("clear")
+            if "clear-keeps-onerror" in self.alt:
+                self.onerr = keep_err
             if "clear-keeps-cont" not in self.alt:
                 self.cont = None
             return None
@@ -585,11 +681,53 @@ class Basic:
             self.reset()
             self.cont = None
             return None
+        m = re.fullmatch(r"([A-Z]\w*[%$!#]?)\(([^()]*)\)=(.+)", s)
+        if m:
+            k = self.element(m.group(1), [int(self.value(x)) for x in m.group(2).split(",")])
+            v = self.value(m.group(3))
+            self.elems[k] = int(v) if m.group(1).endswith("%") else v
+            return None
         m = re.fullmatch(r"([A-Z]\w*\$?)=(.+)", s)
         if m:
             self.vars[m.group(1)] = self.value(m.group(2))
             return None
         raise Err(2)
+
+    FREE = 28000                     # free memory, roughly, on a 32 K machine: no case sits near it (kdim.py)
+
+    def dim(self, name, bounds):
+        """make array `name`: each bound an integer 0..32767 (a string: 13; negative: 5; too large: 6); the elements
+        must fit 65535 BYTES (else 9) -- checked BEFORE free memory (else 7)"""
+        if name in self.arrays:
+            raise Err(10)
+        bs = []
+        for b in bounds:
+            if isinstance(b, str):
+                raise Err(13)
+            b = int(b)
+            if b < 0:
+                raise Err(5)
+            if b > 32767:
+                raise Err(6)
+            bs.append(b)
+        size = {"%": 2, "$": 3, "!": 4}.get(name[-1], 8)
+        n = 1
+        for b in bs:
+            n *= b + 1
+        if n * size > 65535 and "dim-memory-first" not in self.alt:
+            raise Err(9)
+        if n * size > self.FREE or ("dim-memory-first" in self.alt and n * size > 65535 and n * size > self.FREE):
+            raise Err(7)
+        self.arrays[name] = tuple(bs)
+
+    def element(self, name, idx):
+        """the element's key; an undeclared array is made with bound 10 in every dimension"""
+        if name not in self.arrays:
+            self.dim(name, [9 if "auto-bound-9" in self.alt else 10] * len(idx))
+        dims = self.arrays[name]
+        if len(idx) != len(dims) or any(i < 0 or i > b for i, b in zip(idx, dims)):
+            raise Err(9)
+        return (name, tuple(idx))
 
     def data_items(self):
         """the program's DATA items in order, as (line, text): leading spaces skipped, trailing spaces kept, quotes

@@ -683,3 +683,14 @@ held; zerobas agrees on all 29. The small BASIC gained real DATA cutting and one
 (kstop / kerr / ktron screens still predicted). 11 controls, every rule pinned by one of its own -- the first unit
 built under the working rule from the start. Two stale page sentences corrected (READ's Overflow row, RESTORE's
 "not yet measured").
+
+### The program region's second unit (2026-11-25): DIM, ERASE, CLEAR
+
+[kdim.py](../../probes/basic/spec/kdim.py), 42 SCREEN cases (run file [scratchpad/KDM_run1.out](../../scratchpad/KDM_run1.out)),
+taken from the three pages' claims: bounds from 0, the default bound 10, two dimensions, the 65535-byte check before
+free memory, DIM's errors and its one-by-one making, ERASE's suffix-as-name and one-by-one removal, CLEAR's resets,
+CLEAR n / FRE of an empty string, a bare CLEAR and a moved top keeping the size, CLEAR's errors, a refused CLEAR
+changing nothing. The memory-limit cases sit far from the edge, so no expectation depends on a free-memory figure.
+Every page claim held; zerobas agrees on all 42. The small BASIC gained arrays (dim / element), ERASE and CLEAR
+n,top, and lost two bugs its new cases exposed (PRINT's item scanner split inside parentheses; ERASE left the old
+elements). 10 controls, every rule pinned.

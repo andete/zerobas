@@ -1,0 +1,626 @@
+{
+ "FX": {
+  "ref": [
+   [
+    "<prompt>",
+    "10 DIM A(3):A(3)=7:PRINT A(3);A(0)",
+    "RUN",
+    "7  0",
+    "<prompt>"
+   ],
+   [
+    "<prompt>",
+    "10 DIM A(3):A(4)=1",
+    "RUN",
+    "Subscript out of range in 10",
+    "<prompt>"
+   ],
+   [
+    "<prompt>",
+    "10 A(10)=5:PRINT A(10)",
+    "RUN",
+    "5",
+    "<prompt>"
+   ],
+   [
+    "<prompt>",
+    "10 A(11)=5",
+    "RUN",
+    "Subscript out of range in 10",
+    "<prompt>"
+   ],
+   [
+    "<prompt>",
+    "10 DIM A(2,3):A(2,3)=4:PRINT A(2,3)",
+    "RUN",
+    "4",
+    "<prompt>"
+   ],
+   [
+    "<prompt>",
+    "10 DIM A(-1)",
+    "RUN",
+    "Illegal function call in 10",
+    "<prompt>"
+   ],
+   [
+    "<prompt>",
+    "10 DIM A(70000)",
+    "RUN",
+    "Overflow in 10",
+    "<prompt>"
+   ],
+   [
+    "<prompt>",
+    "10 DIM A(10000)",
+    "RUN",
+    "Subscript out of range in 10",
+    "<prompt>"
+   ],
+   [
+    "<prompt>",
+    "10 DIM Q%(200,200)",
+    "RUN",
+    "Subscript out of range in 10",
+    "<prompt>"
+   ],
+   [
+    "<prompt>",
+    "10 DIM A%(20000)",
+    "RUN",
+    "Out of memory in 10",
+    "<prompt>"
+   ],
+   [
+    "<prompt>",
+    "10 DIM A(2):DIM A(2)",
+    "RUN",
+    "Redimensioned array in 10",
+    "<prompt>"
+   ],
+   [
+    "<prompt>",
+    "10 DIM A(\"X\")",
+    "RUN",
+    "Type mismatch in 10",
+    "<prompt>"
+   ],
+   [
+    "<prompt>",
+    "10 DIM 5",
+    "RUN",
+    "Syntax error in 10",
+    "<prompt>"
+   ],
+   [
+    "<prompt>",
+    "10 DIM",
+    "RUN",
+    "Syntax error in 10",
+    "<prompt>"
+   ],
+   [
+    "<prompt>",
+    "10 DIM A,",
+    "RUN",
+    "Syntax error in 10",
+    "<prompt>"
+   ],
+   [
+    "<prompt>",
+    "10 ON ERROR GOTO 90:DIM P(3),Q(-1)",
+    "20 END",
+    "90 DIM P(5):PRINT \"[N]\":END",
+    "RUN",
+    "Redimensioned array in 90",
+    "<prompt>"
+   ],
+   [
+    "<prompt>",
+    "10 DIM A:PRINT \"[\";A;\"]\"",
+    "RUN",
+    "[ 0 ]",
+    "<prompt>"
+   ],
+   [
+    "<prompt>",
+    "10 DIM A%(2),A(2):A%(1)=1.7:A(1)=1.7:",
+    "PRINT A%(1);A(1)",
+    "RUN",
+    "1  1.7",
+    "<prompt>"
+   ],
+   [
+    "<prompt>",
+    "10 DIM A(2):A(1)=5:ERASE A:PRINT A(1)",
+    "RUN",
+    "0",
+    "<prompt>"
+   ],
+   [
+    "<prompt>",
+    "10 ERASE A",
+    "RUN",
+    "Illegal function call in 10",
+    "<prompt>"
+   ],
+   [
+    "<prompt>",
+    "10 DIM A(2):ERASE A:ERASE A",
+    "RUN",
+    "Illegal function call in 10",
+    "<prompt>"
+   ],
+   [
+    "<prompt>",
+    "10 DIM A(2):ERASE A%",
+    "RUN",
+    "Illegal function call in 10",
+    "<prompt>"
+   ],
+   [
+    "<prompt>",
+    "10 ERASE",
+    "RUN",
+    "Syntax error in 10",
+    "<prompt>"
+   ],
+   [
+    "<prompt>",
+    "10 DIM A(2):ERASE A(1)",
+    "RUN",
+    "Syntax error in 10",
+    "<prompt>"
+   ],
+   [
+    "<prompt>",
+    "10 ON ERROR GOTO 90:DIM P(3):ERASE P,",
+    "Q",
+    "20 END",
+    "90 DIM P(5):PRINT \"[E]\":END",
+    "RUN",
+    "[E]",
+    "<prompt>"
+   ],
+   [
+    "<prompt>",
+    "10 DIM A(2):ERASE A:DIM A(5):PRINT \"[",
+    "R]\"",
+    "RUN",
+    "[R]",
+    "<prompt>"
+   ],
+   [
+    "<prompt>",
+    "10 A=5:CLEAR:PRINT A",
+    "RUN",
+    "0",
+    "<prompt>"
+   ],
+   [
+    "<prompt>",
+    "10 ON ERROR GOTO 90:CLEAR",
+    "20 X=1/0",
+    "90 PRINT \"[H]\":END",
+    "RUN",
+    "Division by zero in 20",
+    "<prompt>"
+   ],
+   [
+    "<prompt>",
+    "10 READ A:CLEAR:READ B:PRINT A;B",
+    "20 DATA 1,2",
+    "RUN",
+    "0  1",
+    "<prompt>"
+   ],
+   [
+    "<prompt>",
+    "10 CLEAR:PRINT \"[K]\"",
+    "RUN",
+    "[K]",
+    "<prompt>"
+   ],
+   [
+    "<prompt>",
+    "10 CLEAR 500:PRINT FRE(\"\")",
+    "RUN",
+    "500",
+    "<prompt>"
+   ],
+   [
+    "<prompt>",
+    "PRINT FRE(\"\")",
+    "200",
+    "<prompt>"
+   ],
+   [
+    "<prompt>",
+    "10 CLEAR 500",
+    "RUN",
+    "<prompt>",
+    "CLEAR",
+    "<prompt>",
+    "PRINT FRE(\"\")",
+    "500",
+    "<prompt>"
+   ],
+   [
+    "<prompt>",
+    "10 CLEAR 300,&HC000:PRINT FRE(\"\")",
+    "RUN",
+    "300",
+    "<prompt>"
+   ],
+   [
+    "<prompt>",
+    "10 CLEAR -1",
+    "RUN",
+    "Illegal function call in 10",
+    "<prompt>"
+   ],
+   [
+    "<prompt>",
+    "10 CLEAR 70000",
+    "RUN",
+    "Overflow in 10",
+    "<prompt>"
+   ],
+   [
+    "<prompt>",
+    "10 CLEAR 30000",
+    "RUN",
+    "Out of memory in 10",
+    "<prompt>"
+   ],
+   [
+    "<prompt>",
+    "10 CLEAR \"A\"",
+    "RUN",
+    "Type mismatch in 10",
+    "<prompt>"
+   ],
+   [
+    "<prompt>",
+    "10 CLEAR 200,&H7000",
+    "RUN",
+    "Illegal function call in 10",
+    "<prompt>"
+   ],
+   [
+    "<prompt>",
+    "10 CLEAR 200,",
+    "RUN",
+    "Missing operand in 10",
+    "<prompt>"
+   ],
+   [
+    "<prompt>",
+    "10 CLEAR,",
+    "RUN",
+    "Syntax error in 10",
+    "<prompt>"
+   ],
+   [
+    "<prompt>",
+    "10 A=5:ON ERROR GOTO 90:CLEAR -1",
+    "20 END",
+    "90 PRINT \"[\";A;\"]\":END",
+    "RUN",
+    "[ 5 ]",
+    "<prompt>"
+   ]
+  ],
+  "zb": [
+   [
+    "<prompt>",
+    "10 DIM A(3):A(3)=7:PRINT A(3);A(0)",
+    "RUN",
+    "7  0",
+    "<prompt>"
+   ],
+   [
+    "<prompt>",
+    "10 DIM A(3):A(4)=1",
+    "RUN",
+    "Subscript out of range in 10",
+    "<prompt>"
+   ],
+   [
+    "<prompt>",
+    "10 A(10)=5:PRINT A(10)",
+    "RUN",
+    "5",
+    "<prompt>"
+   ],
+   [
+    "<prompt>",
+    "10 A(11)=5",
+    "RUN",
+    "Subscript out of range in 10",
+    "<prompt>"
+   ],
+   [
+    "<prompt>",
+    "10 DIM A(2,3):A(2,3)=4:PRINT A(2,3)",
+    "RUN",
+    "4",
+    "<prompt>"
+   ],
+   [
+    "<prompt>",
+    "10 DIM A(-1)",
+    "RUN",
+    "Illegal function call in 10",
+    "<prompt>"
+   ],
+   [
+    "<prompt>",
+    "10 DIM A(70000)",
+    "RUN",
+    "Overflow in 10",
+    "<prompt>"
+   ],
+   [
+    "<prompt>",
+    "10 DIM A(10000)",
+    "RUN",
+    "Subscript out of range in 10",
+    "<prompt>"
+   ],
+   [
+    "<prompt>",
+    "10 DIM Q%(200,200)",
+    "RUN",
+    "Subscript out of range in 10",
+    "<prompt>"
+   ],
+   [
+    "<prompt>",
+    "10 DIM A%(20000)",
+    "RUN",
+    "Out of memory in 10",
+    "<prompt>"
+   ],
+   [
+    "<prompt>",
+    "10 DIM A(2):DIM A(2)",
+    "RUN",
+    "Redimensioned array in 10",
+    "<prompt>"
+   ],
+   [
+    "<prompt>",
+    "10 DIM A(\"X\")",
+    "RUN",
+    "Type mismatch in 10",
+    "<prompt>"
+   ],
+   [
+    "<prompt>",
+    "10 DIM 5",
+    "RUN",
+    "Syntax error in 10",
+    "<prompt>"
+   ],
+   [
+    "<prompt>",
+    "10 DIM",
+    "RUN",
+    "Syntax error in 10",
+    "<prompt>"
+   ],
+   [
+    "<prompt>",
+    "10 DIM A,",
+    "RUN",
+    "Syntax error in 10",
+    "<prompt>"
+   ],
+   [
+    "<prompt>",
+    "10 ON ERROR GOTO 90:DIM P(3),Q(-1)",
+    "20 END",
+    "90 DIM P(5):PRINT \"[N]\":END",
+    "RUN",
+    "Redimensioned array in 90",
+    "<prompt>"
+   ],
+   [
+    "<prompt>",
+    "10 DIM A:PRINT \"[\";A;\"]\"",
+    "RUN",
+    "[ 0 ]",
+    "<prompt>"
+   ],
+   [
+    "<prompt>",
+    "10 DIM A%(2),A(2):A%(1)=1.7:A(1)=1.7:",
+    "PRINT A%(1);A(1)",
+    "RUN",
+    "1  1.7",
+    "<prompt>"
+   ],
+   [
+    "<prompt>",
+    "10 DIM A(2):A(1)=5:ERASE A:PRINT A(1)",
+    "RUN",
+    "0",
+    "<prompt>"
+   ],
+   [
+    "<prompt>",
+    "10 ERASE A",
+    "RUN",
+    "Illegal function call in 10",
+    "<prompt>"
+   ],
+   [
+    "<prompt>",
+    "10 DIM A(2):ERASE A:ERASE A",
+    "RUN",
+    "Illegal function call in 10",
+    "<prompt>"
+   ],
+   [
+    "<prompt>",
+    "10 DIM A(2):ERASE A%",
+    "RUN",
+    "Illegal function call in 10",
+    "<prompt>"
+   ],
+   [
+    "<prompt>",
+    "10 ERASE",
+    "RUN",
+    "Syntax error in 10",
+    "<prompt>"
+   ],
+   [
+    "<prompt>",
+    "10 DIM A(2):ERASE A(1)",
+    "RUN",
+    "Syntax error in 10",
+    "<prompt>"
+   ],
+   [
+    "<prompt>",
+    "10 ON ERROR GOTO 90:DIM P(3):ERASE P,",
+    "Q",
+    "20 END",
+    "90 DIM P(5):PRINT \"[E]\":END",
+    "RUN",
+    "[E]",
+    "<prompt>"
+   ],
+   [
+    "<prompt>",
+    "10 DIM A(2):ERASE A:DIM A(5):PRINT \"[",
+    "R]\"",
+    "RUN",
+    "[R]",
+    "<prompt>"
+   ],
+   [
+    "<prompt>",
+    "10 A=5:CLEAR:PRINT A",
+    "RUN",
+    "0",
+    "<prompt>"
+   ],
+   [
+    "<prompt>",
+    "10 ON ERROR GOTO 90:CLEAR",
+    "20 X=1/0",
+    "90 PRINT \"[H]\":END",
+    "RUN",
+    "Division by zero in 20",
+    "<prompt>"
+   ],
+   [
+    "<prompt>",
+    "10 READ A:CLEAR:READ B:PRINT A;B",
+    "20 DATA 1,2",
+    "RUN",
+    "0  1",
+    "<prompt>"
+   ],
+   [
+    "<prompt>",
+    "10 CLEAR:PRINT \"[K]\"",
+    "RUN",
+    "[K]",
+    "<prompt>"
+   ],
+   [
+    "<prompt>",
+    "10 CLEAR 500:PRINT FRE(\"\")",
+    "RUN",
+    "500",
+    "<prompt>"
+   ],
+   [
+    "<prompt>",
+    "PRINT FRE(\"\")",
+    "200",
+    "<prompt>"
+   ],
+   [
+    "<prompt>",
+    "10 CLEAR 500",
+    "RUN",
+    "<prompt>",
+    "CLEAR",
+    "<prompt>",
+    "PRINT FRE(\"\")",
+    "500",
+    "<prompt>"
+   ],
+   [
+    "<prompt>",
+    "10 CLEAR 300,&HC000:PRINT FRE(\"\")",
+    "RUN",
+    "300",
+    "<prompt>"
+   ],
+   [
+    "<prompt>",
+    "10 CLEAR -1",
+    "RUN",
+    "Illegal function call in 10",
+    "<prompt>"
+   ],
+   [
+    "<prompt>",
+    "10 CLEAR 70000",
+    "RUN",
+    "Overflow in 10",
+    "<prompt>"
+   ],
+   [
+    "<prompt>",
+    "10 CLEAR 30000",
+    "RUN",
+    "Out of memory in 10",
+    "<prompt>"
+   ],
+   [
+    "<prompt>",
+    "10 CLEAR \"A\"",
+    "RUN",
+    "Type mismatch in 10",
+    "<prompt>"
+   ],
+   [
+    "<prompt>",
+    "10 CLEAR 200,&H7000",
+    "RUN",
+    "Illegal function call in 10",
+    "<prompt>"
+   ],
+   [
+    "<prompt>",
+    "10 CLEAR 200,",
+    "RUN",
+    "Missing operand in 10",
+    "<prompt>"
+   ],
+   [
+    "<prompt>",
+    "10 CLEAR,",
+    "RUN",
+    "Syntax error in 10",
+    "<prompt>"
+   ],
+   [
+    "<prompt>",
+    "10 A=5:ON ERROR GOTO 90:CLEAR -1",
+    "20 END",
+    "90 PRINT \"[\";A;\"]\":END",
+    "RUN",
+    "[ 5 ]",
+    "<prompt>"
+   ]
+  ]
+ }
+}

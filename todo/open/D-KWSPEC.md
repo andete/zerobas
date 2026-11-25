@@ -106,3 +106,6 @@
       **Program region, first unit (2026-11-25): DATA / READ / RESTORE at DRAFT 1** from probes/basic/spec/kdata.py
       (29 screen cases, scratchpad/KDA_run1.out); every page claim held, zerobas agrees on all 29; 11 controls, every
       rule pinned. NEXT: NEW / LIST / DELETE / RENUM / AUTO (the program text) and DIM / ERASE / CLEAR.
+      **Program region, second unit (2026-11-25): DIM / ERASE / CLEAR at DRAFT 1** from probes/basic/spec/kdim.py (42
+      screen cases, scratchpad/KDM_run1.out); every page claim held, zerobas agrees on all 42; 10 controls, every rule
+      pinned. NEXT: NEW / LIST / LLIST / DELETE / RENUM / AUTO (the program text).
