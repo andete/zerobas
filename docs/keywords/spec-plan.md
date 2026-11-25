@@ -559,6 +559,17 @@ cases added, and the apparatus findings fixed (a frame that uses the keyword und
 kgosub's frame uses GOTO, kfor's readout uses FOR; spec-plan §1 forbids it). Page claims the reviewers found the
 records contradict are corrected in the same pass. Until then the four units stay DRAFT 1 with this note.
 
+**FOR / NEXT reworked (2026-11-25), the first of the four.** [kfor_model.py](../../probes/basic/spec/kfor_model.py) is
+now an interpreter of the FOR / NEXT laws (FOR's order of work, frames stacked on top, NEXT's lazy list, STEP 0 never
+ending); [kfor_controls.py](../../probes/basic/spec/kfor_controls.py) holds 21 one-law rivals, each FALSE on some case.
+[kfor.py](../../probes/basic/spec/kfor.py) gained a group FY of 33 separating cases (a second typed program: with them
+one program outgrew the RAM below HIMEM), an error-count byte, and a readout without FOR / NEXT. Predictions for FY:
+30 of 33 held; the three misses changed two rules -- **STEP 0 never ends even at start = limit** (Microsoft's sign
+compare predicted one run) and **a second FOR on the same variable stacks a new frame instead of replacing the first**
+(FOR.md had claimed "replaces", unmeasured). Page claims corrected: "matches in every case", FOR's error set, "one step
+past the limit". zerobas: 11 cases differ, all filed -- D-FORINTLIM widened (start / limit / step conversion),
+D-FORSTEP0 pinned, and two new items, D-NEXTFRAME (a failed NEXT J drops the open frame) and D-FORCOMMA.
+
 ### The errors region's first unit (2026-11-25): DEFINT, DEFSNG, DEFDBL, DEFSTR -- the first interpreter model
 
 [kdeftype.py](../../probes/basic/spec/kdeftype.py), 58 cases on the RAM-record harness (run file

@@ -76,3 +76,6 @@
       (kdeftype_model.py; kdeftype_controls.py: 11 one-law rivals FALSE). Behaviour agrees on all 58; filed
       D-VARLAYOUT (TIER 6, the variable entry's order). NEXT: rework the flow models (FOR / NEXT first), then
       ERROR / ERR / ERL / RESUME / ON ERROR.
+      **FOR / NEXT reworked (2026-11-25)**: kfor_model.py an interpreter, 21 one-law controls, group FY (33 cases;
+      plan §6). Filed D-NEXTFRAME, D-FORCOMMA (TIER 6); D-FORINTLIM widened, D-FORSTEP0 pinned. NEXT: the same
+      rework for GOTO / GOSUB / RETURN, IF, END / STOP / CONT / RUN.

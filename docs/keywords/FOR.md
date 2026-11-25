@@ -6,13 +6,14 @@ SPDX-License-Identifier: BSD-2-Clause
 
 # `FOR` — start a counted loop
 
-> **Spec:** DRAFT 1 (2026-11-25) — 35 cases measured on the Philips VG-8020 (BASIC's reference) and on
+> **Spec:** DRAFT 1 (2026-11-25) — 58 cases measured on the Philips VG-8020 (BASIC's reference) and on
 > zerobas, by typed BASIC ([`kfor.py`](../../probes/basic/spec/kfor.py), with FOR's and NEXT's cases together);
-> every rule is executable and every recorded output is read by one. Not yet reviewed ([the keyword plan](spec-plan.md)).
+> every rule is executable and every recorded output is read by one. Goldfish pass 1 acted on (2026-11-25:
+> the model is now an interpreter, 15 more cases); not yet re-reviewed ([the keyword plan](spec-plan.md)).
 >
 > **Status (2026-11-25):** level 3 — happy path ✓ · reasonable time ✓ · common
 > errors ✓ (a FOR that fails pushes no frame since D-FORFRAME, 2026-11-25) · RAM usage not yet proven · every
-> error ✗ (D-FORINTLIM, D-FORSTEP0).
+> error ✗ (D-FORINTLIM, D-FORSTEP0, D-FORCOMMA).
 > Speed is deliberately left out of these docs until on-par speed is
 > established for every keyword.
 
@@ -22,8 +23,8 @@ SPDX-License-Identifier: BSD-2-Clause
 statements up to the matching [`NEXT`](NEXT.md) run, and `NEXT` adds the step
 and decides whether to go round again. `FOR` sets the loop up; the counting and
 the stop test happen at `NEXT`, so read the two pages together. zerobas
-behaves like the Philips VG-8020 in every case we have measured, errors
-included.
+behaves like the Philips VG-8020 on the ordinary loops; it differs on an integer
+loop's out-of-range or fractional bounds and on `STEP 0` (see Differences).
 
 ## Syntax
 
@@ -47,19 +48,24 @@ FOR <variable>=<start> TO <limit> [STEP <step>]
   Fractional starts and steps work, and so do values beyond the integer range:
   `FOR A=0 TO 1 STEP .25` runs 0, .25, .5, .75, 1; `FOR A=56700 TO 56702` and
   `FOR A=-40000 TO -39999` count as written.
-- **A loop over an integer (`%`) variable is integer arithmetic.** The start is
-  truncated (`FOR A%=1.7 TO 3` starts at 1) and so is the step — so
-  `FOR A%=1 TO 3 STEP .5` has a step of 0 and never ends, on the VG-8020 too.
-  Stepping past 32767 is `Overflow` (error 6), raised on the `NEXT` line.
+- **A loop over an integer (`%`) variable is integer arithmetic.** The start,
+  the limit and the step are cut towards zero at the `FOR` (`FOR A%=1.7 TO 3`
+  starts at 1, `-1.6` is -1) — so `FOR A%=1 TO 3 STEP .5` has a step of 0 and
+  never ends, on the VG-8020 too. A start, limit or step outside
+  -32768..32767 is `Overflow` (error 6) at the `FOR`; stepping past 32767 is
+  `Overflow` at the `NEXT`.
 - **A new loop variable is created before the start value is worked out**, as
   `LET` does: `FOR I=FRE(0) TO 9` with no `I` yet reads `FRE(0)` with I's
   11 bytes already spent, on both machines.
-- **After the loop, the variable is one step past the limit**: after
-  `FOR I=1 TO 3` it is 4, after `FOR A=.5 TO 3` it is 3.5.
+- **After the loop, the variable is one step past the last value the body
+  saw**: after `FOR I=1 TO 3` it is 4, after `FOR A=.5 TO 3` it is 3.5. The body
+  always runs at least once, so `FOR I=3 TO 1` runs once and leaves 4.
 - **The body may change the variable**, and the loop counts on from the new
   value: `FOR A=1 TO 3:A=A+.5` runs with 1.5 and 3, then stops.
 - **Loops nest**, and `FOR` inside a `GOSUB` and `GOSUB` inside a `FOR` mix
-  freely; how far they nest depends on free memory.
+  freely; how far they nest depends on free memory. A `FOR` on a variable
+  that already has an open loop opens a second one ON TOP; it does not replace
+  the first.
 
 ### Errors
 
@@ -70,10 +76,13 @@ FOR <variable>=<start> TO <limit> [STEP <step>]
 | `FOR I="A" TO 2`, `FOR I=1 TO "A"`, `STEP "A"` | 13 `Type mismatch` |
 | `FOR A$=1 TO 2` | 13 `Type mismatch` |
 | `FOR I=1 TO:NEXT`, `STEP` with nothing after it | 24 `Missing operand` |
+| `FOR I%=1 TO 40000` (a start, limit or step an integer cannot hold) | 6 `Overflow` (at the `FOR`) |
+| `FOR I=1/0 TO 3` (an error in the start, limit or step) | that error (here 11) |
 | an integer loop that steps past 32767 | 6 `Overflow` (at the `NEXT`) |
 
-The whole set of errors `FOR` raises in its three forms is {2, 13, 24}, the
-same on both machines; the `Overflow` belongs to `NEXT`.
+Besides its expressions' own errors, `FOR` raises 2, 6, 13 and 24 (the
+`Overflow` at the `FOR` is an integer variable's bound; the one at `NEXT` is
+the count running out of range).
 
 ## Example
 
@@ -113,90 +122,123 @@ Reference: the Philips VG-8020's MSX BASIC. Ours: zerobas on the diskless machin
 The tables are generated from the checks, so a sentence here cannot say more than the data does.
 
 **Evidence.** One probe, [`probes/basic/spec/kfor.py`](../../probes/basic/spec/kfor.py) (on the shared RAM-record
-harness [`ramrec.py`](../../probes/basic/spec/ramrec.py)), typed on both machines; run file
-[`scratchpad/KFR_run1.out`](../../scratchpad/KFR_run1.out) (2026-11-25; zerobas's side on that day's build). Every case
-is its own line and starts from nothing (`CLEAR`, `ON ERROR` set again); the body counts its runs in WN%; the next line
-records the FIRST error (the statement's own), the LAST error (RESUME NEXT carries on along the line, so after a failed
-FOR its body and NEXT still run), the runs and the loop variable's bytes. A loop that could run for ever carries a
-guard, `ON -(WN%>20) GOTO <the record line>` -- not `IF ... THEN`, whose false test would skip the NEXT after it on the
-same line -- so 21 runs read "it did not stop". Three probe faults were caught while building it, each by a run that
-read wrong on both machines: the last error alone recorded, the IF guard, and a VARPTR of a variable that does not
-exist (error 5 on both machines).
+harness [`ramrec.py`](../../probes/basic/spec/ramrec.py)), typed on both machines as two programs, groups FX (the first
+run's cases) and FY (goldfish pass 1's separating cases); run file
+[`scratchpad/KFR_run1.out`](../../scratchpad/KFR_run1.out) (2026-11-25). Every case is its own line and starts from
+nothing (`CLEAR`, `ON ERROR` set again); the body counts its runs in WN%; the next line records the FIRST error, the
+LAST error and how many there were (RESUME NEXT carries on along the line, so after a failed FOR its body and NEXT
+still run), the runs and the loop variable's bytes (VARPTR; a variable that does not exist reads "none" -- VARPTR
+refuses it on both machines, KFR FY 31). The readout uses no FOR / NEXT (two subroutines of POKEs). A loop that could
+run for ever carries a guard, `ON -(WN%>20) GOTO <the record line>` -- not `IF ... THEN`, whose false test would skip
+the NEXT after it on the same line -- so 21 runs read "more than 20". The model,
+[`kfor_model.py`](../../probes/basic/spec/kfor_model.py), is an INTERPRETER: it runs each case's own statements with
+the laws the rules state and holds no per-case answer. Probe faults caught while building it: the last error alone
+recorded, the IF guard, a VARPTR of a variable that does not exist (error 5), a FOR that failed and left a half-built
+frame on zerobas (every counting body has the guard since), a readout that used FOR / NEXT itself, and -- unrolling
+that readout inline -- a program too big for the RAM below HIMEM (both machines stopped while it was typed; hence the
+two groups).
 - **[KFR FX *i*]** (FOR):
-  0: `FOR I=1 TO 3:WN%=WN%+1:<guard>:NEXT`
-  1: `FOR I=1 TO 1:WN%=WN%+1:<guard>:NEXT`
-  2: `FOR I=3 TO 1:WN%=WN%+1:<guard>:NEXT`
-  3: `FOR I=3 TO 1 STEP -1:WN%=WN%+1:<guard>:NEXT`
-  4: `FOR I=1 TO 3 STEP -1:WN%=WN%+1:<guard>:NEXT`
-  5: `FOR I=1 TO 3 STEP 0:WN%=WN%+1:<guard>:NEXT`
-  6: `FOR I=3 TO 1 STEP 0:WN%=WN%+1:<guard>:NEXT`
-  7: `FOR I=0 TO 1 STEP .1:WN%=WN%+1:<guard>:NEXT`
-  8: `FOR I!=0 TO 1 STEP .1:WN%=WN%+1:<guard>:NEXT`
-  9: `FOR I#=0 TO 1 STEP .1#:WN%=WN%+1:<guard>:NEXT`
-  10: `FOR I%=1 TO 3:WN%=WN%+1:<guard>:NEXT`
-  11: `FOR I%=32765 TO 32767:WN%=WN%+1:<guard>:NEXT`
-  12: `FOR I%=-32766 TO -32768 STEP -1:WN%=WN%+1:<guard>:NEXT`
-  13: `FOR I%=1 TO 3 STEP .5:WN%=WN%+1:<guard>:NEXT`
-  14: `FOR I%=1 TO 3.7:WN%=WN%+1:<guard>:NEXT`
-  15: `FOR I%=1.6 TO 3:WN%=WN%+1:<guard>:NEXT`
-  16: `FOR I%=1 TO 40000:WN%=WN%+1:<guard>:NEXT`
-  17: `FOR I=1 TO 3:WN%=WN%+1:<guard>:I=5:NEXT`
-  18: `WL=3:FOR I=1 TO WL:WN%=WN%+1:<guard>:WL=1:NEXT`
-  19: `WS=1:FOR I=1 TO 5 STEP WS:WN%=WN%+1:<guard>:WS=2:NEXT`
-  20: `FOR I=1 TO 2:FOR J=1 TO 3:WN%=WN%+1:<guard>:NEXT J,I`
-  21: `FOR I=1 TO 2:FOR J=1 TO 3:WN%=WN%+1:<guard>:NEXT:NEXT`
-  23: `FOR I=1 TO 2:FOR I=1 TO 3:WN%=WN%+1:<guard>:NEXT I`
-  24: `FOR I=1 TO 2`
+  0: `FOR I=1 TO 3:WN%=WN%+1:<guard>:NEXT`, reads I
+  1: `FOR I=1 TO 1:WN%=WN%+1:<guard>:NEXT`, reads I
+  2: `FOR I=3 TO 1:WN%=WN%+1:<guard>:NEXT`, reads I
+  3: `FOR I=3 TO 1 STEP -1:WN%=WN%+1:<guard>:NEXT`, reads I
+  4: `FOR I=1 TO 3 STEP -1:WN%=WN%+1:<guard>:NEXT`, reads I
+  5: `FOR I=1 TO 3 STEP 0:WN%=WN%+1:<guard>:NEXT`, reads I
+  6: `FOR I=3 TO 1 STEP 0:WN%=WN%+1:<guard>:NEXT`, reads I
+  7: `FOR I=0 TO 1 STEP .1:WN%=WN%+1:<guard>:NEXT`, reads I
+  8: `FOR I!=0 TO 1 STEP .1:WN%=WN%+1:<guard>:NEXT`, reads I!
+  9: `FOR I#=0 TO 1 STEP .1#:WN%=WN%+1:<guard>:NEXT`, reads I#
+  10: `FOR I%=1 TO 3:WN%=WN%+1:<guard>:NEXT`, reads I%
+  11: `FOR I%=32765 TO 32767:WN%=WN%+1:<guard>:NEXT`, reads I%
+  12: `FOR I%=-32766 TO -32768 STEP -1:WN%=WN%+1:<guard>:NEXT`, reads I%
+  13: `FOR I%=1 TO 3 STEP .5:WN%=WN%+1:<guard>:NEXT`, reads I%
+  14: `FOR I%=1 TO 3.7:WN%=WN%+1:<guard>:NEXT`, reads I%
+  15: `FOR I%=1.6 TO 3:WN%=WN%+1:<guard>:NEXT`, reads I%
+  16: `FOR I%=1 TO 40000:WN%=WN%+1:<guard>:NEXT`, reads I%
+  17: `FOR I=1 TO 3:WN%=WN%+1:<guard>:I=5:NEXT`, reads I
+  18: `WL=3:FOR I=1 TO WL:WN%=WN%+1:<guard>:WL=1:NEXT`, reads I
+  19: `WS=1:FOR I=1 TO 5 STEP WS:WN%=WN%+1:<guard>:WS=2:NEXT`, reads I
+  20: `FOR I=1 TO 2:FOR J=1 TO 3:WN%=WN%+1:<guard>:NEXT J,I`, reads J
+  21: `FOR I=1 TO 2:FOR J=1 TO 3:WN%=WN%+1:<guard>:NEXT:NEXT`, reads I
+  23: `FOR I=1 TO 2:FOR I=1 TO 3:WN%=WN%+1:<guard>:NEXT I`, reads I
+  24: `FOR I=1 TO 2`, reads I
   25: `FOR A$="A" TO "B":WN%=WN%+1:<guard>:NEXT`
-  26: `FOR I=1 TO "A":WN%=WN%+1:<guard>:NEXT`
-  27: `FOR I=1`
-  28: `FOR I=1 TO`
-  29: `FOR I TO 3`
+  26: `FOR I=1 TO "A":WN%=WN%+1:<guard>:NEXT`, reads I
+  27: `FOR I=1`, reads I
+  28: `FOR I=1 TO`, reads I
+  29: `FOR I TO 3`, reads I
   30: `FOR 1=1 TO 3`
   31: `FOR Q(1)=1 TO 3:WN%=WN%+1:<guard>:NEXT`
-  32: `FOR I=1 TO 3 STEP:WN%=WN%+1:<guard>:NEXT`
-  33: `FOR I=1/0 TO 3:WN%=WN%+1:<guard>:NEXT`
-  34: `FOR I=1 TO 1/0:WN%=WN%+1:<guard>:NEXT`
-  42: `FOR I=1 TO 2 STEP "A":WN%=WN%+1:<guard>:NEXT`
+  32: `FOR I=1 TO 3 STEP:WN%=WN%+1:<guard>:NEXT`, reads I
+  33: `FOR I=1/0 TO 3:WN%=WN%+1:<guard>:NEXT`, reads I
+  34: `FOR I=1 TO 1/0:WN%=WN%+1:<guard>:NEXT`, reads I
+  42: `FOR I=1 TO 2 STEP "A":WN%=WN%+1:<guard>:NEXT`, reads I
+- **[KFR FY *i*]** (FOR, goldfish pass 1):
+  0: `FOR I=1:WN%=WN%+1:<guard>:NEXT`, reads I
+  1: `FOR I TO 3:WN%=WN%+1:<guard>:NEXT`, reads I
+  2: `FOR I=1 TO:WN%=WN%+1:<guard>:NEXT`, reads I
+  3: `FOR 1=1 TO 3:WN%=WN%+1:<guard>:NEXT`, reads I
+  4: `FOR I=1 TO 1 STEP 0:WN%=WN%+1:<guard>:NEXT`, reads I
+  5: `FOR I%=-1.6 TO 0:WN%=WN%+1:<guard>:NEXT`, reads I%
+  6: `FOR I%=1 TO 5 STEP 1.5:WN%=WN%+1:<guard>:NEXT`, reads I%
+  7: `FOR I%=3 TO 1 STEP -.5:WN%=WN%+1:<guard>:NEXT`, reads I%
+  8: `FOR I%=1 TO -40000 STEP -1:WN%=WN%+1:<guard>:NEXT`, reads I%
+  9: `FOR I%=40000 TO 1:WN%=WN%+1:<guard>:NEXT`, reads I%
+  10: `FOR I%=1 TO 3 STEP 40000:WN%=WN%+1:<guard>:NEXT`, reads I%
+  11: `FOR I%=32766 TO 32767.9:WN%=WN%+1:<guard>:NEXT`, reads I%
+  12: `FOR I!=0 TO 1 STEP 1/3:WN%=WN%+1:<guard>:NEXT`, reads I!
+  13: `FOR I#=0 TO 1 STEP 1/3:WN%=WN%+1:<guard>:NEXT`, reads I#
+  14: `FOR I=1 TO 3 STEP 1/0:WN%=WN%+1:<guard>:NEXT`, reads I
+  15: `FOR I="A" TO 3:WN%=WN%+1:<guard>:NEXT`, reads I
+  16: `FOR I=1 TO 2 STEP 1,2:WN%=WN%+1:<guard>:NEXT`, reads I
+  17: `WL=1:FOR I=1 TO WL:WN%=WN%+1:<guard>:WL=3:NEXT`, reads I
+  18: `FOR I=1 TO 2:FOR I=1 TO 3:WN%=WN%+1:<guard>:NEXT I:NEXT I`, reads I
+  19: `FOR I=1 TO 2:FOR J=1 TO 2:FOR I=1 TO 3:WN%=WN%+1:<guard>:NEXT I:NEXT J`, reads J
+  20: `I=7:FOR I=1/0 TO 3:WN%=WN%+1:<guard>:NEXT`, reads I
+  21: `I=7:FOR I TO 3:WN%=WN%+1:<guard>:NEXT`, reads I
+  22: `I=7:FOR I=1 TO 40000:WN%=WN%+1:<guard>:NEXT`, reads I
 
-**Controls** ([`kfor_controls.py`](../../probes/basic/spec/kfor_controls.py)): each is a rival rule run over the
-reference's cases: “a start past the limit skips the body (0 runs)” is FALSE on 2 of the 5 cases R-FOR-RUNS selects (e.g. KFR FX 2); “STEP 0 with the start past the limit runs once -- zerobas's” is FALSE on 1 of the 2 cases R-FOR-STEP0 selects (e.g. KFR FX 6); “the limit re-read at every NEXT” is FALSE on 1 of the 3 cases R-FOR-ONCE selects (e.g. KFR FX 18); “the step re-read at every NEXT” is FALSE on 1 of the 3 cases R-FOR-ONCE selects (e.g. KFR FX 19); “an integer variable ROUNDS start and limit” is FALSE on 2 of the 4 cases R-FOR-INT selects (e.g. KFR FX 14); “an integer variable keeps a fractional STEP” is FALSE on 1 of the 4 cases R-FOR-INT selects (e.g. KFR FX 13); “a failed FOR keeps its frame -- zerobas's” is FALSE on 3 of the 8 cases R-FOR-NOFRAME selects (e.g. KFR FX 26).
+**Controls** ([`kfor_controls.py`](../../probes/basic/spec/kfor_controls.py)): each changes ONE law of the interpreter model and runs over the reference's cases: “a start past the limit skips the body (0 runs)” is FALSE on 2 of the 6 cases R-FOR-RUNS selects (e.g. KFR FX 2); “STEP 0 ends at the limit (Microsoft's sign compare)” is FALSE on 1 of the 3 cases R-FOR-STEP0 selects (e.g. KFR FY 4); “STEP 0 is a positive step -- zerobas's” is FALSE on 1 of the 3 cases R-FOR-STEP0 selects (e.g. KFR FX 6); “the limit re-read at every NEXT” is FALSE on 2 of the 4 cases R-FOR-ONCE selects (e.g. KFR FX 18); “the step re-read at every NEXT” is FALSE on 1 of the 4 cases R-FOR-ONCE selects (e.g. KFR FX 19); “NEXT counts a private copy kept in the frame” is FALSE on 1 of the 4 cases R-FOR-ONCE selects (e.g. KFR FX 17); “a FOR on a variable with a frame replaces it (and the frames above)” is FALSE on 2 of the 6 cases R-FOR-NEST selects (e.g. KFR FY 18); “the sum is not rounded to the variable's type” is FALSE on 2 of the 5 cases R-FOR-FRACTION selects (e.g. KFR FY 12); “an integer variable ROUNDS start and limit” is FALSE on 3 of the 7 cases R-FOR-INT selects (e.g. KFR FX 14); “an integer variable FLOORS (towards minus infinity)” is FALSE on 2 of the 7 cases R-FOR-INT selects (e.g. KFR FY 5); “an integer variable keeps a fractional STEP, the sum cut -- zerobas's” is FALSE on 1 of the 7 cases R-FOR-INT selects (e.g. KFR FY 7); “32767 + 1 wraps to -32768” is FALSE on 6 of the 7 cases R-FOR-OVERFLOW selects (e.g. KFR FX 11); “the range is checked before the cut” is FALSE on 1 of the 7 cases R-FOR-OVERFLOW selects (e.g. KFR FY 11); “the variable is made only after `=`” is FALSE on 1 of the 15 cases R-FOR-ERRORS selects (e.g. KFR FX 29); “the start is stored only once the whole FOR has parsed” is FALSE on 7 of the 15 cases R-FOR-ERRORS selects (e.g. KFR FX 26); “a FOR error ends the line” is FALSE on 5 of the 5 cases R-FOR-NOFRAME selects (e.g. KFR FY 0); “text after STEP's value is caught before the push” is FALSE on 1 of the 5 cases R-FOR-NOFRAME selects (e.g. KFR FY 16).
 
 <!-- RULES BEGIN -->
 <!-- GENERATED by tools/spec_rules.py from probes/basic/spec/for_rules.py -- do not edit; `python3 tools/spec_rules.py probes/basic/spec/for_rules.py --write` -->
 
-**9 rules; 9 hold on the reference. Of the 140 recorded outputs (each case's first and last error, the body's runs (WN%, 21 = the probe's guard ended a loop that did not stop) and the loop variable's bytes after it): 140 read by a rule's check, 0 declared NOT evidence (below), 0 unread.**
+**9 rules; 9 hold on the reference. Of the 290 recorded outputs (each case's first and last error, the number of errors, the body's runs (WN%, 21 = the probe's guard ended a loop that did not stop) and the loop variable's value after it): 290 read by a rule's check, 0 declared NOT evidence (below), 0 unread.**
 
 #### 1. The loop
 
 | rule | cases | reference | zerobas |
 |---|---|---|---|
-| **R-FOR-RUNS** FOR stores the start in the variable and the body runs AT LEAST ONCE; NEXT adds STEP (default 1) and runs the body again while the variable has not passed the limit in STEP's direction. FOR I=1 TO 3 runs 3 times and leaves I 4; FOR I=1 TO 1 once (I 2); FOR I=3 TO 1 once (I 4); FOR I=3 TO 1 STEP -1 3 times (I 0); FOR I=1 TO 3 STEP -1 once (I 0). | 5 | ✓ | ✓ |
-| **R-FOR-FRACTION** A fractional STEP adds in the variable's own type: FOR I=0 TO 1 STEP .1 runs 11 times and ends at 1.1, for a double, a single or a double literal step alike. | 3 | ✓ | ✓ |
-| **R-FOR-STEP0** STEP 0 never ends -- also when the start is already past the limit (FOR I=3 TO 1 STEP 0); the probe's guard stops both. | 2 | ✓ | ✗ 1: KFR FX 6 |
-| **R-FOR-ONCE** The limit and STEP are evaluated once, at FOR: changing L or S in the body changes nothing (FOR I=1 TO L with L=1 in the body still runs 3 times; STEP S with S=2 still steps 1, 5 runs). Changing the VARIABLE does count: I=5 in the body ends the loop after one run with I 6. | 3 | ✓ | ✓ |
-| **R-FOR-NEST** Loops nest: FOR I / FOR J closed by NEXT J,I or by two bare NEXTs run 6 bodies; a second FOR on the same variable replaces the first's frame (3 runs, not 6); a FOR without NEXT is no error (the body runs 0 times after it: the line ends). | 4 | ✓ | ✓ |
+| **R-FOR-RUNS** FOR stores the start in the variable, and the body runs AT LEAST ONCE -- also when the start is already past the limit. NEXT adds STEP (default 1) and runs the body again unless the variable has passed the limit in STEP's direction, so a loop ends one step past the last value its body saw (FOR I=1 TO 3: I 4; FOR I=3 TO 1: one run, I 4). | 6 | ✓ | ✓ |
+| **R-FOR-FRACTION** STEP is converted to the variable's type at FOR and the sum is stored in that type: STEP 1/3 is .333333 for a single (4 runs, ending at 1.33333) and fourteen digits for a double. | 5 | ✓ | ✓ |
+| **R-FOR-STEP0** STEP 0 never ends -- with the start below, at or past the limit (the probe's guard stops all three). | 3 | ✓ | ✗ 1: KFR FX 6 |
+| **R-FOR-ONCE** The limit and STEP are evaluated once, at FOR: changing them in the body changes nothing. The VARIABLE is the counter itself: I=5 in the body ends the loop after one run with I 6. | 4 | ✓ | ✓ |
+| **R-FOR-NEST** Loops nest, and a FOR pushes its frame ON TOP even when its variable already has one: FOR I=1 TO 2:FOR I=1 TO 3 ... NEXT I:NEXT I runs 3 bodies and ends with no error (I 5); a FOR on I above an open FOR J leaves J's frame alone. A FOR without NEXT is no error. | 6 | ✓ | ✓ |
 
 #### 2. An integer loop variable
 
 | rule | cases | reference | zerobas |
 |---|---|---|---|
-| **R-FOR-INT** An integer variable TRUNCATES the start, the limit and the step: FOR I%=1.6 TO 3 and FOR I%=1 TO 3.7 both run 3 times (I% 4); STEP .5 is 0 and never ends. FOR I%=1 TO 3 leaves I% 4. | 4 | ✓ | ✓ |
-| **R-FOR-OVERFLOW** Stepping an integer variable past 32767 or below -32768 is error 6 (Overflow) at NEXT, the variable keeping its last value (3 runs: I% 32767, or -32768); a LIMIT an integer variable cannot hold is error 6 at the FOR itself (FOR I%=1 TO 40000), and no frame is pushed. | 3 | ✓ | ✗ 1: KFR FX 16 |
+| **R-FOR-INT** An integer variable cuts the start, the limit and the STEP towards zero at FOR (-1.6 is -1; STEP 1.5 is 1; STEP .5 and -.5 are 0 and never end). | 7 | ✓ | ✗ 2: KFR FY 6, KFR FY 7 |
+| **R-FOR-OVERFLOW** A start, limit or STEP an integer variable cannot hold is error 6 (Overflow) at the FOR, after the cut (32767.9 is 32767 and fits); stepping past 32767 or below -32768 is error 6 at NEXT, the variable keeping its last value. | 7 | ✓ | ✗ 4: KFR FX 16, KFR FY 8, KFR FY 9, KFR FY 10 |
 
 #### 3. Errors
 
 | rule | cases | reference | zerobas |
 |---|---|---|---|
-| **R-FOR-ERRORS** A string variable, limit or STEP is error 13 (Type mismatch); no TO, no `=`, a number or an array element as the variable error 2 (Syntax error); nothing after TO or after STEP error 24 (Missing operand); an error in the start or the limit is that error (1/0: 11). A shape error ends the line there (no body runs); the others leave the line running on (R-FOR-NOFRAME). | 11 | ✓ | ✓ |
-| **R-FOR-NOFRAME** A FOR that fails pushes NO frame: after RESUME NEXT the body runs once and its NEXT is error 1 (NEXT without FOR), the variable as the failed FOR left it. | 8 | ✓ | ✗ 1: KFR FX 16 |
+| **R-FOR-ERRORS** FOR works in order, and an error stops it where it stands: the variable is MADE first (a number as the variable makes nothing; an array element is error 2), then `=` (error 2), then the start is evaluated and STORED (its own error, or 13 for a string; a variable that existed keeps its value), then TO (error 2), the limit (nothing: 24; a string: 13), STEP (nothing: 24). A string variable is 13. | 15 | ✓ | ✓ |
+| **R-FOR-NOFRAME** A FOR that stops on an error pushes NO frame: RESUME NEXT goes on with the statement after it, so the body runs once and its NEXT is error 1. Text after STEP's value is the one error that comes after the push: error 2, and the loop then runs. | 5 | ✓ | ✗ 1: KFR FY 16 |
 
 <!-- RULES END -->
 
 ## Differences from the reference
 
-- **A limit an integer variable cannot hold** (rules R-FOR-OVERFLOW and R-FOR-NOFRAME, case KFR FX 16;
-  [D-FORINTLIM](../../todo/open/D-FORINTLIM.md)): `FOR I%=1 TO 40000` is Overflow at the FOR there, and no frame is pushed; zerobas loops.
+- **An integer loop's bounds** (rules R-FOR-OVERFLOW, R-FOR-INT; cases KFR FX 16, FY 6 - 10;
+  [D-FORINTLIM](../../todo/open/D-FORINTLIM.md)): the reference converts the start, limit and step to the
+  variable's type at the FOR -- out of range is Overflow there, a fraction is cut. zerobas loops on a start or limit
+  out of range, raises a step's Overflow only at the NEXT, and keeps a fractional step (STEP 1.5: 4 runs, not 5).
+- **Text after STEP's value** (rule R-FOR-NOFRAME, case KFR FY 16; [D-FORCOMMA](../../todo/open/D-FORCOMMA.md)):
+  `FOR I=1 TO 2 STEP 1,2` is one Syntax error on the reference and two on zerobas; the loop runs the same.
 - **STEP 0 with the start past the limit** (rule R-FOR-STEP0, case KFR FX 6; [D-FORSTEP0](../../todo/open/D-FORSTEP0.md)):
   `FOR I=3 TO 1 STEP 0` never ends there; zerobas runs the body once.
 
@@ -212,8 +254,8 @@ bytes, in September 2026; the cell-by-cell RAM comparison has not yet proven the
 - [A] Direct mode: every case ran inside a program.
 - [A] FOR inside GOSUB and GOSUB inside FOR, RETURN out of a loop, a loop left by GOTO and entered again many times
   (the frame's reuse), the nesting depth against free memory -- the flow region's next units.
-- [A] A double loop variable beyond the integer range (`FOR A=56700 TO 56702`), DEFINT / DEFSTR'd names.
-- [A] STEP 0 with the start equal to the limit.
+- [A] A double loop variable beyond the integer range (`FOR A=56700 TO 56702`), DEFINT / DEFSTR'd names; ERL
+  (where an error is raised: the record says WHICH error, not which statement).
 
 ## What we found, and how
 

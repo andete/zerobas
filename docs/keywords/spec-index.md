@@ -62,8 +62,8 @@ Every keyword page, the region the spec loop takes it in, and how far its page h
 | `GOSUB` | [flow](../concepts/program-text.md) | RAM record + screen | VG-8020 | [DRAFT 1](GOSUB.md) | 3 | — |
 | `RETURN` | [flow](../concepts/program-text.md) | RAM record + screen | VG-8020 | [DRAFT 1](RETURN.md) | 3 | — |
 | `IF` | [flow](../concepts/program-text.md) | RAM record + screen | VG-8020 | [DRAFT 1](IF.md) | 4 | — |
-| `FOR` | [flow](../concepts/program-text.md) | RAM record + screen | VG-8020 | [DRAFT 1](FOR.md) | 5 | D-FORINTLIM, D-FORSTEP0 |
-| `NEXT` | [flow](../concepts/program-text.md) | RAM record + screen | VG-8020 | [DRAFT 1](NEXT.md) | 3 | D-NEXTCREATE |
+| `FOR` | [flow](../concepts/program-text.md) | RAM record + screen | VG-8020 | [DRAFT 1](FOR.md) | 4 | D-FORINTLIM, D-FORCOMMA, D-FORSTEP0 |
+| `NEXT` | [flow](../concepts/program-text.md) | RAM record + screen | VG-8020 | [DRAFT 1](NEXT.md) | 3 | D-NEXTFRAME, D-NEXTCREATE |
 | `END` | [flow](../concepts/program-text.md) | RAM record + screen | VG-8020 | [DRAFT 1](END.md) | 5 | — |
 | `STOP` | [flow](../concepts/program-text.md) | RAM record + screen | VG-8020 | [DRAFT 1](STOP.md) | 5 | — |
 | `CONT` | [flow](../concepts/program-text.md) | RAM record + screen | VG-8020 | [DRAFT 1](CONT.md) | 5 | — |

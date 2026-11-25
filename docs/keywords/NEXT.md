@@ -6,12 +6,14 @@ SPDX-License-Identifier: BSD-2-Clause
 
 # `NEXT` — end of a `FOR` loop: step, test, go round
 
-> **Spec:** DRAFT 1 (2026-11-25) — 8 cases measured on the Philips VG-8020 (BASIC's reference) and on
+> **Spec:** DRAFT 1 (2026-11-25) — 18 cases measured on the Philips VG-8020 (BASIC's reference) and on
 > zerobas, by typed BASIC ([`kfor.py`](../../probes/basic/spec/kfor.py), with FOR's and NEXT's cases together);
-> every rule is executable and every recorded output is read by one. Not yet reviewed ([the keyword plan](spec-plan.md)).
+> every rule is executable and every recorded output is read by one. Goldfish pass 1 acted on (2026-11-25:
+> the model is now an interpreter, 10 more cases); not yet re-reviewed ([the keyword plan](spec-plan.md)).
 >
 > **Status (2026-11-25):** level 3 — happy path ✓ · reasonable time ✓ · common
-> errors ✓ · RAM usage not yet proven · every error ✗ (a failing NEXT I does not create I: D-NEXTCREATE).
+> errors ✓ · RAM usage not yet proven · every error ✗ (a failing NEXT I does not create I: D-NEXTCREATE; a
+> failing NEXT J drops the open loop: D-NEXTFRAME).
 > Speed is deliberately left out of these docs until on-par speed is
 > established for every keyword.
 
@@ -21,8 +23,8 @@ SPDX-License-Identifier: BSD-2-Clause
 variable, compares it with the limit, and either jumps back to the statement
 after the `FOR` or lets the program carry on. A bare `NEXT` closes the
 innermost open loop; `NEXT I` names the loop; `NEXT J,I` closes several at
-once. zerobas behaves like the Philips VG-8020 in every case we have measured,
-errors included.
+once. zerobas behaves like the Philips VG-8020 on every loop it closes; it
+differs after a NEXT that fails (see Differences).
 
 ## Syntax
 
@@ -40,9 +42,14 @@ NEXT <variable>[,<variable>...]
   `FOR AB=1 TO 3`.
 - **A named `NEXT` closes any inner loops it passes.** With `FOR AB` and
   `FOR CD` open, `NEXT AB` abandons the `CD` loop and steps `AB`.
-- **`NEXT J,I` is `NEXT J` followed by `NEXT I`**, innermost first. A trailing
-  comma (`NEXT J,`) is `NEXT without FOR`; a number in the list (`NEXT J,1`) is
-  `Syntax error`.
+- **`NEXT J,I` is `NEXT J` followed by `NEXT I`**, innermost first, and the
+  rest of the list is read only once J's loop has ended. A trailing comma
+  (`NEXT J,`) then acts as a bare `NEXT` (`NEXT without FOR` when no loop is
+  left); a number in the list (`NEXT J,1`) is `Syntax error`.
+- **A name skips spaces**: `NEXT I J` is `NEXT IJ`.
+- **A NEXT that fails leaves the open loops alone**: after `NEXT J` inside
+  `FOR I` (error 1), a bare `NEXT` still steps I. A named `NEXT` makes its
+  variable even when it fails.
 - **`NEXT A$` is not a type error**: it is `NEXT without FOR`, because no loop
   can have a string variable. The same goes for an array element: `NEXT A(1)`
   is `NEXT without FOR` (and, as on the reference, it creates the array `A` if
@@ -102,51 +109,71 @@ Reference: the Philips VG-8020's MSX BASIC. Ours: zerobas on the diskless machin
 The tables are generated from the checks, so a sentence here cannot say more than the data does.
 
 **Evidence.** One probe, [`probes/basic/spec/kfor.py`](../../probes/basic/spec/kfor.py) (on the shared RAM-record
-harness [`ramrec.py`](../../probes/basic/spec/ramrec.py)), typed on both machines; run file
-[`scratchpad/KFR_run1.out`](../../scratchpad/KFR_run1.out) (2026-11-25; zerobas's side on that day's build). Every case
-is its own line and starts from nothing (`CLEAR`, `ON ERROR` set again); the body counts its runs in WN%; the next line
-records the FIRST error (the statement's own), the LAST error (RESUME NEXT carries on along the line, so after a failed
-FOR its body and NEXT still run), the runs and the loop variable's bytes. A loop that could run for ever carries a
-guard, `ON -(WN%>20) GOTO <the record line>` -- not `IF ... THEN`, whose false test would skip the NEXT after it on the
-same line -- so 21 runs read "it did not stop". Three probe faults were caught while building it, each by a run that
-read wrong on both machines: the last error alone recorded, the IF guard, and a VARPTR of a variable that does not
-exist (error 5 on both machines).
+harness [`ramrec.py`](../../probes/basic/spec/ramrec.py)), typed on both machines as two programs, groups FX (the first
+run's cases) and FY (goldfish pass 1's separating cases); run file
+[`scratchpad/KFR_run1.out`](../../scratchpad/KFR_run1.out) (2026-11-25). Every case is its own line and starts from
+nothing (`CLEAR`, `ON ERROR` set again); the body counts its runs in WN%; the next line records the FIRST error, the
+LAST error and how many there were (RESUME NEXT carries on along the line, so after a failed FOR its body and NEXT
+still run), the runs and the loop variable's bytes (VARPTR; a variable that does not exist reads "none" -- VARPTR
+refuses it on both machines, KFR FY 31). The readout uses no FOR / NEXT (two subroutines of POKEs). A loop that could
+run for ever carries a guard, `ON -(WN%>20) GOTO <the record line>` -- not `IF ... THEN`, whose false test would skip
+the NEXT after it on the same line -- so 21 runs read "more than 20". The model,
+[`kfor_model.py`](../../probes/basic/spec/kfor_model.py), is an INTERPRETER: it runs each case's own statements with
+the laws the rules state and holds no per-case answer. Probe faults caught while building it: the last error alone
+recorded, the IF guard, a VARPTR of a variable that does not exist (error 5), a FOR that failed and left a half-built
+frame on zerobas (every counting body has the guard since), a readout that used FOR / NEXT itself, and -- unrolling
+that readout inline -- a program too big for the RAM below HIMEM (both machines stopped while it was typed; hence the
+two groups).
 - **[KFR FX *i*]** (NEXT):
-  22: `FOR I=1 TO 2:FOR J=1 TO 3:WN%=WN%+1:<guard>:NEXT I`
+  22: `FOR I=1 TO 2:FOR J=1 TO 3:WN%=WN%+1:<guard>:NEXT I`, reads I
   35: `NEXT`
-  36: `NEXT I`
-  37: `FOR I=1 TO 2:WN%=WN%+1:<guard>:NEXT J`
-  38: `FOR I=1 TO 2:WN%=WN%+1:<guard>:NEXT I,`
-  39: `FOR I=1 TO 2:WN%=WN%+1:<guard>:NEXT 5`
-  40: `FOR I=1 TO 2:WN%=WN%+1:<guard>:NEXT I J`
-  41: `FOR I=1 TO 2:FOR J=1 TO 2:WN%=WN%+1:<guard>:NEXT J,I,K`
+  36: `NEXT I`, reads I
+  37: `FOR I=1 TO 2:WN%=WN%+1:<guard>:NEXT J`, reads I
+  38: `FOR I=1 TO 2:WN%=WN%+1:<guard>:NEXT I,`, reads I
+  39: `FOR I=1 TO 2:WN%=WN%+1:<guard>:NEXT 5`, reads I
+  40: `FOR I=1 TO 2:WN%=WN%+1:<guard>:NEXT I J`, reads I
+  41: `FOR I=1 TO 2:FOR J=1 TO 2:WN%=WN%+1:<guard>:NEXT J,I,K`, reads I
+- **[KFR FY *i*]** (NEXT, goldfish pass 1):
+  23: `FOR I=1 TO 2:FOR J=1 TO 3:WN%=WN%+1:<guard>:NEXT I:NEXT J`, reads J
+  24: `FOR I=1 TO 2:WN%=WN%+1:<guard>:NEXT J:NEXT`, reads I
+  25: `FOR I=1 TO 2:WN%=WN%+1:<guard>:NEXT I,5`, reads I
+  26: `FOR IJ=1 TO 2:WN%=WN%+1:<guard>:NEXT I J`, reads IJ
+  27: `FOR I=1 TO 2:FOR J=1 TO 3:WN%=WN%+1:<guard>:NEXT J,I`, reads I
+  28: `FOR I=1 TO 2:FOR J=1 TO 2:WN%=WN%+1:<guard>:NEXT J,K`, reads I
+  29: `FOR A%=1 TO 2:WN%=WN%+1:<guard>:NEXT A`, reads A%
+  30: `FOR AB=1 TO 2:WN%=WN%+1:<guard>:NEXT A`, reads AB
+  31: `NEXT`, reads I
+  32: `FOR I=1 TO 2:WN%=WN%+1:<guard>:NEXT J`, reads J
 
-**Controls** ([`kfor_controls.py`](../../probes/basic/spec/kfor_controls.py)): each is a rival rule run over the
-reference's cases: “a failing NEXT I does not create I -- zerobas's” is FALSE on 1 of the 1 cases R-NEXT-CREATE selects (e.g. KFR FX 36).
+**Controls** ([`kfor_controls.py`](../../probes/basic/spec/kfor_controls.py)): each changes ONE law of the interpreter model and runs over the reference's cases: “a name does not skip spaces” is FALSE on 2 of the 6 cases R-NEXT-MATCH selects (e.g. KFR FX 40); “the whole list is checked before stepping” is FALSE on 1 of the 6 cases R-NEXT-LIST selects (e.g. KFR FY 25); “a failed NEXT drops the frames -- zerobas's” is FALSE on 1 of the 4 cases R-NEXT-ERRORS selects (e.g. KFR FY 24); “a failing NEXT I does not create I -- zerobas's” is FALSE on 2 of the 2 cases R-NEXT-CREATE selects (e.g. KFR FX 36).
 
 <!-- RULES BEGIN -->
 <!-- GENERATED by tools/spec_rules.py from probes/basic/spec/next_rules.py -- do not edit; `python3 tools/spec_rules.py probes/basic/spec/next_rules.py --write` -->
 
-**3 rules; 3 hold on the reference. Of the 32 recorded outputs (each case's first and last error, the body's runs (WN%, 21 = the probe's guard ended a loop that did not stop) and the loop variable's bytes after it): 32 read by a rule's check, 0 declared NOT evidence (below), 0 unread.**
+**4 rules; 4 hold on the reference. Of the 90 recorded outputs (each case's first and last error, the number of errors, the body's runs (WN%, 21 = the probe's guard ended a loop that did not stop) and the loop variable's value after it): 90 read by a rule's check, 0 declared NOT evidence (below), 0 unread.**
 
 #### 1. Closing loops
 
 | rule | cases | reference | zerobas |
 |---|---|---|---|
-| **R-NEXT-CLOSE** NEXT I inside FOR J closes I's loop and drops J's frame: 2 bodies, I 3. | 1 | ✓ | ✓ |
+| **R-NEXT-MATCH** NEXT I closes the innermost frame whose variable has the same name AND type, and drops every frame above it (NEXT I inside FOR J: J's frame is gone, a later NEXT J is error 1). A name skips spaces (`NEXT I J` is NEXT IJ); `NEXT A` does not match FOR A% or FOR AB. | 6 | ✓ | ✓ |
+| **R-NEXT-LIST** NEXT J,I steps J; only when J's loop ends does it read on to I. So a bad item later in the list -- a trailing comma (read as a bare NEXT), a number (error 2), a name with no frame (error 1) -- is met only once the loops before it have finished. | 6 | ✓ | ✓ |
 
 #### 2. Errors
 
 | rule | cases | reference | zerobas |
 |---|---|---|---|
-| **R-NEXT-ERRORS** NEXT without a FOR and NEXT J inside FOR I are error 1 (NEXT without FOR); a name after the loops ran out -- a trailing comma, a third name (NEXT J,I,K) -- is error 1 once those loops have finished; two names without a comma error 1 at once; a number after NEXT error 2. The loop variable is as the loops left it (NEXT J inside FOR I: I 1, its frame unused). | 6 | ✓ | ✓ |
-| **R-NEXT-CREATE** NEXT I without a FOR is error 1 too, and it creates the variable I (it reads 0; VARPTR finds it). | 1 | ✓ | ✗ 1: KFR FX 36 |
+| **R-NEXT-ERRORS** NEXT with no frame to close is error 1 (NEXT without FOR), and a miss leaves every frame where it was: after a failed NEXT J inside FOR I, a bare NEXT still steps I. | 4 | ✓ | ✗ 1: KFR FY 24 |
+| **R-NEXT-CREATE** A NEXT that names a variable MAKES it, even when it then fails (NEXT I without FOR: I exists and reads 0; a failed NEXT J makes J) -- a bare NEXT makes nothing. | 2 | ✓ | ✗ 2: KFR FX 36, KFR FY 32 |
 
 <!-- RULES END -->
 
 ## Differences from the reference
 
-- **A failing NEXT I creates I** (rule R-NEXT-CREATE, case KFR FX 36; [D-NEXTCREATE](../../todo/open/D-NEXTCREATE.md)):
+- **A failing NEXT keeps the open loops** (rule R-NEXT-ERRORS, case KFR FY 24;
+  [D-NEXTFRAME](../../todo/open/D-NEXTFRAME.md)): after `NEXT J` inside `FOR I` (error 1 on both), the reference's
+  bare NEXT steps I and the loop goes on; zerobas's search dropped I's frame, so its bare NEXT is a second error 1.
+- **A failing NEXT I creates I** (rule R-NEXT-CREATE, cases KFR FX 36, FY 32; [D-NEXTCREATE](../../todo/open/D-NEXTCREATE.md)):
   after `NEXT I` with no FOR (error 1 on both), the reference's VARPTR(I) finds I; zerobas never created it (VARPTR
   raises error 5, as for any variable that does not exist).
 
