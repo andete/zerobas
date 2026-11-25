@@ -2324,10 +2324,10 @@ GFX_DCMD        equ     $F716                     ; $F716: current command's sta
 GFX_DSUBN       equ     $F718           ; $F718: substitutions RESOLVED for this command (1)
 GFX_DSUBI       equ     $F719           ; $F719: substitutions SEEN so far this re-parse (1)
 GFX_DSUB        equ     $F703           ; $F703: the resolved values, 2 slots (M takes two) (4)
-GFX_DSUBLEN     equ     $FC96           ; $FC96: slot 0's string length (X only) (1)
-GFX_DREQ        equ     $FC97           ; $FC97: tenant->resident: 0 = done, 1 = resolve an
+GFX_DSUBLEN     equ     $F6E8           ; $F6E8: slot 0's string length (X only) (1)
+GFX_DREQ        equ     $F6E9           ; $F6E9: tenant->resident: 0 = done, 1 = resolve an
                                         ; int, 2 = resolve a string (1)
-GFX_DRESUME     equ     $FC98           ; $FC98: resident->tenant: 1 = resuming (1)
+GFX_DRESUME     equ     $F6A5           ; $F6A5: resident->tenant: 1 = resuming (1)
 GFX_DVAL        equ     $FC99           ; $FC99: the resolved int16, or a string body ptr (2)
 GFX_DVLEN       equ     $F734           ; $F734: that string's length (1)
 GFX_DEXP        equ     BUFTX           ; $F567: NUL-terminated copy of the text between
@@ -2656,7 +2656,11 @@ DB_RESPTR       equ     $F5F2   ; resume: the token to restart at (2 B)
 ; unused by zerobas) -- an INTERIM home: a load over $EC26-$EC59 left BASIC with a
 ; garbage CSP / CURLINE / PRGEND. The same-job homes (CTLTOP -> STKTOP, PRGEND =
 ; VARTAB-2, CSP merged with SAVSTK) are code changes, for when main has bytes.
-PRGEND          equ     $F6E8   ; addr of the $0000 end-of-program marker (2 bytes)
+; 🔁 D-BOOTCELLS step 3 (2026-11-25): PRGEND left PARM1's head for TRPTBL's reserved tail
+; $FC96 (constant 0 on the VG-8020: scratchpad/AE_bootcells3_hosts.out), past the control
+; pool; DATASTATE (SUBFLG) went to $FC98 with it. DRAW's DSUBLEN / DREQ / DRESUME took
+; $F6E8 / $F6E9 / $F6A5.
+PRGEND          equ     $FC96   ; addr of the $0000 end-of-program marker (2 bytes)
 
 ; --- Arrays slice-1, SPLIT design (repack build only, docs/spec-basic- ------
 ; arrays.md §10). The array area is the LOW free region: it begins right
@@ -4893,7 +4897,7 @@ FN_STK_FLOOR    equ     $F200   ; NOT-A-CELL
 ; keeps the line NUMBER there, this the line's link field); RESTORE_LINE and
 ; DATASTATE in ENDFOR / SUBFLG, the reference's transient FOR and subscript
 ; scratch. All four idle on zerobas and C-BIOS (scratchpad/pubfree_map.py).
-DATASTATE       equ     $F6A5   ; 0 = unpositioned (RESTORE), 1 = ready, 2 = exhausted (1 B)
+DATASTATE       equ     $FC98   ; 0 = unpositioned (RESTORE), 1 = ready, 2 = exhausted (1 B)
 DATAPTR         equ     $F6C8   ; next unread DATA item (ASCII) in the program (2)
 DATALINE        equ     $F6A3   ; link-field of the line holding DATAPTR (2)
 RESTORE_LINE    equ     $F6A1   ; link-field a READ seeks DATA from when unpositioned (2)
@@ -6046,6 +6050,10 @@ MSGESC_SUB      equ     6       ; body = this byte alone -> the sub-ROM tenant
 ; ...and the control pool's six pointers inside TRPTBL's reserved tail, below GFX_DVAL.
     IF CSP <= SUBSLOT_OK || FSP + 2 > GFX_DVAL
                 db      BOOTCELLS_CONTROL_POOL_LEFT_THE_TRPTBL_TAIL
+    ENDIF
+; ...PRGEND and DATASTATE after it, still below GFX_DVAL.
+    IF PRGEND < FSP + 2 || DATASTATE < PRGEND + 2 || DATASTATE + 1 > GFX_DVAL
+                db      BOOTCELLS_PRGEND_DATASTATE_LEFT_THE_TRPTBL_TAIL
     ENDIF
     IF GFX_Y2 + 2 > GFX_DPTR
                 db      S11_LINE_ENDPOINTS_OVERRAN_INTO_GFX_DPTR

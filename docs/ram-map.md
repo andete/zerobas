@@ -416,7 +416,7 @@ extents the standard already fixes would be noise, not rigour.
 | `$F69F` | 2 B | `disk` | `BL_OFS` | 2 B: main -> tenant, BLOAD's offset (0 = none) -- published TEMP8 (D-WSZERO; was SW_ADDR's) |  |
 | `$F6A1` | 2 B | `basic` | `RESTORE_LINE` | link-field a READ seeks DATA from when unpositioned (2) |  |
 | `$F6A3` | 2 B | `basic` | `DATALINE` | link-field of the line holding DATAPTR (2) |  |
-| `$F6A5` | 1 B | `basic` | `DATASTATE` | 0 = unpositioned (RESTORE), 1 = ready, 2 = exhausted (1 B) |  |
+| `$F6A5` | 1 B | `basic` | `GFX_DRESUME` | $F6A5: resident->tenant: 1 = resuming (1) |  |
 | `$F6A6` | 1 B | `basic` | `FCH_RDMODE` | current read: 0=INPUT# (stop at ','/CR), 1=LINE (1) |  |
 | `$F6A6` | 1 B | `disk` | `FCH_RDMODE` | current read: 0=INPUT# (stop at ','/CR), 1=LINE (1) |  |
 | `$F6A7` | 2 B | `basic` | `BL_PTR` | 2 B: main -> tenant, the token cursor after BLOAD -- published TEMP (D-WSZERO) |  |
@@ -444,8 +444,8 @@ extents the standard already fixes would be noise, not rigour.
 | `$F6CA` | 26 B | `basic` | `DEFTBL` | per-letter default-type map, A..Z (26) -- |  |
 | `$F6E4` | 2 B | `basic` | `FNSP` | newest FN frame's address, 0 = no FN call live (2) |  |
 | `$F6E6` | 1 B | `basic` | `FN_FST` | tenant -> main: 0 = frame saved, 1 = pool full -> ERR 7 (1) |  |
-| `$F6E8` | 2 B | `basic` | `PRGEND` | addr of the $0000 end-of-program marker (2 bytes) |  |
-| `$F6E8` | 2 B | `disk` | `PRGEND` | addr of the $0000 end-of-program marker (2 bytes) |  |
+| `$F6E8` | 1 B | `basic` | `GFX_DSUBLEN` | $F6E8: slot 0's string length (X only) (1) |  |
+| `$F6E9` | 1 B | `basic` | `GFX_DREQ` | $F6E9: tenant->resident: 0 = done, 1 = resolve an |  |
 | `$F6EA` | 1 B | `basic` | `ARY_OP/TKNAME` | tokeniser: 1 = previous char was part of a name |  |
 | `$F6EB` |  | `basic` | `ARY_KEY/TKRADIX` | tokeniser: &H/&O accumulator radix (16 or 8) |  |
 | `$F6EC` | 1 B | `basic` | `TKRTOK` | tokeniser: &H/&O constant token to emit, $0C/$0B (1 B) |  |
@@ -694,9 +694,9 @@ extents the standard already fixes would be noise, not rigour.
 | `$FC90` | 2 B | `basic` | `CTLLIM` | the pool's collision FLOOR = ARYEND+2 (2). Written (2 B) |  |
 | `$FC92` | 2 B | `basic` | `GSP` | newest GOSUB frame's address; == CTLTOP if none (2) |  |
 | `$FC94` | 2 B | `basic` | `FSP` | the FOR run's FLOOR: FOR frames are [CSP,FSP) (2) |  |
-| `$FC96` | 1 B | `basic` | `GFX_DSUBLEN` | $FC96: slot 0's string length (X only) (1) |  |
-| `$FC97` | 1 B | `basic` | `GFX_DREQ` | $FC97: tenant->resident: 0 = done, 1 = resolve an |  |
-| `$FC98` | 1 B | `basic` | `GFX_DRESUME` | $FC98: resident->tenant: 1 = resuming (1) |  |
+| `$FC96` | 2 B | `basic` | `PRGEND` | addr of the $0000 end-of-program marker (2 bytes) |  |
+| `$FC96` | 2 B | `disk` | `PRGEND` | addr of the $0000 end-of-program marker (2 bytes) |  |
+| `$FC98` | 1 B | `basic` | `DATASTATE` | 0 = unpositioned (RESTORE), 1 = ready, 2 = exhausted (1 B) |  |
 | `$FC99` |  | `basic` | `GFX_DVAL` | $FC99: the resolved int16, or a string body ptr (2) |  |
 | `$FC9A` | 1 B | `basic` | `DISKOP_ERR` | tenant -> main: ERR code of the last DSKIO failure, 0 = none (1) |  |
 | `$FC9A` | 1 B | `disk` | `DISKOP_ERR` | tenant -> main: ERR code of the last DSKIO failure, 0 = none (1) |  |

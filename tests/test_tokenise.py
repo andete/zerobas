@@ -122,7 +122,9 @@ def run():
     # D-WSZERO slice 3: the tokeniser's own scratch cells (TKRADIX, TKRTOK ...) now
     # sit in PARM1 ($F6E8+), inside this 900-byte scan -- they are not the crunch's
     # reach, so the moved block is skipped.
-    lo_skip, hi_skip = s["PRGEND"], s["SL_CEIL"] + 1
+    # D-BOOTCELLS step 3: PRGEND left PARM1 (it was the block's low name), so the
+    # block is bounded by PARM1's own published start.
+    lo_skip, hi_skip = 0xF6E8, s["SL_CEIL"] + 1
     reach = max(i for i in range(900) if m.mem[tb + i] != mark
                 and not lo_skip <= tb + i <= hi_skip)
     for label, got, want in (("crunch reach <= TOKBUFSZ-1", reach <= s["TOKBUFSZ"] - 1, True),

@@ -36,7 +36,7 @@ TXTBASE equ 08001H   ; text base (oracle: TXTTAB value after boot)
 TXTTAB equ 0F676H   ; sysvar: pointer to the BASIC text base
 TXTMAX equ 0E7ADH   ; NOT-A-CELL: the text ceiling (= the workspace floor)
 TXTMAX_NODISK equ 0F380H   ; NOT-A-CELL: the diskless build's text ceiling
-PRGEND equ 0F6E8H   ; addr of the $0000 end-of-program marker (2 bytes)
+PRGEND equ 0FC96H   ; addr of the $0000 end-of-program marker (2 bytes)
 DSV_PTR equ 0EF59H   ; DISK-ONLY: SAVE: current source byte pointer (2)
 DSV_END equ 0EF5BH   ; DISK-ONLY: SAVE/BSAVE: last source byte addr, inclusive (2)
 DISKSLOT_OK equ 0FB21H   ; nonzero = DISKSLOT valid (1 B; the disk ROM's drive count once INIT ran -- D-DRVCOUNT)
