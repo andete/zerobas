@@ -21,8 +21,8 @@ sys.path.insert(0, os.path.join(ROOT, "tools"))
 import kdeftype  # noqa: E402
 from spec_rules import Rule  # noqa: E402
 
-FIELDS = ["e", "f", "t", "v"]
-OUTPUTS = {"FX": FIELDS}
+FIELDS = ["e", "f", "t", "v", "z"]
+OUTPUTS = {"FX": FIELDS, "FY": FIELDS}
 OUTPUTS_DESC = ("each case's first and last error, the type byte before each named variable (PEEK(VARPTR(v)-3); "
                 "$EE: VARPTR refused the name) and the number the case left in WV#")
 CODE = {"%": 2, "$": 3, "!": 4, "#": 8}
@@ -33,6 +33,20 @@ KWS = {"DEFINT": "%", "DEFSNG": "!", "DEFDBL": "#", "DEFSTR": "$"}
 class Err(Exception):
     def __init__(self, n):
         self.n = n
+
+
+def _trunc(x, digits):
+    """x cut to `digits` significant digits (the rival of _round's half-up)"""
+    if x == 0:
+        return Fr(0)
+    s, a, e = (-1 if x < 0 else 1), abs(x), 0
+    while a >= 1:
+        a /= 10
+        e += 1
+    while a < Fr(1, 10):
+        a *= 10
+        e -= 1
+    return s * Fr(int(a * 10 ** digits), 10 ** digits) * Fr(10) ** e
 
 
 def _round(x, digits):
@@ -60,6 +74,7 @@ class Machine:
 
     def clear(self):
         self.deftbl = {chr(c): ("!" if "default-single" in self.alt else "#") for c in range(65, 91)}
+        self.fns = {}
         self.vars = {}
         self.arrays = {}
 
@@ -78,6 +93,8 @@ class Machine:
         base = name.rstrip("%$!#")[:2]
         if "defstr-separate" in self.alt and name[-1] not in CODE and self.typ(name) == "$":
             base += "_"                  # the rival: an unsuffixed DEFSTR name is not the `$` variable
+        if "suffix-separate" in self.alt and name[-1] in CODE:
+            base += "_"                  # the rival: a suffixed name is a variable apart from the unsuffixed one
         return base, self.typ(name)
 
     def store(self, t, val):
@@ -96,8 +113,7 @@ class Machine:
             if not -32768 <= q <= 32767:
                 raise Err(6)
             return ("n", Fr(q))
-        y = _round(x, 6 if t == "!" else 14) if "sng-truncate" not in self.alt or t != "!" else \
-            Fr(int(x * 10 ** 5 * 10) if x else 0, 10 ** 6)
+        y = _round(x, 6 if t == "!" else 14) if "sng-truncate" not in self.alt or t != "!" else _trunc(x, 6)
         if abs(y) >= Fr(10) ** 63:
             raise Err(6)
         return ("n", y)
@@ -125,6 +141,8 @@ class Machine:
             op = self.tk[self.i]
             self.i += 1
             w = self.atom()
+            if op == "/" and w[1] == 0:
+                raise Err(11)
             v = ("n", _round(v[1] * w[1] if op == "*" else v[1] / w[1], 14))
         return v
 
@@ -146,6 +164,20 @@ class Machine:
             if t == "ASC":
                 return ("n", Fr(ord(a[1][0])))
             return ("s", (" " if a[1] >= 0 else "") + str(a[1]))
+        if t.startswith("FN") and t in self.fns:          # DEF FN: the parameter in ITS type, the result in the name's
+            self.i += 1
+            a = self.sum()
+            self.i += 1
+            par, body = self.fns[t]
+            pk = self.key(par)
+            old = self.vars.get(pk)
+            self.vars[pk] = self.store(pk[1], a)
+            r = self.expr_sub(body)
+            if old is None:
+                del self.vars[pk]
+            else:
+                self.vars[pk] = old
+            return self.store(self.typ(t[2:]), r)
         if self.i < len(self.tk) and self.tk[self.i] == "(":
             self.i += 1
             k = int(self.sum()[1])
@@ -204,8 +236,21 @@ class Machine:
                 raise Err(2)
             i += 1
 
-    def stmt(self, s):
+    def expr_sub(self, s):
+        """an expression evaluated in the middle of another (DEF FN's body)"""
+        saved = self.tk, self.i
+        try:
+            return self.expr(s)
+        finally:
+            self.tk, self.i = saved
+
+    def stmt(self, s, pc=0):
+        """one statement; returns the index of the statement to go on with, or None for the next"""
         s = s.strip()
+        m = re.match(r"DEF (FN\w+)\((\w+)\)=(.+)$", s)
+        if m:
+            self.fns[m.group(1)] = (m.group(2), m.group(3))
+            return None
         m = re.match(r"(DEFINT|DEFSNG|DEFDBL|DEFSTR)(.*)$", s)
         if m:
             self._pend = []
@@ -224,12 +269,16 @@ class Machine:
         if s.startswith("READ "):
             return self.assign(s[5:], ("n", Fr(self.data.pop(0))))
         m = re.match(r"FOR (\w+)=(.+) TO (.+)$", s)
-        if m:
-            self.forvar, self.forend = m.group(1), self.expr(m.group(3))
-            return self.assign(m.group(1), self.expr(m.group(2)))
+        if m:                                           # the start and the limit stored in the variable's type
+            k = self.key(m.group(1))
+            self.assign(m.group(1), self.expr(m.group(2)))
+            self.loop = (m.group(1), self.store(k[1], self.expr(m.group(3)))[1], pc + 1)
+            return None
         if s == "NEXT":
-            k = self.key(self.forvar)
-            return self.assign(self.forvar, ("n", self.forend[1] + 1)) if k in self.vars else None
+            name, lim, body = self.loop
+            k = self.key(name)
+            self.assign(name, ("n", self.vars[k][1] + 1))
+            return body if self.vars[k][1] <= lim else None
         lhs, rhs = s.split("=", 1)
         return self.assign(lhs, None, rhs)
 
@@ -270,12 +319,17 @@ def run(c, alt=frozenset()):
     """(e, f, [the named variables' type codes, NOVAR when absent], v) the interpreter gives for case c"""
     data = [x.split("DATA ")[1] for x in c.subs.values() if "DATA " in x]
     mc = Machine(alt, data)
+    mc.vars[("WV", "#")] = ("n", Fr(kdeftype.SENTINEL))      # the probe's WV# before the case
     errs = []
-    for st in _split(_upper(c.stmt)):
+    sts = _split(_upper(c.stmt))
+    pc = 0
+    while pc < len(sts):
         try:
-            mc.stmt(st)
+            to = mc.stmt(sts[pc], pc)
         except Err as e:
             errs.append(e.n)
+            to = None
+        pc = pc + 1 if to is None else to
     wv = mc.vars.get(("WV", "#"), ("n", Fr(0)))[1]
     ts = []
     for name in c.names:
@@ -287,15 +341,23 @@ def run(c, alt=frozenset()):
 
 def behaves(c, alt=frozenset()):
     """errors, the value, and WHETHER each named variable exists (not its type byte -- that is R-xxx-ENTRY's)"""
-    e, f, ts, v = run(c, alt)
+    try:
+        e, f, ts, v = run(c, alt)
+    except (Err, ArithmeticError, TypeError, KeyError, IndexError, ValueError, AttributeError):
+        return False                 # a law that cannot even produce the record (goldfish pass 1: read FALSE, not crash)
     exists = [None if x == 0 else x != NOVAR for x in ts]
     got = [None if x == 0 else x != NOVAR for x in c.t]
-    return (c.e, c.f, c.v) == (e, f, v) and got == exists
+    return (c.e, c.f, c.v, c.z) == (e, f, v, c.idx) and got == exists     # z: the case's OWN line ran
 
 
 def entry(c, alt=frozenset()):
     """the byte before an existing variable's name is its type code"""
-    _, _, ts, _ = run(c, alt)
+    try:
+        _, _, ts, _ = run(c, alt)
+    except (Err, ArithmeticError, TypeError, KeyError, IndexError, ValueError, AttributeError):
+        return False
+    if "entry-after-name" in alt:                       # the rival -- zerobas's order: the name's first letter there
+        ts = [ord(n[0]) if t not in (0, NOVAR) else t for n, t in zip(list(c.names) + ["", "", ""], ts)]
     return list(c.t) == ts
 
 
@@ -306,7 +368,11 @@ def load(kw):
 
 NAME_WHYS = {"a suffix wins over DEF", "the type is looked up at each use: the double A is not the int A",
              "two A's side by side: back to the double one", "A and A$ are the same variable",
-             "DEFSNG A-Z; a double read through another suffix"}
+             "DEFSNG A-Z; a double read through another suffix", "a longer name follows its first letter",
+             "two significant characters", "A and A% are one variable after DEFINT A",
+             "A and A! are one variable after DEFSNG A", "A and A# are one variable with no DEF",
+             "a new type names a new array", "back to the first array", "DIM after a new type is no error",
+             "a DEF FN parameter follows DEF", "a DEF FN name follows DEF"}
 
 
 def has_def(c):
@@ -326,29 +392,36 @@ def _rules(kw):
     ok = lambda c: not syn(c)         # noqa: E731
     out = [
         Rule(f"R-{k}-LIST", s1, f"`{kw}` takes a list of items separated by `,`: a letter, or a range `X-Y` (spaces "
-             "allowed around the dash and before the comma). Every letter of the list now gives an unsuffixed name "
+             "allowed anywhere between the parts). Every letter of the list now gives an unsuffixed name "
              "that type; the last `DEF` for a letter wins, and `CLEAR` puts every letter back to double. Each item "
              "is applied as soon as it is read: a bad item later in the list, or text glued to it (`DEFINT AB`, "
              "`DEFINT A-CD`), is error 2 (Syntax error) but the items before it -- and the glued item itself -- "
-             "stand. Anything else -- no item, a digit, a range without its end letter or written backwards, a "
-             "suffix, a trailing comma -- is error 2 too.",
+             "stand -- but a range cut off after its dash (`DEFINT A-`) applies nothing. Anything else -- no item, "
+             "a digit, a range without its end letter or written backwards, a suffix, a trailing comma -- is error "
+             "2 too.",
              lambda c: has_def(c), behaves),
         Rule(f"R-{k}-NAME", s1, "Only an unsuffixed name follows the table, through its FIRST letter, and the table is "
              "read at every USE of a name, not when the variable was made: after `A=7:DEFINT A`, `A` names a new "
-             "integer variable (0) beside the double one, which `DEFDBL A` names again. A suffix always wins.",
-             lambda c: ok(c) and has_def(c) and c.why in NAME_WHYS,
+             "integer variable (0) beside the double one, which `DEFDBL A` names again. A suffix always wins, and a suffixed name IS the unsuffixed one of the same type (`A%` is `A` "
+             "after DEFINT A). Two characters are significant (ABC is ABD). An ARRAY follows the same lookup: after "
+             "DEFINT A, `A(1)` names a new integer array beside the double one, so DIM A again is no error. A DEF FN "
+             "parameter and a DEF FN name follow the table too (FNA after DEFINT A returns an integer).",
+             lambda c: ok(c) and c.why in NAME_WHYS,
              behaves),
     ]
     store = {
-        "INT": ("An integer variable keeps the whole part, cut TOWARDS ZERO (1.7 -> 1, -1.7 -> -1, 2.5 -> 2); "
-                "outside -32768..32767 is error 6 (Overflow). FOR, READ and array elements store the same way."),
-        "SNG": "A single variable keeps six digits, the seventh rounded half up (1.23456789 -> 1.23457).",
+        "INT": ("An integer variable keeps the whole part, cut TOWARDS ZERO (1.7 -> 1, -1.7 -> -1, 2.5 -> 2), and "
+                "the range is tested AFTER the cut: 32767.9 and -32768.5 fit, 32768 and -32769 are error 6 "
+                "(Overflow). FOR (its start too), READ and array elements store the same way."),
+        "SNG": ("A single variable keeps six digits, the seventh rounded half up (1.23456789 -> 1.23457, an exact "
+                "half 1.234565 -> 1.23457); a value that rounds to 1E63 or more is error 6; a string is error 13."),
         "DBL": "Without any DEF every unsuffixed name is double: fourteen digits.",
         "STR": ("An unsuffixed name of a DEFSTR letter IS the `$` variable (`A` and `A$` are one); storing a "
                 "number in it is error 13 (Type mismatch)."),
     }[k]
-    out.append(Rule(f"R-{k}-STORE", s2, store + " An assignment makes its variable BEFORE the value is checked, so "
-                    "after an error the variable exists, holding its type's zero; reading a name never makes it.",
+    out.append(Rule(f"R-{k}-STORE", s2, store + " An assignment makes its variable BEFORE the value is worked out "
+                    "(`A=1/0` leaves A), so after an error a NEW variable exists holding its type's zero and an existing "
+                    "one keeps its value; reading a name never makes it.",
                     lambda c: ok(c) and not c.why in NAME_WHYS,
                     behaves))
     out.append(Rule(f"R-{k}-ENTRY", s3, "The byte just before a variable's two name bytes, `PEEK(VARPTR(v)-3)`, is "

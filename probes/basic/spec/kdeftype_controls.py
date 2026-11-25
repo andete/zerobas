@@ -18,18 +18,32 @@ def alt(*a):
     return lambda c: M.behaves(c, frozenset(a))
 
 
+def entry_alt(*a):
+    return lambda c: M.entry(c, frozenset(a))
+
+
 CONTROLS = {
     "DEFINT": [("R-INT-LIST", "a list stands only if ALL of it is good", alt("all-or-nothing")),
                ("R-INT-LIST", "a reversed range is swapped, not an error", alt("reversed-swaps")),
                ("R-INT-LIST", "CLEAR keeps the DEF table", alt("clear-keeps-def")),
                ("R-INT-NAME", "a variable keeps the type it was made with", alt("create-time")),
+               ("R-INT-NAME", "a suffixed name is a variable apart from the unsuffixed one", alt("suffix-separate")),
                ("R-INT-STORE", "an integer rounds (half away from zero)", alt("int-round")),
                ("R-INT-STORE", "an integer floors (towards minus infinity)", alt("int-floor")),
-               ("R-INT-STORE", "the variable is made only after its value is checked", alt("create-after"))],
-    "DEFSNG": [("R-SNG-STORE", "a single truncates the seventh digit", alt("sng-truncate"))],
-    "DEFDBL": [("R-DBL-STORE", "with no DEF an unsuffixed name is single", alt("default-single"))],
-    "DEFSTR": [("R-STR-STORE", "the variable is made only after its value is checked", alt("create-after")),
-               ("R-STR-NAME", "an unsuffixed DEFSTR name is a variable apart from the $ one", alt("defstr-separate"))],
+               ("R-INT-STORE", "the variable is made only after its value is checked", alt("create-after")),
+               ("R-INT-ENTRY", "the type byte FOLLOWS the name -- zerobas's order", entry_alt("entry-after-name"))],
+    "DEFSNG": [("R-SNG-LIST", "a list stands only if ALL of it is good", alt("all-or-nothing")),
+               ("R-SNG-NAME", "a suffixed name is a variable apart from the unsuffixed one", alt("suffix-separate")),
+               ("R-SNG-STORE", "a single is CUT to six digits", alt("sng-truncate")),
+               ("R-SNG-ENTRY", "the type byte FOLLOWS the name -- zerobas's order", entry_alt("entry-after-name"))],
+    "DEFDBL": [("R-DBL-LIST", "a list stands only if ALL of it is good", alt("all-or-nothing")),
+               ("R-DBL-NAME", "a suffixed name is a variable apart from the unsuffixed one", alt("suffix-separate")),
+               ("R-DBL-STORE", "with no DEF an unsuffixed name is single", alt("default-single")),
+               ("R-DBL-ENTRY", "the type byte FOLLOWS the name -- zerobas's order", entry_alt("entry-after-name"))],
+    "DEFSTR": [("R-STR-LIST", "a list stands only if ALL of it is good", alt("all-or-nothing")),
+               ("R-STR-NAME", "an unsuffixed DEFSTR name is a variable apart from the $ one", alt("defstr-separate")),
+               ("R-STR-STORE", "the variable is made only after its value is checked", alt("create-after")),
+               ("R-STR-ENTRY", "the type byte FOLLOWS the name -- zerobas's order", entry_alt("entry-after-name"))],
 }
 
 
@@ -48,6 +62,12 @@ def main():
             print(f"{rid:16s} {what[:62]:62s} FALSE on {len(false):3d} of {len(sel):<3d}"
                   f"{'  e.g. ' + false[0] if false else '  <-- NO CASE AGAINST IT'}")
             rc |= not false
+        # every rule must be pinned by a control of its OWN: the check is the whole interpreter, so a rule's ✓ says
+        # only that the model agrees -- what pins its SENTENCE is a rival of that sentence's law failing on its cases
+        bare = sorted(set(rules) - {rid for rid, _, _ in ctl})
+        for rid in bare:
+            print(f"{rid:16s} 🔴 NO CONTROL OF ITS OWN")
+        rc |= bool(bare)
     return rc
 
 

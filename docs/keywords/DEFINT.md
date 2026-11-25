@@ -6,10 +6,11 @@ SPDX-License-Identifier: BSD-2-Clause
 
 # `DEFINT` — make variables integers by their first letter
 
-> **Spec:** DRAFT 1 (2026-11-25) — 38 cases measured on the Philips VG-8020 (BASIC's reference) and on
+> **Spec:** DRAFT 1 (2026-11-25) — 62 cases measured on the Philips VG-8020 (BASIC's reference) and on
 > zerobas, by typed BASIC ([`kdeftype.py`](../../probes/basic/spec/kdeftype.py), with the other three
-> `DEF` type statements' cases); every rule is executable and every recorded output is read by one. Not
-> yet reviewed ([the keyword plan](spec-plan.md)).
+> `DEF` type statements' cases); every rule is executable and every recorded output is read by one. Goldfish
+> pass 1 acted on (2026-11-25: every rule pinned by a control of its own, 33 more cases); not yet
+> re-reviewed ([the keyword plan](spec-plan.md)).
 >
 > **Status (2026-11-25):** level 3 — happy path ✓ · reasonable time ✓ · common
 > errors ✓ · RAM usage not yet proven · every error: one difference, the variable
@@ -24,8 +25,9 @@ has no type suffix, an integer — as if you had written `A%`, `B%`, `C%`.
 Its siblings do the same for the other types: [`DEFSNG`](DEFSNG.md) (single
 precision), [`DEFDBL`](DEFDBL.md) (double precision) and
 [`DEFSTR`](DEFSTR.md) (string). This page holds the rules all four share.
-zerobas behaves exactly like the Philips VG-8020 for every case we have
-measured.
+zerobas gives the Philips VG-8020's values and errors in
+every case we have measured; the variable table is laid out differently
+(see Differences).
 
 ## Syntax
 
@@ -110,11 +112,14 @@ INTERPRETER: it runs each case's own statements -- the `DEF` list, the type of a
 conversion -- and predicts the record from the laws the rules state; it holds no per-case answers.
 
 **Evidence.** One probe, [`probes/basic/spec/kdeftype.py`](../../probes/basic/spec/kdeftype.py), on the shared
-RAM-record harness. Each case is a line run from a fresh `CLEAR`, with `ON ERROR` and `RESUME NEXT` so a statement
-after an error still runs; the record keeps the first and the last error, the type byte before each named variable
-(`PEEK(VARPTR(v)-3)`; VARPTR refuses a variable that does not exist, recorded as "none") and a number the case leaves
-in `WV#`. Every probe variable carries a suffix, so a case's `DEFSTR A-Z` cannot retype the probe. Run file
-[`scratchpad/KDT_run1.out`](../../scratchpad/KDT_run1.out) (2026-11-25).
+RAM-record harness, typed as two programs: FX (the first run's cases) and FY (goldfish pass 1's). Each case is a line
+run from a fresh `CLEAR`, with `ON ERROR` and `RESUME NEXT` so a statement after an error still runs; the record keeps
+the first and the last error, the type byte before each named variable (`PEEK(VARPTR(v)-3)`; VARPTR refuses a variable
+that does not exist, recorded as "none"), a number the case leaves in `WV#` -- which starts at -77, so a value the case
+never wrote shows -- and the case's own index, set at the end of its line, so a line the machine refused when it was
+typed (the first run lost one that way) cannot pass for its predecessor. Every probe variable carries a suffix, so a
+case's `DEFSTR A-Z` cannot retype the probe. Run file [`scratchpad/KDT_run1.out`](../../scratchpad/KDT_run1.out)
+(2026-11-25).
 - **[KDT FX *i*]** (DEFINT), the case's statements:
   3: `DEFINT A:A=1.7:WV#=A`, reads A
   4: `DEFINT A:A=-1.7:WV#=A`, reads A
@@ -154,33 +159,57 @@ in `WV#`. Every probe variable carries a suffix, so a case's `DEFSTR A-Z` cannot
   55: `DEFINT A ,B:B=1.7:WV#=B`, reads B
   56: `DEFINT AB:A=1.7:WV#=A`, reads A
   57: `DEFINT A-CD:B=1.7:WV#=B`, reads B
+- **[KDT FY *i*]** (DEFINT, goldfish pass 1), the case's statements:
+  0: `DEFINT A:A=32767.9:WV#=A`, reads A
+  1: `DEFINT A:A=32768`, reads A
+  2: `DEFINT A:A=-32768.5:WV#=A`, reads A
+  3: `DEFINT A:A=-32769`, reads A
+  4: `DEFINT A:A=40000:WV#=A+.5`, reads A
+  5: `DEFINT A:A=5:A=40000:WV#=A`, reads A
+  6: `DEFINT A:AB=1.7:BA=1.7:WV#=AB+BA`
+  7: `DEFINT A:ABC=1:ABD=2:WV#=ABC`
+  8: `DEFINT A:A%=5:WV#=A`, reads A
+  11: `DEFINT A-:A=1.7:WV#=A`, reads A
+  12: `DEFINT A B:A=1.7:WV#=A`, reads A
+  13: `DEFINT A,:A=1.7:WV#=A`, reads A
+  14: `DEFINT A$:A=1.7:WV#=A`, reads A
+  15: `DEFINT A-B-C:B=1.7:WV#=B`, reads B
+  16: `DEFINT A, B:B=1.7:WV#=B`, reads B
+  17: `DEFINT A :A=1.7:WV#=A`, reads A
+  22: `DEFINT I:FOR I=1.7 TO 3:NEXT:WV#=I`, reads I
+  26: `DIM A(2):A(1)=1.7:DEFINT A:WV#=A(1)`
+  27: `DIM A(2):A(1)=1.7:DEFINT A:A(1)=3:DEFDBL A:WV#=A(1)`
+  28: `DIM A(2):DEFINT A:DIM A(2)`
+  29: `DEFINT X:DEF FNB(X)=X:WV#=FNB(1.7)`
+  30: `DEFINT A:DEF FNA(X)=X/2:WV#=FNA(3)`
+  31: `DEFINT A-Z:CLEAR:Z=1.7:WV#=Z`, reads Z
+  32: `DEFINT A:A=1/0`, reads A
 
-**Controls** ([`kdeftype_controls.py`](../../probes/basic/spec/kdeftype_controls.py)): each changes ONE law of the
-interpreter and runs over the reference's cases: “a list stands only if ALL of it is good” is FALSE on 4 of the 38 cases R-INT-LIST selects (e.g. KDT FX 52); “a reversed range is swapped, not an error” is FALSE on 2 of the 38 cases R-INT-LIST selects (e.g. KDT FX 26); “CLEAR keeps the DEF table” is FALSE on 1 of the 38 cases R-INT-LIST selects (e.g. KDT FX 21); “a variable keeps the type it was made with” is FALSE on 3 of the 3 cases R-INT-NAME selects (e.g. KDT FX 10); “an integer rounds (half away from zero)” is FALSE on 12 of the 20 cases R-INT-STORE selects (e.g. KDT FX 3); “an integer floors (towards minus infinity)” is FALSE on 1 of the 20 cases R-INT-STORE selects (e.g. KDT FX 4); “the variable is made only after its value is checked” is FALSE on 1 of the 20 cases R-INT-STORE selects (e.g. KDT FX 16).
+**Controls** ([`kdeftype_controls.py`](../../probes/basic/spec/kdeftype_controls.py)): each changes ONE law of the interpreter and runs over the reference's cases; every rule has at least one of its own: “a list stands only if ALL of it is good” is FALSE on 8 of the 62 cases R-INT-LIST selects (e.g. KDT FX 52); “a reversed range is swapped, not an error” is FALSE on 2 of the 62 cases R-INT-LIST selects (e.g. KDT FX 26); “CLEAR keeps the DEF table” is FALSE on 2 of the 62 cases R-INT-LIST selects (e.g. KDT FX 21); “a variable keeps the type it was made with” is FALSE on 3 of the 11 cases R-INT-NAME selects (e.g. KDT FX 10); “a suffixed name is a variable apart from the unsuffixed one” is FALSE on 10 of the 11 cases R-INT-NAME selects (e.g. KDT FX 10); “an integer rounds (half away from zero)” is FALSE on 16 of the 31 cases R-INT-STORE selects (e.g. KDT FX 3); “an integer floors (towards minus infinity)” is FALSE on 2 of the 31 cases R-INT-STORE selects (e.g. KDT FX 4); “the variable is made only after its value is checked” is FALSE on 5 of the 31 cases R-INT-STORE selects (e.g. KDT FX 16); “the type byte FOLLOWS the name -- zerobas's order” is FALSE on 40 of the 40 cases R-INT-ENTRY selects (e.g. KDT FX 3).
 
 <!-- RULES BEGIN -->
 <!-- GENERATED by tools/spec_rules.py from probes/basic/spec/defint_rules.py -- do not edit; `python3 tools/spec_rules.py probes/basic/spec/defint_rules.py --write` -->
 
-**4 rules; 4 hold on the reference. Of the 228 recorded outputs (each case's first and last error, the type byte before each named variable (PEEK(VARPTR(v)-3); $EE: VARPTR refused the name) and the number the case left in WV#): 228 read by a rule's check, 0 declared NOT evidence (below), 0 unread.**
+**4 rules; 4 hold on the reference. Of the 434 recorded outputs (each case's first and last error, the type byte before each named variable (PEEK(VARPTR(v)-3); $EE: VARPTR refused the name) and the number the case left in WV#): 434 read by a rule's check, 0 declared NOT evidence (below), 0 unread.**
 
 #### 1. The letters
 
 | rule | cases | reference | zerobas |
 |---|---|---|---|
-| **R-INT-LIST** `DEFINT` takes a list of items separated by `,`: a letter, or a range `X-Y` (spaces allowed around the dash and before the comma). Every letter of the list now gives an unsuffixed name that type; the last `DEF` for a letter wins, and `CLEAR` puts every letter back to double. Each item is applied as soon as it is read: a bad item later in the list, or text glued to it (`DEFINT AB`, `DEFINT A-CD`), is error 2 (Syntax error) but the items before it -- and the glued item itself -- stand. Anything else -- no item, a digit, a range without its end letter or written backwards, a suffix, a trailing comma -- is error 2 too. | 38 | ✓ | ✓ |
-| **R-INT-NAME** Only an unsuffixed name follows the table, through its FIRST letter, and the table is read at every USE of a name, not when the variable was made: after `A=7:DEFINT A`, `A` names a new integer variable (0) beside the double one, which `DEFDBL A` names again. A suffix always wins. | 3 | ✓ | ✓ |
+| **R-INT-LIST** `DEFINT` takes a list of items separated by `,`: a letter, or a range `X-Y` (spaces allowed anywhere between the parts). Every letter of the list now gives an unsuffixed name that type; the last `DEF` for a letter wins, and `CLEAR` puts every letter back to double. Each item is applied as soon as it is read: a bad item later in the list, or text glued to it (`DEFINT AB`, `DEFINT A-CD`), is error 2 (Syntax error) but the items before it -- and the glued item itself -- stand -- but a range cut off after its dash (`DEFINT A-`) applies nothing. Anything else -- no item, a digit, a range without its end letter or written backwards, a suffix, a trailing comma -- is error 2 too. | 62 | ✓ | ✓ |
+| **R-INT-NAME** Only an unsuffixed name follows the table, through its FIRST letter, and the table is read at every USE of a name, not when the variable was made: after `A=7:DEFINT A`, `A` names a new integer variable (0) beside the double one, which `DEFDBL A` names again. A suffix always wins, and a suffixed name IS the unsuffixed one of the same type (`A%` is `A` after DEFINT A). Two characters are significant (ABC is ABD). An ARRAY follows the same lookup: after DEFINT A, `A(1)` names a new integer array beside the double one, so DIM A again is no error. A DEF FN parameter and a DEF FN name follow the table too (FNA after DEFINT A returns an integer). | 11 | ✓ | ✓ |
 
 #### 2. Storing a value
 
 | rule | cases | reference | zerobas |
 |---|---|---|---|
-| **R-INT-STORE** An integer variable keeps the whole part, cut TOWARDS ZERO (1.7 -> 1, -1.7 -> -1, 2.5 -> 2); outside -32768..32767 is error 6 (Overflow). FOR, READ and array elements store the same way. An assignment makes its variable BEFORE the value is checked, so after an error the variable exists, holding its type's zero; reading a name never makes it. | 20 | ✓ | ✓ |
+| **R-INT-STORE** An integer variable keeps the whole part, cut TOWARDS ZERO (1.7 -> 1, -1.7 -> -1, 2.5 -> 2), and the range is tested AFTER the cut: 32767.9 and -32768.5 fit, 32768 and -32769 are error 6 (Overflow). FOR (its start too), READ and array elements store the same way. An assignment makes its variable BEFORE the value is worked out (`A=1/0` leaves A), so after an error a NEW variable exists holding its type's zero and an existing one keeps its value; reading a name never makes it. | 31 | ✓ | ✓ |
 
 #### 3. The variable table
 
 | rule | cases | reference | zerobas |
 |---|---|---|---|
-| **R-INT-ENTRY** The byte just before a variable's two name bytes, `PEEK(VARPTR(v)-3)`, is its type: 2 integer, 3 string, 4 single, 8 double (the published MSX variable entry: type, two name bytes, value). | 23 | ✓ | ✗ 23: KDT FX 3, KDT FX 4, KDT FX 5, KDT FX 6, KDT FX 7, KDT FX 8 … (+17) |
+| **R-INT-ENTRY** The byte just before a variable's two name bytes, `PEEK(VARPTR(v)-3)`, is its type: 2 integer, 3 string, 4 single, 8 double (the published MSX variable entry: type, two name bytes, value). | 40 | ✓ | ✗ 40: KDT FX 3, KDT FX 4, KDT FX 5, KDT FX 6, KDT FX 7, KDT FX 8 … (+34) |
 
 <!-- RULES END -->
 

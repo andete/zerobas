@@ -635,3 +635,21 @@ entered from its top), REM / the apostrophe as the rest of the line, IF ... ELSE
 screens are still predicted. [ktron_controls.py](../../probes/basic/spec/ktron_controls.py): 11 one-law rivals.
 Predictions, taken from the pages: 25 of 25 held; zerobas agrees on all 25. **Region 6 (errors) is complete at
 DRAFT 1**: DEFINT / DEFSNG / DEFDBL / DEFSTR, ERROR / ERR / ERL / RESUME, TRON / TROFF / REM.
+
+### Goldfish pass 1 over the errors region (2026-11-25), and a working rule it forced
+
+Three reviewers (scratchpad/REVIEW-m2-gkwdeft.md, -gkwerr.md, -gkwtron.md; about 140 findings). The structural finding,
+in all three: with an INTERPRETER model every rule's check is the whole model, so a rule's ✓ says only that the model
+agrees on the cases the rule selects -- not that its own SENTENCE was tested. **Working rule from here on (proposed to
+Joost, not yet ruled): every rule must have at least one one-law control that is FALSE on its own selection**; that
+control is what pins the sentence. kdeftype_controls.py enforces it (a rule with no control of its own fails the run);
+the other units follow as they are reworked. Also from the pass: a model that crashes under a rival law reads FALSE,
+never an exception (kdeftype_model, kstop_model).
+
+**DEF types reworked.** [kdeftype.py](../../probes/basic/spec/kdeftype.py): group FY (33 cases: the integer range
+edges and the cut before the range test, the value a variable holds after an error, long names and two significant
+characters, suffixed = unsuffixed, partial lists, spaces, arrays under a new type, DEF FN, CLEAR, an exact half, a FOR
+start); WV# starts at a sentinel (-77); each record carries the case's own index, set at the end of its line, so a line
+refused at typing cannot pass for its predecessor; the typed program's size is asserted. All 33 predictions held;
+zerobas agrees on every value. The model gained a real FOR loop and DEF FN; its rule sentences now state every law it
+uses; 18 controls, every rule pinned.

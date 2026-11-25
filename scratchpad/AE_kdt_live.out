@@ -1,0 +1,10 @@
+  live KDT_run1.out FX: 58 cases, 0.1 s
+  live KDT_run1.out FY: 33 cases, 0.1 s
+  live KDT_run1.out: zerobas as committed
+OK   docs/keywords/DEFINT.md: 4 rules, 1 failing on zerobas (live, 1 run file(s))
+OK   docs/keywords/DEFSNG.md: 4 rules, 1 failing on zerobas (live, 1 run file(s))
+OK   docs/keywords/DEFDBL.md: 4 rules, 1 failing on zerobas (live, 1 run file(s))
+OK   docs/keywords/DEFSTR.md: 4 rules, 1 failing on zerobas (live, 1 run file(s))
+===== spec-live: ALL PAGES AGREE =====
+refcache: 2 hit, 0 miss, 2 of the hits were ZEROBAS readings
+rc=0

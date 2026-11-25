@@ -20,7 +20,10 @@ THE RECORD (13 bytes per case, from $C001):
   0     E   the FIRST error (0: none)
   1     F   the LAST error
   2-4   T   the types of the case's (up to) three named variables
-  5-12  V   WV#'s eight bytes (ramrec.number)
+  5-12  V   WV#'s eight bytes (ramrec.number); WV# starts at -77, so a value the case never wrote reads -77
+  13    Z   the case's own index (WZ%), set at the END of its own line (after the case's statements -- a CLEAR in
+            them would wipe it): a line the machine refused when it was TYPED (the first run's `A=1E63`) leaves the
+            previous case's index here
 
 THE GROUP (case ids "KDT FX <i>"): FX, every case of DEFINT, DEFSNG, DEFDBL and DEFSTR.
 
@@ -34,9 +37,10 @@ ROOT = os.path.dirname(os.path.dirname(os.path.dirname(HERE)))
 sys.path.insert(0, HERE)
 import ramrec  # noqa: E402
 
-REC = 13
+REC = 14
 RUN = "KDT_run1.out"
-GAPS = {"FX": 4000.0}
+GAPS = {"FX": 4000.0, "FY": 4000.0}
+SENTINEL = -77                 # WV# before the case: a value the case did not write reads as this
 
 # (keyword, line n's statements, {offset: the line's statements}, the names whose type is read, what it separates)
 FX = [
@@ -106,6 +110,44 @@ FX = [
     ("DEFINT", "DEFINT A-CD:B=1.7:WV#=B", {}, "B", "is a range before a glued letter applied"),
 ]
 
+# GROUP FY -- goldfish pass 1 (scratchpad/REVIEW-m2-gkwdeft.md): the cases that separate the rules' rivals
+FY = [
+    ("DEFINT", "DEFINT A:A=32767.9:WV#=A", {}, "A", "the cut before the range test (32767.9)"),
+    ("DEFINT", "DEFINT A:A=32768", {}, "A", "32768"),
+    ("DEFINT", "DEFINT A:A=-32768.5:WV#=A", {}, "A", "the cut before the range test (-32768.5)"),
+    ("DEFINT", "DEFINT A:A=-32769", {}, "A", "-32769"),
+    ("DEFINT", "DEFINT A:A=40000:WV#=A+.5", {}, "A", "a new variable after an error holds 0"),
+    ("DEFINT", "DEFINT A:A=5:A=40000:WV#=A", {}, "A", "an existing variable after an error keeps its value"),
+    ("DEFINT", "DEFINT A:AB=1.7:BA=1.7:WV#=AB+BA", {}, "", "a longer name follows its first letter"),
+    ("DEFINT", "DEFINT A:ABC=1:ABD=2:WV#=ABC", {}, "", "two significant characters"),
+    ("DEFINT", "DEFINT A:A%=5:WV#=A", {}, "A", "A and A% are one variable after DEFINT A"),
+    ("DEFSNG", "DEFSNG A:A!=2.5:WV#=A", {}, "A", "A and A! are one variable after DEFSNG A"),
+    ("DEFDBL", "A#=1/3:WV#=A", {}, "A", "A and A# are one variable with no DEF"),
+    ("DEFINT", "DEFINT A-:A=1.7:WV#=A", {}, "A", "the start of an unfinished range"),
+    ("DEFINT", "DEFINT A B:A=1.7:WV#=A", {}, "A", "the item before a space and a letter"),
+    ("DEFINT", "DEFINT A,:A=1.7:WV#=A", {}, "A", "the item before a trailing comma"),
+    ("DEFINT", "DEFINT A$:A=1.7:WV#=A", {}, "A", "the letter before a suffix"),
+    ("DEFINT", "DEFINT A-B-C:B=1.7:WV#=B", {}, "B", "the range before a second dash"),
+    ("DEFINT", "DEFINT A, B:B=1.7:WV#=B", {}, "B", "a space after the comma"),
+    ("DEFINT", "DEFINT A :A=1.7:WV#=A", {}, "A", "a space before the colon"),
+    ("DEFSTR", 'DEFSTR A,5:A="X":WV#=LEN(A)', {}, "A", "DEFSTR: a bad item after a good one"),
+    ("DEFSNG", "DEFSNG AB:A=1/3:WV#=A", {}, "A", "DEFSNG: a glued letter"),
+    ("DEFDBL", "DEFINT A:DEFDBL A-:A=1.7:WV#=A", {}, "A", "DEFDBL: an unfinished range"),
+    ("DEFDBL", "DEFINT A-Z:DEFDBL A-C,Z-A:B=1/3:WV#=B", {}, "B", "DEFDBL: a reversed range after a good one"),
+    ("DEFINT", "DEFINT I:FOR I=1.7 TO 3:NEXT:WV#=I", {}, "I", "a FOR start is cut"),
+    ("DEFSNG", 'DEFSNG A:A="X"', {}, "A", "DEFSNG: a string into the name"),
+    ("DEFSNG", "DEFSNG A:A=9.9999999E62", {}, "A", "DEFSNG: rounding past the top of the range"),
+    ("DEFSNG", "DEFSNG A:A=1.234565:WV#=A", {}, "A", "DEFSNG: an exact half"),
+    ("DEFINT", "DIM A(2):A(1)=1.7:DEFINT A:WV#=A(1)", {}, "", "a new type names a new array"),
+    ("DEFINT", "DIM A(2):A(1)=1.7:DEFINT A:A(1)=3:DEFDBL A:WV#=A(1)", {}, "", "back to the first array"),
+    ("DEFINT", "DIM A(2):DEFINT A:DIM A(2)", {}, "", "DIM after a new type is no error"),
+    ("DEFINT", "DEFINT X:DEF FNB(X)=X:WV#=FNB(1.7)", {}, "", "a DEF FN parameter follows DEF"),
+    ("DEFINT", "DEFINT A:DEF FNA(X)=X/2:WV#=FNA(3)", {}, "", "a DEF FN name follows DEF"),
+    ("DEFINT", "DEFINT A-Z:CLEAR:Z=1.7:WV#=Z", {}, "Z", "CLEAR puts every letter back"),
+    ("DEFINT", "DEFINT A:A=1/0", {}, "A", "the variable is made before its value is worked out"),
+]
+GROUPS = {"FX": FX, "FY": FY}
+
 
 def _read(name, o):
     # T := $EE first: VARPTR of a variable that does not exist is error 5; the record line's handler (900) sets WX%
@@ -118,21 +160,24 @@ def program(group="FX"):
              "900 WX%=1:RESUME NEXT"]
     cases = []
     n = 2000
-    for i, (kw, main, subs, names, why) in enumerate(FX):
+    for i, (kw, main, subs, names, why) in enumerate(GROUPS[group]):
         base = 0xC001 + REC * i
         m = {f"L{k}": n + k for k in (5, 10, 15, 20)}
-        lines.append(f"{n} CLEAR 300,&HBF00:ON ERROR GOTO 800:WE%=0:WF%=0:WV#=0:" + main.format(**m) + f":GOTO {n + 25}")
+        lines.append(f"{n} CLEAR 300,&HBF00:ON ERROR GOTO 800:WE%=0:WF%=0:WV#={SENTINEL}:" + main.format(**m) + f":WZ%={i}" + f":GOTO {n + 25}")
         for k, t in sorted(subs.items()):
             lines.append(f"{n + k} {t.format(**m)}")
         rec = n + 25
         lines.append(f"{rec} ON ERROR GOTO 900:POKE {base},WE%:POKE {base + 1},WF%:POKE {base + 2},0:"
                      f"POKE {base + 3},0:POKE {base + 4},0:WA!=VARPTR(WV#):"
-                     f"FOR WK%=0 TO 7:POKE {base + 5}+WK%,PEEK(WA!+WK%):NEXT")
+                     f"FOR WK%=0 TO 7:POKE {base + 5}+WK%,PEEK(WA!+WK%):NEXT:POKE {base + 13},WZ%")
         for j, v in enumerate(names):
             lines.append(f"{rec + 1 + j} " + _read(v, base + 2 + j))
-        cases.append((f"KDT FX {i}", dict(kw=kw, stmt=main, subs=subs, names=names, why=why)))
+        cases.append((f"KDT {group} {i}", dict(kw=kw, stmt=main, subs=subs, names=names, why=why, idx=i)))
         n += 30
-    lines.append(f"{n} ON ERROR GOTO 0:POKE &HC001+{REC * len(FX)},&HC3:POKE &HC000,&H5A:END")
+    lines.append(f"{n} ON ERROR GOTO 0:POKE &HC001+{REC * len(cases)},&HC3:POKE &HC000,&H5A:END")
+    # the typed program must fit below HIMEM: as TEXT, 18.3 K (this probe's first FX) and 19.7 K (FX with the Z byte)
+    # ran; 27.6 K (kfor.py, unrolled) stopped both machines while it was typed. Between them, the line is drawn here.
+    assert sum(len(t) + 1 for t in lines) < 21000, "the program outgrows the RAM below &HBF00: split the group"
     assert 1 + REC * len(cases) + 1 <= 0xF380 - ramrec.BASE
     return lines + ["RUN"], cases
 
@@ -141,10 +186,14 @@ def decode(hexs, n):
     rs, why = ramrec.frame(hexs, n, REC)
     if rs is None:
         return None, why
-    return [dict(e=r[0], f=r[1], t=list(r[2:5]), v=ramrec.number(bytes(r[5:13]))) for r in rs], None
+    return [dict(e=r[0], f=r[1], t=list(r[2:5]), v=ramrec.number(bytes(r[5:13])), z=r[13]) for r in rs], None
 
 
-def load(group="FX", run=RUN):
+def load(group=None, run=RUN):
+    """the cases of one group, or (group None) of every group, in GROUPS' order"""
+    if group is None:
+        parts = [load(g, run) for g in GROUPS]
+        return {who: [c for p in parts for c in p[who]] for who in ("ref", "zb")}
     sec = ramrec.read_section(os.path.join(ROOT, "scratchpad", run), group)
     _, cases = program(group)
     out = {}
@@ -158,27 +207,29 @@ def load(group="FX", run=RUN):
 
 def main(argv):
     path = os.path.join(ROOT, "scratchpad", RUN)
-    if "--out" in argv:
-        path = os.path.join(ROOT, argv[argv.index("--out") + 1])
-    lines, cases = program()
+    groups = [g for g in GROUPS if g in argv] or list(GROUPS)
     if "--lines" in argv:
-        print("\n".join(lines))
+        print("\n".join(program(groups[0])[0]))
         return 0
-    cap = ramrec.measure(lines, len(cases), REC, GAPS["FX"])
-    bad = []
-    for who in ("ref", "zb"):
-        recs, why = decode(cap[who], len(cases))
-        if recs is None:
-            bad.append(f"{who}: {why}")
-    text = open(path).read() if os.path.exists(path) else ""
-    open(path, "w").write(ramrec.write_section(text, "FX", cap, len(cases), bad))
-    print(f"FX: {len(cases)} cases; {'; '.join(bad) or 'both complete'}", flush=True)
-    if not bad:
-        ref, zb = (decode(cap[w], len(cases))[0] for w in ("ref", "zb"))
-        for i, (a, b) in enumerate(zip(ref, zb)):
-            mark = "" if a == b else "  <<"
-            print(f"{i:2d} {cases[i][1]['why'][:48]:48s} ref e{a['e']} f{a['f']} t{a['t']} v{float(a['v']):.10g}"
-                  + (f"\n{'':51s}zb  e{b['e']} f{b['f']} t{b['t']} v{float(b['v']):.10g}{mark}" if mark else ""))
+    for group in groups:
+        lines, cases = program(group)
+        cap = ramrec.measure(lines, len(cases), REC, GAPS[group])
+        bad = []
+        for who in ("ref", "zb"):
+            recs, why = decode(cap[who], len(cases))
+            if recs is None:
+                bad.append(f"{who}: {why}")
+        text = open(path).read() if os.path.exists(path) else ""
+        open(path, "w").write(ramrec.write_section(text, group, cap, len(cases), bad))
+        print(f"{group}: {len(cases)} cases; {'; '.join(bad) or 'both complete'}", flush=True)
+        if not bad:
+            ref, zb = (decode(cap[w], len(cases))[0] for w in ("ref", "zb"))
+            for i, (a, b) in enumerate(zip(ref, zb)):
+                mark = "" if a == b else "  <<"
+                ran = "" if a["z"] == i else f"  🔴 RAN? z={a['z']}"
+                print(f"{i:2d} {cases[i][1]['why'][:48]:48s} ref e{a['e']} f{a['f']} t{a['t']} v{float(a['v']):.10g}"
+                      f"{ran}" + (f"\n{'':51s}zb  e{b['e']} f{b['f']} t{b['t']} v{float(b['v']):.10g}{mark}"
+                                  if mark else ""))
     print(f"wrote {os.path.relpath(path, ROOT)}")
     return 0
 

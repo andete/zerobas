@@ -515,7 +515,10 @@ def run(c, alt=frozenset()):
 
 
 def ok(c, alt=frozenset()):
-    return list(c.scr or []) == run(c, alt)
+    try:
+        return list(c.scr or []) == run(c, alt)
+    except (Err, Stop, ArithmeticError, TypeError, KeyError, IndexError, ValueError, AttributeError):
+        return False                 # a law that cannot even produce the screen reads FALSE (goldfish pass 1)
 
 
 def load(kw):

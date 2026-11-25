@@ -96,3 +96,7 @@
       DRAFT 1** from probes/basic/spec/ktron.py (25 screen cases, scratchpad/KTN_run1.out); 11 one-law controls;
       zerobas agrees on all 25. REGION 6 IS COMPLETE AT DRAFT 1. NEXT: region 7 (program: NEW LIST LLIST DELETE RENUM
       AUTO DATA READ RESTORE DIM ERASE CLEAR), and a goldfish pass over region 6.
+      **Goldfish pass 1 over region 6 (2026-11-25)**: scratchpad/REVIEW-m2-gkwdeft.md, -gkwerr.md, -gkwtron.md (~140
+      findings). WORKING RULE (proposed to Joost): every rule needs a one-law control FALSE on its own cases (plan §6).
+      DEF types reworked (group FY, 33 cases; the ran byte; 18 controls, every rule pinned). NEXT: ERROR / RESUME,
+      then TRON / TROFF / REM (a wrong PRINT law in the shared BASIC first), then region 7.
