@@ -68,3 +68,11 @@
       SCREEN-reading keyword probe (19 cases, scratchpad/KSP_run1.out; tools/spec_live.py's new `live_copy` hook re-runs
       it); kstop_controls.py: 7 rivals FALSE; zerobas agrees on all 19. THE FLOW REGION IS COMPLETE AT DRAFT 1. NEXT:
       the goldfish review passes over the flow pages, then region 6 (errors: ERR ERL ERROR RESUME TRON TROFF REM DEF*).
+      **Goldfish pass 1 over the flow region (2026-11-25)**: scratchpad/REVIEW-m2-gkwfor.md, -gkwgosub.md, -gkwif.md,
+      -gkwstop.md (about 150 findings; plan §6 "Goldfish pass 1 over the flow region"). ALL FOUR MODELS ARE PER-CASE
+      TABLES -- the rework (interpreter models, one-law rivals, the separating cases, frames free of the keyword under
+      test) is open, unit by unit. **Errors region, first unit (2026-11-25): DEFINT / DEFSNG / DEFDBL / DEFSTR at
+      DRAFT 1** from probes/basic/spec/kdeftype.py (58 cases, scratchpad/KDT_run1.out), the first INTERPRETER model
+      (kdeftype_model.py; kdeftype_controls.py: 11 one-law rivals FALSE). Behaviour agrees on all 58; filed
+      D-VARLAYOUT (TIER 6, the variable entry's order). NEXT: rework the flow models (FOR / NEXT first), then
+      ERROR / ERR / ERL / RESUME / ON ERROR.

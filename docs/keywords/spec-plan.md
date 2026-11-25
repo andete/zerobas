@@ -547,3 +547,30 @@ ran or after a program line changed prints `Can't CONTINUE`, a direct statement 
 after an ERROR it runs the failing statement again (predicted "Can't CONTINUE": a miss); RUN clears the variables, RUN
 n starts at n, a missing n is `Undefined line number`. **The flow region (GOTO GOSUB RETURN IF FOR NEXT END STOP CONT
 RUN) is complete at DRAFT 1.**
+
+### Goldfish pass 1 over the flow region (2026-11-25): the models were tables
+
+One fresh test-writer reviewer per probe family (scratchpad/REVIEW-m2-gkwfor.md, -gkwgosub.md, -gkwif.md,
+-gkwstop.md; about 150 findings). **The finding that matters is shared by all four: each flow model (kfor_model,
+kgosub_model, kif_model, kstop_model) is a per-case TABLE of whole records, and each control is a hand edit of one row.**
+A wrong law with right table entries passes, so "every rule is executable" held in form only. The rework, unit by
+unit: an interpreter model whose laws are the rules' sentences, rivals that change ONE law, the reviewers' separating
+cases added, and the apparatus findings fixed (a frame that uses the keyword under test -- kif's handler uses IF,
+kgosub's frame uses GOTO, kfor's readout uses FOR; spec-plan §1 forbids it). Page claims the reviewers found the
+records contradict are corrected in the same pass. Until then the four units stay DRAFT 1 with this note.
+
+### The errors region's first unit (2026-11-25): DEFINT, DEFSNG, DEFDBL, DEFSTR -- the first interpreter model
+
+[kdeftype.py](../../probes/basic/spec/kdeftype.py), 58 cases on the RAM-record harness (run file
+[scratchpad/KDT_run1.out](../../scratchpad/KDT_run1.out)); the record keeps the first and last error, the type byte
+before each named variable (`PEEK(VARPTR(v)-3)`) and a number the case leaves in `WV#`. Every probe variable carries
+a suffix, so a case's `DEFSTR A-Z` cannot retype the probe. **The model, [kdeftype_model.py](../../probes/basic/spec/kdeftype_model.py),
+is an interpreter** -- the answer to the flow region's goldfish pass: it runs each case's statements (the DEF list's
+parse, the type of a name at each use, LET's conversion) and holds no per-case answer; the 11 controls in
+[kdeftype_controls.py](../../probes/basic/spec/kdeftype_controls.py) each flip one law (all-or-nothing lists, a
+swapped reversed range, CLEAR keeping the table, a variable keeping its birth type, rounding / flooring integers,
+LET making its variable after the check, single precision truncating, a single default, a DEFSTR name apart from the
+`$` one), and each is FALSE on some case. Behaviour agrees on all 58 cases. **One difference: the variable entry's
+layout** -- the byte before the name is the type on the VG-8020 and the name's first letter on zerobas, whose entry is
+[name0][name1][type][value] (D-VARLAYOUT, TIER 6). A first-run apparatus miss: `A=1E63` is Overflow when the line is
+TYPED, so that case's line was never stored and its record repeated the previous case's -- replaced by `9.99999E62`.

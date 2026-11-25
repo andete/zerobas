@@ -10,7 +10,7 @@ SPDX-License-Identifier: BSD-2-Clause
 
 Every keyword page, the region the spec loop takes it in, and how far its page has become a SPECIFICATION: measured rules, each checked against the reference machine's cases ([the plan](spec-plan.md), [the method](../spec-method.md)). A page that is not yet a spec is a "user page": it says what the keyword does and was checked by its example, but its sentences are not yet executable rules. The reference is the Philips VG-8020; disk statements, the National CF-3300.
 
-**54 of 150 keyword pages are specs; 0 are FINAL.**
+**58 of 150 keyword pages are specs; 0 are FINAL.**
 
 | keyword | region | harness | reference | page | open (not measured) | differences (TODO items, from the page) |
 |---|---|---|---|---|---|---|
@@ -75,10 +75,10 @@ Every keyword page, the region the spec loop takes it in, and how far its page h
 | `TRON` | [errors](../concepts/errors.md) | RAM record + screen | VG-8020 | [user page](TRON.md) | — | — |
 | `TROFF` | [errors](../concepts/errors.md) | RAM record + screen | VG-8020 | [user page](TROFF.md) | — | — |
 | `REM` | [errors](../concepts/errors.md) | RAM record + screen | VG-8020 | [user page](REM.md) | — | — |
-| `DEFINT` | [errors](../concepts/errors.md) | RAM record + screen | VG-8020 | [user page](DEFINT.md) | — | — |
-| `DEFSNG` | [errors](../concepts/errors.md) | RAM record + screen | VG-8020 | [user page](DEFSNG.md) | — | — |
-| `DEFDBL` | [errors](../concepts/errors.md) | RAM record + screen | VG-8020 | [user page](DEFDBL.md) | — | — |
-| `DEFSTR` | [errors](../concepts/errors.md) | RAM record + screen | VG-8020 | [user page](DEFSTR.md) | — | — |
+| `DEFINT` | [errors](../concepts/errors.md) | RAM record + screen | VG-8020 | [DRAFT 1](DEFINT.md) | 2 | D-VARLAYOUT |
+| `DEFSNG` | [errors](../concepts/errors.md) | RAM record + screen | VG-8020 | [DRAFT 1](DEFSNG.md) | 2 | D-VARLAYOUT |
+| `DEFDBL` | [errors](../concepts/errors.md) | RAM record + screen | VG-8020 | [DRAFT 1](DEFDBL.md) | 2 | D-VARLAYOUT |
+| `DEFSTR` | [errors](../concepts/errors.md) | RAM record + screen | VG-8020 | [DRAFT 1](DEFSTR.md) | 2 | D-VARLAYOUT |
 | `NEW` | [program](../concepts/program-text.md) | screen + program text | VG-8020 | [user page](NEW.md) | — | — |
 | `LIST` | [program](../concepts/program-text.md) | screen + program text | VG-8020 | [user page](LIST.md) | — | — |
 | `LLIST` | [program](../concepts/program-text.md) | screen + program text | VG-8020 | [user page](LLIST.md) | — | — |
