@@ -10,7 +10,7 @@ SPDX-License-Identifier: BSD-2-Clause
 
 Every keyword page, the region the spec loop takes it in, and how far its page has become a SPECIFICATION: measured rules, each checked against the reference machine's cases ([the plan](spec-plan.md), [the method](../spec-method.md)). A page that is not yet a spec is a "user page": it says what the keyword does and was checked by its example, but its sentences are not yet executable rules. The reference is the Philips VG-8020; disk statements, the National CF-3300.
 
-**46 of 150 keyword pages are specs; 0 are FINAL.**
+**49 of 150 keyword pages are specs; 0 are FINAL.**
 
 | keyword | region | harness | reference | page | open (not measured) | differences (TODO items, from the page) |
 |---|---|---|---|---|---|---|
@@ -58,9 +58,9 @@ Every keyword page, the region the spec loop takes it in, and how far its page h
 | `MOD` | [operators](../concepts/numbers.md) | RAM record | VG-8020 | [DRAFT 1](MOD.md) | 6 | — |
 | `LET` | [operators](../concepts/numbers.md) | RAM record | VG-8020 | [DRAFT 1](LET.md) | 5 | — |
 | `SWAP` | [operators](../concepts/numbers.md) | RAM record | VG-8020 | [DRAFT 1](SWAP.md) | 4 | D-SWAPNEW |
-| `GOTO` | [flow](../concepts/program-text.md) | RAM record + screen | VG-8020 | [user page](GOTO.md) | — | — |
-| `GOSUB` | [flow](../concepts/program-text.md) | RAM record + screen | VG-8020 | [user page](GOSUB.md) | — | — |
-| `RETURN` | [flow](../concepts/program-text.md) | RAM record + screen | VG-8020 | [user page](RETURN.md) | — | — |
+| `GOTO` | [flow](../concepts/program-text.md) | RAM record + screen | VG-8020 | [DRAFT 1](GOTO.md) | 3 | D-GOTOSPACE |
+| `GOSUB` | [flow](../concepts/program-text.md) | RAM record + screen | VG-8020 | [DRAFT 1](GOSUB.md) | 3 | — |
+| `RETURN` | [flow](../concepts/program-text.md) | RAM record + screen | VG-8020 | [DRAFT 1](RETURN.md) | 3 | — |
 | `IF` | [flow](../concepts/program-text.md) | RAM record + screen | VG-8020 | [user page](IF.md) | — | — |
 | `FOR` | [flow](../concepts/program-text.md) | RAM record + screen | VG-8020 | [DRAFT 1](FOR.md) | 5 | D-FORINTLIM, D-FORSTEP0 |
 | `NEXT` | [flow](../concepts/program-text.md) | RAM record + screen | VG-8020 | [DRAFT 1](NEXT.md) | 3 | D-NEXTCREATE |

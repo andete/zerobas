@@ -57,3 +57,7 @@
       scratchpad/KFR_run1.out; plan §6 "The flow region's first unit"); kfor_controls.py: 8 rivals FALSE. Filed:
       D-FORFRAME (TIER 3, a failed FOR keeps its frame -- a hang under RESUME NEXT), D-FORINTLIM, D-FORSTEP0,
       D-NEXTCREATE (TIER 6). NEXT: the flow region's next unit (GOTO / GOSUB / RETURN; FOR inside GOSUB), and D-FORFRAME.
+      **Flow, second unit (2026-11-25): GOTO / GOSUB / RETURN at DRAFT 1** from probes/basic/spec/kgosub.py (30 cases,
+      scratchpad/KGS_run1.out; plan §6 "The flow region's second unit"); kgosub_controls.py: 6 rivals FALSE. Filed:
+      D-GOTOSPACE (TIER 1, `GO TO` with one space). NEXT: the flow region's last unit (IF, END, STOP, CONT, RUN), then
+      D-GOTOSPACE.

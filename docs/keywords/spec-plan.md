@@ -501,3 +501,18 @@ machines:** recording only the LAST error (RESUME NEXT runs on along the line: a
 NEXT without FOR over the FOR's own error); a guard `IF WN%>20 THEN n` before NEXT (a false IF skips the rest of the
 line, NEXT included: every loop read one run) -- now `ON -(WN%>20) GOTO n`; and a VARPTR of a variable that does not
 exist, which is error 5 on both machines and stopped zerobas's run.
+
+### The flow region's second unit (2026-11-25): GOTO, GOSUB, RETURN
+
+One probe, [kgosub.py](../../probes/basic/spec/kgosub.py): each case a block of 30 lines -- line n the statement(s)
+under test, n+5 .. n+20 its own target lines, n+25 the record -- so a case can jump, call and come back; the record
+holds the first and last error, a counter and WP%, the bits of the lines reached (WHICH lines ran, not only how many);
+30 cases; run file [scratchpad/KGS_run1.out](../../scratchpad/KGS_run1.out); model
+[kgosub_model.py](../../probes/basic/spec/kgosub_model.py), controls
+[kgosub_controls.py](../../probes/basic/spec/kgosub_controls.py) (6 rivals, each FALSE on some case). Three pages at
+DRAFT 1; every rule holds on the VG-8020 and every recorded output is read. Measured: RETURN drops every FOR frame
+opened since its GOSUB, and a NEXT inside a subroutine does not reach a FOR outside it (error 1 both); RETURN n
+continues at n; a line past 65529, or a number followed by more text, is error 8 (Undefined line number), not 2.
+Predictions scored: RETURN drops the subroutine's FOR (hit), RETURN n accepted (hit), a missing line is 8 (hit). One
+difference: [D-GOTOSPACE](../../todo/open/D-GOTOSPACE.md) (TIER 1) -- `GO TO` with exactly one space is GOTO on the
+reference (also after THEN), a Syntax error on zerobas; two spaces, `GO SUB` and `GO` alone are Syntax errors on both.
