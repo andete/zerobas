@@ -1,0 +1,10 @@
+# D-FORFRAME / D-BD2FRAGILE 2026-11-25: Chuckie Egg (tape corpus, --only Chuckie) on three builds
+## the first fix: an inline 3 B call in ex_for (code up to the $6CF3 pin shifted by 3)
+[ 1/1] RESET         8918  ref S2 L65535  zb S0 L65535  Chuckie Egg
+[ 1/1] RESET         8918  ref S2 L65535  zb S0 L65535  Chuckie Egg
+## three NOPs in its place (the same shift, no behaviour change)
+[ 1/1] RESET         8918  ref S2 L65535  zb S0 L65535  Chuckie Egg
+## the build before any fix (d988eaf2b, isolated instance)
+[ 1/1] RUNS?         6293  ref S2 L65535  zb S2 L65535  Chuckie Egg
+## the size-neutral fix (087308ebe)
+[ 1/1] RUNS?         6293  ref S2 L65535  zb S2 L65535  Chuckie Egg

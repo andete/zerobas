@@ -72,7 +72,7 @@
       was agreement for the wrong reason. Fixed as D-DRVCOUNT (below the D-DISKRUN corpus note).
       📏 2026-11-25, A SECOND TITLE OF THE CLASS, WITH A WINDOW: CHUCKIE EGG resets when the main ROM's code between
       ex_for ($6289) and the $6CF3 pin moves by 3 bytes (D-FORFRAME's first fix; three NOPs at the same spot did the
-      same, so it is the layout, not the code; tape corpus RUNS? 6293 -> RESET 8918, scratchpad/AE_ff_tape.out). Its
+      same, so it is the layout, not the code; tape corpus RUNS? 6293 -> RESET 8918, scratchpad/AE_chuckie_layout.out). Its
       machine code depends on an address in that stretch -- a BASIC ROM entry the reference has there and zerobas
       matches only by position. Next: log the page-1 addresses its RAM code calls (zerobas's own PCs) and pin the one
       inside $6289-$6CF3, as D-BASICINT2 pinned Demonia's $72D4.
