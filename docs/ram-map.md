@@ -483,14 +483,14 @@ extents the standard already fixes would be noise, not rigour.
 | `$F71A` | 2 B | `basic` | `SL_CEIL` | store_line: the ceiling a store stays below (2 B) |  |
 | `$F71C` | 16 B | `basic` | `FCH_MODES` | 16 B ($F71C..$F72B) |  |
 | `$F71C` | 16 B | `disk` | `FCH_MODES` | 16 B ($F71C..$F72B) |  |
-| `$F72C` | 2 B | `basic` | `CSR_ADDR` | VRAM address of the cell the cursor covers (2 B) |  |
+| `$F72C` | 2 B | `basic` | `GFX_DARG` | $F72C: last parsed argument (int16 LE) (2) |  |
 | `$F72E` | 2 B | `basic` | `ARL_GETBYTE` | ascii_read_lines byte-source vector (2) |  |
 | `$F730` | 2 B | `basic` | `CAS_BUFP` | base of the tape buffer in use (2 B) |  |
 | `$F732` | 1 B | `basic` | `RL_AUTO` | read_line: 1 = AUTO's polling mode (1) |  |
 | `$F733` | 1 B | `basic` | `FCH_ACTIVE` | channel live in the engine globals, 0 = none (1) |  |
 | `$F733` | 1 B | `disk` | `FCH_ACTIVE` | channel live in the engine globals, 0 = none (1) |  |
-| `$F734` | 1 B | `basic` | `CSR_CHAR` | the character it covers, put back on removal (1 B) |  |
-| `$F735` | 1 B | `basic` | `CSR_ON` | 1 while the cursor is shown, else 0 (1 B) |  |
+| `$F734` | 1 B | `basic` | `GFX_DVLEN` | $F734: that string's length (1) |  |
+| `$F735` | 1 B | `basic` | `GFX_DFN` | $F735: 1 = N (no-update) prefix pending (1) |  |
 | `$F736` | 1 B | `basic` | `CONTVALID` | 1 = a CONT resume point is valid (1) |  |
 | `$F737` |  | `basic` | `CAL_CNT` | cassette ASCII load: read position in the |  |
 | `$F738` | 1 B | `basic` | `CAL_NEEDFILL` | cassette ASCII load: whether the buffer CAL_CURHI (1 B) |  |
@@ -646,12 +646,12 @@ extents the standard already fixes would be noise, not rigour.
 | `$F975` | 128 B | `basic` | `VOICAQ` | voice-0 packet buffer (128 B) |  |
 | `$F9F5` | 128 B | `basic` | `VOICBQ` | voice-1 packet buffer (128 B) |  |
 | `$FA75` | 128 B | `basic` | `VOICCQ` | voice-2 packet buffer (128 B) |  |
-| `$FAF5` | 2 B | `basic` | `GFX_DARG` | $FAF5: last parsed argument (int16 LE) (2) |  |
-| `$FAF7` | 1 B | `basic` | `GFX_DVLEN` | $FAF7: that string's length (1) |  |
+| `$FAF5` | 2 B | `basic` | `CSR_ADDR` | VRAM address of the cell the cursor covers (2 B) |  |
+| `$FAF7` | 1 B | `basic` | `CSR_CHAR` | the character it covers, put back on removal (1 B) |  |
 | `$FAF8` |  | `basic` | `EXBRSA` |  |  |
 | `$FAF9` | 2 B | `basic` | `PU_FMTD` | -> the format's [len][ptr] descriptor (2) |  |
 | `$FAFB` | 2 B | `basic` | `GFX_DDX` | $FAFB: this command's dx (int16) (2) |  |
-| `$FAFD` | 1 B | `basic` | `GFX_DFN` | $FAFD: 1 = N (no-update) prefix pending (1) |  |
+| `$FAFD` | 1 B | `basic` | `CSR_ON` | 1 while the cursor is shown, else 0 (1 B) |  |
 | `$FAFE` | 2 B | `basic` | `RL_HL` | main -> tenant: the write cursor (LINEBUF, or AUTO's preset) (2) |  |
 | `$FB00` | 1 B | `basic` | `RL_ROW0` | the row where input began (1-based; 0 once scrolled off) (1) |  |
 | `$FB01` | 1 B | `basic` | `RL_COL0` | the column where input began, after any prompt (1) |  |

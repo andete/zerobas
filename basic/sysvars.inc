@@ -2324,7 +2324,7 @@ GFX_DREQ        equ     $FC97           ; $FC97: tenant->resident: 0 = done, 1 =
                                         ; int, 2 = resolve a string (1)
 GFX_DRESUME     equ     $FC98           ; $FC98: resident->tenant: 1 = resuming (1)
 GFX_DVAL        equ     $FC99           ; $FC99: the resolved int16, or a string body ptr (2)
-GFX_DVLEN       equ     $FAF7           ; $FAF7: that string's length (1)
+GFX_DVLEN       equ     $F734           ; $F734: that string's length (1)
 GFX_DEXP        equ     BUFTX           ; $F567: NUL-terminated copy of the text between
                                 ; D-WSZERO S14d: BUF, statement-exclusive (DRAW) (was $ED67)
                                         ; `=`/`X` and its `;`, so the resident's eval runs
@@ -2333,9 +2333,9 @@ GFX_DEXP        equ     BUFTX           ; $F567: NUL-terminated copy of the text
 GFX_DEXP_CAP    equ     24
 GFX_DFB         equ     $FCBB   ; $FCBB: 1 = B (blank move) prefix pending (1)
                                   ; D-WSZERO S8: the reference's DRWFLG (was GFX_DEXP + GFX_DEXP_CAP)
-GFX_DFN         equ     $FAFD     ; $FAFD: 1 = N (no-update) prefix pending (1)
+GFX_DFN         equ     $F735     ; $F735: 1 = N (no-update) prefix pending (1)
                                   ; D-WSZERO S8: (pinned: was GFX_DFB + 1)
-GFX_DARG        equ     $FAF5           ; $FAF5: last parsed argument (int16 LE) (2)
+GFX_DARG        equ     $F72C           ; $F72C: last parsed argument (int16 LE) (2)
 GFX_DDX         equ     $FAFB           ; $FAFB: this command's dx (int16) (2)
 GFX_DDY         equ     $F7BA           ; $F7BA: ...dy (2)
 GFX_DTX         equ     $F410           ; $F410: move target X (2)
@@ -4675,11 +4675,14 @@ SL_CEIL         equ     $F71A   ; store_line: the ceiling a store stays below (2
                                 ; reads 0 of 40 bytes changed. A map is a reading;
                                 ; that is a measurement.
 ; D-CURSORBLOCK (2026-09-26): the line editor's block cursor (sub/cursor.asm).
-CSR_ADDR        equ     $F72C   ; VRAM address of the cell the cursor covers (2 B)
+; 🔁 D-BOOTCELLS step 3 (2026-11-25): the cursor record is live at the prompt (CSR_ON 1),
+; so it left PARM1 for the MSX2-only RS2IQ bytes $FAF5-$FAF7 / $FAFD (DPPAGE / ACPAGE /
+; AVCSAV / NORUSE on an MSX2; constant 0 on the VG-8020); EXBRSA $FAF8 stays 0.
+CSR_ADDR        equ     $FAF5   ; VRAM address of the cell the cursor covers (2 B)
                                 ; D-WSZERO S10: PARM1's unattributed tail (was $EEEA)
-CSR_CHAR        equ     $F734   ; the character it covers, put back on removal (1 B)
+CSR_CHAR        equ     $FAF7   ; the character it covers, put back on removal (1 B)
                                 ; D-WSZERO S10: PARM1's unattributed tail (was $EEEC)
-CSR_ON          equ     $F735   ; 1 while the cursor is shown, else 0 (1 B)
+CSR_ON          equ     $FAFD   ; 1 while the cursor is shown, else 0 (1 B)
                                 ; D-WSZERO S10: PARM1's unattributed tail (was $EEED)
 ; FREE-RAM $EDA9..$EDAB  the rest of the retired GOSUB_STK (PU_DIG took $E05A..$E079, D-DETOKBUF S3; CSR_* $E07A..$E07D, D-CURSORBLOCK) [D-RAMSHIFT: was $E07E..$E080]
 ; D-COPY (2026-09-11): COPY "src" TO "dst" keeps the SOURCE name and what fat_find
