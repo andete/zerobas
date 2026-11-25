@@ -1,4 +1,4 @@
-- [ ] **D-DOSSESSION — MSX-DOS COMMANDS AS TYPED SESSIONS ON THE CF-3300 AND ZEROBAS: THE SCREEN AFTER EACH COMMAND, THE DISK AFTER THE SESSION**
+- [x] **D-DOSSESSION — MSX-DOS COMMANDS AS TYPED SESSIONS ON THE CF-3300 AND ZEROBAS: THE SCREEN AFTER EACH COMMAND, THE DISK AFTER THE SESSION**
       🎚️ TIER 1 — Joost 2026-11-23, the order "3, 2, 1": this first, then D-MSX2SPEC, then D-KWSPEC.
       🤖 **AUTONOMOUS** — Not spec pages per command: COMMAND.COM / MSXDOS.SYS are Microsoft's, loaded from the user's
       disk (docs/concepts/msx-dos.md); zerobas supplies the disk ROM, the BDOS and the boot. An integration suite instead:
@@ -30,3 +30,5 @@
       every agreeing row prints its last two screen lines as a witness (the date taken, "A>REM A REMARK", "Bad command
       or file name"). D-DOSSESSION's own scope is done; what is left is the disk pages' rules for BASIC / FORMAT
       (D-DISKCONTRACT).
+      ✅ CLOSED 2026-11-25: the session (21 rows + the disk) gated as dossession-acceptance; FORMAT at A> is
+      fmtdos-acceptance's; the disk-page rules for BASIC / FORMAT continue under D-DISKCONTRACT.
