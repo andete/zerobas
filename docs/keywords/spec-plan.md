@@ -614,3 +614,15 @@ LET making its variable after the check, single precision truncating, a single d
 layout** -- the byte before the name is the type on the VG-8020 and the name's first letter on zerobas, whose entry is
 [name0][name1][type][value] (D-VARLAYOUT, TIER 6). A first-run apparatus miss: `A=1E63` is Overflow when the line is
 TYPED, so that case's line was never stored and its record repeated the previous case's -- replaced by `9.99999E62`.
+
+### The errors region's second unit (2026-11-25): ERROR, ERR, ERL, RESUME (and ON ERROR GOTO's handler)
+
+[kerr.py](../../probes/basic/spec/kerr.py), 40 SCREEN cases (run file [scratchpad/KER_run1.out](../../scratchpad/KER_run1.out)):
+a probe that records into RAM catches errors with ON ERROR / RESUME NEXT, the keywords under test, so this one reads
+the screen. The model is kstop's small BASIC, extended into ONE interpreter for every screen-reading keyword probe --
+ERR / ERL on every error, a handler entered from the prompt too, No RESUME, ON ERROR GOTO 0 re-raising, RESUME's forms;
+kstop's 53 screens still predicted. [kerr_controls.py](../../probes/basic/spec/kerr_controls.py): 13 one-law rivals.
+Predictions from the pages: 37 of 38 held; the miss -- `ON ERROR GOTO A` is GOTO 0 on the VG-8020, not the Syntax
+error RESUME.md claimed (that was zerobas's behaviour). A modelling fork (KST FY 3: after a handler ENDed, a typed
+RESUME is not trapped) was decided by two added cases: RESUME's own error is never trapped; END does not disarm.
+zerobas: two differences -- D-RESUMEMISS (TIER 3: `RESUME 99` to a missing line HANGS) and D-ONERRVAR (TIER 6).

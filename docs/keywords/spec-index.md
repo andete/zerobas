@@ -10,7 +10,7 @@ SPDX-License-Identifier: BSD-2-Clause
 
 Every keyword page, the region the spec loop takes it in, and how far its page has become a SPECIFICATION: measured rules, each checked against the reference machine's cases ([the plan](spec-plan.md), [the method](../spec-method.md)). A page that is not yet a spec is a "user page": it says what the keyword does and was checked by its example, but its sentences are not yet executable rules. The reference is the Philips VG-8020; disk statements, the National CF-3300.
 
-**58 of 150 keyword pages are specs; 0 are FINAL.**
+**62 of 150 keyword pages are specs; 0 are FINAL.**
 
 | keyword | region | harness | reference | page | open (not measured) | differences (TODO items, from the page) |
 |---|---|---|---|---|---|---|
@@ -68,10 +68,10 @@ Every keyword page, the region the spec loop takes it in, and how far its page h
 | `STOP` | [flow](../concepts/program-text.md) | RAM record + screen | VG-8020 | [DRAFT 1](STOP.md) | 6 | — |
 | `CONT` | [flow](../concepts/program-text.md) | RAM record + screen | VG-8020 | [DRAFT 1](CONT.md) | 19 | D-DELNOLINE, D-RUNCONT |
 | `RUN` | [flow](../concepts/program-text.md) | RAM record + screen | VG-8020 | [DRAFT 1](RUN.md) | 7 | — |
-| `ERR` | [errors](../concepts/errors.md) | RAM record + screen | VG-8020 | [user page](ERR.md) | — | — |
-| `ERL` | [errors](../concepts/errors.md) | RAM record + screen | VG-8020 | [user page](ERL.md) | — | — |
-| `ERROR` | [errors](../concepts/errors.md) | RAM record + screen | VG-8020 | [user page](ERROR.md) | — | — |
-| `RESUME` | [errors](../concepts/errors.md) | RAM record + screen | VG-8020 | [user page](RESUME.md) | — | — |
+| `ERR` | [errors](../concepts/errors.md) | RAM record + screen | VG-8020 | [DRAFT 1](ERR.md) | 2 | — |
+| `ERL` | [errors](../concepts/errors.md) | RAM record + screen | VG-8020 | [DRAFT 1](ERL.md) | 2 | — |
+| `ERROR` | [errors](../concepts/errors.md) | RAM record + screen | VG-8020 | [DRAFT 1](ERROR.md) | 2 | — |
+| `RESUME` | [errors](../concepts/errors.md) | RAM record + screen | VG-8020 | [DRAFT 1](RESUME.md) | 2 | D-RESUMEMISS, D-ONERRVAR |
 | `TRON` | [errors](../concepts/errors.md) | RAM record + screen | VG-8020 | [user page](TRON.md) | — | — |
 | `TROFF` | [errors](../concepts/errors.md) | RAM record + screen | VG-8020 | [user page](TROFF.md) | — | — |
 | `REM` | [errors](../concepts/errors.md) | RAM record + screen | VG-8020 | [user page](REM.md) | — | — |

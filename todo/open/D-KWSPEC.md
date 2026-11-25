@@ -88,3 +88,7 @@
       group FY (34 cases). Filed D-ENDCLOSE, D-DELNOLINE, D-RUNCONT (TIER 6). GOLDFISH PASS 1 OVER THE FLOW REGION IS
       ACTED ON IN FULL. NEXT: region 6's remaining units -- ERROR / ERR / ERL / RESUME / ON ERROR, then TRON / TROFF /
       REM.
+      **Errors region, second unit (2026-11-25): ERROR / ERR / ERL / RESUME at DRAFT 1** from probes/basic/spec/kerr.py
+      (40 screen cases, scratchpad/KER_run1.out); kstop_model.py's small BASIC is now the one interpreter for screen
+      probes; kerr_controls.py: 13 one-law rivals. Filed D-RESUMEMISS (TIER 3, a hang) and D-ONERRVAR (TIER 6). NEXT:
+      D-RESUMEMISS (tier 3 ranks first), then TRON / TROFF / REM.

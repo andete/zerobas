@@ -35,9 +35,15 @@ from spec_rules import Rule  # noqa: E402
 FIELDS = ["scr"]
 OUTPUTS = {"FX": FIELDS, "FY": FIELDS}
 OUTPUTS_DESC = "each case's normalised screen (prompts as <prompt>, the echo of the typed lines, the output, the messages)"
-MSG = {1: "NEXT without FOR", 2: "Syntax error", 3: "RETURN without GOSUB", 8: "Undefined line number",
-       10: "Redimensioned array", 11: "Division by zero", 13: "Type mismatch", 17: "Can't CONTINUE",
-       20: "RESUME without error", 59: "File not OPEN"}
+MSG = {1: "NEXT without FOR", 2: "Syntax error", 3: "RETURN without GOSUB", 5: "Illegal function call",
+       6: "Overflow", 7: "Out of memory", 8: "Undefined line number", 10: "Redimensioned array",
+       11: "Division by zero", 13: "Type mismatch", 17: "Can't CONTINUE", 21: "No RESUME",
+       22: "RESUME without error", 24: "Missing operand", 59: "File not OPEN"}
+
+
+def msg(n):
+    """the message of error n; a code with no message of its own is `Unprintable error`"""
+    return MSG.get(n, "Unprintable error")
 WIDTH = 37
 
 
@@ -72,6 +78,10 @@ class Basic:
         self.cur = ""
         self.cont = None              # None: nothing to continue; "END": ran off the end; (line, index)
         self.files = set()
+        self.err, self.erl = 0, 0     # ERR / ERL: 0 before any error; ERL 65535 for an error typed at the prompt
+        self.direct = []              # the statements of the line being typed: points ("D", i)
+        self.last = None              # the last program line that ran
+        self.disarmed = False
         self.reset()
 
     def reset(self):
@@ -116,9 +126,17 @@ class Basic:
             return a / b
         if re.fullmatch(r"-?\d+", s):
             return int(s)
+        if re.fullmatch(r"-?\d*\.\d+", s):
+            return float(s)
+        if s == "ERR":
+            return self.err
+        if s == "ERL":
+            return self.erl
         if re.fullmatch(r"[A-Z]\w*\$", s):
             return self.vars.get(s, "")
-        return self.vars.get(s, 0)
+        if re.fullmatch(r"[A-Z]\w*", s):
+            return self.vars.get(s, 0)
+        raise Err(2)                                     # a form this BASIC does not read (`ERR 1`)
 
     @staticmethod
     def fmt(v):
@@ -139,6 +157,12 @@ class Basic:
             raise Err(8)
         return (n, 0)
 
+    def fetch(self, pt):
+        line, i = pt
+        if line == "D":
+            return self.direct[i] if i < len(self.direct) else None
+        return split(self.prog[line])[i]
+
     def next_point(self, pt):
         line, i = pt
         if line == "D":                                  # a statement typed at the prompt
@@ -153,15 +177,35 @@ class Basic:
         while pt != "END" and budget:
             budget -= 1
             line, i = pt
-            st = split(self.prog[line])[i]
+            st = self.fetch(pt)
+            if st is None:                               # the end of a typed line
+                return
+            if line != "D":
+                self.last = line
             try:
                 to = self.stmt(st, pt)
             except Err as e:
-                if self.onerr is not None and self.handler is None:
+                self.err, self.erl = e.n, (65535 if line == "D" else line)
+                if line == "D" and "typed-erl-zero" in self.alt:
+                    self.erl = 0
+                trap = e.n != 22 or "resume-error-trapped" in self.alt   # RESUME's own error is never trapped
+                if "end-disarms-handler" in self.alt and self.disarmed:
+                    trap = False
+                if line == "D" and "typed-errors-untrapped" in self.alt:
+                    trap = False
+                if self.handler is not None and "handler-traps-own" in self.alt and self.onerr is not None:
+                    pt = (self.onerr, 0)
+                    continue
+                if self.onerr is not None and self.handler is None and trap:
                     self.handler = pt
                     pt = (self.onerr, 0)
                     continue
-                self.message(f"{MSG[e.n]} in {line}")
+                if line == "D":
+                    self.message(msg(e.n))
+                    if "direct-error-drops-cont" in self.alt:
+                        self.cont = None
+                    return
+                self.message(f"{msg(e.n)} in {line}")
                 self.cont = pt                           # CONT runs the failing statement again
                 if "cont-after-error-cant" in self.alt:
                     self.cont = None
@@ -170,7 +214,13 @@ class Basic:
                 return
             except Stop:
                 return
+            if line == "D" and "direct-blocks-cont" in self.alt and not st.startswith("CONT"):
+                self.cont = None
             pt = self.next_point(pt) if to is None else to
+        if pt == "END" and self.handler is not None:     # a handler ran off the end of the program
+            self.err, self.erl = 21, self.last
+            self.message(f"{msg(21)} in {self.last}")
+            return
         if pt == "END":
             self.newline()
             self.cont = "END" if "run-end-cant" not in self.alt else None
@@ -202,6 +252,7 @@ class Basic:
             self.newline()
             if "end-keeps-files" not in self.alt:
                 self.files.clear()
+            self.disarmed = self.handler is not None     # (the rival law: END in a handler disarms ON ERROR)
             self.handler = None
             self.cont = self.next_point(pt)
             if "cont-after-end-cant" in self.alt:
@@ -229,7 +280,7 @@ class Basic:
             if self.cont == "END":
                 raise Stop
             if self.cont[0] == "REPRINT":
-                self.message(f"{MSG[self.cont[1]]} in {self.cont[2]}")
+                self.message(f"{msg(self.cont[1])} in {self.cont[2]}")
                 raise Stop
             pt2, self.cont = self.cont, None
             self.run_from(pt2)
@@ -285,13 +336,53 @@ class Basic:
             self.stack.pop(f[-1])
             return None
         if s.startswith("ON ERROR GOTO"):
-            self.onerr = int(s.split()[-1])
+            arg = s[13:].strip()
+            if arg and not arg.isdigit() and "onerr-var-syntax" in self.alt:
+                raise Err(2)
+            n = int(arg) if arg.isdigit() else 0         # no number (nothing, a variable) is GOTO 0
+            if n == 0:
+                self.onerr = None
+                if self.handler is not None and "onerr0-just-disarms" not in self.alt:
+                    self.message(f"{msg(self.err)} in {self.erl}" if self.erl != 65535 else msg(self.err))
+                    raise Stop
+                return None
+            if n not in self.prog and "onerr-missing-late" not in self.alt:
+                raise Err(8)
+            self.onerr = n
             return None
         if s.startswith("RESUME"):
             if self.handler is None:
-                raise Err(20)
-            at, self.handler = self.handler, None
-            return self.next_point(at)
+                raise Err(22)
+            arg = s[6:].strip()
+            if arg in ("", "0"):
+                to = self.handler                        # the failing statement again
+            elif arg == "NEXT":
+                to = self.next_point(self.handler)
+                if "resume-next-next-line" in self.alt:
+                    to = self.next_line(self.handler)
+            else:
+                if "resume-missing-silent" in self.alt and int(arg) not in self.prog:
+                    raise Stop
+                to = self.first(int(arg))                # a missing line: 8, the handler still active
+            self.handler = None
+            if "resume-keeps-err" not in self.alt:
+                self.err = 0
+            return to
+        if s.startswith("ERROR"):
+            arg = s[5:].strip()
+            if not arg:
+                raise Err(24)
+            if "," in arg:
+                raise Err(2)
+            v = self.value(arg)
+            if isinstance(v, str):
+                raise Err(13)
+            v = round(v) if "error-code-rounds" in self.alt else int(v)
+            if not -32768 <= v <= 65535:
+                raise Err(6)
+            if not 1 <= v <= 255:
+                raise Err(5)
+            raise Err(v)
         if s.startswith("DIM "):
             name = s[4:].split("(")[0]
             if name in self.arrays:
@@ -346,7 +437,7 @@ class Basic:
         if m and not t.startswith("RUN"):
             n, text = int(m.group(1)), m.group(2).strip()
             if not text and n not in self.prog:
-                self.message(MSG[8])                     # a delete of a line that is not there: a direct error
+                self.message(msg(8))                     # a delete of a line that is not there: a direct error
                 self.screen.append("<prompt>")
                 if "delete-missing-drops-cont" in self.alt:
                     self.cont = None
@@ -360,28 +451,8 @@ class Basic:
             if "edit-keeps-cont" not in self.alt:
                 self.cont = None
             return
-        sts = split(t)
-        i = 0
-        while i < len(sts):
-            st = sts[i]
-            try:
-                to = self.stmt(st, ("D", i))
-                if to is not None and to[0] == "D":       # a jump inside the typed line (a direct FOR / NEXT)
-                    i = to[1]
-                    continue
-                if to is not None and to != "END":
-                    self.run_from(to)
-                    break
-            except Err as e:
-                self.message(MSG[e.n])
-                if "direct-error-drops-cont" in self.alt:
-                    self.cont = None
-                break
-            except Stop:
-                break
-            if "direct-blocks-cont" in self.alt and not st.startswith("CONT"):
-                self.cont = None
-            i += 1
+        self.direct = split(t)
+        self.run_from(("D", 0))
         self.newline()
         self.screen.append("<prompt>")
 

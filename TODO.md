@@ -2825,6 +2825,8 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
 - [ ] **END CLOSES OPEN FILES ON THE VG-8020; ZEROBAS LEAVES THEM OPEN (D-ENDCLOSE, found 2026-11-25 by D-KWSPEC's...** -> [D-ENDCLOSE](todo/open/D-ENDCLOSE.md) <!-- item:open/D-ENDCLOSE -->
 - [ ] **DELETING A LINE THAT DOES NOT EXIST AFTER A STOP: ZEROBAS SAYS `Undefined line number in 10`, AND THE NEXT...** -> [D-DELNOLINE](todo/open/D-DELNOLINE.md) <!-- item:open/D-DELNOLINE -->
 - [ ] **`RUN 15` TO A MISSING LINE KEEPS THE CONT POINT ON ZEROBAS; THE VG-8020 DROPS IT FIRST (D-RUNCONT, found 20...** -> [D-RUNCONT](todo/open/D-RUNCONT.md) <!-- item:open/D-RUNCONT -->
+- [ ] **`RESUME 99` TO A MISSING LINE HANGS ZEROBAS (NO PROMPT EVER COMES BACK); THE VG-8020 STOPS WITH `Undefined...** -> [D-RESUMEMISS](todo/open/D-RESUMEMISS.md) <!-- item:open/D-RESUMEMISS -->
+- [ ] **`ON ERROR GOTO A` IS `ON ERROR GOTO 0` ON THE VG-8020; ZEROBAS SAYS SYNTAX ERROR (D-ONERRVAR, found 2026-11...** -> [D-ONERRVAR](todo/open/D-ONERRVAR.md) <!-- item:open/D-ONERRVAR -->
 - [ ] **A VARIABLE'S ENTRY IS [name0][name1][type][value] ON ZEROBAS, [type][name0][name1][value] ON THE VG-8020 (D...** -> [D-VARLAYOUT](todo/open/D-VARLAYOUT.md) <!-- item:open/D-VARLAYOUT -->
 - [x] **`GO TO 100` (ONE SPACE) IS GOTO ON THE VG-8020 AND A SYNTAX ERROR ON ZEROBAS (D-GOTOSPACE, found 2026-11-25...** -> [D-GOTOSPACE](todo/done/D-GOTOSPACE.md) <!-- item:done/D-GOTOSPACE -->
 - [ ] **`VAL`'S DECIMAL EXPONENT AT ITS 8-BIT EDGES: THE VG-8020 WRAPS PAST 255 DIGITS AND KEEPS THE DIGITS OF A ZE...** -> [D-VALEXP](todo/open/D-VALEXP.md) <!-- item:open/D-VALEXP -->
