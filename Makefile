@@ -2842,6 +2842,19 @@ dosmode-acceptance: repack-machine
 dossession-acceptance: repack-machine
 	python3 probes/disk/disk_probe_dossession.py
 
+# --- ramatlas-acceptance: the high-RAM atlas still describes this build (D-RAMATLAS)
+# docs/ram-atlas.md: who writes each range of $D000-$FFFF, at which moment (boot,
+# INIT, H.RUNC, MSX-DOS, BASIC), on the VG-8020, the VG-8020 + HBD-F1, the
+# CF-3300 and zerobas (addresses and page@slot only -- clean room). Re-measures
+# zerobas's three runs (~10 s) and fails when they differ from the stored JSON or
+# the page is stale. `make ram-atlas` re-measures everything and renders.
+ramatlas-acceptance: repack-machine
+	python3 -u tools/ram_atlas.py --check
+
+ram-atlas: repack-machine
+	python3 -u tools/ram_atlas.py --run
+	python3 tools/ram_atlas.py --render
+
 # --- bootkeys-acceptance: SHIFT held at power-on keeps Disk BASIC out (D-BOOTKEYS)
 # The key is pressed from power-on in a Tcl prologue; DSKF(0) answers or is ERR 5.
 bootkeys-acceptance: repack-machine $(DISK_TEST_DSK)

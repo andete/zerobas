@@ -118,3 +118,9 @@
       zerobas's disk cartridge boots MSX-DOS 1.03 (AE_hs_vg8020.out).
       ➡️ NEXT: (a) second part -- the claim at each moment against what zerobas uses there (H.RUNC's $DE77-$F194:
       the buffers, the layout rebuild's cells, the DOS block), then (c).
+      STEP 4 (a) SECOND PART, from the high RAM atlas (docs/ram-atlas.md, D-RAMATLAS, 2026-11-25): in the H.RUNC claim
+      zerobas writes the slot-switching code ($DDAE-$DF85) at H.RUNC in both scenarios and keeps Disk BASIC's data
+      from $E8AD up, so the DOS block and Disk BASIC's data are ALREADY on separate addresses -- (c)'s overlap does
+      not exist; what is left of (c) is only HIMEM under MSX-DOS ($DE77 here, $DF93 on the CF-3300). $DF86-$E8AC is
+      claimed and never written. GETWRK_AREA ($DD0E) is never written, where the references write that band -- (a)
+      continues there.

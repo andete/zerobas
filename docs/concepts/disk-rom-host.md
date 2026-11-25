@@ -165,6 +165,13 @@ none of its own state in the RAM below HIMEM a disk ROM may claim -- zerobas's m
 $F380 and above ([ram_inventory_f380.md](../../scratchpad/ram_inventory_f380.md)); what sits below is its own disk
 ROM's.
 
+The same question for every machine at once -- the VG-8020, the VG-8020 + Sony HBD-F1, the CF-3300 and zerobas --
+split by moment (boot, INIT, H.RUNC, MSX-DOS, BASIC): the generated [high RAM atlas](../ram-atlas.md)
+(`make ramatlas-acceptance`). Two things it showed first (2026-11-25): on both references the whole of $F195-$F37F,
+the RAM INIT claims, is the disk ROM's own work area; and zerobas claims $DF86-$E8AC at H.RUNC without writing it,
+where the references leave most of that band unwritten too -- room to arrange its own state inside the claim
+(D-DISKROMHOST step 4).
+
 ## Open (not measured or not met)
 
 - The date format of the start-up prompt: D-M-Y on zerobas, M-D-Y on the VG-8020 -- the disk ROM reads it from the

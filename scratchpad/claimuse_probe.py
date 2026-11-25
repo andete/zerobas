@@ -30,7 +30,7 @@ EXT = os.environ.get("CLAIMUSE_EXT")          # e.g. Sony_HBD-F1 on Philips_VG_8
 # value is read (this range holds the reference's RAM-resident code). Writes before 1.0 s (the main ROM clearing its
 # work area at start-up) are left out, so what remains is the disk ROM's and MSX-DOS's own use.
 REF = not MACHINE.startswith("C-BIOS_")
-LO, HI = 0xF195, 0xF37F
+LO, HI = (int(x, 16) for x in os.environ.get("CLAIMUSE_RANGE", "F195-F37F").split("-"))   # e.g. DD00-F194
 RUNS = {
     "dos": (os.path.expanduser("~/Documents/msx/msx/disks/test.dsk"), 70,
             [(16, r"\r"), (21, r"DIR MSXDOS.SYS\r"), (26, r"COPY MSXDOS.SYS X.SYS\r"), (32, r"BASIC\r"),

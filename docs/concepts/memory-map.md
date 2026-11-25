@@ -6,16 +6,18 @@ SPDX-License-Identifier: BSD-2-Clause
 
 # The memory map — where BASIC keeps things in RAM
 
-> **Status (2026-10-16):** program, variables and arrays sit at the Philips
-> VG-8020's addresses and cost the same bytes. Since 2026-10-16 a diskless
-> machine starts with `HIMEM` `&HF380`, as the VG-8020 does, and 14 bytes MORE
-> `FRE(0)` (28829 against 28815,
-> [`wszero_s15_fremem.out`](../../scratchpad/wszero_s15_fremem.out); it was 1658 bytes
-> less that morning, 4978 less on 2026-10-13); the disk build is 531 bytes
-> *ahead* of the National CF-3300
-> ([`strscrbuf_disk.out`](../../scratchpad/strscrbuf_disk.out)). Open, TIER 4:
-> the 14 bytes (D-FREPLUS14), D-DIMRESERVE, the `GOSUB` frame. CTRL held at
-> power-on gives the CF-3300's `HIMEM` (`&HE48D`) and free RAM (since 2026-10-27).
+> **Status (2026-11-25):** program, variables and arrays sit at the Philips
+> VG-8020's addresses and cost the same bytes. A diskless machine starts with
+> `HIMEM` `&HF380`, `FRE(0)` 28815 and `FRE("")` 200, as the VG-8020 does, and
+> since D-BOOTCELLS (2026-11-24) the published layout cells -- MEMSIZ, STKTOP,
+> FRETOP, FILTAB, NULBUF, SAVSTK -- follow MS-BASIC's rule through boot, `CLEAR`
+> and `MAXFILES` ([D-BOOTCELLS](../../todo/open/D-BOOTCELLS.md)). The disk build
+> starts with `HIMEM` `&HDE77`, `FRE(0)` 23415 and `FRE("")` 200, as the National
+> CF-3300 does ([`AE_diskhost_fre.out`](../../scratchpad/AE_diskhost_fre.out)); its
+> disk ROM claims that RAM in the CF-3300's steps (INIT, then H.RUNC). Who writes
+> which part of high RAM, at which moment, on each machine: the generated
+> [high RAM atlas](../ram-atlas.md). CTRL held at power-on gives the CF-3300's
+> `HIMEM` (`&HE48D`) and free RAM (since 2026-10-27).
 > Speed is deliberately left out of these docs until on-par speed is
 > established for every keyword.
 
@@ -383,10 +385,13 @@ arguments in [basic/clear.asm](../../basic/clear.asm).
   [variables.md](variables.md), [program-text.md](program-text.md),
   [files-and-devices.md](files-and-devices.md), [msx-dos.md](msx-dos.md).
 - More keywords: [`GOSUB`](../keywords/GOSUB.md).
+- Generated maps: [docs/ram-map.md](../ram-map.md) (zerobas's declared cells) and [docs/ram-atlas.md](../ram-atlas.md)
+  (who writes each range of high RAM, at which moment, on each machine -- measured).
 
 ## Tests that cover it
 
 - `make ram-map-check` — the generated map matches the source.
+- `make ramatlas-acceptance` — the high RAM atlas still describes this build.
 - `make ramfree-acceptance`, `make txtceil-acceptance`, `make ctllim-acceptance`
   — zerobas's own map: declared spans really hold what they claim, the program
   stops at the string space, the stack stops at the arrays.
