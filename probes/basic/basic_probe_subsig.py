@@ -4,8 +4,13 @@
 r"""D-SUBSIG: zerobas's sub ROM carries its own "ZB" marker (Joost, 2026-10-11),
 not the MSX2 SUB-ROM's "CD", and boot no longer writes EXBRSA ($FAF8).
 
-  faf8   PEEK(&HFAF8) / PEEK(&HFAF9) after boot -- both MSX1 references leave
-         them 0 (scratchpad/subsig_probe.out); ours wrote the sub-ROM slot, 139
+  faf8   PEEK(&HFAF8) after boot -- both MSX1 references leave it 0
+         (scratchpad/subsig_probe.out); ours wrote the sub-ROM slot, 139.
+         $FAF9 is no longer read (D-BOOTCELLS step 3, Joost 2026-11-25): zerobas
+         now keeps POOLSIZE in $FAF9-$FAFA, bytes MSX1 leaves undefined (MSX2's
+         CHRCNT / ROMA; the head of the RS-232C queue on an MSX1), so it reads 200
+         where both references read 0 -- a RULED, known difference, filed to be
+         removed later (D-OWNCELLS). EXBRSA itself is this probe's subject.
   p1     SQR(16): a PAGE-1 sub-ROM tenant (fp_sqrt) -- found and callable
   p0     an array store and read: the PAGE-0 array engine (ary_engine)
 
@@ -25,7 +30,7 @@ PAIRS = (("VG-8020", "Philips_VG_8020",
          ("CF-3300", "National_CF-3300",
           os.environ.get("ZEROBAS_MACHINE", "C-BIOS_MSX1_EU_REPACK_DISK")))
 CASES = {
-    "faf8": 'PRINT"[R";PEEK(&HFAF8);PEEK(&HFAF9);"]"',
+    "faf8": 'PRINT"[R";PEEK(&HFAF8);"]"',
     "p1": 'PRINT"[R";SQR(16);"]"',
     "p0": 'DIM Q(5):Q(3)=7:PRINT"[R";Q(3);"]"',
 }
