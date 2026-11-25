@@ -61,3 +61,6 @@
       scratchpad/KGS_run1.out; plan §6 "The flow region's second unit"); kgosub_controls.py: 6 rivals FALSE. Filed:
       D-GOTOSPACE (TIER 1, `GO TO` with one space). NEXT: the flow region's last unit (IF, END, STOP, CONT, RUN), then
       D-GOTOSPACE.
+      **Flow, third unit (2026-11-25): IF at DRAFT 1** from probes/basic/spec/kif.py (32 cases, scratchpad/KIF_run1.out;
+      plan §6 "The flow region's third unit"); kif_controls.py: 5 rivals FALSE; zerobas agrees on every case. NEXT: END /
+      STOP / CONT / RUN (a screen-based harness: they stop or restart the recording program).

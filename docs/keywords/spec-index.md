@@ -10,7 +10,7 @@ SPDX-License-Identifier: BSD-2-Clause
 
 Every keyword page, the region the spec loop takes it in, and how far its page has become a SPECIFICATION: measured rules, each checked against the reference machine's cases ([the plan](spec-plan.md), [the method](../spec-method.md)). A page that is not yet a spec is a "user page": it says what the keyword does and was checked by its example, but its sentences are not yet executable rules. The reference is the Philips VG-8020; disk statements, the National CF-3300.
 
-**49 of 150 keyword pages are specs; 0 are FINAL.**
+**50 of 150 keyword pages are specs; 0 are FINAL.**
 
 | keyword | region | harness | reference | page | open (not measured) | differences (TODO items, from the page) |
 |---|---|---|---|---|---|---|
@@ -61,7 +61,7 @@ Every keyword page, the region the spec loop takes it in, and how far its page h
 | `GOTO` | [flow](../concepts/program-text.md) | RAM record + screen | VG-8020 | [DRAFT 1](GOTO.md) | 3 | D-GOTOSPACE |
 | `GOSUB` | [flow](../concepts/program-text.md) | RAM record + screen | VG-8020 | [DRAFT 1](GOSUB.md) | 3 | — |
 | `RETURN` | [flow](../concepts/program-text.md) | RAM record + screen | VG-8020 | [DRAFT 1](RETURN.md) | 3 | — |
-| `IF` | [flow](../concepts/program-text.md) | RAM record + screen | VG-8020 | [user page](IF.md) | — | — |
+| `IF` | [flow](../concepts/program-text.md) | RAM record + screen | VG-8020 | [DRAFT 1](IF.md) | 4 | — |
 | `FOR` | [flow](../concepts/program-text.md) | RAM record + screen | VG-8020 | [DRAFT 1](FOR.md) | 5 | D-FORINTLIM, D-FORSTEP0 |
 | `NEXT` | [flow](../concepts/program-text.md) | RAM record + screen | VG-8020 | [DRAFT 1](NEXT.md) | 3 | D-NEXTCREATE |
 | `END` | [flow](../concepts/program-text.md) | RAM record + screen | VG-8020 | [user page](END.md) | — | — |

@@ -516,3 +516,16 @@ continues at n; a line past 65529, or a number followed by more text, is error 8
 Predictions scored: RETURN drops the subroutine's FOR (hit), RETURN n accepted (hit), a missing line is 8 (hit). One
 difference: [D-GOTOSPACE](../../todo/open/D-GOTOSPACE.md) (TIER 1) -- `GO TO` with exactly one space is GOTO on the
 reference (also after THEN), a Syntax error on zerobas; two spaces, `GO SUB` and `GO` alone are Syntax errors on both.
+
+### The flow region's third unit (2026-11-25): IF
+
+One probe, [kif.py](../../probes/basic/spec/kif.py), on kgosub.py's 30-line blocks, plus a line n+1 reached only by
+FALLING THROUGH line n (a false IF skips the rest of its line, the GOTO to the record included -- without it a false IF
+ran the case's target lines); 32 cases; run file [scratchpad/KIF_run1.out](../../scratchpad/KIF_run1.out); model
+[kif_model.py](../../probes/basic/spec/kif_model.py), controls [kif_controls.py](../../probes/basic/spec/kif_controls.py)
+(5 rivals, each FALSE on some case). IF.md at DRAFT 1; every rule holds on the VG-8020 and on zerobas (0 of 32 cases
+differ). Measured: any non-zero number is true (.5, 1E-30); a false IF skips the WHOLE rest of the line, a NEXT
+included; ELSE belongs to the nearest unmatched IF and runs its statements plus the rest of the line; THEN followed by
+nothing or a colon is no error; a missing line after THEN is error 8 only when taken. Predictions scored: the false
+IF's skip (hit), ELSE's nearest IF (hit), a string condition is 13 (hit). Left of the flow region: END, STOP, CONT,
+RUN -- they stop or restart the program that records, so they need a screen-based harness.
