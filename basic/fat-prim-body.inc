@@ -260,16 +260,15 @@ fm_fatacc:
                 ld      de, 2               ; DE accumulates 2 + dataSectors / secPerClus (D-DISKREREAD
                                             ; 2026-11-26: the +2 up front, not two `inc de` after, 2 B;
                                             ; C = SPC since the top, 3 B)
+                ; 🔴 D-FATODDGEO (2026-11-26): FLOOR(data sectors / SPC), as the FAT spec counts clusters. The
+                ; loop stopped only when the remainder hit EXACTLY 0: a count that is not a multiple of SPC
+                ; (5 with SPC 2: 5, 3, 1, $FFFF, ...) wrapped and, with an even SPC, never reached 0 -- the mount
+                ; HUNG. 3 B shorter. B = 0 on exit, as the djnz above left it.
+                ld      b, 0                ; BC = SPC
+                or      a                   ; Cy = 0; it stays 0 on every pass that loops
 fm_div:
-                ld      a, l
-                or      h
-                jr      z, fm_divdone
-                ld      a, l
-                sub     c
-                ld      l, a
-                jr      nc, fm_nob
-                dec     h
-fm_nob:
+                sbc     hl, bc
+                jr      c, fm_divdone       ; fewer than SPC left: a partial cluster is no cluster
                 inc     de
                 jr      fm_div
 fm_divdone:                                 ; DE = + 2 (first data cluster is 2) already

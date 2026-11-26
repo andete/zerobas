@@ -1,0 +1,4 @@
+ZBND   plain    3476 addresses written in $D000-$FFFF
+ZBD    dos      8370 addresses written in $D000-$FFFF
+ZBD    basic    4705 addresses written in $D000-$FFFF
+wrote docs/ram-atlas.md: 718 rows over 8 runs

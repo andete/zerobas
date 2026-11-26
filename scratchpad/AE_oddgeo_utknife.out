@@ -1,0 +1,9 @@
+PASS  SPC 2, 1426 data sectors (remainder 0): FAT_TOTCLUS 715 (want 715)
+FAIL  SPC 2, 1425 data sectors: fat_mount did not return (RuntimeError)
+FAIL  SPC 4, 1426 data sectors: fat_mount did not return (RuntimeError)
+FAIL  SPC 4, 1425 data sectors: fat_mount did not return (RuntimeError)
+PASS  SPC 4, 1424 data sectors (remainder 0): FAT_TOTCLUS 358 (want 358)
+FAIL  SPC 4, 1423 data sectors: fat_mount did not return (RuntimeError)
+FAIL  SPC 8, 1425 data sectors: fat_mount did not return (RuntimeError)
+
+5 CHECK(S) FAILED
