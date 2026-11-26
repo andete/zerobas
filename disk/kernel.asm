@@ -3263,15 +3263,12 @@ sdate_body:
                 cp      12
                 jr      nc, sd_bad          ; month not 1..12 (0 wraps to 255)
                 ld      b, a                ; B = month - 1
-                ld      a, e
-                dec     a                   ; A = day - 1 (day 0 wraps to 255)
-                push    af
-                call    month_len           ; A = this month's length
-                ld      d, a
-                pop     af
-                cp      d
-                jr      nc, sd_bad          ; past the month's last day
-                ld      l, a
+                dec     e                   ; E = day - 1 (day 0 wraps to 255)
+                call    month_len           ; A = this month's length (keeps DE)
+                dec     a
+                cp      e                   ; D-DISKREREAD (2026-11-26): length - 1 < day - 1, tested
+                jr      c, sd_bad           ; in E (no push/pop, no D), 3 B -- past the month's last day
+                ld      l, e
                 ld      h, 0                ; HL = day - 1
 sd_mon:
                 ld      a, b
@@ -3283,11 +3280,10 @@ sd_mon:
                 ld      d, 0
                 add     hl, de
                 jr      sd_mon
-sd_yr:
-                ld      a, c
+sd_yr:                                      ; D-DISKREREAD (2026-11-26): one loop tested at the top, not a
+                ld      a, c                ; guard plus a bottom test, 2 B
                 or      a
                 jr      z, sd_store
-sd_yrlp:
                 dec     c                   ; + every earlier year
                 ld      de, 365
                 ld      a, c
@@ -3296,9 +3292,7 @@ sd_yrlp:
                 inc     de                  ; 1980 + C is a leap year
 sd_yadd:
                 add     hl, de
-                ld      a, c
-                or      a
-                jr      nz, sd_yrlp
+                jr      sd_yr
 sd_store:
                 ld      (DATE_DAYS), hl
                 xor     a
@@ -3349,8 +3343,8 @@ gc_yr:
                 and     3
                 jr      nz, gc_yl
                 inc     de
-gc_yl:
-                or      a
+gc_yl:                                      ; D-DISKREREAD (2026-11-26): no `or a` -- CF = 0 from `and 3`
+                                            ; (`jr nz` / `inc de` keep it), 1 B
                 sbc     hl, de
                 jr      c, gc_yrd           ; inside this year
                 inc     c
@@ -3369,9 +3363,8 @@ gc_mon:
                 jr      gc_mon
 gc_mond:
                 add     hl, de              ; L = the day of the month, from 0
-                ld      a, l
-                inc     a
-                ld      e, a                ; E = day
+                inc     l                   ; D-DISKREREAD (2026-11-26): through L, not A (L is
+                ld      e, l                ; overwritten next), 1 B -- E = day
                 ld      d, b
                 inc     d                   ; D = month
                 ld      l, c
@@ -3409,25 +3402,24 @@ month_days:     db      31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31
 ; month << 5 | day (1984-01-01 = 0821h, 1999-12-31 = 279Fh). Trashes AF, BC, HL.
 date_fat_word:
                 call    gdate_core          ; HL = year, D = month, E = day
-                ld      bc, -1980
-                add     hl, bc
+                ; D-DISKREREAD (2026-11-26): built in place in DE, one rotate of the month serving
+                ; both bytes, and year - 1980 from L alone (1980 = $07BC; year - 1980 < 120), 6 B
                 ld      a, l
+                sub     $BC
                 add     a, a                ; (year - 1980) << 1: bits 15..9
                 ld      h, a
                 ld      a, d
-                srl     a
-                srl     a
-                srl     a                   ; month >> 3: bit 8
+                rrca
+                rrca
+                rrca                        ; bit 0 = month >> 3, bits 7..5 = month << 5
+                ld      l, a
+                and     1                   ; month >> 3: bit 8
                 or      h
-                ld      h, a
-                ld      a, d
-                rrca
-                rrca
-                rrca
+                ld      d, a
+                ld      a, l
                 and     $E0                 ; (month << 5) & $E0: bits 7..5
                 or      e                   ; day: bits 4..0
-                ld      l, a
-                ex      de, hl
+                ld      e, a
                 ret
 
 ; ===== D-DOSBASIC (2026-10-02): BASENT, "start BASIC" from MSX-DOS ==========
@@ -3528,9 +3520,9 @@ dos_clear_screen:
                 call    $0056               ; FILVRM: VRAM[$1800..$1AFF] := $20
                 call    pg0_mainrom_out     ; restore page 0 = RAM (STAY-DI: no ei)
                 pop     ix
-                ld      a, $01
-                ld      ($F3DC), a          ; CSRY := 1 (home row, 1-based)
-                ld      ($F3DD), a          ; CSRX := 1 (home col, 1-based)
+                ld      hl, $0101           ; D-DISKREREAD (2026-11-26): one word store, not two byte stores
+                                            ; (the sole caller, dos_handoff, reloads HL and A next), 2 B
+                ld      ($F3DC), hl         ; CSRY := 1, CSRX := 1 (home row/col, 1-based)
                 ret
                 ds      $5E10 - $, $00  ; pad up to the pinned $5E10 entry
 mb_5e10:                        ; D-DISKROOM (2026-11-25): the pinned $5E10 entry FALLS INTO basent_body,
@@ -3588,7 +3580,8 @@ basent_tramp:
                 ; slots come back as they went in, before a DOS session and after one;
                 ; zerobas rewrote slot 3's subslot register (scratchpad/f368use_run.out).
                 ; C-BIOS has RETs here before any DOS.
-                ld      a, $C9
+                ld      a, (hl)             ; D-DISKREREAD (2026-11-26): $C9 -- the ldir ended with HL =
+                                            ; $FFC9, a cell it just filled with $C9, 1 B
                 ld      (WA_JMPTAB), a
                 ld      (WA_JMPTAB + 3), a
 bt_keep:
@@ -3605,8 +3598,6 @@ bt_keep:
                 ld      hl, ($4002)         ; the main ROM's cartridge INIT
                 jp      (hl)
 basent_tramp_end:
-                include "basic/fatfits-body.inc"     ; fat_fits (D-SAVEFULLSTAMP): here,
-                                                     ; not with fat-prim-body (no room)
 ; --- sav_fits / sav_full: tokenised SAVE's half of D-SAVEFULLSTAMP ------------
 ; Source: black-box measurement on the CF-3300 (entry, size and file bytes the
 ; machine wrote; no ROM byte read); own code over our own FAT engine.
@@ -3622,7 +3613,10 @@ sav_fits:
                 ld      de,2
                 add     hl,de               ; HL = marker + image - 1 (the image is
                                             ; TXTBASE..PRGEND+1), CF = bit 16
-                jr      fat_fits            ; A = 0 fits, $FF does not
+                                            ; D-DISKREREAD (2026-11-26): FALLS INTO fat_fits (the include
+                                            ; below), not a `jr` to it, 2 B -- A = 0 fits, $FF does not
+                include "basic/fatfits-body.inc"     ; fat_fits (D-SAVEFULLSTAMP): here,
+                                                     ; not with fat-prim-body (no room)
 ; (sav_full is bsv_full's tail since D-CALLSTMT's carve, 2026-11-13: basic/sv-bsvdisk.inc)
 
 ; (hk_aopen/hk_agetb sited here since D-SAVEFULLSTAMP (2026-10-02): the region
@@ -3647,21 +3641,17 @@ hk_aopen:
                                             ; (D-HOOKDI's class) -- the open's directory /
                                             ; FAT reads then ran fully masked: 258 ms on
                                             ; RUN "P2.BAS" (scratchpad/asavedi_pc_chain2.out)
-                call    fat_mount
-                jr      c,hka_io            ; 3: mount / I-O
+                call    fat_mount           ; D-DISKREREAD (2026-11-26): each status loaded BEFORE its
+                ld      a,3                 ; test (`ld` keeps the carry; neither call takes A), not in
+                jr      c,hka_st            ; two stubs, 4 B -- 3: mount / I-O
                 call    fat_io_find
-                jr      c,hka_nf            ; 1: not found
+                ld      a,1
+                jr      c,hka_st            ; 1: not found
                 xor     a                   ; 0: open and primed
 hka_st:
                 ld      (DISKOP_STATUS),a
                 scf                         ; CF=1: mine
                 ret
-hka_nf:
-                ld      a,1
-                jr      hka_st
-hka_io:
-                ld      a,3
-                jr      hka_st
 
 ; --- hk_agetb: one byte of the open ASCII file (step 11) ---------------------
 ; Sources: the per-byte shape is MEASURED, not chosen -- disk/docs/
@@ -3681,10 +3671,9 @@ hk_agetb:
                                             ; reason, disk/fat.asm)
                 call    fat_io_getbyte      ; A = byte, CF set = EOF
                 ld      c,a
-                ld      a,1                 ; 1 = EOF
-                jr      c,hkg_st
-                xor     a                   ; 0 = C holds a byte
-hkg_st:
+                sbc     a,a                 ; D-DISKREREAD (2026-11-26): the status from the carry, not
+                and     1                   ; a branch, 2 B -- 1 = EOF, 0 = C holds a byte (only CF is
+                                            ; read on return: main's cg_back; fopen_cross re-tests A)
                 jr      hka_st              ; D-DISKROOM: hka_st's tail is this one, byte for byte
 
 ; --- hk_format: CALL FORMAT's geometry menu + tenant dispatch, RUNNING IN THE DISK ROM (docs/spec-basic-nodisk.md §9) ---
@@ -3939,9 +3928,10 @@ bcw_own:
                 ld      bc, (BDOS_WRFIRST)
                 or      a
                 sbc     hl, bc
-                jp      nz, bdos_close_rd   ; another file: the writer stays open
+                jr      nz, bcw_x           ; another file: the writer stays open
                 xor     a
                 ld      (BDOS_WRMODE), a    ; the writer's own file: no longer for write
+bcw_x:                                      ; D-DISKREREAD (2026-11-26): one `jp`, reached by `jr`, 1 B
                 jp      bdos_close_rd
 ; fmt_err -- the motor off, A / F kept (FORMAT's error exit; MOVED here by D-DISKCARVE6 step 3).
 fmt_err:
@@ -4026,9 +4016,9 @@ frnd_update_size:
                 ld      (ix+16), l
                 ld      (ix+17), h
                 ld      (ix+18), a
-                ld      (ix+19), 0
                 xor     a                   ; CF = 0 (and A = 0, as dout_mirror's
-                ret                         ; tail left them)
+                ld      (ix+19), a          ; tail left them) -- D-DISKREREAD (2026-11-26): the
+                ret                         ; zero from A, 1 B
 
 ; rnd_rd -- FAT_MBUF := sector GP_PHYS. CF = the read failed.
 rnd_rd:
@@ -4136,14 +4126,15 @@ p0_env_tab:
 fsize_body:
                 push    de
                 pop     ix                  ; IX = kernel FCB-copy pointer ($DA40)
-                push    ix
-                pop     de
+                                            ; D-DISKREREAD (2026-11-26): no `push ix / pop de` --
+                                            ; DE still holds it, 3 B
                 call    fat_mount
                 jr      c, fsize_miss
                 push    ix
-                pop     de
-                inc     de                  ; DE -> copy+1 (11-byte 8.3 name)
-                ex      de, hl              ; HL -> name (fat_find's contract)
+                pop     hl
+                inc     hl                  ; HL -> copy+1, the 11-byte 8.3 name (fat_find's
+                                            ; contract; it takes no DE) -- D-DISKREREAD
+                                            ; (2026-11-26): straight into HL, no `ex`, 1 B
                 call    fat_find            ; Cy=0 found -> FAT_FILESIZE set
                 jr      c, fsize_miss
                 ; r0..r2 := ceil(FAT_FILESIZE / 128) = (size + 127) >> 7, 24-bit.
@@ -4168,12 +4159,14 @@ fsize_shift:
                 call      set_rr
                 ld      (ix+35), e
                 xor     a                   ; A = 0 = found
-                ld      l, a                ; L := A (A=L=0, the pinned success contract)
-                jp      rrnd_finish         ; jp: rrnd_finish is far below (out of jr range)
+                jr      fsz_t               ; D-DISKREREAD (2026-11-26): one `ld l,a / jp` for both
+                                            ; arms, 2 B (ld / jr keep the flags)
 fsize_miss:
                 ld      a, $FF
-                ld      l, a                ; L := A (A=L=$FF, not-found)
-                jp      rrnd_finish
+fsz_t:
+                ld      l, a                ; L := A (A=L=0 found, the pinned success contract;
+                                            ; A=L=$FF not-found)
+                jp      rrnd_finish         ; jp: rrnd_finish is far below (out of jr range)
 
 ; ===========================================================================
 ; $26 WRBLK — RANDOM BLOCK WRITE (M28 §3.3, [LANDED-A]/[LANDED-B])
@@ -4223,10 +4216,8 @@ wrblk_body:
                 ; ever touches DOS_DTAPTR, never BDOS_DTA).
                 call    dta_from_dos
                 ; resolve RS := copy+14..15, 0 -> 128 (RECSIZE)
-                ld      a, (ix+14)
-                ld      e, a
-                ld      a, (ix+15)
-                ld      d, a
+                ld      e, (ix+14)          ; D-DISKREREAD (2026-11-26): straight into E / D, not
+                ld      d, (ix+15)          ; through A, 2 B
                 ld      a, d
                 or      e
                 jr      nz, wrblk_rs_ok
@@ -4234,10 +4225,9 @@ wrblk_body:
 wrblk_rs_ok:
                 call    wrblk_huge          ; WRBLK_RS := DE; D-BDOSSEQ: 1 MB on -> full
                 ; load RR (24-bit, copy+33..35) into WRBLK_REC
-                ld      a, (ix+33)
-                ld      (WRBLK_REC), a
-                ld      a, (ix+34)
-                ld      (WRBLK_REC + 1), a
+                ld      l, (ix+33)          ; D-DISKREREAD (2026-11-26): the low word through HL
+                ld      h, (ix+34)          ; (reloaded just below), 3 B
+                ld      (WRBLK_REC), hl
                 ld      a, (ix+35)
                 ld      (WRBLK_REC + 2), a
                 ; HL_requested == 0 ? -> size-only / shrink path (no per-record loop)
@@ -4284,27 +4274,23 @@ wrblk_loop:
                 ld      a, h
                 or      l
                 jr      z, wrblk_loop_done
-                ld      a, (WRBLK_REC + 2)
-                ld      b, a
-                ld      a, (WRBLK_REC + 1)
-                srl     b
-                rra
-                ld      c, a                ; BC = offset >> 9 = sector-in-file
+                ld      hl, (WRBLK_REC + 1) ; D-DISKREREAD (2026-11-26): the shift in HL, not B:A
+                srl     h                   ; (wrblk_position_sec takes BC only), 2 B
+                rr      l
+                ld      b, h
+                ld      c, l                ; BC = offset >> 9 = sector-in-file
                 call    wrblk_position_sec  ; Cy=0 ok, SECTOR_BUF <- target sector's bytes
                 jp      c, wrblk_full
-                ld      a, (WRBLK_REC + 1)
+                ld      de, (WRBLK_REC)     ; D-DISKREREAD (2026-11-26): one word load, masked in D;
+                ld      a, d                ; `and 1` leaves CF = 0 for the sbc (no `or a`), 3 B
                 and     1
-                ld      d, a
-                ld      a, (WRBLK_REC)
-                ld      e, a                ; DE = offset & 511 = within
+                ld      d, a                ; DE = offset & 511 = within
                 ld      hl, 512
-                or      a
                 sbc     hl, de              ; HL = room left in this sector
                 push    de                  ; [within]
                 ld      de, (WRBLK_CNT)
-                push    hl
-                or      a
-                sbc     hl, de
+                push    hl                  ; D-DISKREREAD (2026-11-26): no `or a` -- CF = 0 from
+                sbc     hl, de              ; 512 - within (never borrows; push / ld keep it), 1 B
                 pop     hl
                 jr      c, wrblk_room       ; room < remaining -> chunk = room
                 ex      de, hl              ; else chunk = remaining
@@ -4333,10 +4319,8 @@ wrblk_off_nc:
                 jr      wrblk_loop
 wrblk_loop_done:
                 ; new_RR := RR_start + HL_requested (24-bit + 16-bit)
-                ld      a, (ix+33)
-                ld      l, a
-                ld      a, (ix+34)
-                ld      h, a
+                ld      l, (ix+33)          ; D-DISKREREAD (2026-11-26): straight into L / H, not
+                ld      h, (ix+34)          ; through A (reloaded below), 2 B
                 ld      de, (WRBLK_REQ)
                 add     hl, de
                 call      set_rr
@@ -4347,15 +4331,14 @@ wrblk_loop_done:
                 call    wrblk_mul_rr_rs     ; WRBLK_MULACC := (ix+33..35, = new_RR) * RS
                 call    wrblk_size_max
                 call    wrblk_set_wrfirst
-                call    wrblk_fcb_keep      ; D-WRBLKSEEK: FCB +16/+26/+28/+30, as stock
+                ; (wrblk_fcb_keep, via wzp_dirupdate) D-WRBLKSEEK: FCB +16/+26/+28/+30, as stock
                 ; D-WRBLKDIR (2026-11-08): NO directory update per call -- the CF-3300
                 ; touches the entry only at FCLOSE (fdccount_run.out: 72 writes for 64
                 ; data sectors; ours wrote the entry every call). The close writes it
                 ; from the FCB (bdos_close -> close_read -> cr_dir), which
                 ; wrblk_fcb_keep keeps current.
-                xor     a
-                ld      hl, (WRBLK_REQ)
-                jr      wrblk_finish
+                jr      wzp_dirupdate       ; D-DISKREREAD (2026-11-26): wzp_dirupdate's tail is this
+                                            ; one, byte for byte, 7 B
 wrblk_zero_path:
                 ; HL_requested == 0: compute target := RR (unchanged) * RS, then either
                 ; grow-or-hold (target >= old size) or shrink (target < old size). RR
@@ -4381,19 +4364,16 @@ wzp_dirupdate:
                 ; (scratchpad/dosl_d7_trunc_stock.out) -- as the record path does.
                 call    wrblk_fcb_keep
                 xor     a
-                ld      hl, (WRBLK_REQ)     ; = 0
-                jr      wrblk_finish
+                jr      wrblk_fin_req       ; D-DISKREREAD (2026-11-26): one `ld hl,(WRBLK_REQ)`, 3 B
 wrblk_ioerr:
 wrblk_ioerr2:
                 ld      a, 2                ; generic FDC I/O error (fdc_read_data convention)
-                ld      hl, (WRBLK_REQ)
+wrblk_fin_req:
+                ld      hl, (WRBLK_REQ)     ; (= 0 on the zero path)
 wrblk_finish:                              ; shared tail: M20 dispatcher-flag rule, preserve A/HL
-                push    af
-                push    hl
-                call     clr_f306
-                pop     hl
-                pop     af
-                ret
+                jp      rrnd_finish         ; D-DISKREREAD (2026-11-26): IS rrnd_finish -- clr_f306
+                                            ; touches only A / F / $F306, so the push / pop of HL
+                                            ; guarded nothing, 5 B
 
 ; wrblk_position_ext — position (or extend) the file's iterator to record
 ; WRBLK_REC (24-bit). M29 (tier2-m29-wrblk-position-cursor-spec.md): keeps an
@@ -4423,12 +4403,15 @@ wrblk_position_sec:                         ; D-WRBLKRS: in BC = the target SECT
                 ; --- cursor valid: incremental path, no fat_open ---------------
                 push    bc                  ; save target_sec
                 pop     hl                  ; HL = target_sec
-                ld      de, (WRBLK_CURSEC)
-                or      a
-                sbc     hl, de              ; HL = target_sec - WRBLK_CURSEC (>=0, monotonic)
+                ld      de, (WRBLK_CURSEC)  ; D-DISKREREAD (2026-11-26): no `or a` -- CF = 0 from the
+                sbc     hl, de              ; one above (push / pop / ld keep it), 1 B
+                                            ; HL = target_sec - WRBLK_CURSEC (>=0, monotonic)
                 ld      a, h
                 or      l
-                jr      z, wpe_same         ; delta==0 -> already positioned, no I/O
+                ret     z                   ; delta==0 -> already positioned, no I/O: Cy=0 from
+                                            ; `or l` -- SECTOR_BUF already holds the target sector
+                                            ; from the previous call (D-DISKREREAD: was wpe_same's
+                                            ; `or a / ret`, 3 B)
                 ; delta >= 1: advance HL steps via wrblk_read_or_extend_sector
                 ld      (WRBLK_CURSEC), bc  ; bc still holds target_sec
                 ex      de, hl              ; DE = delta
@@ -4445,9 +4428,6 @@ wpe_adv:
                 or      e
                 jr      nz, wpe_adv
                 ret                         ; Cy=0 (wrblk_read_or_extend_sector cleared it)
-wpe_same:
-                or      a                   ; Cy=0, no I/O -- SECTOR_BUF already holds
-                ret                         ; the target sector from the previous call
 wpe_fresh:
                 call    fat_open            ; iterator -> FAT_FIRSTCLUS, clussec 0
                 ld      (WRBLK_CURSEC), bc
@@ -4512,10 +4492,11 @@ wroe_incluster:
                 or      a
                 sbc     hl, de
                 jr      c, wroe_need_extend ; cluster < 2 (free / empty file)
-                ld      hl, (FAT_CURCLUS)
+                add     hl, de              ; D-DISKREREAD (2026-11-26): HL = the cluster again (the
+                                            ; sbc did not borrow), not a reload, 2 B
                 call    hl_cmp_eoc
-                jr      nc, wroe_need_extend ; cluster >= $0FF8 = end-of-chain
-                jr      wroe_have_valid
+                jr      c, wroe_have_valid  ; cluster < $0FF8; else end-of-chain, falling into
+                                            ; wroe_need_extend (D-DISKREREAD: one `jr`, not two, 2 B)
 wroe_need_extend:
                 call    wroe_ext            ; HL = new cluster, claimed + linked, the FAT
                 ret     c                   ; sector written ONCE (disk/driver.asm); Cy=1 full / I/O
@@ -4696,9 +4677,10 @@ fren_wild:
                 push    hl                  ; the frame (12 B): SP+4 = the built name
                 push    hl                  ; [cnt]
                 push    hl                  ; [idx][cnt]
+                                            ; D-DISKREREAD (2026-11-26): no `pop hl / push hl` at the
+                                            ; loop head -- HL = the idx on top on BOTH entries (0 here,
+                                            ; fw_next's `pop / inc / push`), 2 B
 fw_lp:
-                pop     hl
-                push    hl
                 call    fr_entry            ; HL = entry idx
                 jr      c, fw_end
                 ld      a, (hl)
@@ -4778,7 +4760,7 @@ fw_io:
 ; seq_k_adv -- BDOS_SEQREC += 1 = K; the kernel FCB copy's +32 CR := K AND $7F and
 ; +12 EX := K >> 7; HL = K. seq_k30 -- +30 := (K - 1) / records-per-cluster, from
 ; HL = K. Both stood twice, in wrseq_writeback and wrseq_wr_writeback (D-DSKFMT
-; defrag, 2026-11-09). Clobber A, B (seq_k30 also C, DE, HL).
+; defrag, 2026-11-09). Clobber A, F (seq_k30 also B, C, DE, HL).
 seq_k_adv:
                 ld      hl, (BDOS_SEQREC)
                 inc     hl
@@ -4786,15 +4768,11 @@ seq_k_adv:
                 ld      a, l
                 and     $7F
                 ld      (ix+32), a
-                push    hl
-                ld      b, 7
-ska_shr:
-                srl     h
-                rr      l
-                djnz    ska_shr             ; HL = K >> 7
-                ld      a, l
+                ld      a, l                ; D-DISKREREAD (2026-11-26): A = low byte of K >> 7 =
+                rla                         ; H << 1 | L's bit 7, two rotates, not a 7-step shift
+                ld      a, h                ; of a saved HL (HL kept; B no longer clobbered;
+                rla                         ; neither caller tests a flag), 7 B
                 ld      (ix+12), a
-                pop     hl
                 ret
 
 ; recperclus_div -- DE := HL / (A * RECPERSEC), A = FAT_SECPERCLUS on entry (the
@@ -4851,13 +4829,14 @@ copy4:
 ;   out: Cy = 0 ok, Cy = 1 = I/O error
 wrblk_shrink:
                 ld      hl, WRBLK_MULACC
-                call    to_wrbytes          ; BDOS_WRBYTES := target size
-                ld      a, (WRBLK_MULACC)
-                ld      hl, WRBLK_MULACC + 1
+                call    to_wrbytes          ; BDOS_WRBYTES := target size; HL = WRBLK_MULACC + 4
+                dec     hl                  ; D-DISKREREAD (2026-11-26): walked DOWN from where
+                ld      a, (hl)             ; to_wrbytes left HL, no reload, 3 B
+                dec     hl
                 or      (hl)
-                inc     hl
+                dec     hl
                 or      (hl)
-                inc     hl
+                dec     hl
                 or      (hl)                ; Z iff target size == 0 (all 4 bytes)
                 jr      z, wshrink_empty
                 ; keep_sectors = ceil(target_size / 512) = (target_size + 511) >> 9
@@ -4891,11 +4870,10 @@ wshrink_walk:
                 jr      z, wshrink_atlast   ; consumed keep_clusters-1 steps -> HL = last-to-keep
                 ld      (WRBLK_KEEPCNT), de
                 call    fat_next_cluster
-                push    hl
-                call    hl_cmp_eoc
-                pop     hl
-                jr      nc, wshrink_atlast  ; chain shorter than expected -- stop defensively
-                jr      wshrink_walk
+                call    hl_cmp_eoc          ; D-DISKREREAD (2026-11-26): `add hl,de` restores HL and
+                add     hl, de              ; carries iff HL < $0FF8 (the fdel loop's idiom), so no
+                jr      c, wshrink_walk     ; push / pop and one `jr`, 3 B -- at EOC the chain is
+                                            ; shorter than expected: stop defensively (falls through)
 wshrink_atlast:
                 ; HL = the cluster to KEEP as the file's new (and only surviving) tail.
                 push    hl
@@ -4904,37 +4882,30 @@ wshrink_atlast:
                 pop     hl                  ; HL = the keep-cluster
                 ld      de, EOC
                 call    fat_write_fat_entry ; keep-cluster := EOC in every FAT copy
-                jr      c, wshrink_ioerr
+                ret     c                   ; I/O error, CF = 1 (D-DISKREREAD: was wshrink_ioerr)
                 ld      hl, (WRBLK_NEXTCLUS)
                 jr      wshrink_freeloop
 wshrink_empty:
                 ld      hl, (FAT_FIRSTCLUS) ; HL = old first cluster (the whole chain to free)
-                push    hl
-                ld      hl, 0
-                ld      (FAT_FIRSTCLUS), hl ; file becomes clusterless
-                pop     hl
+                ld      de, 0               ; D-DISKREREAD (2026-11-26): the zero through DE, no
+                ld      (FAT_FIRSTCLUS), de ; push / pop of HL (the freeloop takes HL only), 1 B
+                                            ; -- file becomes clusterless
 wshrink_freeloop:
                 ld      a, h
                 or      l
-                jr      z, wshrink_freedone ; HL == 0 -> nothing to free
-                push    hl
-                call    hl_cmp_eoc
-                pop     hl
-                jr      nc, wshrink_freedone ; HL >= $0FF8 (EOC) -> nothing more to free
+                ret     z                   ; HL == 0 -> nothing to free, CF = 0 from `or l`
+                call    hl_cmp_eoc          ; D-DISKREREAD (2026-11-26): `add hl,de` restores HL and
+                add     hl, de              ; carries iff HL < $0FF8; the exits are `ret`s (the stack
+                ret     nc                  ; is balanced at each), not two stubs, 9 B -- HL >= $0FF8
+                                            ; (EOC) -> nothing more to free, CF = 0
                 push    hl                  ; HL = cluster to free
                 call    fat_next_cluster    ; HL := its current link
                 ld      (WRBLK_NEXTCLUS), hl
                 pop     hl                  ; HL = the cluster to free (restored)
                 call    fwfe_zero ; mark it free ($000)
-                jr      c, wshrink_ioerr
+                ret     c                   ; I/O error, CF = 1
                 ld      hl, (WRBLK_NEXTCLUS)
                 jr      wshrink_freeloop
-wshrink_freedone:
-                or      a
-                ret
-wshrink_ioerr:
-                scf
-                ret
 
 ; ===== M31: k_47B2 faithful Random Block Read body (tier2-m31-rdblk-randrecord-
 ; spec.md §3.2) — relocated out of $47B2's cramped span (3b-relocation, the
@@ -4997,10 +4968,9 @@ k47b2_pos_done:
                 ; full record size): CNT < RECSIZE iff at least one byte already
                 ; landed -- no extra flag cell needed (RDBLK_RRSTART's 3 bytes are the
                 ; spec's whole free-tail budget, §3.1).
-k47b2_xfer_rec:
-                ld      hl, (RDBLK_DONE)
-                ld      de, (RDBLK_REQ)
-                or      a
+k47b2_xfer_rec:                             ; D-DISKREREAD (2026-11-26): no `or a` -- CF = 0 on both
+                ld      hl, (RDBLK_DONE)    ; entries (the fall-through after `jr c, k47b2_eof`;
+                ld      de, (RDBLK_REQ)     ; recdone, reached only by `jr z` after `or l`), 1 B
                 sbc     hl, de
                 jr      z, k47b2_ok         ; delivered every requested record -> A=0
                 ld      hl, (RDBLK_RECSIZE)
@@ -5129,10 +5099,11 @@ setrnd_body:
                 ld      a, (ix+14)
                 srl     a                   ; A = RS's low byte / 2
                 ld      (ix+35), a          ; r2
-                ld      (ix+36), 0          ; r3
                 ld      hl, 1
                 call    set_rr              ; r0 = 1, r1 = 0
                 call    clr_f306            ; M20 dispatcher-flag rule (A = 0)
+                ld      (ix+36), a          ; r3 -- D-DISKREREAD (2026-11-26): the zero from A
+                                            ; (clr_f306 keeps IX), 1 B
                 ld      h, a                ; H = $00
                 ld      a, $25              ; A = L = $25 (MSX-DOS's, measured)
                 ld      l, a
@@ -5181,19 +5152,18 @@ fhfc_loop:
                 push    hl
                 call    fac_cached_entry    ; DE = the entry (CF = a read error: none free)
                 pop     hl
-                jr      c, fhfc_none
+                ret     c                   ; D-DISKREREAD (2026-11-26): the read error returns its own
+                                            ; CF = 1 (stack balanced after the pop), 2 B
                 ld      a, d
                 or      e
-                jr      z, fhfc_found       ; $000 -> free
+                ret     z                   ; $000 -> free: Cy = 0 from `or e` (D-DISKREREAD: was
+                                            ; fhfc_found's `or a / ret`, 2 B net)
                 inc     hl
                 jr      fhfc_loop
 ; (fac_cached_entry, D-DISKCARVE3, is in front of runtime.asm's $7F7C pin since
 ; D-DISKCARVE5: this region holds D-CALSLTP0's template.)
 fhfc_none:
                 scf                         ; Cy = 1 -- disk full
-                ret
-fhfc_found:
-                or      a                   ; Cy = 0 -- a free cluster exists
                 ret
 
 ; wrrnd_extend — M36 (tier2-m35-m36-tierc-fixes-spec.md §M36): WRRND ($22)
@@ -5226,25 +5196,24 @@ wrrnd_extend:
                 ld      a, (ix+18)
                 or      (ix+19)
                 ret     nz                  ; oldsize >= 65536 -- old wins, no extension
-                ld      a, (ix+33)          ; A = r0
-                ld      l, a
-                ld      h, 0
+                ; D-DISKREREAD (2026-11-26): A = 0 from here. The +18/+19 stores wrote the zeros the
+                ; `ret nz` just proved are there; old - new answers both "no extension" cases with
+                ; one `ret nc`; and the new size is stored from DE. 16 B (the sole caller, the WRRND
+                ; tail, tests only `jr c` and reloads A)
+                ld      l, (ix+33)          ; L = r0
+                ld      h, a
                 inc     hl                  ; HL = r0+1 (<= 256, safe before the x128 shift)
                 call    hl_x128            ; HL = (r0+1)*RECSIZE = newsize (<= 32768)
                 ld      e, (ix+16)
                 ld      d, (ix+17)          ; DE = oldsize (low word; high word already 0 here)
-                push    hl                  ; keep newsize
+                ex      de, hl              ; HL = oldsize, DE = newsize
                 or      a
-                sbc     hl, de              ; HL = newsize - oldsize
-                pop     hl                  ; HL = newsize again (sbc preserved it via the push)
-                jr      c, wre_noext        ; newsize < oldsize -- no extension
-                jr      z, wre_noext        ; newsize == oldsize -- no extension
-                ; --- extending: HL = newsize; store into ix+16..19 (+18/+19 = 0) ---
-                ld      (ix+16), l
-                ld      (ix+17), h
-                ld      (ix+18), 0
-                ld      (ix+19), 0
-                or      a                   ; Cy = 0
+                sbc     hl, de              ; Cy iff newsize > oldsize
+                ret     nc                  ; newsize <= oldsize -- no extension, Cy = 0 (NOT an error)
+                ; --- extending: DE = newsize; store into ix+16..17 (+18/+19 are 0 already) ---
+                ld      (ix+16), e
+                ld      (ix+17), d
+                xor     a                   ; Cy = 0
                 ret
                 ; 🔴 D-RNDLIVE (2026-11-10): the directory entry is NOT written here any
                 ; more. The CF-3300 leaves it alone until FCLOSE -- FSIZE of an open file it
@@ -5252,9 +5221,6 @@ wrrnd_extend:
                 ; probes/disk/dosl/d6rand.asm, scratchpad/dosl_d6_3.out) -- and FCLOSE
                 ; writes the size from the FCB (the same rung reads 2048 back after a
                 ; close and re-open). M36's persist step wrote it at once.
-wre_noext:
-                or      a                   ; Cy = 0 -- no extension needed, NOT an error
-                ret                         ; (the preceding sbc's Cy/Z must not leak to the caller)
 
 
 ; --- the disk ROM's banner line (docs/disk-rom-layout.md) -------------------
@@ -5283,16 +5249,9 @@ disk_show_banner:
                 push    de
                 push    hl
                 ld      hl, disk_banner
-dsb_lp:
-                ld      a,(hl)
-                or      a
-                jr      z,dsb_end
-                inc     hl
-                push    hl
-                call    CHPUT
-                pop     hl
-                jr      dsb_lp
-dsb_end:
+                call    hke_pr              ; D-DISKREREAD (2026-11-26): the print loop IS hke_pr's
+                                            ; (CHPUT, 0-terminated; the pops below restore every
+                                            ; register and the flags), 9 B
                 pop     hl
                 pop     de
                 pop     bc
@@ -6049,7 +6008,7 @@ layout_rebuild:
                 include "basic/fatiow-body.inc"      ; fat_io_putbyte / fat_io_close
                 include "basic/sv-diskwr.inc"        ; disk_write_begin/putbyte/
                                                      ; putword/write_end
-                include "basic/sv-savdisk.inc"       ; sav_disk_write .. sav_fin
+                include "basic/sv-savdisk.inc"       ; sav_disk_write .. sav_data
 
 ; --- hk_dpsave: the tokenised SAVE write engine, in the disk ROM ------------
 ; D-SAVEPORT, step 12 of spec-diskcode-eviction.md §6.2, under the same ruling

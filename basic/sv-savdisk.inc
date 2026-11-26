@@ -1,7 +1,7 @@
 ; Copyright (c) 2026 Joost Yervante Damad
 ; SPDX-License-Identifier: BSD-2-Clause
 
-; sv-savdisk.inc -- SAVE's tokenised DISK write engine (sav_disk_write .. sav_fin).
+; sv-savdisk.inc -- SAVE's tokenised DISK write engine (sav_disk_write .. sav_data).
 ; ===========================================================================
 ; One of the five SAVE-family WRITE ENGINES evicted from main page 1 into the
 ; sub-ROM PAGE-1 tenant sub/save.asm (SUBROM_IDX_SAVE) to fund `TIME` and
@@ -58,18 +58,12 @@ sav_data:
                 ld      hl,(DSV_PTR)
                 ld      a,(hl)
                 call    disk_putbyte
-                ld      hl,(DSV_PTR)
-                ld      de,(DSV_END)
-                ld      a,h
-                cp      d
-                jr      nz,sav_next
-                ld      a,l
-                cp      e
-                jr      z,sav_fin
-sav_next:
-                ld      hl,(DSV_PTR)
+                ld      hl,(DSV_PTR)        ; D-DISKREREAD (2026-11-26): one 16-bit compare, HL put
+                ld      de,(DSV_END)        ; back by `add` rather than reloaded, and the end hop
+                or      a                   ; straight to disk_write_end (sav_fin's `jr` was all it
+                sbc     hl,de               ; held), 7 B
+                jr      z,disk_write_end
+                add     hl,de
                 inc     hl
                 ld      (DSV_PTR),hl
                 jr      sav_data
-sav_fin:
-                jr      disk_write_end

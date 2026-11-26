@@ -35,7 +35,23 @@ fat_delete:
                 ld      hl, (FAT_FIRSTCLUS)
                 call    fat_free_chain
                 ret     c
-                jr      fdl_marked
+                ; D-DISKREREAD (2026-11-26): fdl_marked FOLLOWS here (it ends in a `jp`, so
+                ; nothing falls out of it into fat_free_chain), not a `jr` to it below, 2 B
+fdl_marked:
+                ; --- mark the directory entry deleted ($E5) and write it back ---
+                ld      de, (FWR_DIRSEC)
+                push    de                  ; D-DISKREREAD (2026-11-26): the sector kept on the
+                call    rs_dbuf             ; stack, not reloaded, and the offset added through BC
+                pop     de                  ; (fatprim_write_sector sets B / C itself), 2 B
+                ret     c
+                ld      hl, (FWR_DIROFF)
+                ld      bc, FAT_DBUF
+                add     hl, bc
+                ld      (hl), $E5           ; deleted-entry marker
+                ld      hl, FAT_DBUF
+                jp      fatprim_write_sector ; tail: returns the write's CY (renamed,
+                                            ; see fat-prim-body.inc's write_sector
+                                            ; header for why)
 
 ; fat_free_chain -- write 0 to every FAT entry of the chain from HL (in every
 ; FAT copy), stopping at a non-data cluster. Cy = 1 on an I/O error. Split out
@@ -65,25 +81,9 @@ fdl_isdata:
                 push    de                  ; save next across the FAT write
                 call    fwfe_zero ; FAT[current] = 0 in every FAT copy  ; free marker
                 pop     hl                  ; HL = next cluster
-                jr      c, fdl_err
+                ret     c                   ; I/O error, CF = 1 (stack balanced) -- D-DISKREREAD
+                                            ; (2026-11-26): was `jr c, fdl_err` (`scf / ret`), 3 B
                 jr      fdl_free
 fdl_done:
                 or      a                   ; Cy = 0: the chain is free
-                ret
-fdl_marked:
-                ; --- mark the directory entry deleted ($E5) and write it back ---
-                ld      de, (FWR_DIRSEC)
-                call    rs_dbuf
-                ret     c
-                ld      hl, (FWR_DIROFF)
-                ld      de, FAT_DBUF
-                add     hl, de
-                ld      (hl), $E5           ; deleted-entry marker
-                ld      de, (FWR_DIRSEC)
-                ld      hl, FAT_DBUF
-                jp      fatprim_write_sector ; tail: returns the write's CY (renamed,
-                                            ; see fat-prim-body.inc's write_sector
-                                            ; header for why)
-fdl_err:
-                scf
                 ret

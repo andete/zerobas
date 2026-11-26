@@ -1,0 +1,11 @@
+TALLY {"ZB-ONLY": 1}
+refcache: 1 hit, 1 miss, 1 stored
+refcache: 1 hit, 1 miss, 1 stored
+[  1/1] BOTH-RUN    5183  ref S1 pc=59274  zb S0 pc=28601  frayg0i.dsk
+TALLY {"BOTH-RUN": 1}
+refcache: 1 hit, 1 miss, 1 stored
+refcache: 1 hit, 1 miss, 1 stored
+[  1/1] BOTH-RUN    5183  ref S2 pc=30303  zb S2 pc=30326  xaki3-3.dsk
+TALLY {"BOTH-RUN": 1}
+refcache: 1 hit, 1 miss, 1 stored
+refcache: 1 hit, 1 miss, 1 stored

@@ -11,6 +11,11 @@
       * Slice B (kernel.asm's BASIC hooks, the BDOS table, BSAVE, fat_fits) -- DONE: 90 B of 93 claimed (one item's
         old block was miscounted), room 182 -> 270 B ([`AE_apB_apply.md`](../../scratchpad/AE_apB_apply.md)). Disk corpus:
         every class as slice A's but YOUMAKOR, a sampling-phase flip measured on both builds (D-DISKRUN).
-      * Slice C -- OPEN: [`AE_reread_C.md`](../../scratchpad/AE_reread_C.md), ~176 B claimed in the low-risk rows (2026-11-26, at a89a93d15).
+      * Slice C (the date code, WRBLK / WRRND / FSIZE / SETRND, KILL, tokenised SAVE, the banner) -- DONE 2026-11-26:
+        138 B (two items' old blocks miscounted, +1 / -1), room 270 -> 424 B in runs of 16 B or more
+        ([`AE_apC_apply.md`](../../scratchpad/AE_apC_apply.md), [`AE_reread_C.md`](../../scratchpad/AE_reread_C.md)). Disk corpus as slice B's but
+        YOUMAKOR (phase, back to BOTH-RUN) and three no-readings that re-ran to their old classes
+        ([`AE_apC_corpus3.out`](../../scratchpad/AE_apC_corpus3.out)). Left for later: fat.asm's wrblk_full can `jp wrblk_fin_req`
+        (3 B before $46E6, reach unchecked).
       * Slice D -- OPEN: [`AE_reread_D.md`](../../scratchpad/AE_reread_D.md), ~295 B claimed in the low-risk rows (2026-11-26, at a89a93d15).
       Medium-risk rows (an inline-word call-back helper, a table reorder) are skipped until the low rows are spent.
