@@ -1,0 +1,4 @@
+CF dos DISKVE ptr=D609 cell=D700  BREAKV ptr=D611 cell=D76D  
+CF basic DISKVE ptr=5B33 cell=-  BREAKV ptr=5E46 cell=-  
+ZB dos DISKVE ptr=D609 cell=D700  BREAKV ptr=D611 cell=D76D  
+ZB basic DISKVE ptr=00C9 cell=-  BREAKV ptr=C9C9 cell=FFFF  

@@ -44,10 +44,10 @@ DS.SESSION = [
 NOPROMPT = {"partial", "ctrlp", "ctrlp2"}     # steps after which the screen need not show a fresh A>
 MACHINES = (("CF", "National_CF-3300"), ("ZB", os.environ.get("DOSSESSION_ZB_MACHINE")
                                          or "C-BIOS_MSX1_EU_REPACK_DISK"))
-# 🔴 THE KNOWN DIFFERENCES (D-BUFINCTL, measured 2026-11-26, scratchpad/AE_dosctl2.out): zerobas's line input stores
-# Ctrl-C and Ctrl-P as characters. These rows must still DIVERGE -- one that turns SAME means the fix landed and its
-# pin must go -- and every other row must be SAME.
-KNOWN = {"ctrlc", "ctrlp", "type2", "printer"}
+# D-BUFINCTL (measured 2026-11-26, scratchpad/AE_dosctl2.out): zerobas's line input stored Ctrl-C and Ctrl-P as
+# characters; FIXED the same day (scratchpad/AE_bufctl_dosctl4.out) -- every row SAME, the four pins dropped.
+# (A pin set here again would be a new KNOWN difference: its rows must DIVERGE.)
+KNOWN = set()
 TYPEKEYS = "\n".join([
     "proc typekeys {s} {",
     "  if {[string index $s 0] eq \"^\"} {",

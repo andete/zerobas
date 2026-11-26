@@ -162,12 +162,12 @@ The six published entries, then every PINNED address in `disk/*.asm` -- the refe
 | $5E10 | `mb_5e10` | no BDOS function named | disk/kernel.asm:3527 |
 | $5FE5 | `(jp k_5FE5)` | no BDOS function named | disk/kernel.asm:3942 |
 | $607B | `(jp k_607B)` | BDOS $0C CPMVER: exercised | disk/kernel.asm:4062 |
-| $75A5 | `(jp k_75A5)` | no BDOS function named | disk/kernel.asm:7601 |
-| $77B8 | `(jp k_77B8)` | no BDOS function named | disk/kernel.asm:7999 |
-| $782B | `(jp k_782B)` | no BDOS function named | disk/kernel.asm:8088 |
-| $7F7C | `k_7F7C` | no BDOS function named | disk/runtime.asm:886 |
-| $7FC0 | `fw_done` | no BDOS function named | disk/runtime.asm:890 |
-| $7FD1 | `(IF ($ <= $7FBF))` | no BDOS function named | disk/runtime.asm:903 |
+| $75A5 | `(jp k_75A5)` | no BDOS function named | disk/kernel.asm:7675 |
+| $77B8 | `(jp k_77B8)` | no BDOS function named | disk/kernel.asm:8073 |
+| $782B | `(jp k_782B)` | no BDOS function named | disk/kernel.asm:8162 |
+| $7F7C | `k_7F7C` | no BDOS function named | disk/runtime.asm:900 |
+| $7FC0 | `fw_done` | no BDOS function named | disk/runtime.asm:904 |
+| $7FD1 | `(IF ($ <= $7FBF))` | no BDOS function named | disk/runtime.asm:917 |
 
 64 pinned addresses; 37 name a BDOS function, 27 do not.
 
@@ -550,7 +550,7 @@ A keyword's LEVEL is its highest UNBROKEN run of proven rungs from T1: `T1✓ T2
 | — | TIER 1 | 🤖 | entry points (the disk-ROM entries are the BDOS / disk-BIOS focus's own subject; filed 2026-11-22). | T-A41327 |
 | — | TIER 1 | 🤖 | the measured keyword-completeness remainder, now an | T-D2A359 |
 | — | TIER 2 | 🤖 | reasonable time (the gate's own wall time; filed 2026-11-17 at Joost's request). | T-6EEBBC |
-| — | TIER 3 | 🤖 | Ctrl-C at A> is how a user abandons a line; under MSX-DOS 1 the line input (BDOS $0A, | T-E66DED |
+| — | TIER 3 | 🤖 | Ctrl-C is how a user stops a long `TYPE` or `DIR`; Ctrl-S pauses it. | T-F0467B |
 | — | TIER 3 | 🤖 | the room pays for D-BUFINCTL (Ctrl-C / Ctrl-P at A>) and the filed disk fixes behind it. | T-03170D |
 | — | TIER 4 | 🤖 | the rung's own definition; it is the bar every other item at | T-83DBAC |
 | — | TIER 4 | 🤖 | RAM usage: this item is the measurement the RAM rung is | T-169379 |

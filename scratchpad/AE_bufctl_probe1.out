@@ -1,0 +1,14 @@
+ROW X    SAME     CF=[RETURNED 3 41 42 44; printer b'']
+ROW XX   SAME     CF=[RETURNED 4 41 42 43 44; printer b'']
+ROW E    SAME     CF=[RETURNED 5 41 42 05 43 44; printer b'']
+ROW S    SAME     CF=[RETURNED 5 41 42 13 43 44; printer b'']
+ROW R    SAME     CF=[RETURNED 4 41 42 43 44; printer b'']
+ROW N    SAME     CF=[RETURNED 4 41 42 43 44; printer b'']
+ROW U    SAME     CF=[RETURNED 2 43 44; printer b'']
+ROW ESC  SAME     CF=[RETURNED 2 43 44; printer b'']
+ROW H    SAME     CF=[RETURNED 3 41 43 44; printer b'']
+ROW P    SAME     CF=[RETURNED 4 41 42 43 44; printer b'CD\r']
+ROW C    SAME     CF=[ABANDONED; printer b'']
+
+PASS: BUFIN's control keys under MSX-DOS (11 rows SAME)
+refcache: REFS MODE (references replayed, zerobas measured), 0 REFERENCE reading(s) replayed, 11 reference miss, 11 zerobas reading(s) MEASURED, 0 zerobas replayed, 11 stored

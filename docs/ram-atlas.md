@@ -14,13 +14,12 @@ SPDX-License-Identifier: BSD-2-Clause
 
 > **Power-on:** the main ROM's writes before any cartridge's INIT are left out of the rows (they are the RAM test and clear, not a use of the RAM). Addresses of the range the main ROM writes at boot, per run: VG plain 12235, VGHBD dos 12235, VGHBD basic 12235, CF dos 12235, CF basic 12235, ZBND plain 3476, ZBD dos 3437, ZBD basic 3437.
 
-716 rows.
+714 rows.
 
 | range | B | VG plain | VGHBD dos | VGHBD basic | CF dos | CF basic | ZBND plain | ZBD dos | ZBD basic | zerobas |
 |---|---:|---|---|---|---|---|---|---|---|---|
 | `$D000-$D355` | 854 |   | D:R |   | D:R |   |   | D:R |   |  |
-| `$D356-$D356` | 1 |   | D:R B:R |   | D:R B:R |   |   | D:R B:R |   |  |
-| `$D357-$D3D7` | 129 |   | D:R B:R |   | D:R B:R |   |   | D:R |   |  |
+| `$D356-$D3D7` | 130 |   | D:R B:R |   | D:R B:R |   |   | D:R B:R |   |  |
 | `$D3D8-$D3D8` | 1 |   | D:R |   | D:R |   |   | D:R |   |  |
 | `$D3D9-$D3DA` | 2 |   | D:R |   | D:R B:R |   |   | D:R B:R |   |  |
 | `$D3DB-$D3ED` | 19 |   | D:R B:R |   | D:R B:R |   |   | D:R |   |  |
@@ -30,8 +29,8 @@ SPDX-License-Identifier: BSD-2-Clause
 | `$D40F-$D412` | 4 |   | D:DR |   | D:DR |   |   | D:R |   |  |
 | `$D413-$D428` | 22 |   | D:R |   | D:R |   |   | D:R |   |  |
 | `$D429-$D42A` | 2 |   | D:R |   | D:R B:R |   |   | D:R B:R |   |  |
-| `$D42B-$D500` | 214 |   | D:R |   | D:R |   |   | D:R |   |  |
-| `$D501-$D518` | 24 |   | D:R |   | D:R |   |   | D:MR |   |  |
+| `$D42B-$D4F4` | 202 |   | D:R |   | D:R |   |   | D:R |   |  |
+| `$D4F5-$D518` | 36 |   | D:R |   | D:R |   |   | D:MR |   |  |
 | `$D519-$D51E` | 6 |   | D:R B:R |   | D:R B:R |   |   | D:MR B:R |   |  |
 | `$D51F-$D526` | 8 |   | D:R B:R |   | D:R B:R |   |   | D:R B:R |   |  |
 | `$D527-$D528` | 2 |   | D:R B:DR |   | D:R B:R |   |   | D:R B:R |   |  |
@@ -42,8 +41,7 @@ SPDX-License-Identifier: BSD-2-Clause
 | `$D533-$DA3C` | 1290 |   | D:R |   | D:R |   |   | D:R |   |  |
 | `$DA3D-$DA3D` | 1 |   | D:R B:R |   | D:R B:R |   |   | D:R B:R |   |  |
 | `$DA3E-$DA40` | 3 |   | D:R |   | D:R B:R |   |   | D:R B:R |   |  |
-| `$DA41-$DA41` | 1 |   | D:DR B:D |   | D:DR B:DR |   |   | D:DR B:R |   |  |
-| `$DA42-$DA42` | 1 |   | D:DR B:D |   | D:DR B:DR |   |   | D:DR B:DR |   |  |
+| `$DA41-$DA42` | 2 |   | D:DR B:D |   | D:DR B:DR |   |   | D:DR B:DR |   |  |
 | `$DA43-$DA45` | 3 |   | D:DR B:D |   | D:DR B:DR |   |   | D:DR B:R |   |  |
 | `$DA46-$DA47` | 2 |   | D:DR B:D |   | D:DR B:R |   |   | D:DR B:R |   |  |
 | `$DA48-$DA4D` | 6 |   | D:DR |   | D:DR B:R |   |   | D:DR B:R |   |  |
@@ -107,8 +105,8 @@ SPDX-License-Identifier: BSD-2-Clause
 | `$DBD8-$DBE7` | 16 |   | D:MDR B:M |   | D:MDR B:MDR |   |   | D:MDR B:MDR |   |  |
 | `$DBE8-$DBEB` | 4 |   | D:MDR B:MR |   | D:MDR B:MDR |   |   | D:MDR B:MDR |   |  |
 | `$DBEC-$DBED` | 2 |   | D:MDR B:MDR |   | D:MDR B:MDR |   |   | D:MDR B:MDR |   |  |
-| `$DBEE-$DBF7` | 10 |   | D:DR B:DR |   | D:DR B:DR |   |   | D:MDR B:MDR |   |  |
-| `$DBF8-$DBFD` | 6 |   | D:DR B:DR |   | D:DR B:DR |   |   | D:DR B:DR |   |  |
+| `$DBEE-$DBF5` | 8 |   | D:DR B:DR |   | D:DR B:DR |   |   | D:MDR B:MD |   |  |
+| `$DBF6-$DBFD` | 8 |   | D:DR B:DR |   | D:DR B:DR |   |   | D:DR B:DR |   |  |
 | `$DBFE-$DBFF` | 2 |   | D:R B:R |   | D:R B:R |   |   | D:R B:R |   |  |
 | `$DC00-$DC60` | 97 |   | D:R |   | D:R |   |   | D:R |   |  |
 | `$DC61-$DC61` | 1 |   | D:R |   | D:R | B:D |   | D:R | B:D |  |
@@ -422,7 +420,7 @@ SPDX-License-Identifier: BSD-2-Clause
 | `$F237-$F237` | 1 |   | I:D D:D B:D | I:D | I:D D:D B:D | I:D B:D |   | H:D D:D B:D | H:D |  |
 | `$F238-$F239` | 2 |   | I:D D:D | I:D B:D | I:D D:D B:D | I:D B:D |   |   |   |  |
 | `$F23A-$F23A` | 1 |   | I:D | I:D | I:D | I:D |   |   |   |  |
-| `$F23B-$F23B` | 1 |   | I:D D:R B:R | I:D | I:D D:R | I:D |   | H:D D:R | H:D |  |
+| `$F23B-$F23B` | 1 |   | I:D D:R B:R | I:D | I:D D:R | I:D |   | H:D D:R | H:D | PRN_ECHO |
 | `$F23C-$F23C` | 1 |   | I:D D:D | I:D | I:D D:D B:D | I:D |   |   |   |  |
 | `$F23D-$F23E` | 2 |   | I:D H:D D:DR | I:D | I:D H:D D:DR B:D | I:D |   | H:D D:DR | H:D | DOS_DTAPTR |
 | `$F23F-$F240` | 2 |   | I:D H:D D:D | I:D | I:D H:D D:D | I:D |   |   |   |  |

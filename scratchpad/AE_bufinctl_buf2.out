@@ -1,0 +1,4 @@
+P    CF: returned=yes count=0x04 chars=41 42 43 44 (ABCD)  printer=b'CD\r'
+P    ZB: returned=yes count=0x05 chars=41 42 10 43 44 (AB.CD)  printer=b''
+N    CF: returned=yes count=0x04 chars=41 42 43 44 (ABCD)  printer=b''
+N    ZB: returned=yes count=0x05 chars=41 42 0e 43 44 (AB.CD)  printer=b''

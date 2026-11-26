@@ -7598,6 +7598,80 @@ st_res:
                 ld      b, h
                 ld      c, l
                 ret
+; --- D-BUFINCTL (2026-11-26): BUFIN's control keys under MSX-DOS, as the CF-3300 ------------------
+; Measured, one key between `AB` and `CD` (scratchpad/AE_bufinctl_keys.out: the screen;
+; AE_bufinctl_buf.out / _buf2.out: the buffer and the printer): Ctrl-C echoes ^C and the program is
+; abandoned (a warm boot here: see cc_break); Ctrl-P / Ctrl-N set / clear the
+; printer echo ($F23B 1 / 0, AE_prnflag.out) and are not stored; Ctrl-U and ESC erase the line;
+; Ctrl-R is dropped; Ctrl-X is dropped WITH the key after it (`ABD`; ^X^X CD -> `ABCD`); Ctrl-E,
+; Ctrl-S (and the rest) are stored and echo as ^E. Under BASIC ($F37D's BUFIN) nothing changes --
+; not measured there; DISKVE's high byte is the key, as bdos_dskio's (0 under BASIC).
+; CLEAN-ROOM: the published BUFIN contract (map.grauw.nl, MSX2 TH §BDOS: DE = the buffer, +0 max,
+; +1 count) and black-box readings -- typed keys in; the buffer, the screen and the printer out,
+; plus the work-area cell $F23B. No stock routine read or decoded.
+; cinl_ctl -- in: A = a key below $20, not CR / BS (conin_line_body jumps here). Out: back into
+; conin_line_body -- cinl_store (A = the key) or cinl_getchar -- or to the Ctrl-C handler.
+cinl_ctl:
+                ld      c, a
+                ld      a, (DISKVE + 1)
+                or      a
+                ld      a, c
+                jp      z, cinl_store       ; BASIC: stored, as before
+                cp      $03
+                jr      z, cc_break
+                cp      $10
+                jr      z, cc_prn
+                cp      $0E
+                jr      z, cc_prn
+                cp      $18
+                jr      z, cc_skip
+                cp      $15
+                jr      z, cc_erase
+                cp      $1B
+                jr      z, cc_erase
+                cp      $12
+                jp      nz, cinl_store      ; ^E, ^S, ...: stored (cinl_echo shows ^E)
+                jp      cinl_getchar        ; ^R: nothing
+cc_prn:         sub     $0E                 ; ^N 0, ^P 2 (no borrow: CF = 0)
+                rra                         ; ^N 0, ^P 1 -- the CF-3300's values
+                ld      (PRN_ECHO), a
+                jp      cinl_getchar
+cc_skip:        call    cinl_key            ; ^X: the next key goes too
+                jp      cinl_getchar
+cc_erase:       ld      hl, CONIN_COUNT     ; ^U / ESC: un-echo and drop every stored key
+                ld      a, (hl)
+                or      a
+                jp      z, cinl_getchar
+                dec     (hl)
+                ld      hl, cinl_bs
+                call    fmt_pr
+                jr      cc_erase
+cc_break:       ld      hl, cc_ctlc
+                call    fmt_pr
+                jp      $0000               ; the warm boot: COMMAND.COM's A> again, as bdos_dskio's
+                                            ; Abort. (Entering the handler BREAKV names, $D76D, from
+                                            ; inside the call HUNG after the ^C: AE_bufctl_dosctl1.out.)
+cc_ctlc:        db      "^C", 0             ; no CR LF: the warm-started COMMAND.COM starts its own line
+                                            ; (with CR LF here: a blank row more than the CF-3300, dosctl3)
+; cinl_echo -- conin_line_body's echo of a STORED key (E): under MSX-DOS a control key shows as
+; caret + letter (^E, ^S: AE_bufinctl_keys.out); TAB, printable keys and BASIC as before.
+cinl_echo:
+                ld      a, e
+                cp      $20
+                jp      nc, conout_body
+                cp      $09
+                jp      z, conout_body
+                ld      a, (DISKVE + 1)
+                or      a
+                jp      z, conout_body
+                push    de
+                ld      e, '^'
+                call    conout_body
+                pop     de
+                ld      a, e
+                add     a, $40
+                ld      e, a
+                jp      conout_body
                 ds      $75A5 - $, $00
                 jp      k_75A5          ; $75A5
 

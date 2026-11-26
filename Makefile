@@ -2859,9 +2859,14 @@ dossession-acceptance: repack-machine
 verifyread-acceptance: repack-machine
 	python3 probes/disk/disk_probe_verify.py
 
-# --- dosctl-acceptance: Ctrl-C / Ctrl-P at A> against the CF-3300 (D-DISKCONTRACT gap 5; D-BUFINCTL pinned) ---
+# --- dosctl-acceptance: Ctrl-C / Ctrl-P at A> against the CF-3300 (D-DISKCONTRACT gap 5; D-BUFINCTL fixed) ---
 dosctl-acceptance: repack-machine
 	python3 probes/disk/disk_probe_dosctl.py
+
+# --- bufinctl-acceptance: every line-editing key's effect on a BDOS $0A line under MSX-DOS (D-BUFINCTL) ---
+# BUFINX.COM's buffer and the printer log, one key between `AB` and `CD`, CF-3300 vs zerobas.
+bufinctl-acceptance: repack-machine
+	python3 probes/disk/disk_probe_bufinctl.py
 
 # --- endclose-acceptance: END closes open files on both references, disk and CRT: (D-ENDCLOSE pinned) ---
 endclose-acceptance: repack-machine $(DISK_TEST_DSK)

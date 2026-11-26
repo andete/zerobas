@@ -1,0 +1,21 @@
+ROW partial  '~DIR'                 SAME
+   == A>DIR
+ROW ctrlc    '^C'                   SAME
+   == A>DIR^C
+   == A>
+ROW ctrlp    '^P'                   SAME
+   == A>DIR^C
+   == A>
+ROW dirp     'DIR'                  SAME
+   ==       42 files   374784 bytes free
+   == A>
+ROW ctrlp2   '^P'                   SAME
+   ==       42 files   374784 bytes free
+   == A>
+ROW type2    'TYPE HELLO.TXT'       SAME
+   == SECOND LINE
+   == A>
+ROW printer  1689 B / 1689 B  SAME
+   == b'DIR\r\nLIST            1415 02-00-04 12:04p\r\nOPENMSX1 MBK   32824 02-05-03 10:10a\r\nOPENMSX1 MBM     450 02-05-03 10:10a\r\nA'
+
+PASS: Ctrl-C / Ctrl-P at A> (every other row SAME, 0 known differences pinned)

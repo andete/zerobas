@@ -74,7 +74,7 @@
       every row (valid 0; month 13, Feb 30, 1979, 2100, month 0 all $FF and the date kept; the leap day valid). STIME:
       the CF-3300 answers $FF for hour 25, minute 60, second 60, hundredths 100; ours 0 every time
       ([`XT_stock.out`](../../scratchpad/XT_stock.out), [`XT_ours.out`](../../scratchpad/XT_ours.out)). Those 4 bytes are pinned at ours in the gate. 🔮 "the CF-3300 keeps the time STIME set": MISS --
-      its GTIME reads 00:00:00 throughout, as ours (no clock on an MSX1). Left: ~~(12) VERIFY~~, ~~(5) Ctrl-P / C~~ (Ctrl-S, Ctrl-C during output: D-BUFINCTL's to measure), ~~(6) > $30~~.
+      its GTIME reads 00:00:00 throughout, as ours (no clock on an MSX1). Left: ~~(12) VERIFY~~, ~~(5) Ctrl-P / C~~ (Ctrl-S, Ctrl-C during output: [D-CTLOUTPUT](D-CTLOUTPUT.md), to measure), ~~(6) > $30~~.
       🔴 **(12) VERIFY'S EFFECT, 2026-11-26 -- A REAL DIFFERENCE, FILED [D-VERIFYREAD](D-VERIFYREAD.md).** New `make
       verifyread-acceptance` (probes/disk/disk_probe_verify.py): a COPY at A> under VERIFY OFF and ON, the FDC's command
       register watched. The CF-3300 reads back each of the 9 sectors it writes; zerobas sends the same commands either
@@ -87,7 +87,7 @@
       (Microsoft's, the same file on both machines) -- not measured. The in-range numbers with no function ($1C-$20, $25, $29) answer 0
       on the CF-3300 too (the same exit; they were $FF as well). $00 (TERMINATE) does NOT return there -- it ends the BASIC
       program silently: filed [D-F37DTERM](D-F37DTERM.md); the unit test pins ours.
-      🔴 **(5) CTRL-C / CTRL-P AT A>, 2026-11-26 -- A REAL DIFFERENCE, FILED [D-BUFINCTL](D-BUFINCTL.md).** New `make
+      🔴 **(5) CTRL-C / CTRL-P AT A>, 2026-11-26 -- A REAL DIFFERENCE, FILED [D-BUFINCTL](../done/D-BUFINCTL.md).** New `make
       dosctl-acceptance` (probes/disk/disk_probe_dosctl.py; CTRL held in the key matrix around the letter): the CF-3300
       echoes `^C` and gives a fresh A>, and Ctrl-P prints DIR's listing too; zerobas's line input stores both as
       characters -- no `^C`, nothing printed, and the stray Ctrl-P later swallows a TYPE. Pinned as KNOWN rows.

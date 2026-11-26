@@ -1,0 +1,4 @@
+CF toggled by ^P and restored by ^N: $DBBF F3->FC->F3, $DBC3 02->04->02, $DBCE 9F->03->9F, $F23B 00->01->00
+CF other changed cells: 4 $F3F8, $F3FA, $FBF0, $FBF1
+ZB toggled by ^P and restored by ^N: none
+ZB other changed cells: 24 $DA42, $DA43, $DBD2, $DBD3, $DBD8, $DBD9, $DBDA, $DBDB, $DBDC, $DBDD, $DBEE, $DBF0, $DBF2, $DBF4, $DBF6, $DBF7, $F237, $F3F6, $F3F8, $F3FA, $F771, $F7A8, $FBF0, $FBF1

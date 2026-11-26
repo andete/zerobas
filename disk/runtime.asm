@@ -112,6 +112,9 @@ conout_body:
 ; 2026-07-04). The dispatch preamble above is byte-stable. Contract: char in E, A:=E.
 conout_not_dispatch:
                 pop     hl                  ; restore caller's HL; caller AF stays on the stack
+                ld      a, (PRN_ECHO)       ; D-BUFINCTL: Ctrl-P's printer echo -- the char to the
+                dec     a                   ; printer too. EXACTLY 1: under BASIC the cell keeps
+                call    z, lstout_body      ; the RAM fill $FF (M27). lstout_body keeps BC/DE/HL.
                 ld      a, e                ; char arrives in E ($5454 CONOUT contract)
                 cp      $09                 ; TAB? -> expand to the next 8-column stop
                 jr      z, conout_tab       ; conout_tab is just below (jr-reachable)
@@ -233,6 +236,9 @@ login_bits_done:
 ; (jp conin_line_body). NO return register (per the M12d pin) -- the result lives in
 ; the buffer. One CHGET per char (PIN B: 7 calls for a 6-char + CR line): CR ends the
 ; line, BS backs up one char (buffer edit only), else echo via conout_body and store.
+; D-BUFINCTL (2026-11-26): under MSX-DOS the other control keys go to cinl_ctl (disk/kernel.asm) --
+; Ctrl-C / P / N / U / ESC / X / R act as the CF-3300's, a stored one echoes as ^E; under BASIC
+; they are stored as before.
 ; CLEAN-ROOM: CHGET/CHPUT/func-$0A buffer are the published/cross-vendor BDOS ABI; the
 ; stock $50E0 routine's internals were never read (only its entry regs, black-box).
 ;   in:  DE = buffer base ; out: buffer filled (func-$0A layout); BC/DE/HL preserved
@@ -245,17 +251,15 @@ conin_line_body:
                 xor     a
                 ld      (CONIN_COUNT), a    ; running fill count starts at 0
 cinl_getchar:
-                di                          ; no interrupt while the BIOS is half-mapped
-                call    br_mainin_tmpl
-                call    $009F               ; CHGET - wait for + return a char in A
-                ld      b, a                ; B = the char (pg0_mainrom_out clobbers A)
-                call    pg0_mainrom_out     ; restore page 0
-                ei
-                ld      a, b                ; A = the char read
+                call    cinl_key            ; A = the key read
                 cp      $0D                 ; CR -> line done
                 jr      z, cinl_cr
                 cp      $08                 ; BS -> edit back one char
-                jr      nz, cinl_store
+                jr      z, cinl_bsp
+                cp      $20                 ; D-BUFINCTL: the other control keys (disk/kernel.asm)
+                jp      c, cinl_ctl
+                jr      cinl_store
+cinl_bsp:
                 ld      hl, CONIN_COUNT
                 ld      a, (hl)
                 or      a
@@ -282,8 +286,8 @@ cinl_store:
                 ld      (hl), c             ; store the char
                 ld      hl, CONIN_COUNT
                 inc     (hl)                ; count++
-                ld      e, c                ; echo via conout_body (E = char, its ABI)
-                call    conout_body
+                ld      e, c                ; echo (E = char): conout_body, or ^E for a control
+                call    cinl_echo           ; key under MSX-DOS (D-BUFINCTL)
                 jr      cinl_getchar
 cinl_cr:
                 ld      e, a                ; D-BUFINECHO: Return echoes CR -- the CF-3300 leaves
@@ -307,6 +311,16 @@ cinl_done:
                                             ; BUFIN from $F37D (CONIN.md R-BC-BUFIN); was the count
                 pop     hl
                 pop     bc
+                ret
+; cinl_key -- one key through CHGET ($009F), the BIOS paged in and out around it. Out: A = B = the key.
+cinl_key:
+                di                          ; no interrupt while the BIOS is half-mapped
+                call    br_mainin_tmpl
+                call    $009F               ; CHGET - wait for + return a char in A
+                ld      b, a                ; B = the char (pg0_mainrom_out clobbers A)
+                call    pg0_mainrom_out     ; restore page 0
+                ei
+                ld      a, b
                 ret
 ; (cinl_bs -- BackSpace's un-echo -- moved in front of $543C by D-F37DCONIN, for the A = $0D above)
 

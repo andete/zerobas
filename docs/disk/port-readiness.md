@@ -57,10 +57,16 @@ Philips VG-8020 with a Sony HBD-F1.
 4. ✅ **The open entry rows (2b)**, MEASURED 2026-11-26: every row D-DISKCONTRACT's inventory left open now has a
    reading against the CF-3300. One fixed on the spot (D-F37DHIGH: an undefined function through $F37D answers A = 0,
    as the CF-3300 -- the fix was a byte shorter); two filed and pinned in their gates (D-VERIFYREAD: VERIFY ON reads
-   each written sector back on the CF-3300, `make verifyread-acceptance`; D-BUFINCTL: Ctrl-C / Ctrl-P are stored as
-   characters by the line input, `make dosctl-acceptance`). **What is left of the entry contract is FIXES, not
-   unknowns** -- D-DOSDRVB, D-STIMERANGE, D-CONCOL, D-DSKIOCYL, D-VERIFYREAD, D-BUFINCTL -- and every one of them
-   needs disk-ROM bytes: row 5 (room) is the bottleneck again.
+   each written sector back on the CF-3300, `make verifyread-acceptance`; D-BUFINCTL: Ctrl-C / Ctrl-P were stored as
+   characters by the line input -- ✅ FIXED 2026-11-26, below). **What is left of the entry contract is FIXES, not
+   unknowns** -- D-DOSDRVB, D-STIMERANGE, D-CONCOL, D-DSKIOCYL, D-VERIFYREAD -- and the room for them now exists
+   (D-DISKREREAD, the same day: ~8 B -> 718 B by re-reading the code).
+   ✅ **D-BUFINCTL FIXED 2026-11-26:** under MSX-DOS the line input (BDOS $0A) now does what the CF-3300's does with
+   every control key -- Ctrl-C abandons the program (`^C`, COMMAND.COM's A> again), Ctrl-P / Ctrl-N turn the printer
+   echo on / off ($F23B, and console output goes to the printer while it is on), Ctrl-U and ESC erase the line,
+   Ctrl-X drops itself and the next key, Ctrl-R is dropped, Ctrl-E / Ctrl-S are stored and shown as `^E`
+   (`make bufinctl-acceptance`, 11 rows; `make dosctl-acceptance`, every row SAME with no pins). BASIC's BUFIN
+   ($F37D) is unchanged and not measured with these keys; Ctrl-C during OUTPUT (CONST) is not measured either.
 5. ✅ **END and open disk files** ([D-ENDCLOSE](../../todo/open/D-ENDCLOSE.md)), MEASURED 2026-11-26: the
    references do not split -- the VG-8020 + HBD-F1 and the CF-3300 both close every open file at END, a disk file
    and `CRT:` alike (`make endclose-acceptance`); zerobas keeps them open. The fix is BASIC-side and waits; a

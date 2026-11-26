@@ -34,7 +34,7 @@ names the other component's BUFFER this address falls within. That
 second one is the question a per-component map cannot answer.
 
 * **basic** — 70 declared addresses in this project's own workspace `$E000..$F37F` (69 with a machine-readable width), plus **459** in the MSX standard work area at or above `$F380`.
-* **disk** — 126 declared addresses in this project's own workspace `$E000..$F37F` (117 with a machine-readable width), plus **77** in the MSX standard work area at or above `$F380`.
+* **disk** — 127 declared addresses in this project's own workspace `$E000..$F37F` (118 with a machine-readable width), plus **77** in the MSX standard work area at or above `$F380`.
 
 ## This project's own workspace (`$E000..$F37F`)
 
@@ -217,6 +217,7 @@ second one is the question a per-component map cannot answer.
 | `$F1AA` |  | `disk` | `W50A9_RET_DE` | DE (= IX) on return: disk work-area pointer |  |
 | `$F1C8` | 1 B | `disk` | `HOOK_SLOT` | our slot byte for the HPHYD inter-slot hook (1) |  |
 | `$F1C9` |  | `disk` | `RES_PRINT` | resident $-string print routine the kernel CALLs (§8.28) |  |
+| `$F23B` | 1 B | `disk` | `PRN_ECHO` | (1 B) the printer-echo flag: Ctrl-P 1, Ctrl-N 0 (D-BUFINCTL, AE_prnflag.out; M27) |  |
 | `$F23D` | 2 B | `disk` | `DOS_DTAPTR` | disk work-area current-DTA cache (word, LE; M19) |  |
 | `$F242` | 1 B | `disk` | `W50A9_WRKB` | the one work-area cell $50A9 clears (semantic: black-box) (1 B) |  |
 | `$F247` | 1 B | `disk` | `CURDRV_CELL` | current-drive index ($00=A:); read by $50C4 (M18) (1 B) |  |

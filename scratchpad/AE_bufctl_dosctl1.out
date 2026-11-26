@@ -1,0 +1,31 @@
+python3 probes/disk/disk_probe_dosctl.py
+ROW partial  '~DIR'                 SAME
+   == A>DIR
+ROW ctrlc    '^C'                   KNOWN DIFFERENCE (D-BUFINCTL)
+ROW ctrlp    '^P'                   KNOWN DIFFERENCE (D-BUFINCTL)
+ROW dirp     'DIR'                  DIVERGES
+   CF |TEST     BAS    1793 02-01-25  9:58p
+   CF |MOD      BAS    1793 02-01-25  9:58p
+   CF |MUS      BAS    1793 02-01-25  9:58p
+   CF |SCR0     BAS      51 02-03-22 12:14a
+   CF |RYTHM    BAS    1799 02-03-25  6:03p
+   CF |SIMPLE   BAS     104 02-04-11  4:17p
+   CF |      42 files   374784 bytes free
+   CF |A>
+   ZB |A>DIR^C
+ROW ctrlp2   '^P'                   DIVERGES
+   CF |TEST     BAS    1793 02-01-25  9:58p
+   CF |MOD      BAS    1793 02-01-25  9:58p
+   CF |MUS      BAS    1793 02-01-25  9:58p
+   CF |SCR0     BAS      51 02-03-22 12:14a
+   CF |RYTHM    BAS    1799 02-03-25  6:03p
+   CF |SIMPLE   BAS     104 02-04-11  4:17p
+   CF |      42 files   374784 bytes free
+   CF |A>
+   ZB |A>DIR^C
+ROW type2    'TYPE HELLO.TXT'       KNOWN DIFFERENCE (D-BUFINCTL)
+ROW printer  1689 B / 0 B  KNOWN DIFFERENCE (D-BUFINCTL)
+   == b'DIR\r\nLIST            1415 02-00-04 12:04p\r\nOPENMSX1 MBK   32824 02-05-03 10:10a\r\nOPENMSX1 MBM     450 02-05-03 10:10a\r\nA'
+
+FAIL: Ctrl-C / Ctrl-P at A> (dirp, ctrlp2)
+make: *** [dosctl-acceptance] Error 1
