@@ -2854,6 +2854,15 @@ dosmode-acceptance: repack-machine
 dossession-acceptance: repack-machine
 	python3 probes/disk/disk_probe_dossession.py
 
+# --- nobasic-dossession-acceptance: the SAME session on the C-BIOS port's host (docs/disk/port-readiness.md gap 3) ---
+# A C-BIOS checkout's OWN MSX1 build with NO BASIC, zerobas's disk ROM in slot 3-1. Needs a built checkout:
+#   make nobasic-dossession-acceptance CBIOS=~/projects/cbios
+# Not in the battery (tools/battery-exclusions.txt): it measures a C-BIOS checkout's state, not only this tree.
+nobasic-dossession-acceptance: $(DISK_ROM)
+	@test -n "$(CBIOS)" || { echo "nobasic-dossession-acceptance: set CBIOS=<a built C-BIOS checkout>"; exit 2; }
+	python3 tools/install_cbios_msx2.py --cbios $(CBIOS)
+	DOSSESSION_ZB_MACHINE=CBIOS2_CUR_MSX1_EU_NOBASIC_DISK python3 probes/disk/disk_probe_dossession.py
+
 # --- ramatlas-acceptance: the high-RAM atlas still describes this build (D-RAMATLAS)
 # docs/ram-atlas.md: who writes each range of $D000-$FFFF, at which moment (boot,
 # INIT, H.RUNC, MSX-DOS, BASIC), on the VG-8020, the VG-8020 + HBD-F1, the

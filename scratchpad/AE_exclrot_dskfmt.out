@@ -1,0 +1,7 @@
+  choice 1 stock: DSKFMT A/Cy/B [0, 0, 0]  BDOS [0, 0, 0, 0, 0]  record back 1
+  choice 1 ours : DSKFMT A/Cy/B [0, 0, 0]  BDOS [0, 0, 0, 0, 0]  record back 1
+  PASS  choice 1
+  choice 4 stock: DSKFMT A/Cy/B [0, 0, 0]  BDOS [0, 0, 0, 0, 0]  record back 1
+  choice 4 ours : DSKFMT A/Cy/B [0, 0, 0]  BDOS [0, 0, 0, 0, 0]  record back 1
+  PASS  choice 4
+===== dskfmt-acceptance: 2/2 choices PASS =====

@@ -801,7 +801,11 @@ def main(argv):
                              "--exclude", skip, "--keep", keep], cwd=ROOT, env=env).returncode
     for t in x5:
         _t0 = time.time()       # ⏱ W11 (2026-11-26): the excluded-five run serially after FULL -- now timed
-        r = subprocess.run(["make", t], cwd=ROOT, capture_output=True, text=True)
+        # 🔴 (2026-11-26) REFS MODE HERE TOO. run_gates sets ZEROBAS_REFCACHE=refs in ITS process; these run from
+        # this one, where the default mode SERVES ZEROBAS READINGS from the store -- input-devices "passed" 50 cases
+        # in 0 s on replayed zerobas screens. A suite here must measure the ROM it gates.
+        r = subprocess.run(["make", t], cwd=ROOT, capture_output=True, text=True,
+                           env=dict(os.environ, ZEROBAS_REFCACHE=os.environ.get("ZEROBAS_REFCACHE") or "refs"))
         print(f"{t} exit={r.returncode} {time.time() - _t0:.0f}s")
         # 🔴 D-X5LOG (2026-09-30): a failing suite's output used to be DROPPED.
         # bdos-acceptance exited 2 in a FULL run and was 12/12 green alone, and

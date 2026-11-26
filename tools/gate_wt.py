@@ -245,7 +245,10 @@ def run(a) -> int:
     tmp = os.path.join(tempfile.gettempdir(), "zerobas-gatewt")
     os.makedirs(tmp, exist_ok=True)
     env = dict(os.environ, OPENMSX_USER_DATA=share, ZEROBAS_GATE_BASE=parent,
-               ZEROBAS_TMP=tmp, PYTHONUNBUFFERED="1")
+               ZEROBAS_TMP=tmp, PYTHONUNBUFFERED="1",
+               # 🔴 (2026-11-26): its EXCLUDED5 run here is outside run_gates, whose REFS mode does not reach it --
+               # the default mode serves zerobas readings from the store (pick_gates had the same hole)
+               ZEROBAS_REFCACHE=os.environ.get("ZEROBAS_REFCACHE") or "refs")
     fails = []
 
     # test-dsk: disk/test720.dsk and empty720.dsk are GENERATED and untracked, so a

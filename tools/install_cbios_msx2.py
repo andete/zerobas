@@ -10,6 +10,9 @@ installs machines that run the C-BIOS built from a checkout instead, so a page m
 For each variant the bundled openMSX config is copied, its ROMs' <sha1> pins dropped and their <filename>s
 pointed at copies of the checkout's derived/bin ROMs (~/.openMSX/share/zerobas-cbios2/<tag>/), under the name
 CBIOS2_<TAG>_<VARIANT> in ~/.openMSX/share/machines. probes/bios/biosl_run.py's msx2* rows use TAG CUR.
+It also writes CBIOS2_<TAG>_MSX1_EU_NOBASIC_DISK: the checkout's MSX1 EU build with NO BASIC and zerobas's disk ROM
+(build/disk.rom) in slot 3-1 -- the C-BIOS port's host (docs/disk/port-readiness.md gap 3; `make
+nobasic-dossession-acceptance CBIOS=...`).
 
     python3 tools/install_cbios_msx2.py --cbios <built C-BIOS checkout> [--tag CUR]
 """
@@ -51,6 +54,22 @@ def install(cbios, tag):
         name = f"CBIOS2_{tag.upper()}_{var}"
         open(os.path.join(USER, name + ".xml"), "w").write(xml)
         names.append(name)
+    # 💽 docs/disk/port-readiness.md gap 3 (2026-11-26): the C-BIOS PORT'S HOST -- the checkout's own MSX1 EU build,
+    # NO BASIC anywhere, zerobas's disk ROM in slot 3-1 behind the CF-3300-style FDC. openMSX's bundled C-BIOS (0.29)
+    # is not that host: it predates the disk-host work (HIMEM, MS-BASIC's layout at the scan), so it is the
+    # checkout's build that is measured.
+    import importlib.util
+    spec = importlib.util.spec_from_file_location("inst", os.path.join(ROOT, "tools", "install-openmsx-machine.py"))
+    inst = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(inst)
+    disk_rom = os.path.join(ROOT, "build", "disk.rom")
+    xml = open(os.path.join(BUNDLED, "C-BIOS_MSX1_EU.xml")).read()
+    xml = re.sub(r"\s*<sha1>[0-9a-f]+</sha1>", "", xml)
+    xml = re.sub(r"<filename>([^<]+)</filename>", lambda m: f"<filename>{os.path.join(dest, m.group(1))}</filename>", xml)
+    xml = inst.expand_slot3(xml, disk_rom, "")
+    name = f"CBIOS2_{tag.upper()}_MSX1_EU_NOBASIC_DISK"
+    open(os.path.join(USER, name + ".xml"), "w").write(xml)
+    names.append(name)
     print("installed: " + ", ".join(names) + f"  (ROMs in {dest})")
 
 

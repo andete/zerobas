@@ -39,6 +39,12 @@ from disk_probe_bdos import fat12_add               # noqa: E402  (reuse, don't 
 OMSX = os.environ.get("OPENMSX") or shutil.which("openmsx") or "/opt/homebrew/bin/openmsx"
 DOS = sys.argv[1] if len(sys.argv) > 1 else os.path.expanduser("~/Documents/msx/msx/disks/test.dsk")
 MACHINES = (("CF", "National_CF-3300"), ("ZB", "C-BIOS_MSX1_EU_REPACK_DISK"))
+# 💽 docs/disk/port-readiness.md gap 3 (2026-11-26): DOSSESSION_ZB_MACHINE swaps zerobas's side for another host --
+# CBIOS2_CUR_MSX1_EU_NOBASIC_DISK (tools/install_cbios_msx2.py) is the C-BIOS port's: a C-BIOS checkout's own build,
+# no BASIC at all, zerobas's disk ROM in slot 3-1 (`make nobasic-dossession`).
+if os.environ.get("DOSSESSION_ZB_MACHINE"):
+    MACHINES = (MACHINES[0], ("ZB", os.environ["DOSSESSION_ZB_MACHINE"]))
+NOBASIC_HOST = "NOBASIC" in MACHINES[1][1]
 HELLO = b"HELLO FROM THE SESSION\r\nSECOND LINE\r\n\x1a"
 
 # (tag, the line typed -- None: nothing, wait only -- and the seconds to wait after it)
@@ -241,6 +247,14 @@ def main():
             blind.append(tag)
         elif tag in UNSCORED:
             verdict = "printed (Disk BASIC's banner: zerobas's own by design; the next row is scored)"
+        elif tag in VALUE_ROWS and NOBASIC_HOST:
+            # 💽 a host with NO BASIC (gap 3): `BASIC` at A> has nothing to start, so the restart comes back to
+            # MSX-DOS -- the row must SHOW that (the banner again), not merely differ from the CF-3300's BASIC
+            back = bool(zb) and any("MSX-DOS version" in r for r in zb[1])
+            verdict = ("SAME (no BASIC on this host: A>BASIC restarts into MSX-DOS, as it must)" if back
+                       else "DIVERGES")
+            if not back:
+                bad.append(tag)
         elif tag in VALUE_ROWS:
             pick = lambda v: next((m.group(1).split() for r in reversed(v[1])        # the margin differs: strip
                                    for m in [re.match(r"M([0-9A-F]{4}\s+-?\d+\s+\d+)$", r.strip())] if m),

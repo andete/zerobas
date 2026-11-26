@@ -1,0 +1,89 @@
+
+===== BDOSX (build_bdosx_disk.py) =====
+  PASS  BDOSX 0x0300:0x180: byte-identical (384 bytes)
+  PASS  BDOSX 0x0400:0x180: byte-identical (384 bytes)
+
+===== BDOSX2 (build_bdosx2_disk.py) =====
+  PASS  BDOSX2 0x0340:0x78: byte-identical (120 bytes)
+
+===== BDOSX3 (build_bdosx3_disk.py) =====
+  PASS  BDOSX3 0x03b0:0x125: byte-identical (293 bytes)
+  PASS  BDOSX3 0x04d5:0x380: byte-identical (896 bytes)
+
+===== BDOSX0 (build_bdosx0_disk.py) =====
+
+===== BDOSX4 (build_bdosx4_disk.py) =====
+  PASS  BDOSX4 0x01c5:0x80: byte-identical (128 bytes)
+
+===== BDOSXC (build_bdosxc_disk.py) =====
+  PASS  BDOSXC 0x0340:0x3c4: byte-identical (964 bytes)
+
+===== BDOSXK (build_bdosxk_disk.py) =====
+  PASS  BDOSXK 0x0340:0x3d8: byte-identical (984 bytes)
+
+===== BDOSXS (build_bdosxs_disk.py) =====
+  PASS  BDOSXS 0x0340:0x51: byte-identical (81 bytes)
+
+===== BDOSXE (build_bdosxe_disk.py) =====
+  PASS  BDOSXE 0x023d:0x52: byte-identical (82 bytes)
+
+===== BDOSXT (build_bdosxt_disk.py) =====
+  PASS  BDOSXT 0x0340:0x083: byte-identical (131 bytes)
+
+===== BDOSXB (build_bdosxb_disk.py) =====
+  PASS  BDOSXB 0x0340:0x3ec: byte-identical (1004 bytes)
+
+===== BDOSX5 (build_bdosx5_disk.py) =====
+  PASS  BDOSX5 0x019a:0x65: byte-identical (101 bytes)
+
+===== BDOSX6 (build_bdosx6_disk.py) =====
+  PASS  BDOSX6 0x0207:0x69: byte-identical (105 bytes)
+  PASS  BDOSX6 0x0270:0x80: byte-identical (128 bytes)
+
+===== BDOSX7 (build_bdosx7_disk.py) =====
+  PASS  BDOSX7 0x01b8:0x65: byte-identical (101 bytes)
+
+===== BDOSX8 (build_bdosx8_disk.py) =====
+  PASS  BDOSX8 0x01ab:0xca: byte-identical (202 bytes)
+
+===== BDOSX9 (build_bdosx9_disk.py) =====
+  PASS  BDOSX9 0x0400:0x118: byte-identical (280 bytes)
+
+===== BUFINX (build_bufinx_disk.py) =====
+  PASS  BUFINX 0x0408:0x18: byte-identical (24 bytes)
+
+===== AUXINX (build_auxinx_disk.py) =====
+  PASS  AUXINX 0x0400:0x08: byte-identical (8 bytes)
+
+===== DSKENT (build_dskent_disk.py) =====
+  PASS  DSKENT 0x0400:0x40: byte-identical (64 bytes)
+
+===== DSKCHG (build_dskchg_disk.py) =====
+  PASS  DSKCHG 0x0400:0x40: byte-identical (64 bytes)
+
+===== WRZER (build_wrzer_disk.py) =====
+  PASS  WRZER 0x0400:0x6A0: byte-identical (1696 bytes)
+
+===== DOSL-D1 (build_dosl_disk.py) =====
+  PASS  DOSL-D1 0x0400:0x20: byte-identical (32 bytes)
+
+===== DOSL-D2 (build_dosl_disk.py) =====
+  PASS  DOSL-D2 0x0400:0x10: byte-identical (16 bytes)
+
+===== DOSL-D3 (build_dosl_disk.py) =====
+  PASS  DOSL-D3 0x0400:0x20: byte-identical (32 bytes)
+
+===== DOSL-D4 (build_dosl_disk.py) =====
+  PASS  DOSL-D4 0x0400:0x6c: byte-identical (108 bytes)
+
+===== DOSL-D5 (build_dosl_disk.py) =====
+  PASS  DOSL-D5 0x0400:0x10: byte-identical (16 bytes)
+
+===== DOSL-D6 (build_dosl_disk.py) =====
+  PASS  DOSL-D6 0x0480:0x25: byte-identical (37 bytes)
+
+===== DOSL-D7 (build_dosl_disk.py) =====
+  PASS  DOSL-D7 0x0400:0x20: byte-identical (32 bytes)
+
+===== C-BIOS self-consistency: 30/30 regions byte-identical CF-3300 vs CBIOS2_CUR_MSX1_EU_NOBASIC_DISK =====
+ALL IDENTICAL — the disk ROM's BDOS surface is BIOS-independent (C-BIOS matches the stock-validated CF-3300 byte-for-byte).
