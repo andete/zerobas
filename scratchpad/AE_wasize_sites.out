@@ -1,0 +1,883 @@
+# per-site list: file line symbol value kind form source (build/disk.sym of Nov 26 18:19:07 2026)
+disk/init.asm	70	GETWRK_AREA	DD0E	const	ld hl,nn	ld      hl, GETWRK_AREA
+disk/init.asm	122	HOOK_SLOT	F1C8	cell	ld (nn),a	ld      (HOOK_SLOT), a
+disk/init.asm	155	SECTOR_BUF	E8AD	cell	ld hl,nn	ld      hl, SECTOR_BUF
+disk/init.asm	156	DBUF_PTR	EDB5	cell	ld (nn),hl	ld      (DBUF_PTR), hl
+disk/init.asm	159	MBUF_PTR	EDB7	cell	ld (nn),hl	ld      (MBUF_PTR), hl
+disk/init.asm	176	SYSTEM	F37D	cell	ld (nn),a	ld      (SYSTEM), a
+disk/init.asm	177	F37D_STUB	EFDA	cell	ld hl,nn	ld      hl, F37D_STUB
+disk/init.asm	178	SYSTEM	F37D	cell	ld (nn),hl	ld      (SYSTEM + 1), hl
+disk/init.asm	210	DATE_DAYS	F33B	cell	ld (nn),hl	ld      (DATE_DAYS), hl
+disk/init.asm	212	DOS_F346	F346	cell	ld (nn),a	ld      (DOS_F346), a
+disk/init.asm	424	DRVA_DPB	F195	cell	ld ix,nn	ld      ix, DRVA_DPB
+disk/init.asm	451	BOOT_SV_A8	ED6D	cell	ld (nn),a	ld      (BOOT_SV_A8), a
+disk/init.asm	462	BOOT_SV_SEC	ED6E	cell	ld (nn),a	ld      (BOOT_SV_SEC), a
+disk/init.asm	475	BOOT_SV_SEC	ED6E	cell	ld a,(nn)	ld      a, (BOOT_SV_SEC)
+disk/init.asm	477	BOOT_SV_A8	ED6D	cell	ld a,(nn)	ld      a, (BOOT_SV_A8)
+disk/init.asm	526	DOS_F340	F340	cell	ld (nn),a	ld      (DOS_F340), a
+disk/init.asm	550	DRVCNT	F347	cell	ld (nn),a	ld      (DRVCNT), a
+disk/init.asm	552	CURDRV_CELL	F247	cell	ld (nn),a	ld      (CURDRV_CELL), a
+disk/init.asm	582	HOOK_SLOT	F1C8	cell	ld a,(nn)	ld      a, (HOOK_SLOT)
+disk/init.asm	583	DRVTBL	F348	cell	ld (nn),a	ld      (DRVTBL), a
+disk/init.asm	587	DSK_MEDIA	EFF6	cell	ld (nn),a	ld      (DSK_MEDIA), a
+disk/init.asm	589	DSK_CURDRV	F022	cell	ld (nn),a	ld      (DSK_CURDRV), a
+disk/init.asm	592	DK_FCB_DRV	EF48	cell	ld (nn),a	ld      (DK_FCB_DRV), a
+disk/init.asm	603	RAMAD0	F341	cell	ld a,(nn)	ld      a, (RAMAD0)
+disk/init.asm	628	RAMAD0	F341	cell	ld (nn),a	ld      (RAMAD0 + 0), a
+disk/init.asm	629	RAMAD0	F341	cell	ld (nn),a	ld      (RAMAD0 + 1), a
+disk/init.asm	630	RAMAD0	F341	cell	ld (nn),a	ld      (RAMAD0 + 2), a
+disk/init.asm	631	RAMAD0	F341	cell	ld (nn),a	ld      (RAMAD0 + 3), a
+disk/init.asm	652	WA_JMPTAB	F368	cell	ld hl,nn	ld      hl, WA_JMPTAB
+disk/init.asm	676	DRV_TRAMP	ED9F	cell	ld hl,nn	ld      hl, DRV_TRAMP
+disk/init.asm	681	HOOK_SLOT	F1C8	cell	ld a,(nn)	ld      a, (HOOK_SLOT)
+disk/init.asm	700	DRVTBL	F348	cell	ld de,nn	ld      de, DRVTBL + 1
+disk/init.asm	740	RES_STUBS	F24E	cell	ld hl,nn	ld      hl, RES_STUBS
+disk/init.asm	742	RES_STUBS	F24E	cell	ld de,nn	ld      de, RES_STUBS + 1
+disk/init.asm	743	RES_STUBS_END	F2B8	cell	ld bc,nn	ld      bc, RES_STUBS_END - RES_STUBS - 1
+disk/init.asm	743	RES_STUBS	F24E	cell	ld bc,nn	ld      bc, RES_STUBS_END - RES_STUBS - 1
+disk/init.asm	759	DRVA_DPB	F195	cell	ld (nn),a	ld      (DRVA_DPB), a
+disk/init.asm	760	DRVA_DPB	F195	cell	ld hl,nn	ld      hl, DRVA_DPB
+disk/init.asm	805	DOS_RESV_TOP	DF93	const	dw nn (data)	dw      DOS_RESV_TOP
+disk/init.asm	806	GETWRK_AREA	DD0E	const	dw nn (data)	dw      GETWRK_AREA
+disk/init.asm	807	DRV_TRAMP	ED9F	cell	dw nn (data)	dw      DRV_TRAMP + 0
+disk/init.asm	808	DRV_TRAMP	ED9F	cell	dw nn (data)	dw      DRV_TRAMP + 5
+disk/init.asm	809	DRV_TRAMP	ED9F	cell	dw nn (data)	dw      DRV_TRAMP + 10
+disk/init.asm	811	DRV_TRAMP	ED9F	cell	dw nn (data)	dw      DRV_TRAMP + 15
+disk/pageenv.asm	80	BDOS_SEQREC	EDB3	cell	ld de,(nn)	ld      de, (BDOS_SEQREC)
+disk/pageenv.asm	88	FAT_FIRSTCLUS	ECB9	cell	ld de,(nn)	ld      de, (FAT_FIRSTCLUS)
+disk/pageenv.asm	115	FAT_DEFER	EDB9	cell	ld a,(nn)	ld      a, (FAT_DEFER)
+disk/pageenv.asm	119	FAT_DEFER	EDB9	cell	ld (nn),a	ld      (FAT_DEFER), a
+disk/pageenv.asm	125	WRBLK_REC	ED87	cell	ld (nn),hl	ld      (WRBLK_REC), hl
+disk/pageenv.asm	127	WRBLK_REC	ED87	cell	ld (nn),a	ld      (WRBLK_REC + 2), a
+disk/pageenv.asm	186	BR_GO	DEE8	cell	jp nn (RAM code)	jp      BR_GO
+disk/pageenv.asm	190	BR_GO	DEE8	cell	jp nn (RAM code)	jp      BR_GO
+disk/pageenv.asm	192	BR_CALS	DF1D	cell	jp nn (RAM code)	jp      BR_CALS
+disk/pageenv.asm	205	BR_P0IN	DDC9	cell	call nn (RAM code)	call    BR_P0IN
+disk/pageenv.asm	214	BR_GO	DEE8	cell	jp nn (RAM code)	jp      BR_GO
+disk/pageenv.asm	221	FILES_ENTIDX	EF63	cell	ld a,(nn)	ld      a,(FILES_ENTIDX)
+disk/pageenv.asm	225	FAT_DBUF	E8AD	cell	ld de,nn	ld      de,FAT_DBUF
+disk/driver.asm	28	DSK_MEDIA	EFF6	cell	ld (nn),a	ld      (DSK_MEDIA), a
+disk/driver.asm	33	FDC_CNT	EFF8	cell	ld (nn),a	ld      (FDC_CNT), a
+disk/driver.asm	34	FDC_LSEC	EFF9	cell	ld (nn),de	ld      (FDC_LSEC), de
+disk/driver.asm	35	FDC_DEST	EFFB	cell	ld (nn),hl	ld      (FDC_DEST), hl
+disk/driver.asm	48	P1_DEST	ED85	cell	ld (nn),hl	ld      (P1_DEST), hl
+disk/driver.asm	49	SECTOR_BUF	E8AD	cell	ld hl,nn	ld      hl, SECTOR_BUF
+disk/driver.asm	50	FDC_DEST	EFFB	cell	ld (nn),hl	ld      (FDC_DEST), hl
+disk/driver.asm	54	SECTOR_BUF	E8AD	cell	ld hl,nn	ld      hl, SECTOR_BUF
+disk/driver.asm	55	P1_DEST	ED85	cell	ld de,(nn)	ld      de, (P1_DEST)
+disk/driver.asm	57	P1_BLIT	EFFE	cell	call nn (RAM code)	call    P1_BLIT
+disk/driver.asm	59	P1_DEST	ED85	cell	ld hl,(nn)	ld      hl, (P1_DEST)
+disk/driver.asm	78	FDC_DEST	EFFB	cell	ld (nn),hl	ld      (FDC_DEST), hl
+disk/driver.asm	79	FDC_LSEC	EFF9	cell	ld hl,(nn)	ld      hl, (FDC_LSEC)
+disk/driver.asm	81	FDC_LSEC	EFF9	cell	ld (nn),hl	ld      (FDC_LSEC), hl
+disk/driver.asm	82	FDC_CNT	EFF8	cell	ld a,(nn)	ld      a, (FDC_CNT)
+disk/driver.asm	84	FDC_CNT	EFF8	cell	ld (nn),a	ld      (FDC_CNT), a
+disk/driver.asm	93	FDC_CNT	EFF8	cell	ld a,(nn)	ld      a, (FDC_CNT)
+disk/driver.asm	96	FDC_LSEC	EFF9	cell	ld hl,(nn)	ld      hl, (FDC_LSEC)
+disk/driver.asm	98	FDC_DEST	EFFB	cell	ld hl,(nn)	ld      hl, (FDC_DEST)
+disk/driver.asm	106	FDC_CNT	EFF8	cell	ld a,(nn)	ld      a, (FDC_CNT)
+disk/driver.asm	133	FDC_DEST	EFFB	cell	ld hl,(nn)	ld      hl, (FDC_DEST)
+disk/driver.asm	158	FDC_TRY	EFFD	cell	ld (nn),a	ld      (FDC_TRY), a
+disk/driver.asm	160	DSK_STAMP	EDBD	cell	ld (nn),hl	ld      (DSK_STAMP), hl
+disk/driver.asm	164	FDC_TRY	EFFD	cell	ld a,(nn)	ld      a, (FDC_TRY)
+disk/driver.asm	166	FDC_TRY	EFFD	cell	ld (nn),a	ld      (FDC_TRY), a
+disk/driver.asm	217	FWR_DIRSEC	ED5F	cell	ld hl,(nn)	ld      hl, (FWR_DIRSEC)
+disk/driver.asm	219	FWR_DIROFF	ED61	cell	ld hl,(nn)	ld      hl, (FWR_DIROFF)
+disk/driver.asm	223	FWR_DIROFF	ED61	cell	ld (nn),hl	ld      (FWR_DIROFF), hl
+disk/driver.asm	225	FWR_DIRSEC	ED5F	cell	ld (nn),hl	ld      (FWR_DIRSEC), hl
+disk/driver.asm	259	HOOK_SLOT	F1C8	cell	ld a,(nn)	ld      a, (HOOK_SLOT)
+disk/driver.asm	306	FDC_DEST	EFFB	cell	ld hl,(nn)	ld      hl, (FDC_DEST)
+disk/driver.asm	390	DISK_FCB_NAME	EF49	cell	ld de,nn	ld      de, DISK_FCB_NAME
+disk/driver.asm	414	WRBLK_PREVCLUS	ED91	cell	ld de,(nn)	ld      de, (WRBLK_PREVCLUS)
+disk/driver.asm	451	RDBLK_DST	ED83	cell	ld hl,(nn)	ld      hl, (RDBLK_DST)
+disk/driver.asm	467	RDBLK_DST	ED83	cell	ld (nn),hl	ld      (RDBLK_DST), hl
+disk/driver.asm	474	P1_BLIT	EFFE	cell	ld de,nn	ld      de, P1_BLIT
+disk/driver.asm	560	RND_HSEC	EDBB	cell	ld hl,(nn)	ld      hl, (RND_HSEC)
+disk/driver.asm	569	FAT_MBUF	EAAD	cell	cp imm	cp      high FAT_MBUF
+disk/driver.asm	572	FAT_MBUF	EAAD	cell	cp imm	cp      low FAT_MBUF
+disk/driver.asm	636	BDOS_DTA	ECCD	cell	ld (nn),hl	ld      (BDOS_DTA), hl
+disk/driver.asm	637	DOS_DTAPTR	F23D	cell	ld (nn),hl	ld      (DOS_DTAPTR), hl
+disk/driver.asm	650	BDOS_WRMODE	ED53	cell	ld (nn),a	ld      (BDOS_WRMODE), a
+disk/driver.asm	698	FWR_DIRSEC	ED5F	cell	ld de,(nn)	ld      de,(FWR_DIRSEC)
+disk/driver.asm	701	FAT_DBUF	E8AD	cell	ld hl,nn	ld      hl,FAT_DBUF
+disk/driver.asm	702	FWR_DIROFF	ED61	cell	ld de,(nn)	ld      de,(FWR_DIROFF)
+disk/driver.asm	705	DISK_FCB_NAME	EF49	cell	ld hl,nn	ld      hl,DISK_FCB_NAME
+disk/driver.asm	707	FWR_DIRSEC	ED5F	cell	ld de,(nn)	ld      de,(FWR_DIRSEC)
+disk/driver.asm	708	FAT_DBUF	E8AD	cell	ld hl,nn	ld      hl,FAT_DBUF
+disk/driver.asm	773	BDOS_BYTESLEFT	ED4F	cell	ld hl,nn	ld      hl, BDOS_BYTESLEFT + 3
+disk/driver.asm	791	BDOS_RECIDX	ECCC	cell	ld a,(nn)	ld      a, (BDOS_RECIDX)
+disk/driver.asm	795	SECTOR_BUF	E8AD	cell	ld de,nn	ld      de, SECTOR_BUF
+disk/driver.asm	797	BDOS_DTA	ECCD	cell	ld de,(nn)	ld      de, (BDOS_DTA)
+disk/driver.asm	798	P1_BLIT	EFFE	cell	call nn (RAM code)	call    P1_BLIT
+disk/driver.asm	818	BDOS_BYTESLEFT	ED4F	cell	ld hl,nn	ld      hl, BDOS_BYTESLEFT
+disk/driver.asm	831	BDOS_RECIDX	ECCC	cell	ld a,(nn)	ld      a, (BDOS_RECIDX)
+disk/driver.asm	833	BDOS_RECIDX	ECCC	cell	ld (nn),a	ld      (BDOS_RECIDX), a
+disk/driver.asm	843	P1_DEST	ED85	cell	ld (nn),a	ld      (P1_DEST), a
+disk/driver.asm	844	P1_DEST	ED85	cell	ld hl,nn	ld      hl, P1_DEST
+disk/driver.asm	846	P1_BLIT	EFFE	cell	jp nn (RAM code)	jp      P1_BLIT
+disk/driver.asm	857	RDBLK_REQ	ED79	cell	ld (nn),hl	ld      (RDBLK_REQ), hl
+disk/driver.asm	869	RDBLK_RECSIZE	ED7B	cell	ld (nn),hl	ld      (RDBLK_RECSIZE), hl
+disk/driver.asm	900	GP_RECNO	EE7D	cell	ld hl,nn	ld      hl, GP_RECNO
+disk/driver.asm	919	BDOS_WRFIRST	ED56	cell	ld (nn),hl	ld      (BDOS_WRFIRST), hl
+disk/driver.asm	929	CURDRV_CELL	F247	cell	ld (nn),a	ld      (CURDRV_CELL), a
+disk/driver.asm	944	RDBLK_BUFPOS	ED81	cell	ld hl,(nn)	ld      hl, (RDBLK_BUFPOS)
+disk/driver.asm	953	RDBLK_BUFPOS	ED81	cell	ld (nn),hl	ld      (RDBLK_BUFPOS), hl
+disk/driver.asm	955	SECTOR_BUF	E8AD	cell	ld de,nn	ld      de, SECTOR_BUF
+disk/driver.asm	962	BDOS_BYTESLEFT	ED4F	cell	ld hl,nn	ld      hl, BDOS_BYTESLEFT
+disk/driver.asm	992	BDOS_WRMODE	ED53	cell	ld a,(nn)	ld      a, (BDOS_WRMODE)
+disk/fat.asm	25	DRVCNT	F347	cell	ld a,(nn)	ld      a, (DRVCNT)
+disk/fat.asm	108	BDOS_SRCHIDX	ED6B	cell	ld hl,(nn)	ld      hl, (BDOS_SRCHIDX)
+disk/fat.asm	110	BDOS_SRCHIDX	ED6B	cell	ld (nn),hl	ld      (BDOS_SRCHIDX), hl
+disk/fat.asm	119	GP_FLAGS	F088	cell	ld a,(nn)	ld      a, (GP_FLAGS)
+disk/fat.asm	140	WRBLK_REQ	ED8F	cell	ld hl,(nn)	ld      hl, (WRBLK_REQ)
+disk/fat.asm	147	BDOS_WRMODE	ED53	cell	ld (nn),a	ld      (BDOS_WRMODE), a
+disk/fat.asm	194	GP_RECNO	EE7D	cell	ld (nn),hl	ld      (GP_RECNO), hl
+disk/fat.asm	195	GP_RECNO	EE7D	cell	ld (nn),de	ld      (GP_RECNO+2), de
+disk/fat.asm	321	FAT_FIRSTCLUS	ECB9	cell	ld hl,(nn)	ld      hl, (FAT_FIRSTCLUS)
+disk/fat.asm	322	BDOS_WRFIRST	ED56	cell	ld (nn),hl	ld      (BDOS_WRFIRST), hl
+disk/fat.asm	353	FAT_DEFER	EDB9	cell	ld a,(nn)	ld      a, (FAT_DEFER)
+disk/fat.asm	356	FAT_FATSEC	ECC2	cell	ld hl,(nn)	ld      hl, (FAT_FATSEC)
+disk/fat.asm	359	FAT_DEFER	EDB9	cell	ld a,(nn)	ld      a, (FAT_DEFER)
+disk/fat.asm	399	FAT_WRTMP	ED63	cell	ld (nn),de	ld      (FAT_WRTMP), de
+disk/fat.asm	403	FAT_FATSEC	ECC2	cell	ld de,(nn)	ld      de, (FAT_FATSEC)
+disk/fat.asm	435	FAT_DEFER	EDB9	cell	ld (nn),a	ld      (FAT_DEFER), a
+disk/fat.asm	436	FAT_NUMFATS	ED67	cell	ld a,(nn)	ld      a, (FAT_NUMFATS)
+disk/fat.asm	438	FAT_FATSEC	ECC2	cell	ld hl,(nn)	ld      hl, (FAT_FATSEC)
+disk/fat.asm	448	FAT_SECPERFAT	ED68	cell	ld de,(nn)	ld      de, (FAT_SECPERFAT)
+disk/fat.asm	462	FAT_FIRSTROOT	ECB0	cell	ld hl,(nn)	ld      hl, (FAT_FIRSTROOT)
+disk/fat.asm	463	FAT_DIRSEC	ECC8	cell	ld (nn),hl	ld      (FAT_DIRSEC), hl
+disk/fat.asm	465	FAT_DIRREM	ECCA	cell	ld (nn),hl	ld      (FAT_DIRREM), hl
+disk/fat.asm	472	FAT_FIRSTDATA	ECB4	cell	ld hl,(nn)	ld      hl, (FAT_FIRSTDATA)
+disk/fat.asm	473	FAT_FIRSTROOT	ECB0	cell	ld de,(nn)	ld      de, (FAT_FIRSTROOT)
+disk/fat.asm	504	FDC_IFF	EFF7	cell	ld a,(nn)	ld      a, (FDC_IFF)
+disk/fat.asm	529	FDC_IFF	EFF7	cell	ld a,(nn)	ld      a, (FDC_IFF)
+disk/fat.asm	535	FDC_IFF	EFF7	cell	ld (nn),a	ld      (FDC_IFF), a
+disk/fat.asm	536	FDC_DEST	EFFB	cell	ld hl,(nn)	ld      hl, (FDC_DEST)
+disk/fat.asm	634	GP_WITHIN	F07D	cell	ld hl,(nn)	ld      hl, (GP_WITHIN)
+disk/fat.asm	635	FAT_MBUF	EAAD	cell	ld de,nn	ld      de, FAT_MBUF
+disk/fat.asm	637	GP_SRC	EE77	cell	ld de,(nn)	ld      de, (GP_SRC)
+disk/fat.asm	639	GP_SRC	EE77	cell	ld (nn),de	ld      (GP_SRC), de
+disk/fat.asm	684	FAT_FIRSTCLUS	ECB9	cell	ld hl,(nn)	ld      hl, (FAT_FIRSTCLUS)
+disk/fat.asm	937	RDBLK_RECSIZE	ED7B	cell	ld (nn),hl	ld      (RDBLK_RECSIZE), hl
+disk/fat.asm	1023	BASENT_REQ	F33D	cell	ld (nn),hl	ld      (BASENT_REQ), hl
+disk/fat.asm	1087	BD_LINE	E8AD	cell	ld hl,nn	ld      hl, BD_LINE
+disk/fat.asm	1129	BD_LINE	E8AD	cell	ld de,nn	ld      de, BD_LINE
+disk/fat.asm	1132	BD_MON	E8C7	cell	ld (nn),a	ld      (BD_MON), a
+disk/fat.asm	1137	BD_DAY	E8C6	cell	ld (nn),a	ld      (BD_DAY), a
+disk/fat.asm	1164	BD_DAY	E8C6	cell	ld de,(nn)	ld      de, (BD_DAY)
+disk/fat.asm	1240	BR_CFOP	DF17	cell	ld (nn),a	ld      (BR_CFOP), a
+disk/fat.asm	1243	BR_CFOP	DF17	cell	ld (nn),a	ld      (BR_CFOP + 1), a
+disk/fat.asm	1246	BR_CFOP	DF17	cell	ld (nn),a	ld      (BR_CFOP + 2), a
+disk/fat.asm	1253	BR_CFOP	DF17	cell	ld hl,(nn)	ld      hl, (BR_CFOP)
+disk/fat.asm	1267	BR_CFOP	DF17	cell	ld hl,(nn)	ld      hl, (BR_CFOP + 1)
+disk/fat.asm	1276	BR_TGT	DF11	cell	ld (nn),hl	ld      (BR_TGT), hl
+disk/fat.asm	1277	BR_CFOP	DF17	cell	ld hl,nn	ld      hl, BR_CFOP
+disk/fat.asm	1278	BR_FRAME	DEEE	cell	jp nn (RAM code)	jp      BR_FRAME
+disk/fat.asm	1306	FAT_DIRSEC	ECC8	cell	ld hl,(nn)	ld      hl, (FAT_DIRSEC)
+disk/fat.asm	1308	FAT_DIRSEC	ECC8	cell	ld (nn),hl	ld      (FAT_DIRSEC), hl
+disk/fat.asm	1309	FAT_DIRREM	ECCA	cell	ld hl,(nn)	ld      hl, (FAT_DIRREM)
+disk/fat.asm	1311	FAT_DIRREM	ECCA	cell	ld (nn),hl	ld      (FAT_DIRREM), hl
+disk/fat.asm	1317	FAT_SECPERCLUS	ECAD	cell	ld a,(nn)	ld      a, (FAT_SECPERCLUS)
+disk/fat.asm	1349	FDC_IFF	EFF7	cell	ld (nn),a	ld      (FDC_IFF), a
+disk/fat.asm	1354	FDC_IFF	EFF7	cell	ld a,(nn)	ld      a, (FDC_IFF)
+disk/fat.asm	1374	DSK_MEDIA	EFF6	cell	ld a,(nn)	ld      a, (DSK_MEDIA)
+disk/fat.asm	1391	DSK_MEDIA	EFF6	cell	ld a,(nn)	ld      a, (DSK_MEDIA)
+disk/fat.asm	1475	SECTOR_BUF	E8AD	cell	ld a,(nn)	ld      a, (SECTOR_BUF + 21)
+disk/fat.asm	1481	SECTOR_BUF	E8AD	cell	ld a,(nn)	ld      a, (SECTOR_BUF + BPB_BYTSPERSEC)
+disk/fat.asm	1484	SECTOR_BUF	E8AD	cell	ld a,(nn)	ld      a, (SECTOR_BUF + BPB_BYTSPERSEC + 1)
+disk/fat.asm	1503	FAT_SECPERCLUS	ECAD	cell	ld a,(nn)	ld      a, (FAT_SECPERCLUS)
+disk/fat.asm	1526	FAT_FATSTART	ECAE	cell	ld de,(nn)	ld      de, (FAT_FATSTART)
+disk/fat.asm	1533	FAT_NUMFATS	ED67	cell	ld a,(nn)	ld      a, (FAT_NUMFATS)
+disk/fat.asm	1539	SECTOR_BUF	E8AD	cell	ld a,(nn)	ld      a, (SECTOR_BUF + BPB_ROOTENTCNT)
+disk/fat.asm	1545	FAT_FIRSTDATA	ECB4	cell	ld de,(nn)	ld      de, (FAT_FIRSTDATA)
+disk/fat.asm	1568	FAT_SECPERFAT	ED68	cell	ld a,(nn)	ld      a, (FAT_SECPERFAT)
+disk/fat.asm	1574	FAT_FIRSTROOT	ECB0	cell	ld de,(nn)	ld      de, (FAT_FIRSTROOT)
+disk/fat.asm	1621	FAT_FILESIZE	ECBB	cell	ld hl,(nn)	ld      hl, (FAT_FILESIZE)
+disk/fat.asm	1638	FAT_FILESIZE	ECBB	cell	ld a,(nn)	ld      a, (FAT_FILESIZE + 2)
+disk/fat.asm	1640	FAT_FILESIZE	ECBB	cell	ld a,(nn)	ld      a, (FAT_FILESIZE + 3)
+disk/fat.asm	1657	FAT_FILESIZE	ECBB	cell	ld hl,nn	ld      hl, FAT_FILESIZE
+disk/fat.asm	1664	FAT_FIRSTCLUS	ECB9	cell	ld hl,(nn)	ld      hl, (FAT_FIRSTCLUS)
+disk/fat.asm	1687	BDOS_RECIDX	ECCC	cell	ld (nn),a	ld      (BDOS_RECIDX), a
+disk/fat.asm	1688	FAT_FILESIZE	ECBB	cell	ld hl,nn	ld      hl, FAT_FILESIZE
+disk/fat.asm	1689	BDOS_BYTESLEFT	ED4F	cell	ld de,nn	ld      de, BDOS_BYTESLEFT
+disk/fat.asm	1695	BDOS_SEQREC	EDB3	cell	ld (nn),hl	ld      (BDOS_SEQREC), hl
+disk/fat.asm	1739	FAT_FIRSTROOT	ECB0	cell	ld hl,(nn)	ld      hl, (FAT_FIRSTROOT)
+disk/fat.asm	1742	FAT_DIRSEC	ECC8	cell	ld hl,(nn)	ld      hl, (FAT_DIRSEC)
+disk/fat.asm	1746	FAT_DIRSEC	ECC8	cell	ld (nn),de	ld      (FAT_DIRSEC), de
+disk/fat.asm	1756	FAT_DBUF	E8AD	cell	ld de,nn	ld      de, FAT_DBUF
+disk/fat.asm	1811	DOS_DTAPTR	F23D	cell	ld hl,(nn)	ld      hl, (DOS_DTAPTR)
+disk/kernel.asm	33	GP_CLUS	F07F	cell	ld de,(nn)	ld      de, (GP_CLUS)
+disk/kernel.asm	39	GP_CLUS	F07F	cell	ld (nn),hl	ld      (GP_CLUS), hl
+disk/kernel.asm	40	GP_CLIDX	F081	cell	ld hl,(nn)	ld      hl, (GP_CLIDX)
+disk/kernel.asm	44	GP_CLIDX	F081	cell	ld (nn),hl	ld      (GP_CLIDX), hl
+disk/kernel.asm	59	DSK_STAMP	EDBD	cell	ld de,(nn)	ld      de, (DSK_STAMP)
+disk/kernel.asm	108	BR_BDOS	DECD	cell	jp nn (RAM code)	jp      nz, BR_BDOS
+disk/kernel.asm	131	F37D_STUB	EFDA	cell	ld de,nn	ld      de, F37D_STUB
+disk/kernel.asm	134	HOOK_SLOT	F1C8	cell	ld a,(nn)	ld      a, (HOOK_SLOT)
+disk/kernel.asm	135	F37D_STUB	EFDA	cell	ld (nn),a	ld      (F37D_STUB + f37d_iy - f37d_tmpl + 3), a
+disk/kernel.asm	177	BOOT_LOAD	C000	const	ld de,nn	ld      de, BOOT_LOAD + fmt_bfcb - fmt_boot
+disk/kernel.asm	186	BOOT_LOAD	C000	const	ld (nn),hl	ld      (BOOT_LOAD + fmt_bfcb - fmt_boot + 14), hl
+disk/kernel.asm	188	BOOT_LOAD	C000	const	ld de,nn	ld      de, BOOT_LOAD + fmt_bfcb - fmt_boot
+disk/kernel.asm	206	RND_HSEC	EDBB	cell	ld (nn),hl	ld      (RND_HSEC), hl
+disk/kernel.asm	220	BDOS_DTA	ECCD	cell	ld (nn),de	ld      (BDOS_DTA), de
+disk/kernel.asm	221	DOS_DTAPTR	F23D	cell	ld (nn),de	ld      (DOS_DTAPTR), de
+disk/kernel.asm	233	DK_FCB_DRV	EF48	cell	ld a,(nn)	ld      a, (DK_FCB_DRV)
+disk/kernel.asm	240	FAT_DBUF	E8AD	cell	ld a,(nn)	ld      a, (FAT_DBUF)
+disk/kernel.asm	243	DSK_MEDIA	EFF6	cell	ld (nn),a	ld      (DSK_MEDIA), a
+disk/kernel.asm	251	SECTOR_BUF	E8AD	cell	ld hl,nn	ld      hl, SECTOR_BUF
+disk/kernel.asm	254	DSK_MEDIA	EFF6	cell	ld (nn),a	ld      (DSK_MEDIA), a
+disk/kernel.asm	262	FAT_DBUF	E8AD	cell	ld a,(nn)	ld      a, (FAT_DBUF)
+disk/kernel.asm	274	FAT_DBUF	E8AD	cell	ld hl,nn	ld      hl, FAT_DBUF + 11
+disk/kernel.asm	345	FAT_DEFER	EDB9	cell	ld a,(nn)	ld      a, (FAT_DEFER)
+disk/kernel.asm	347	FAT_DEFER	EDB9	cell	ld (nn),a	ld      (FAT_DEFER), a
+disk/kernel.asm	350	FAT_DEFER	EDB9	cell	ld a,(nn)	ld      a, (FAT_DEFER)
+disk/kernel.asm	353	FAT_DEFER	EDB9	cell	ld (nn),a	ld      (FAT_DEFER), a
+disk/kernel.asm	380	FAT_CURCLUS	ECB6	cell	ld hl,(nn)	ld      hl, (FAT_CURCLUS)
+disk/kernel.asm	397	BR_TGT	DF11	cell	ld (nn),hl	ld      (BR_TGT), hl
+disk/kernel.asm	398	BR_BACK	DE0D	cell	ld hl,nn	ld      hl, BR_BACK
+disk/kernel.asm	401	BR_FRM	DF13	cell	ld (nn),hl	ld      (BR_FRM), hl
+disk/kernel.asm	407	BR_MAININ	DDC5	cell	call nn (RAM code)	call    BR_MAININ
+disk/kernel.asm	412	BR_HL	DF15	cell	ld (nn),hl	ld      (BR_HL), hl
+disk/kernel.asm	415	BR_FRM	DF13	cell	ld hl,(nn)	ld      hl, (BR_FRM)
+disk/kernel.asm	417	BR_TGT	DF11	cell	ld hl,(nn)	ld      hl, (BR_TGT)
+disk/kernel.asm	419	BR_HL	DF15	cell	ld hl,(nn)	ld      hl, (BR_HL)
+disk/kernel.asm	425	BR_BACK	DE0D	cell	jp nn (RAM code)	jp      BR_BACK
+disk/kernel.asm	457	WRBLK_MULACC	ECA1	cell	ld (nn),hl	ld      (WRBLK_MULACC), hl
+disk/kernel.asm	458	WRBLK_MULACC	ECA1	cell	ld (nn),de	ld      (WRBLK_MULACC + 2), de
+disk/kernel.asm	491	DPSAVE_SP	ED8B	cell	ld (nn),sp	ld      (DPSAVE_SP),sp
+disk/kernel.asm	548	FDC_DEST	EFFB	cell	ld hl,(nn)	ld      hl,(FDC_DEST)
+disk/kernel.asm	647	DSK_CURDRV	F022	cell	ld hl,nn	ld      hl,DSK_CURDRV
+disk/kernel.asm	683	DOS_F346	F346	cell	ld (nn),a	ld      (DOS_F346), a
+disk/kernel.asm	685	W50A9_WRKB	F242	cell	ld (nn),a	ld      (W50A9_WRKB), a
+disk/kernel.asm	687	BASENT_REQ	F33D	cell	ld (nn),hl	ld      (BASENT_REQ), hl
+disk/kernel.asm	690	W50A9_RET_DE	F1AA	cell	ld de,nn	ld      de, W50A9_RET_DE
+disk/kernel.asm	693	W50A9_RET_HL	F359	cell	ld hl,nn	ld      hl, W50A9_RET_HL
+disk/kernel.asm	758	FAT_FATSEC	ECC2	cell	ld (nn),hl	ld      (FAT_FATSEC), hl
+disk/kernel.asm	947	LRSET_JUST	EEC6	cell	ld (nn),a	ld      (LRSET_JUST),a
+disk/kernel.asm	1019	DK_FCB_DRV	EF48	cell	ld (nn),a	ld      (DK_FCB_DRV),a
+disk/kernel.asm	1035	DSKBUF_PTR	F351	cell	ld hl,(nn)	ld      hl,(DSKBUF_PTR)
+disk/kernel.asm	1081	FCH_RECLENS	EE4D	cell	ld de,nn	ld      de,FCH_RECLENS
+disk/kernel.asm	1092	FLD_CUROFF	EEC3	cell	ld (nn),hl	ld      (FLD_CUROFF),hl
+disk/kernel.asm	1095	FLD_END	F019	cell	ld (nn),hl	ld      (FLD_END),hl
+disk/kernel.asm	1112	FLD_CUROFF	EEC3	cell	ld hl,(nn)	ld      hl,(FLD_CUROFF)
+disk/kernel.asm	1117	FLD_CUROFF	EEC3	cell	ld (nn),hl	ld      (FLD_CUROFF),hl
+disk/kernel.asm	1119	FLD_END	F019	cell	ld hl,(nn)	ld      hl,(FLD_END)
+disk/kernel.asm	1157	DOS_DTAPTR	F23D	cell	ld de,(nn)	ld      de, (DOS_DTAPTR)
+disk/kernel.asm	1158	P1_DEST	ED85	cell	ld (nn),de	ld      (P1_DEST), de
+disk/kernel.asm	1159	SECTOR_BUF	E8AD	cell	ld de,nn	ld      de, SECTOR_BUF + 256
+disk/kernel.asm	1162	SECTOR_BUF	E8AD	cell	ld hl,nn	ld      hl, SECTOR_BUF + 256
+disk/kernel.asm	1164	SECTOR_BUF	E8AD	cell	ld hl,nn	ld      hl, SECTOR_BUF
+disk/kernel.asm	1166	DOS_DTAPTR	F23D	cell	ld (nn),hl	ld      (DOS_DTAPTR), hl
+disk/kernel.asm	1170	DOS_DTAPTR	F23D	cell	ld hl,(nn)	ld      hl, (DOS_DTAPTR)
+disk/kernel.asm	1171	P1_DEST	ED85	cell	ld de,(nn)	ld      de, (P1_DEST)
+disk/kernel.asm	1172	DOS_DTAPTR	F23D	cell	ld (nn),de	ld      (DOS_DTAPTR), de
+disk/kernel.asm	1178	P1_BLIT	EFFE	cell	jp nn (RAM code)	jp      nz, P1_BLIT
+disk/kernel.asm	1198	P1_BLIT	EFFE	cell	jp nn (RAM code)	jp      P1_BLIT
+disk/kernel.asm	1289	RES_PRINT	F1C9	cell	dw nn (data)	dw      RES_PRINT
+disk/kernel.asm	1405	FAT_TOTCLUS	ECB2	cell	ld de,(nn)	ld      de, (FAT_TOTCLUS)
+disk/kernel.asm	1449	FAT_CLUSSEC	ECB8	cell	ld a,(nn)	ld      a, (FAT_CLUSSEC)
+disk/kernel.asm	1451	FAT_CURCLUS	ECB6	cell	ld hl,(nn)	ld      hl, (FAT_CURCLUS)
+disk/kernel.asm	1557	BASENT_REQ	F33D	cell	ld hl,(nn)	ld      hl, (BASENT_REQ)
+disk/kernel.asm	1560	BASENT_REQ	F33D	cell	ld (nn),hl	ld      (BASENT_REQ), hl
+disk/kernel.asm	1566	BOOT_ENTRY	C01E	const	call nn (RAM code)	call    BOOT_ENTRY
+disk/kernel.asm	1568	BASENT_REQ	F33D	cell	ld (nn),hl	ld      (BASENT_REQ), hl
+disk/kernel.asm	1575	BR_P1SV	DEE7	cell	ld (nn),a	ld      (BR_P1SV), a
+disk/kernel.asm	1577	WA_SEG_ROM	DEB2	cell	call nn (RAM code)	call    WA_SEG_ROM
+disk/kernel.asm	1580	BR_P1SV	DEE7	cell	ld a,(nn)	ld      a, (BR_P1SV)
+disk/kernel.asm	1582	WA_SEG_RAM	DEB8	cell	call nn (RAM code)	call    z, WA_SEG_RAM
+disk/kernel.asm	1599	GP_RECLEN	F09A	cell	ld de,(nn)	ld      de, (GP_RECLEN)
+disk/kernel.asm	1625	BDOS_BYTESLEFT	ED4F	cell	ld hl,(nn)	ld      hl, (BDOS_BYTESLEFT)
+disk/kernel.asm	1626	BDOS_BYTESLEFT	ED4F	cell	ld de,(nn)	ld      de, (BDOS_BYTESLEFT + 2)
+disk/kernel.asm	1632	BDOS_RECIDX	ECCC	cell	ld a,(nn)	ld      a, (BDOS_RECIDX)
+disk/kernel.asm	1638	BDOS_RECIDX	ECCC	cell	ld (nn),a	ld      (BDOS_RECIDX), a
+disk/kernel.asm	1662	BDOS_SEQREC	EDB3	cell	ld (nn),hl	ld      (BDOS_SEQREC), hl
+disk/kernel.asm	1664	BDOS_WRMODE	ED53	cell	ld (nn),a	ld      (BDOS_WRMODE), a
+disk/kernel.asm	1700	FAT_FIRSTCLUS	ECB9	cell	ld hl,(nn)	ld      hl, (FAT_FIRSTCLUS)
+disk/kernel.asm	1701	BDOS_WRFIRST	ED56	cell	ld (nn),hl	ld      (BDOS_WRFIRST), hl
+disk/kernel.asm	1729	F365_STUB	F365	cell	ld de,nn	ld      de, F365_STUB
+disk/kernel.asm	1736	DOS_DTAPTR	F23D	cell	ld (nn),de	ld      (DOS_DTAPTR), de
+disk/kernel.asm	1774	GP_RECLEN	F09A	cell	ld de,(nn)	ld      de, (GP_RECLEN)
+disk/kernel.asm	1817	CURDRV_CELL	F247	cell	ld a,(nn)	ld      a, (CURDRV_CELL)
+disk/kernel.asm	1827	TXTMAX	E7AD	const	ld hl,nn	ld      hl, TXTMAX-(FCH_CEIL+1)*FCH_STATESZ
+disk/kernel.asm	1844	FAT_FILESIZE	ECBB	cell	ld hl,nn	ld      hl, FAT_FILESIZE
+disk/kernel.asm	2047	COPY_SRC	EEEE	cell	ld hl,nn	ld      hl,COPY_SRC
+disk/kernel.asm	2059	COPY_SRC	EEEE	cell	ld hl,nn	ld      hl,COPY_SRC
+disk/kernel.asm	2060	DISK_FCB_NAME	EF49	cell	ld de,nn	ld      de,DISK_FCB_NAME
+disk/kernel.asm	2080	COPY_SRC	EEEE	cell	ld hl,nn	hkc_differ:     ld      hl,COPY_SRC
+disk/kernel.asm	2085	COPY_STAMP	ED87	cell	ld de,nn	ld      de,COPY_STAMP
+disk/kernel.asm	2087	FAT_FIRSTCLUS	ECB9	cell	ld hl,nn	ld      hl,FAT_FIRSTCLUS
+disk/kernel.asm	2088	COPY_CLUS	EEF9	cell	ld de,nn	ld      de,COPY_CLUS
+disk/kernel.asm	2095	DISK_FCB_NAME	EF49	cell	ld hl,nn	ld      hl,DISK_FCB_NAME
+disk/kernel.asm	2099	COPY_CLUS	EEF9	cell	ld hl,(nn)	ld      hl,(COPY_CLUS)
+disk/kernel.asm	2100	FAT_FIRSTCLUS	ECB9	cell	ld (nn),hl	ld      (FAT_FIRSTCLUS),hl
+disk/kernel.asm	2103	COPY_LEFT	EEFB	cell	ld hl,(nn)	ld      hl,(COPY_LEFT)
+disk/kernel.asm	2104	COPY_LEFT	EEFB	cell	ld a,(nn)	ld      a,(COPY_LEFT+2)
+disk/kernel.asm	2112	COPY_LEFT	EEFB	cell	ld hl,(nn)	ld      hl,(COPY_LEFT)
+disk/kernel.asm	2113	COPY_LEFT	EEFB	cell	ld a,(nn)	ld      a,(COPY_LEFT+2)
+disk/kernel.asm	2119	COPY_LEFT	EEFB	cell	ld de,(nn)	ld      de,(COPY_LEFT)
+disk/kernel.asm	2120	FWR_BUFLEN	ED59	cell	ld (nn),de	hkc_n:          ld      (FWR_BUFLEN),de
+disk/kernel.asm	2121	COPY_LEFT	EEFB	cell	ld hl,(nn)	ld      hl,(COPY_LEFT)
+disk/kernel.asm	2124	COPY_LEFT	EEFB	cell	ld (nn),hl	ld      (COPY_LEFT),hl
+disk/kernel.asm	2126	COPY_LEFT	EEFB	cell	ld hl,nn	ld      hl,COPY_LEFT+2
+disk/kernel.asm	2128	FWR_BYTES	ED5B	cell	ld hl,(nn)	hkc_nb:         ld      hl,(FWR_BYTES)
+disk/kernel.asm	2130	FWR_BYTES	ED5B	cell	ld (nn),hl	ld      (FWR_BYTES),hl
+disk/kernel.asm	2132	FWR_BYTES	ED5B	cell	ld hl,nn	ld      hl,FWR_BYTES+2
+disk/kernel.asm	2143	FWR_DIROFF	ED61	cell	ld hl,(nn)	ld      hl,(FWR_DIROFF)
+disk/kernel.asm	2144	FAT_MBUF	EAAD	cell	ld de,nn	ld      de,FAT_MBUF+22
+disk/kernel.asm	2147	COPY_STAMP	ED87	cell	ld hl,nn	ld      hl,COPY_STAMP
+disk/kernel.asm	2149	FWR_DIRSEC	ED5F	cell	ld de,(nn)	ld      de,(FWR_DIRSEC)
+disk/kernel.asm	2150	FAT_MBUF	EAAD	cell	ld hl,nn	ld      hl,FAT_MBUF
+disk/kernel.asm	2184	COPY_SRC	EEEE	cell	ld hl,nn	ld      hl,COPY_SRC
+disk/kernel.asm	2186	DISK_FCB_NAME	EF49	cell	ld hl,nn	ld      hl,DISK_FCB_NAME
+disk/kernel.asm	2198	FAT_DIRSEC	ECC8	cell	ld de,(nn)	ld      de,(FAT_DIRSEC)
+disk/kernel.asm	2202	FAT_DBUF	E8AD	cell	ld hl,nn	ld      hl,FAT_DBUF
+disk/kernel.asm	2245	COPY_SRC	EEEE	cell	ld de,nn	ld      de,COPY_SRC
+disk/kernel.asm	2249	DISK_FCB_NAME	EF49	cell	ld de,nn	ld      de,DISK_FCB_NAME
+disk/kernel.asm	2294	FWR_DIROFF	ED61	cell	ld hl,(nn)	ld      hl, (FWR_DIROFF)
+disk/kernel.asm	2295	FAT_MBUF	EAAD	cell	ld bc,nn	ld      bc, FAT_MBUF + 22
+disk/kernel.asm	2386	DISK_FCB_NAME	EF49	cell	ld hl,nn	ld      hl, DISK_FCB_NAME
+disk/kernel.asm	2418	FWR_DIRSEC	ED5F	cell	ld hl,(nn)	ld      hl, (FWR_DIRSEC)
+disk/kernel.asm	2421	FWR_DIROFF	ED61	cell	ld hl,(nn)	ld      hl, (FWR_DIROFF)
+disk/kernel.asm	2504	DK_FCB_DRV	EF48	cell	ld (nn),a	ld      (DK_FCB_DRV),a
+disk/kernel.asm	2519	FILES_HASPAT	F09D	cell	ld (nn),a	ld      (FILES_HASPAT),a
+disk/kernel.asm	2554	FAT_DEFER	EDB9	cell	ld (nn),a	ld      (FAT_DEFER), a
+disk/kernel.asm	2598	FWR_BYTES	ED5B	cell	ld hl,(nn)	ld      hl, (FWR_BYTES)
+disk/kernel.asm	2599	FWR_BUFLEN	ED59	cell	ld de,(nn)	ld      de, (FWR_BUFLEN)
+disk/kernel.asm	2602	FWR_BYTES	ED5B	cell	ld (nn),hl	ld      (FWR_BYTES), hl
+disk/kernel.asm	2604	FWR_BYTES	ED5B	cell	ld hl,(nn)	ld      hl, (FWR_BYTES + 2)
+disk/kernel.asm	2606	FWR_BYTES	ED5B	cell	ld (nn),hl	ld      (FWR_BYTES + 2), hl
+disk/kernel.asm	2651	FAT_FILESIZE	ECBB	cell	ld hl,(nn)	ld      hl, (FAT_FILESIZE)
+disk/kernel.asm	2671	FAT_SECPERCLUS	ECAD	cell	ld hl,nn	ld      hl, FAT_SECPERCLUS
+disk/kernel.asm	2680	FWR_SECIDX	ED58	cell	ld (nn),a	ld      (FWR_SECIDX), a
+disk/kernel.asm	2695	FWR_CLUS	ED54	cell	ld (nn),hl	ld      (FWR_CLUS), hl
+disk/kernel.asm	2699	FAT_DBUF	E8AD	cell	ld hl,nn	ld      hl, FAT_DBUF
+disk/kernel.asm	2782	FWR_CLUS	ED54	cell	ld (nn),hl	ld      (FWR_CLUS), hl
+disk/kernel.asm	2785	FWR_FIRST	ED56	cell	ld (nn),hl	ld      (FWR_FIRST), hl
+disk/kernel.asm	2787	FWR_SECIDX	ED58	cell	ld (nn),a	ld      (FWR_SECIDX), a
+disk/kernel.asm	2788	FAT_DBUF	E8AD	cell	ld de,nn	ld      de, FAT_DBUF
+disk/kernel.asm	2793	FAT_DBUF	E8AD	cell	ld de,nn	ld      de, FAT_DBUF+256
+disk/kernel.asm	2806	FWR_BUFLEN	ED59	cell	ld (nn),hl	ld      (FWR_BUFLEN), hl
+disk/kernel.asm	2812	FWR_SECIDX	ED58	cell	ld hl,nn	ld      hl, FWR_SECIDX
+disk/kernel.asm	2815	FWR_CLUS	ED54	cell	ld hl,(nn)	ld      hl, (FWR_CLUS)
+disk/kernel.asm	2818	FWR_FIRST	ED56	cell	ld hl,(nn)	ld      hl, (FWR_FIRST)
+disk/kernel.asm	2821	FWR_SECIDX	ED58	cell	ld a,(nn)	ld      a, (FWR_SECIDX)
+disk/kernel.asm	2845	FWR_CLUS	ED54	cell	ld hl,(nn)	ld      hl, (FWR_CLUS)
+disk/kernel.asm	2846	FWR_SECIDX	ED58	cell	ld a,(nn)	ld      a, (FWR_SECIDX)
+disk/kernel.asm	2857	FAT_SECPERCLUS	ECAD	cell	ld a,(nn)	ld      a, (FAT_SECPERCLUS)
+disk/kernel.asm	2862	FAT_FIRSTDATA	ECB4	cell	ld de,(nn)	ld      de, (FAT_FIRSTDATA)
+disk/kernel.asm	2934	FWR_DIRSEC	ED5F	cell	ld (nn),hl	ld      (FWR_DIRSEC), hl
+disk/kernel.asm	2937	FWR_DIROFF	ED61	cell	ld (nn),hl	ld      (FWR_DIROFF), hl
+disk/kernel.asm	2940	FWR_FIRST	ED56	cell	ld (nn),hl	ld      (FWR_FIRST), hl
+disk/kernel.asm	2959	FAT_SECPERCLUS	ECAD	cell	ld a,(nn)	ld      a, (FAT_SECPERCLUS)
+disk/kernel.asm	2966	FAT_ALLOCHINT	ED9A	cell	ld (nn),hl	ld      (FAT_ALLOCHINT), hl
+disk/kernel.asm	2970	BDOS_DIRSEC	ED5F	cell	ld (nn),de	ld      (BDOS_DIRSEC), de
+disk/kernel.asm	2971	BDOS_DIROFF	ED61	cell	ld (nn),hl	ld      (BDOS_DIROFF), hl
+disk/kernel.asm	2986	FAT_FIRSTROOT	ECB0	cell	ld hl,(nn)	ld      hl, (FAT_FIRSTROOT)
+disk/kernel.asm	3002	SECTOR_BUF	E8AD	cell	ld de,nn	ld      de, SECTOR_BUF
+disk/kernel.asm	3005	BDOS_DTA	ECCD	cell	ld hl,(nn)	ld      hl, (BDOS_DTA)
+disk/kernel.asm	3064	FAT_FILESIZE	ECBB	cell	ld hl,nn	ld      hl, FAT_FILESIZE
+disk/kernel.asm	3070	FAT_FIRSTCLUS	ECB9	cell	ld hl,(nn)	ld      hl, (FAT_FIRSTCLUS)
+disk/kernel.asm	3085	FAT_DIRREM	ECCA	cell	ld hl,(nn)	ld      hl,(FAT_DIRREM)
+disk/kernel.asm	3138	GP_RECNO	EE7D	cell	ld de,nn	ld      de, GP_RECNO
+disk/kernel.asm	3140	GP_RECNO	EE7D	cell	ld hl,nn	ld      hl, GP_RECNO
+disk/kernel.asm	3148	GP_RECNO	EE7D	cell	ld hl,nn	ld      hl, GP_RECNO
+disk/kernel.asm	3185	GP_FLAGS	F088	cell	ld (nn),a	ld      (GP_FLAGS), a
+disk/kernel.asm	3213	FCH_RECLENS	EE4D	cell	ld de,nn	ld      de, FCH_RECLENS
+disk/kernel.asm	3218	GP_RECLEN	F09A	cell	ld (nn),de	ld      (GP_RECLEN), de
+disk/kernel.asm	3219	GP_LEFT	EE79	cell	ld (nn),de	ld      (GP_LEFT), de
+disk/kernel.asm	3221	GP_SRC	EE77	cell	ld (nn),hl	ld      (GP_SRC), hl
+disk/kernel.asm	3229	GP_WITHIN	F07D	cell	ld (nn),de	ld      (GP_WITHIN), de
+disk/kernel.asm	3234	GP_SEC	F07B	cell	ld (nn),de	ld      (GP_SEC), de
+disk/kernel.asm	3297	DATE_DAYS	F33B	cell	ld (nn),hl	ld      (DATE_DAYS), hl
+disk/kernel.asm	3319	DATE_DAYS	F33B	cell	ld hl,(nn)	ld      hl, (DATE_DAYS)
+disk/kernel.asm	3440	BASENT_REQ	F33D	cell	ld hl,(nn)	ld      hl, (BASENT_REQ)
+disk/kernel.asm	3459	WRBLK_RS	ED8B	cell	ld (nn),de	ld      (WRBLK_RS), de
+disk/kernel.asm	3491	WRBLK_CURSEC	ED98	cell	ld (nn),hl	ld      (WRBLK_CURSEC), hl
+disk/kernel.asm	3545	BASENT_REQ	F33D	cell	ld hl,(nn)	ld      hl, (BASENT_REQ)
+disk/kernel.asm	3560	BASENT_REQ	F33D	cell	ld (nn),hl	ld      (BASENT_REQ), hl
+disk/kernel.asm	3563	SECTOR_BUF	E8AD	cell	ld de,nn	ld      de, SECTOR_BUF
+disk/kernel.asm	3567	SECTOR_BUF	E8AD	cell	jp nn (RAM code)	jp      z, SECTOR_BUF + (bt_keep - basent_tramp)
+disk/kernel.asm	3568	SECTOR_BUF	E8AD	cell	jp nn (RAM code)	jp      SECTOR_BUF
+disk/kernel.asm	3585	WA_JMPTAB	F368	cell	ld (nn),a	ld      (WA_JMPTAB), a
+disk/kernel.asm	3586	WA_JMPTAB	F368	cell	ld (nn),a	ld      (WA_JMPTAB + 3), a
+disk/kernel.asm	3710	FMT_RESULT	EF62	cell	ld (nn),a	ld      (FMT_RESULT),a
+disk/kernel.asm	3814	DOS_F346	F346	cell	ld a,(nn)	ld      a,(DOS_F346)
+disk/kernel.asm	3856	BOOT_ENTRY	C01E	const	call nn (RAM code)	call    BOOT_ENTRY
+disk/kernel.asm	3860	DRVA_DPB	F195	cell	ld ix,nn	ld      ix,DRVA_DPB
+disk/kernel.asm	3928	BDOS_WRFIRST	ED56	cell	ld bc,(nn)	ld      bc, (BDOS_WRFIRST)
+disk/kernel.asm	3933	BDOS_WRMODE	ED53	cell	ld (nn),a	ld      (BDOS_WRMODE), a
+disk/kernel.asm	3967	GP_SEC	F07B	cell	ld hl,(nn)	ld      hl, (GP_SEC)
+disk/kernel.asm	3977	FAT_MBUF	EAAD	cell	ld hl,nn	ld      hl, FAT_MBUF
+disk/kernel.asm	3985	GP_WITHIN	F07D	cell	ld hl,(nn)	ld      hl, (GP_WITHIN)
+disk/kernel.asm	3986	FAT_MBUF	EAAD	cell	ld de,nn	ld      de, FAT_MBUF
+disk/kernel.asm	3989	GP_SRC	EE77	cell	ld hl,(nn)	ld      hl, (GP_SRC)
+disk/kernel.asm	3991	GP_SRC	EE77	cell	ld (nn),hl	ld      (GP_SRC), hl
+disk/kernel.asm	3997	GP_PHYS	F084	cell	ld hl,(nn)	ld      hl, (GP_PHYS)
+disk/kernel.asm	3998	RND_HSEC	EDBB	cell	ld (nn),hl	ld      (RND_HSEC), hl
+disk/kernel.asm	4009	GP_RECLEN	F09A	cell	ld de,(nn)	ld      de, (GP_RECLEN)
+disk/kernel.asm	4025	GP_PHYS	F084	cell	ld de,(nn)	ld      de, (GP_PHYS)
+disk/kernel.asm	4031	GP_LEFT	EE79	cell	ld hl,(nn)	ld      hl, (GP_LEFT)
+disk/kernel.asm	4036	GP_WITHIN	F07D	cell	ld (nn),hl	ld      (GP_WITHIN), hl
+disk/kernel.asm	4037	GP_SEC	F07B	cell	ld hl,(nn)	ld      hl, (GP_SEC)
+disk/kernel.asm	4039	GP_SEC	F07B	cell	ld (nn),hl	ld      (GP_SEC), hl
+disk/kernel.asm	4088	BR_RDSLT	DE48	cell	dw nn (data)	dw      $000C, BR_RDSLT
+disk/kernel.asm	4089	BR_WRSLT	DE4F	cell	dw nn (data)	dw      $0014, BR_WRSLT
+disk/kernel.asm	4090	BR_CALSLT	DE56	cell	dw nn (data)	dw      $001C, BR_CALSLT
+disk/kernel.asm	4091	BR_ENASLT	DE59	cell	dw nn (data)	dw      $0024, BR_ENASLT
+disk/kernel.asm	4092	BR_CALLF	DE74	cell	dw nn (data)	dw      $0030, BR_CALLF
+disk/kernel.asm	4093	BR_BDOS	DECD	cell	dw nn (data)	dw      $0005, BR_BDOS
+disk/kernel.asm	4096	INT_H_HIRAM	DDAE	cell	dw nn (data)	dw      $0038, INT_H_HIRAM
+disk/kernel.asm	4141	FAT_FILESIZE	ECBB	cell	ld hl,(nn)	ld      hl, (FAT_FILESIZE)
+disk/kernel.asm	4142	FAT_FILESIZE	ECBB	cell	ld de,(nn)	ld      de, (FAT_FILESIZE + 2)
+disk/kernel.asm	4202	WRBLK_REQ	ED8F	cell	ld (nn),hl	ld      (WRBLK_REQ), hl
+disk/kernel.asm	4230	WRBLK_REC	ED87	cell	ld (nn),hl	ld      (WRBLK_REC), hl
+disk/kernel.asm	4232	WRBLK_REC	ED87	cell	ld (nn),a	ld      (WRBLK_REC + 2), a
+disk/kernel.asm	4234	WRBLK_REQ	ED8F	cell	ld hl,(nn)	ld      hl, (WRBLK_REQ)
+disk/kernel.asm	4250	WRBLK_RS	ED8B	cell	ld de,(nn)	ld      de, (WRBLK_RS)
+disk/kernel.asm	4268	WRBLK_CNT	ED8D	cell	ld (nn),hl	ld      (WRBLK_CNT), hl
+disk/kernel.asm	4271	WRBLK_CURVALID	ED97	cell	ld (nn),a	ld      (WRBLK_CURVALID), a
+disk/kernel.asm	4273	WRBLK_CNT	ED8D	cell	ld hl,(nn)	ld      hl, (WRBLK_CNT)
+disk/kernel.asm	4277	WRBLK_REC	ED87	cell	ld hl,(nn)	ld      hl, (WRBLK_REC + 1)
+disk/kernel.asm	4284	WRBLK_REC	ED87	cell	ld de,(nn)	ld      de, (WRBLK_REC)
+disk/kernel.asm	4291	WRBLK_CNT	ED8D	cell	ld de,(nn)	ld      de, (WRBLK_CNT)
+disk/kernel.asm	4303	BDOS_DTA	ECCD	cell	ld (nn),hl	ld      (BDOS_DTA), hl
+disk/kernel.asm	4308	WRBLK_REC	ED87	cell	ld hl,(nn)	ld      hl, (WRBLK_REC)
+disk/kernel.asm	4310	WRBLK_REC	ED87	cell	ld (nn),hl	ld      (WRBLK_REC), hl
+disk/kernel.asm	4312	WRBLK_REC	ED87	cell	ld hl,nn	ld      hl, WRBLK_REC + 2
+disk/kernel.asm	4315	WRBLK_CNT	ED8D	cell	ld hl,(nn)	ld      hl, (WRBLK_CNT)
+disk/kernel.asm	4318	WRBLK_CNT	ED8D	cell	ld (nn),hl	ld      (WRBLK_CNT), hl
+disk/kernel.asm	4324	WRBLK_REQ	ED8F	cell	ld de,(nn)	ld      de, (WRBLK_REQ)
+disk/kernel.asm	4372	WRBLK_REQ	ED8F	cell	ld hl,(nn)	ld      hl, (WRBLK_REQ)
+disk/kernel.asm	4400	WRBLK_CURVALID	ED97	cell	ld a,(nn)	ld      a, (WRBLK_CURVALID)
+disk/kernel.asm	4406	WRBLK_CURSEC	ED98	cell	ld de,(nn)	ld      de, (WRBLK_CURSEC)
+disk/kernel.asm	4416	WRBLK_CURSEC	ED98	cell	ld (nn),bc	ld      (WRBLK_CURSEC), bc
+disk/kernel.asm	4433	WRBLK_CURSEC	ED98	cell	ld (nn),bc	ld      (WRBLK_CURSEC), bc
+disk/kernel.asm	4435	WRBLK_CURVALID	ED97	cell	ld (nn),a	ld      (WRBLK_CURVALID), a
+disk/kernel.asm	4442	FAT_FIRSTCLUS	ECB9	cell	ld hl,(nn)	ld      hl, (FAT_FIRSTCLUS)
+disk/kernel.asm	4482	FAT_CURCLUS	ECB6	cell	ld hl,(nn)	ld      hl, (FAT_CURCLUS)
+disk/kernel.asm	4483	WRBLK_PREVCLUS	ED91	cell	ld (nn),hl	ld      (WRBLK_PREVCLUS), hl
+disk/kernel.asm	4484	FAT_CLUSSEC	ECB8	cell	ld a,(nn)	ld      a, (FAT_CLUSSEC)
+disk/kernel.asm	4485	FAT_SECPERCLUS	ECAD	cell	ld hl,nn	ld      hl, FAT_SECPERCLUS
+disk/kernel.asm	4490	FAT_CURCLUS	ECB6	cell	ld hl,(nn)	ld      hl, (FAT_CURCLUS)
+disk/kernel.asm	4503	WRBLK_PREVCLUS	ED91	cell	ld de,(nn)	ld      de, (WRBLK_PREVCLUS)
+disk/kernel.asm	4507	FAT_FIRSTCLUS	ECB9	cell	ld (nn),hl	ld      (FAT_FIRSTCLUS), hl
+disk/kernel.asm	4509	FAT_CURCLUS	ECB6	cell	ld (nn),hl	ld      (FAT_CURCLUS), hl
+disk/kernel.asm	4511	FAT_CLUSSEC	ECB8	cell	ld (nn),a	ld      (FAT_CLUSSEC), a
+disk/kernel.asm	4543	WRBLK_RS	ED8B	cell	ld bc,(nn)	ld      bc, (WRBLK_RS)
+disk/kernel.asm	4609	DOS_DTAPTR	F23D	cell	ld hl,(nn)	ld      hl, (DOS_DTAPTR)
+disk/kernel.asm	4671	FAT_DIRSEC	ECC8	cell	ld (nn),hl	ld      (FAT_DIRSEC), hl
+disk/kernel.asm	4734	FAT_DIRSEC	ECC8	cell	ld de,(nn)	ld      de, (FAT_DIRSEC)
+disk/kernel.asm	4735	FAT_DBUF	E8AD	cell	ld hl,nn	ld      hl, FAT_DBUF
+disk/kernel.asm	4765	BDOS_SEQREC	EDB3	cell	ld hl,(nn)	ld      hl, (BDOS_SEQREC)
+disk/kernel.asm	4767	BDOS_SEQREC	EDB3	cell	ld (nn),hl	ld      (BDOS_SEQREC), hl
+disk/kernel.asm	4804	WRBLK_MULACC	ECA1	cell	ld hl,nn	ld      hl, WRBLK_MULACC
+disk/kernel.asm	4806	FAT_FILESIZE	ECBB	cell	ld hl,nn	ld      hl, FAT_FILESIZE
+disk/kernel.asm	4811	BDOS_WRBYTES	ED5B	cell	ld de,nn	ld      de, BDOS_WRBYTES
+disk/kernel.asm	4831	WRBLK_MULACC	ECA1	cell	ld hl,nn	ld      hl, WRBLK_MULACC
+disk/kernel.asm	4843	WRBLK_MULACC	ECA1	cell	ld hl,(nn)	ld      hl, (WRBLK_MULACC)
+disk/kernel.asm	4846	WRBLK_MULACC	ECA1	cell	ld a,(nn)	ld      a, (WRBLK_MULACC + 2)
+disk/kernel.asm	4855	FAT_SECPERCLUS	ECAD	cell	ld a,(nn)	ld      a, (FAT_SECPERCLUS)
+disk/kernel.asm	4863	WRBLK_KEEPCNT	ED93	cell	ld (nn),de	ld      (WRBLK_KEEPCNT), de
+disk/kernel.asm	4864	FAT_FIRSTCLUS	ECB9	cell	ld hl,(nn)	ld      hl, (FAT_FIRSTCLUS)
+disk/kernel.asm	4866	WRBLK_KEEPCNT	ED93	cell	ld de,(nn)	ld      de, (WRBLK_KEEPCNT)
+disk/kernel.asm	4871	WRBLK_KEEPCNT	ED93	cell	ld (nn),de	ld      (WRBLK_KEEPCNT), de
+disk/kernel.asm	4881	WRBLK_NEXTCLUS	ED95	cell	ld (nn),hl	ld      (WRBLK_NEXTCLUS), hl
+disk/kernel.asm	4886	WRBLK_NEXTCLUS	ED95	cell	ld hl,(nn)	ld      hl, (WRBLK_NEXTCLUS)
+disk/kernel.asm	4889	FAT_FIRSTCLUS	ECB9	cell	ld hl,(nn)	ld      hl, (FAT_FIRSTCLUS)
+disk/kernel.asm	4891	FAT_FIRSTCLUS	ECB9	cell	ld (nn),de	ld      (FAT_FIRSTCLUS), de
+disk/kernel.asm	4903	WRBLK_NEXTCLUS	ED95	cell	ld (nn),hl	ld      (WRBLK_NEXTCLUS), hl
+disk/kernel.asm	4907	WRBLK_NEXTCLUS	ED95	cell	ld hl,(nn)	ld      hl, (WRBLK_NEXTCLUS)
+disk/kernel.asm	4932	RDBLK_RRSTART	ED9C	cell	ld de,nn	ld      de, RDBLK_RRSTART
+disk/kernel.asm	4940	RDBLK_DST	ED83	cell	ld (nn),hl	ld      (RDBLK_DST), hl
+disk/kernel.asm	4958	RDBLK_DONE	ED7D	cell	ld (nn),hl	ld      (RDBLK_DONE), hl
+disk/kernel.asm	4972	RDBLK_DONE	ED7D	cell	ld hl,(nn)	ld      hl, (RDBLK_DONE)
+disk/kernel.asm	4973	RDBLK_REQ	ED79	cell	ld de,(nn)	ld      de, (RDBLK_REQ)
+disk/kernel.asm	4976	RDBLK_RECSIZE	ED7B	cell	ld hl,(nn)	ld      hl, (RDBLK_RECSIZE)
+disk/kernel.asm	4977	RDBLK_CNT	ED7F	cell	ld (nn),hl	ld      (RDBLK_CNT), hl
+disk/kernel.asm	4979	RDBLK_CNT	ED7F	cell	ld hl,(nn)	ld      hl, (RDBLK_CNT)
+disk/kernel.asm	4993	RDBLK_CNT	ED7F	cell	ld hl,(nn)	ld      hl, (RDBLK_CNT)
+disk/kernel.asm	4994	RDBLK_RECSIZE	ED7B	cell	ld de,(nn)	ld      de, (RDBLK_RECSIZE)
+disk/kernel.asm	4999	RDBLK_CNT	ED7F	cell	ld hl,(nn)	ld      hl, (RDBLK_CNT)
+disk/kernel.asm	5013	RDBLK_DONE	ED7D	cell	ld hl,(nn)	ld      hl, (RDBLK_DONE)
+disk/kernel.asm	5015	RDBLK_DONE	ED7D	cell	ld (nn),hl	ld      (RDBLK_DONE), hl
+disk/kernel.asm	5035	RDBLK_DONE	ED7D	cell	ld hl,(nn)	ld      hl, (RDBLK_DONE)
+disk/kernel.asm	5036	RDBLK_RRSTART	ED9C	cell	ld a,(nn)	ld      a, (RDBLK_RRSTART)
+disk/kernel.asm	5039	RDBLK_RRSTART	ED9C	cell	ld a,(nn)	ld      a, (RDBLK_RRSTART + 1)
+disk/kernel.asm	5042	RDBLK_RRSTART	ED9C	cell	ld a,(nn)	ld      a, (RDBLK_RRSTART + 2)
+disk/kernel.asm	5050	DRVA_DPB	F195	cell	ld ix,nn	ld      ix, DRVA_DPB
+disk/kernel.asm	5064	BDOS_BYTESLEFT	ED4F	cell	ld hl,nn	ld      hl, BDOS_BYTESLEFT
+disk/kernel.asm	5141	FAT_WRTMP	ED63	cell	ld (nn),de	ld      (FAT_WRTMP), de
+disk/kernel.asm	5143	FAT_WRTMP2	ED65	cell	ld (nn),hl	ld      (FAT_WRTMP2), hl
+disk/kernel.asm	5146	FAT_WRTMP	ED63	cell	ld de,(nn)	ld      de, (FAT_WRTMP)
+disk/kernel.asm	5411	DK_FCB_DRV	EF48	cell	ld (nn),a	ld      (DK_FCB_DRV),a
+disk/kernel.asm	5553	DISKVE	F323	cell	ld a,(nn)	ld      a, (DISKVE + 1)
+disk/kernel.asm	5577	DISKVE	F323	cell	ld hl,(nn)	ld      hl, (DISKVE)
+disk/kernel.asm	5610	DRVCNT	F347	cell	ld a,(nn)	ld      a, (DRVCNT)
+disk/kernel.asm	5616	CURDRV_CELL	F247	cell	ld (nn),a	ld      (CURDRV_CELL), a
+disk/kernel.asm	5632	CURDRV_CELL	F247	cell	ld a,(nn)	ld      a, (CURDRV_CELL)
+disk/kernel.asm	5646	DSK_CURDRV	F022	cell	ld hl,nn	ld      hl, DSK_CURDRV
+disk/kernel.asm	5693	INIT_HIMEM	F195	const	ld hl,nn	ld      hl, INIT_HIMEM
+disk/kernel.asm	5695	FWBUF	EAAD	cell	ld hl,nn	ld      hl, FWBUF
+disk/kernel.asm	5696	DSKBUF_PTR	F351	cell	ld (nn),hl	ld      (DSKBUF_PTR), hl
+disk/kernel.asm	5698	DISKVE	F323	cell	ld (nn),a	ld      (DISKVE + 1), a
+disk/kernel.asm	5869	DISK_HIMEM	DE77	const	ld hl,nn	ld      hl, DISK_HIMEM
+disk/kernel.asm	5871	CTRL_HIMEM	E48D	const	ld hl,nn	ld      hl, CTRL_HIMEM
+disk/kernel.asm	5880	DOS_RESV_TOP	DF93	const	ld hl,nn	ld      hl, DOS_RESV_TOP
+disk/kernel.asm	5887	FWR_CLUS	ED54	cell	ld hl,(nn)	ld      hl, (FWR_CLUS)
+disk/kernel.asm	5898	RDBLK_CNT	ED7F	cell	ld hl,(nn)	ld      hl, (RDBLK_CNT)
+disk/kernel.asm	5900	RDBLK_CNT	ED7F	cell	ld (nn),hl	ld      (RDBLK_CNT), hl
+disk/kernel.asm	6056	DPSAVE_SP	ED8B	cell	ld sp,(nn)	ld      sp,(DPSAVE_SP)
+disk/kernel.asm	6158	FAT_DEFER	EDB9	cell	ld (nn),hl	ld      (FAT_DEFER),hl
+disk/kernel.asm	6189	FAT_DEFER	EDB9	cell	ld a,(nn)	ld      a,(FAT_DEFER)
+disk/kernel.asm	6191	FAT_DEFER	EDB9	cell	ld (nn),a	ld      (FAT_DEFER),a
+disk/kernel.asm	6434	DISK_FCB_NAME	EF49	cell	ld hl,nn	ld      hl,DISK_FCB_NAME
+disk/kernel.asm	6502	DISK_FCB_NAME	EF49	cell	ld hl,nn	ld      hl,DISK_FCB_NAME
+disk/kernel.asm	6503	COPY_SRC	EEEE	cell	ld de,nn	ld      de,COPY_SRC
+disk/kernel.asm	6535	COPY_SRC	EEEE	cell	ld hl,nn	ld      hl,COPY_SRC
+disk/kernel.asm	6552	DISK_FCB_NAME	EF49	cell	ld hl,nn	ld      hl,DISK_FCB_NAME
+disk/kernel.asm	6553	COPY_SRC	EEEE	cell	ld de,nn	ld      de,COPY_SRC
+disk/kernel.asm	6598	BASENT_REQ	F33D	cell	ld hl,(nn)	ld      hl, (BASENT_REQ)
+disk/kernel.asm	6604	BASENT_REQ	F33D	cell	ld (nn),hl	ld      (BASENT_REQ), hl
+disk/kernel.asm	6610	FAT_FILESIZE	ECBB	cell	ld hl,nn	ld      hl,FAT_FILESIZE
+disk/kernel.asm	6627	DISK_FCB_NAME	EF49	cell	ld de,nn	ld      de,DISK_FCB_NAME
+disk/kernel.asm	6672	FILES_HASPAT	F09D	cell	ld (nn),a	ld      (FILES_HASPAT),a
+disk/kernel.asm	6673	DK_FCB_DRV	EF48	cell	ld (nn),a	ld      (DK_FCB_DRV),a
+disk/kernel.asm	6735	FAT_DIRSEC	ECC8	cell	ld de,(nn)	ld      de,(FAT_DIRSEC)
+disk/kernel.asm	6739	FILES_ENTIDX	EF63	cell	ld (nn),a	ld      (FILES_ENTIDX),a
+disk/kernel.asm	6754	FILES_HASPAT	F09D	cell	ld a,(nn)	ld      a,(FILES_HASPAT)
+disk/kernel.asm	6758	DISK_FCB_NAME	EF49	cell	ld de,nn	ld      de,DISK_FCB_NAME
+disk/kernel.asm	6766	FILES_ENTIDX	EF63	cell	ld a,(nn)	ld      a,(FILES_ENTIDX)
+disk/kernel.asm	6768	FILES_ENTIDX	EF63	cell	ld (nn),a	ld      (FILES_ENTIDX),a
+disk/kernel.asm	6913	FAT_PARITY	ECBF	cell	ld (nn),a	ld      (FAT_PARITY), a
+disk/kernel.asm	6920	FAT_BYTEIDX	ECC0	cell	ld (nn),a	ld      (FAT_BYTEIDX), a
+disk/kernel.asm	6923	FAT_BYTEIDX	ECC0	cell	ld (nn),a	ld      (FAT_BYTEIDX + 1), a
+disk/kernel.asm	6928	FAT_FATSTART	ECAE	cell	ld hl,(nn)	ld      hl, (FAT_FATSTART)
+disk/kernel.asm	6933	FREAD_LEFT	ED79	cell	ld hl,(nn)	hd_last:        ld      hl,(FREAD_LEFT)
+disk/kernel.asm	6941	FAT_DBUF	E8AD	cell	ld hl,nn	ld      hl,FAT_DBUF
+disk/kernel.asm	6942	FREAD_LEFT	ED79	cell	ld bc,(nn)	ld      bc,(FREAD_LEFT)
+disk/kernel.asm	6944	FREAD_OFF	ED81	cell	ld (nn),de	hd_end:         ld      (FREAD_OFF),de
+disk/kernel.asm	6955	FREAD_OFF	ED81	cell	ld hl,(nn)	ld      hl,(FREAD_OFF)
+disk/kernel.asm	7003	FREAD_OFF	ED81	cell	ld de,(nn)	ld      de,(FREAD_OFF)
+disk/kernel.asm	7021	FREAD_OFF	ED81	cell	ld hl,(nn)	hw_eof:         ld      hl,(FREAD_OFF)
+disk/kernel.asm	7028	RND_HSEC	EDBB	cell	ld hl,(nn)	ld      hl, (RND_HSEC)
+disk/kernel.asm	7044	RND_HSEC	EDBB	cell	ld (nn),hl	ld      (RND_HSEC), hl
+disk/kernel.asm	7079	BC_FIELD	DF79	cell	call nn (RAM code)	call    BC_FIELD
+disk/kernel.asm	7090	BC_FIELD	DF79	cell	call nn (RAM code)	call    BC_FIELD
+disk/kernel.asm	7098	BC_TMP	DF84	cell	ld (nn),de	ld      (BC_TMP), de
+disk/kernel.asm	7101	BR_ENASLT	DE59	cell	call nn (RAM code)	call    BR_ENASLT
+disk/kernel.asm	7106	BC_TMP	DF84	cell	ld iy,(nn)	ld      iy, (BC_TMP)
+disk/kernel.asm	7108	BC_JPIX	DF82	cell	call nn (RAM code)	call    BC_JPIX
+disk/kernel.asm	7114	BR_ENASLT	DE59	cell	call nn (RAM code)	call    BR_ENASLT
+disk/kernel.asm	7124	BR_GO	DEE8	cell	jp nn (RAM code)	jp      BR_GO
+disk/kernel.asm	7184	BDOS_WRMODE	ED53	cell	ld a,(nn)	ld      a, (BDOS_WRMODE)
+disk/kernel.asm	7189	BDOS_SEQREC	EDB3	cell	ld (nn),hl	ld      (BDOS_SEQREC), hl
+disk/kernel.asm	7440	FDC_DEST	EFFB	cell	ld (nn),hl	ld      (FDC_DEST),hl
+disk/kernel.asm	7506	SECTOR_BUF	E8AD	cell	ld bc,nn	ld      bc, SECTOR_BUF
+disk/kernel.asm	7532	BDOS_WRCLUS	ED54	cell	ld hl,nn	ld      hl, BDOS_WRCLUS
+disk/kernel.asm	7554	FWR_BUFLEN	ED59	cell	ld hl,(nn)	ld      hl, (FWR_BUFLEN)
+disk/kernel.asm	7570	BDOS_WRBYTES	ED5B	cell	ld hl,nn	ld      hl, BDOS_WRBYTES
+disk/kernel.asm	7616	DISKVE	F323	cell	ld a,(nn)	ld      a, (DISKVE + 1)
+disk/kernel.asm	7637	PRN_ECHO	F23B	cell	ld (nn),a	ld      (PRN_ECHO), a
+disk/kernel.asm	7664	DISKVE	F323	cell	ld a,(nn)	ld      a, (DISKVE + 1)
+disk/kernel.asm	7713	FWR_DIRSEC	ED5F	cell	ld de,(nn)	ld      de, (FWR_DIRSEC)
+disk/kernel.asm	7714	FWR_DIROFF	ED61	cell	ld hl,(nn)	ld      hl, (FWR_DIROFF)
+disk/kernel.asm	7727	SECTOR_BUF	E8AD	cell	ld de,nn	ld      de, SECTOR_BUF
+disk/kernel.asm	7730	FAT_DIRSEC	ECC8	cell	ld de,(nn)	ld      de, (FAT_DIRSEC)
+disk/kernel.asm	7743	FAT_FIRSTROOT	ECB0	cell	ld bc,(nn)	ld      bc, (FAT_FIRSTROOT)
+disk/kernel.asm	7782	FAT_SECPERCLUS	ECAD	cell	ld a,(nn)	ld      a, (FAT_SECPERCLUS)
+disk/kernel.asm	7785	WRBLK_RECSEC	ED8A	cell	ld (nn),a	ld      (WRBLK_RECSEC), a
+disk/kernel.asm	7793	FAT_FIRSTCLUS	ECB9	cell	ld bc,(nn)	ld      bc, (FAT_FIRSTCLUS)
+disk/kernel.asm	7812	FAT_CURCLUS	ECB6	cell	ld (nn),hl	ld      (FAT_CURCLUS), hl
+disk/kernel.asm	7813	FAT_SECPERCLUS	ECAD	cell	ld a,(nn)	ld      a, (FAT_SECPERCLUS)
+disk/kernel.asm	7814	FAT_CLUSSEC	ECB8	cell	ld (nn),a	ld      (FAT_CLUSSEC), a
+disk/kernel.asm	7821	WRBLK_RECSEC	ED8A	cell	ld a,(nn)	ld      a, (WRBLK_RECSEC)
+disk/kernel.asm	7833	FAT_CURCLUS	ECB6	cell	ld (nn),hl	ld      (FAT_CURCLUS), hl
+disk/kernel.asm	7834	WRBLK_RECSEC	ED8A	cell	ld a,(nn)	ld      a, (WRBLK_RECSEC)
+disk/kernel.asm	7835	FAT_CLUSSEC	ECB8	cell	ld (nn),a	ld      (FAT_CLUSSEC), a
+disk/kernel.asm	7850	FAT_FIRSTCLUS	ECB9	cell	ld hl,(nn)	ld      hl, (FAT_FIRSTCLUS)
+disk/kernel.asm	7856	WRBLK_CURVALID	ED97	cell	ld a,(nn)	ld      a, (WRBLK_CURVALID)
+disk/kernel.asm	7860	FAT_CURCLUS	ECB6	cell	ld hl,(nn)	ld      hl, (FAT_CURCLUS)
+disk/kernel.asm	7863	WRBLK_CURSEC	ED98	cell	ld hl,(nn)	ld      hl, (WRBLK_CURSEC)
+disk/kernel.asm	7873	FAT_SECPERCLUS	ECAD	cell	ld a,(nn)	ld      a, (FAT_SECPERCLUS)
+disk/kernel.asm	7910	FAT_SECPERCLUS	ECAD	cell	ld a,(nn)	ld      a, (FAT_SECPERCLUS)
+disk/kernel.asm	7916	RDBLK_RECSIZE	ED7B	cell	ld hl,(nn)	ld      hl, (RDBLK_RECSIZE)
+disk/kernel.asm	7917	WRBLK_RS	ED8B	cell	ld (nn),hl	ld      (WRBLK_RS), hl
+disk/kernel.asm	7921	WRBLK_REC	ED87	cell	ld hl,nn	ld      hl, WRBLK_REC
+disk/kernel.asm	7923	BDOS_BYTESLEFT	ED4F	cell	ld (nn),a	ld      (BDOS_BYTESLEFT), a
+disk/kernel.asm	7927	BDOS_BYTESLEFT	ED4F	cell	ld (nn),a	ld      (BDOS_BYTESLEFT + 1), a
+disk/kernel.asm	7931	BDOS_BYTESLEFT	ED4F	cell	ld (nn),a	ld      (BDOS_BYTESLEFT + 2), a
+disk/kernel.asm	7934	BDOS_BYTESLEFT	ED4F	cell	ld (nn),a	ld      (BDOS_BYTESLEFT + 3), a
+disk/kernel.asm	7937	WRBLK_REC	ED87	cell	ld hl,(nn)	ld      hl, (WRBLK_REC + 1)
+disk/kernel.asm	7941	FAT_SECPERCLUS	ECAD	cell	ld a,(nn)	ld      a, (FAT_SECPERCLUS)
+disk/kernel.asm	7944	FAT_CLUSSEC	ECB8	cell	ld (nn),a	ld      (FAT_CLUSSEC), a
+disk/kernel.asm	7946	RDBLK_CNT	ED7F	cell	ld (nn),hl	ld      (RDBLK_CNT), hl
+disk/kernel.asm	7951	RDBLK_CNT	ED7F	cell	ld hl,(nn)	ld      hl, (RDBLK_CNT)
+disk/kernel.asm	7970	FAT_CURCLUS	ECB6	cell	ld (nn),hl	ld      (FAT_CURCLUS), hl
+disk/kernel.asm	7971	RDBLK_CNT	ED7F	cell	ld hl,(nn)	ld      hl, (RDBLK_CNT)
+disk/kernel.asm	7976	WRBLK_REC	ED87	cell	ld hl,(nn)	ld      hl, (WRBLK_REC)
+disk/kernel.asm	7983	RDBLK_BUFPOS	ED81	cell	ld (nn),hl	ld      (RDBLK_BUFPOS), hl
+disk/kernel.asm	7990	RDBLK_BUFPOS	ED81	cell	ld (nn),hl	ld      (RDBLK_BUFPOS), hl
+disk/kernel.asm	8042	BDOS_SEQREC	EDB3	cell	ld (nn),hl	ld      (BDOS_SEQREC), hl
+disk/kernel.asm	8051	WRBLK_MULACC	ECA1	cell	ld de,nn	ld      de, WRBLK_MULACC + 3
+disk/kernel.asm	8052	FAT_FILESIZE	ECBB	cell	ld hl,nn	ld      hl, FAT_FILESIZE + 3
+disk/kernel.asm	8086	GP_SEC	F07B	cell	ld hl,(nn)	ld      hl, (GP_SEC)
+disk/kernel.asm	8087	FAT_SECPERCLUS	ECAD	cell	ld a,(nn)	ld      a, (FAT_SECPERCLUS)
+disk/kernel.asm	8098	GP_SECINCL	F083	cell	ld (nn),a	ld      (GP_SECINCL), a
+disk/kernel.asm	8099	GP_CLIDX	F081	cell	ld (nn),de	ld      (GP_CLIDX), de
+disk/kernel.asm	8112	GP_CLUS	F07F	cell	ld (nn),hl	ld      (GP_CLUS), hl
+disk/kernel.asm	8113	GP_CLIDX	F081	cell	ld hl,(nn)	ld      hl, (GP_CLIDX)
+disk/kernel.asm	8118	GP_CLIDX	F081	cell	ld (nn),hl	ld      (GP_CLIDX), hl
+disk/kernel.asm	8119	GP_CLUS	F07F	cell	ld hl,(nn)	ld      hl, (GP_CLUS)
+disk/kernel.asm	8138	GP_FLAGS	F088	cell	ld a,(nn)	ld      a, (GP_FLAGS)
+disk/kernel.asm	8258	P1_BLIT	EFFE	cell	jp nn (RAM code)	jp      pe, P1_BLIT + (pb_iff - p1_blit_tmpl)
+disk/kernel.asm	8350	WA_SEG	DEB2	cell	ld de,nn	ld      de, WA_SEG
+disk/kernel.asm	8390	DRVCNT	F347	cell	ld hl,(nn)	ld      hl, (DRVCNT)
+disk/kernel.asm	8393	RES_PRINT	F1C9	cell	ld de,nn	ld      de, RES_PRINT
+disk/kernel.asm	8488	FAT_WRTMP2	ED65	cell	ld (nn),hl	ld      (FAT_WRTMP2), hl
+disk/kernel.asm	8529	FAT_SECPERCLUS	ECAD	cell	ld a,(nn)	ld      a, (FAT_SECPERCLUS)
+disk/kernel.asm	8551	BDOS_SRCHIDX	ED6B	cell	ld (nn),hl	ld      (BDOS_SRCHIDX), hl
+disk/kernel.asm	8558	FAT_NAMEPTR	ECC6	cell	ld (nn),de	ld      (FAT_NAMEPTR), de
+disk/kernel.asm	8571	BDOS_SRCHIDX	ED6B	cell	ld hl,(nn)	ld      hl, (BDOS_SRCHIDX)
+disk/kernel.asm	8580	FAT_FIRSTROOT	ECB0	cell	ld de,(nn)	ld      de, (FAT_FIRSTROOT)
+disk/kernel.asm	8582	FAT_DIRSEC	ECC8	cell	ld (nn),hl	ld      (FAT_DIRSEC), hl
+disk/kernel.asm	8590	FAT_DIRREM	ECCA	cell	ld (nn),hl	ld      (FAT_DIRREM), hl
+disk/kernel.asm	8594	FAT_DIRSEC	ECC8	cell	ld de,(nn)	ld      de, (FAT_DIRSEC)
+disk/kernel.asm	8598	BDOS_SRCHIDX	ED6B	cell	ld a,(nn)	ld      a, (BDOS_SRCHIDX)
+disk/kernel.asm	8602	SECTOR_BUF	E8AD	cell	ld hl,nn	ld      hl, SECTOR_BUF
+disk/kernel.asm	8626	FAT_NAMEPTR	ECC6	cell	ld de,(nn)	ld      de, (FAT_NAMEPTR)
+disk/kernel.asm	8661	DOS_DTAPTR	F23D	cell	ld de,(nn)	ld      de, (DOS_DTAPTR)
+disk/kernel.asm	8673	CURDRV_CELL	F247	cell	ld a,(nn)	ld      a, (CURDRV_CELL)
+disk/kernel.asm	8730	FDC_IFF	EFF7	cell	ld a,(nn)	ld      a, (FDC_IFF)
+disk/kernel.asm	8799	BDOS_WRMODE	ED53	cell	ld a,(nn)	ld      a, (BDOS_WRMODE)
+disk/kernel.asm	8808	BDOS_WRBUFLEN	ED59	cell	ld hl,(nn)	ld      hl, (BDOS_WRBUFLEN)
+disk/kernel.asm	8812	BDOS_WRCLUS	ED54	cell	ld hl,(nn)	ld      hl, (BDOS_WRCLUS)
+disk/kernel.asm	8816	BDOS_WRSECIDX	ED58	cell	ld a,(nn)	ld      a, (BDOS_WRSECIDX)
+disk/kernel.asm	8817	FAT_SECPERCLUS	ECAD	cell	ld hl,nn	ld      hl, FAT_SECPERCLUS
+disk/kernel.asm	8832	BDOS_WRFIRST	ED56	cell	ld (nn),hl	ld      (BDOS_WRFIRST), hl
+disk/kernel.asm	8833	BDOS_WRCLUS	ED54	cell	ld (nn),hl	ld      (BDOS_WRCLUS), hl
+disk/kernel.asm	8847	BDOS_WRBUFLEN	ED59	cell	ld hl,(nn)	ld      hl, (BDOS_WRBUFLEN)
+disk/kernel.asm	8850	BDOS_WRBUFLEN	ED59	cell	ld hl,(nn)	ld      hl, (BDOS_WRBUFLEN)
+disk/kernel.asm	8853	BDOS_WRBUFLEN	ED59	cell	ld (nn),hl	ld      (BDOS_WRBUFLEN), hl
+disk/kernel.asm	8858	BDOS_WRBUFLEN	ED59	cell	ld hl,nn	ld      hl, BDOS_WRBUFLEN+1
+disk/kernel.asm	8864	BDOS_WRSECIDX	ED58	cell	ld hl,nn	ld      hl, BDOS_WRSECIDX
+disk/kernel.asm	8934	FAT_FIRSTCLUS	ECB9	cell	ld hl,(nn)	ld      hl, (FAT_FIRSTCLUS)
+disk/kernel.asm	8958	FAT_DIRSEC	ECC8	cell	ld de,(nn)	ld      de, (FAT_DIRSEC)
+disk/kernel.asm	9000	FAT_FIRSTCLUS	ECB9	cell	ld (nn),hl	ld      (FAT_FIRSTCLUS), hl
+disk/kernel.asm	9003	FAT_FILESIZE	ECBB	cell	ld (nn),hl	ld      (FAT_FILESIZE), hl
+disk/kernel.asm	9006	FAT_FILESIZE	ECBB	cell	ld (nn),hl	ld      (FAT_FILESIZE+2), hl
+disk/kernel.asm	9102	FAT_FILESIZE	ECBB	cell	ld de,(nn)	ld      de, (FAT_FILESIZE)
+disk/kernel.asm	9106	BDOS_BYTESLEFT	ED4F	cell	ld (nn),hl	ld      (BDOS_BYTESLEFT), hl
+disk/kernel.asm	9107	FAT_FILESIZE	ECBB	cell	ld hl,(nn)	ld      hl, (FAT_FILESIZE + 2)
+disk/kernel.asm	9111	BDOS_BYTESLEFT	ED4F	cell	ld (nn),hl	ld      (BDOS_BYTESLEFT), hl
+disk/kernel.asm	9113	BDOS_BYTESLEFT	ED4F	cell	ld (nn),hl	ld      (BDOS_BYTESLEFT + 2), hl
+disk/kernel.asm	9130	BDOS_RECIDX	ECCC	cell	ld (nn),a	ld      (BDOS_RECIDX), a
+disk/kernel.asm	9174	BDOS_RECIDX	ECCC	cell	ld a,(nn)	ld      a, (BDOS_RECIDX)
+basic/sv-bsvdisk.inc	45	DSV_PTR	EF59	cell	ld (nn),hl	ld      (DSV_PTR),hl
+basic/sv-bsvdisk.inc	48	DSV_PTR	EF59	cell	ld hl,(nn)	ld      hl,(DSV_PTR)
+basic/sv-bsvdisk.inc	65	DSV_END	EF5B	cell	ld hl,(nn)	ld      hl,(DSV_END)
+basic/sv-bsvdisk.inc	82	DSV_END	EF5B	cell	ld hl,nn	ld      hl,DSV_END
+basic/sv-bsvdisk.inc	105	DSV_END	EF5B	cell	ld de,(nn)	ld      de,(DSV_END)
+basic/fatfits-body.inc	31	FWR_CLUS	ED54	cell	ld (nn),hl	ld      (FWR_CLUS),hl
+basic/fatfits-body.inc	32	FWR_FIRST	ED56	cell	ld (nn),hl	ld      (FWR_FIRST),hl
+basic/fatfits-body.inc	35	FAT_SECPERCLUS	ECAD	cell	ld hl,(nn)	ld      hl,(FAT_SECPERCLUS)
+basic/fat-prim-body.inc	98	FAT_MBUF	EAAD	cell	ld hl,nn	ld      hl, FAT_MBUF
+basic/fat-prim-body.inc	106	FAT_MBUF	EAAD	cell	ld hl,nn	ld      hl, FAT_MBUF
+basic/fat-prim-body.inc	109	FAT_DBUF	E8AD	cell	ld hl,nn	ld      hl, FAT_DBUF
+basic/fat-prim-body.inc	212	FAT_DBUF	E8AD	cell	ld hl,(nn)	ld      hl, (FAT_DBUF + BPB_BYTSPERSEC)
+basic/fat-prim-body.inc	217	FAT_DBUF	E8AD	cell	ld a,(nn)	ld      a, (FAT_DBUF + BPB_SECPERCLUS)
+basic/fat-prim-body.inc	218	FAT_SECPERCLUS	ECAD	cell	ld (nn),a	ld      (FAT_SECPERCLUS), a
+basic/fat-prim-body.inc	221	FAT_DBUF	E8AD	cell	ld hl,(nn)	ld      hl, (FAT_DBUF + BPB_RSVDSECCNT)
+basic/fat-prim-body.inc	222	FAT_FATSTART	ECAE	cell	ld (nn),hl	ld      (FAT_FATSTART), hl
+basic/fat-prim-body.inc	224	FAT_DBUF	E8AD	cell	ld a,(nn)	ld      a, (FAT_DBUF + BPB_NUMFATS)
+basic/fat-prim-body.inc	225	FAT_NUMFATS	ED67	cell	ld (nn),a	ld      (FAT_NUMFATS), a
+basic/fat-prim-body.inc	227	FAT_DBUF	E8AD	cell	ld de,(nn)	ld      de, (FAT_DBUF + BPB_FATSZ16)
+basic/fat-prim-body.inc	228	FAT_SECPERFAT	ED68	cell	ld (nn),de	ld      (FAT_SECPERFAT), de
+basic/fat-prim-body.inc	234	FAT_FIRSTROOT	ECB0	cell	ld (nn),hl	ld      (FAT_FIRSTROOT), hl
+basic/fat-prim-body.inc	237	FAT_DBUF	E8AD	cell	ld hl,(nn)	ld      hl, (FAT_DBUF + BPB_ROOTENTCNT)
+basic/fat-prim-body.inc	248	FAT_FIRSTDATA	ECB4	cell	ld (nn),hl	ld      (FAT_FIRSTDATA), hl
+basic/fat-prim-body.inc	257	FAT_DBUF	E8AD	cell	ld hl,(nn)	ld      hl, (FAT_DBUF + 19)
+basic/fat-prim-body.inc	276	FAT_TOTCLUS	ECB2	cell	ld (nn),de	ld      (FAT_TOTCLUS), de
+basic/fat-prim-body.inc	278	FAT_DEFER	EDB9	cell	ld (nn),a	ld      (FAT_DEFER), a
+basic/fat-prim-body.inc	292	FAT_ALLOCHINT	ED9A	cell	ld (nn),hl	ld      (FAT_ALLOCHINT), hl
+basic/fat-prim-body.inc	304	DISK_FCB_NAME	EF49	cell	ld hl,nn	ld      hl, DISK_FCB_NAME
+basic/fat-prim-body.inc	306	FAT_NAMEPTR	ECC6	cell	ld (nn),hl	ld      (FAT_NAMEPTR), hl
+basic/fat-prim-body.inc	311	FAT_DIRSEC	ECC8	cell	ld de,(nn)	ld      de, (FAT_DIRSEC)
+basic/fat-prim-body.inc	314	FAT_DBUF	E8AD	cell	ld hl,nn	ld      hl, FAT_DBUF
+basic/fat-prim-body.inc	353	FAT_DBUF	E8AD	cell	ld de,nn	ld      de, FAT_DBUF
+basic/fat-prim-body.inc	363	FAT_FIRSTCLUS	ECB9	cell	ld (nn),de	ld      (FAT_FIRSTCLUS), de
+basic/fat-prim-body.inc	364	FAT_FILESIZE	ECBB	cell	ld de,nn	ld      de, FAT_FILESIZE
+basic/fat-prim-body.inc	377	FWR_DIROFF	ED61	cell	ld (nn),hl	ld      (FWR_DIROFF), hl
+basic/fat-prim-body.inc	378	FAT_DIRSEC	ECC8	cell	ld de,(nn)	ld      de, (FAT_DIRSEC)
+basic/fat-prim-body.inc	379	FWR_DIRSEC	ED5F	cell	ld (nn),de	ld      (FWR_DIRSEC), de
+basic/fat-prim-body.inc	387	FAT_NAMEPTR	ECC6	cell	ld de,(nn)	ld      de, (FAT_NAMEPTR)
+basic/fat-prim-body.inc	449	FAT_FIRSTCLUS	ECB9	cell	ld hl,(nn)	ld      hl, (FAT_FIRSTCLUS)
+basic/fat-prim-body.inc	451	FAT_CURCLUS	ECB6	cell	ld (nn),hl	ld      (FAT_CURCLUS), hl
+basic/fat-prim-body.inc	453	FAT_CLUSSEC	ECB8	cell	ld (nn),a	ld      (FAT_CLUSSEC), a
+basic/fat-prim-body.inc	458	FAT_CURCLUS	ECB6	cell	ld hl,(nn)	ld      hl, (FAT_CURCLUS)
+basic/fat-prim-body.inc	472	FAT_FATSEC	ECC2	cell	ld (nn),hl	ld      (FAT_FATSEC), hl
+basic/fat-prim-body.inc	486	FAT_DBUF	E8AD	cell	ld bc,nn	ld      bc, FAT_DBUF
+basic/fat-prim-body.inc	487	FAT_DEFER	EDB9	cell	ld a,(nn)	ld      a, (FAT_DEFER)
+basic/fat-prim-body.inc	493	FAT_MBUF	EAAD	cell	ld bc,nn	ld      bc, FAT_MBUF
+basic/fat-prim-body.inc	494	FAT_FCACHE	EDBA	cell	ld a,(nn)	ld      a, (FAT_FCACHE)
+basic/fat-prim-body.inc	498	FAT_FCACHE	EDBA	cell	ld (nn),a	ld      (FAT_FCACHE), a
+basic/fat-prim-body.inc	508	FAT_FATSEC	ECC2	cell	ld hl,(nn)	ld      hl, (FAT_FATSEC)
+basic/fat-prim-body.inc	512	FAT_DBUF	E8AD	cell	ld a,(nn)	ld      a, (FAT_DBUF)
+basic/fat-prim-body.inc	518	FAT_B1	ECC5	cell	ld hl,nn	ld      hl, FAT_B1
+basic/fat-prim-body.inc	520	FAT_PARITY	ECBF	cell	ld a,(nn)	ld      a, (FAT_PARITY)
+basic/fat-prim-body.inc	530	FAT_B0	ECC4	cell	ld hl,(nn)	ld      hl, (FAT_B0)
+basic/fat-prim-body.inc	542	FAT_BYTEIDX	ECC0	cell	ld hl,(nn)	ld      hl, (FAT_BYTEIDX)
+basic/fat-prim-body.inc	545	FAT_B0	ECC4	cell	ld (nn),a	ld      (FAT_B0), a
+basic/fat-prim-body.inc	548	FAT_BYTEIDX	ECC0	cell	ld de,(nn)	ld      de, (FAT_BYTEIDX)
+basic/fat-prim-body.inc	562	FAT_DBUF	E8AD	cell	ld hl,nn	ld      hl, FAT_DBUF
+basic/fat-prim-body.inc	581	FAT_CLUSSEC	ECB8	cell	ld hl,nn	ld      hl, FAT_CLUSSEC
+basic/fat-prim-body.inc	591	FAT_CLUSSEC	ECB8	cell	ld a,(nn)	ld      a, (FAT_CLUSSEC)
+basic/fat-prim-body.inc	592	FAT_SECPERCLUS	ECAD	cell	ld hl,nn	ld      hl, FAT_SECPERCLUS
+basic/fat-prim-body.inc	596	FAT_CURCLUS	ECB6	cell	ld hl,(nn)	ld      hl, (FAT_CURCLUS)
+basic/fat-prim-body.inc	607	FAT_CURCLUS	ECB6	cell	ld hl,(nn)	ld      hl, (FAT_CURCLUS)
+basic/fat-prim-body.inc	608	FAT_CLUSSEC	ECB8	cell	ld a,(nn)	ld      a, (FAT_CLUSSEC)
+basic/fat-prim-body.inc	662	FAT_WRTMP	ED63	cell	ld (nn),de	ld      (FAT_WRTMP), de
+basic/fat-prim-body.inc	665	FAT_WRTMP2	ED65	cell	ld (nn),hl	ld      (FAT_WRTMP2), hl
+basic/fat-prim-body.inc	682	FAT_ALLOCHINT	ED9A	cell	ld hl,(nn)	ld      hl, (FAT_ALLOCHINT)
+basic/fat-prim-body.inc	684	FAT_WRTMP	ED63	cell	ld de,(nn)	ld      de, (FAT_WRTMP)
+basic/fat-prim-body.inc	696	FAT_WRTMP2	ED65	cell	ld de,(nn)	ld      de, (FAT_WRTMP2)
+basic/fat-prim-body.inc	706	FAT_WRTMP2	ED65	cell	ld (nn),hl	ld      (FAT_WRTMP2), hl
+basic/fat-prim-body.inc	734	FAT_ALLOCHINT	ED9A	cell	ld (nn),hl	ld      (FAT_ALLOCHINT), hl
+basic/fat-prim-body.inc	753	FAT_MBUF	EAAD	cell	ld bc,nn	ld      bc, FAT_MBUF
+basic/fat-prim-body.inc	760	FAT_FATSEC	ECC2	cell	ld hl,(nn)	ld      hl, (FAT_FATSEC)
+basic/fat-prim-body.inc	762	FAT_WRTMP2	ED65	cell	ld (nn),hl	ld      (FAT_WRTMP2), hl
+basic/fat-prim-body.inc	764	FAT_MBUF	EAAD	cell	ld a,(nn)	ld      a, (FAT_MBUF)
+basic/fat-prim-body.inc	796	FAT_WRTMP	ED63	cell	ld (nn),de	ld      (FAT_WRTMP), de
+basic/fat-prim-body.inc	801	FAT_BYTEIDX	ECC0	cell	ld hl,(nn)	ld      hl, (FAT_BYTEIDX)
+basic/fat-prim-body.inc	802	FAT_MBUF	EAAD	cell	ld de,nn	ld      de, FAT_MBUF
+basic/fat-prim-body.inc	805	FAT_WRTMP	ED63	cell	ld de,(nn)	ld      de, (FAT_WRTMP)
+basic/fat-prim-body.inc	806	FAT_PARITY	ECBF	cell	ld a,(nn)	ld      a, (FAT_PARITY)
+basic/fat-prim-body.inc	829	FAT_BYTEIDX	ECC0	cell	ld bc,(nn)	ld      bc, (FAT_BYTEIDX)
+basic/fat-prim-body.inc	860	FAT_FATSEC	ECC2	cell	ld hl,(nn)	ld      hl, (FAT_FATSEC)
+basic/fat-prim-body.inc	864	FAT_MBUF	EAAD	cell	ld hl,nn	ld      hl, FAT_MBUF
+basic/fat-prim-body.inc	873	FAT_WRTMP	ED63	cell	ld de,(nn)	ld      de, (FAT_WRTMP)
+basic/fat-prim-body.inc	874	FAT_PARITY	ECBF	cell	ld a,(nn)	ld      a, (FAT_PARITY)
+basic/fat-prim-body.inc	909	FAT_DEFER	EDB9	cell	ld a,(nn)	ld      a, (FAT_DEFER)
+basic/fat-prim-body.inc	915	FAT_DEFER	EDB9	cell	ld (nn),a	ld      (FAT_DEFER), a
+basic/fat-prim-body.inc	965	FAT_BYTEIDX	ECC0	cell	ld (nn),de	ld      (FAT_BYTEIDX), de
+basic/fat-prim-body.inc	969	FAT_WRTMP	ED63	cell	ld (nn),de	ld      (FAT_WRTMP), de
+basic/fat-prim-body.inc	971	FAT_WRTMP2	ED65	cell	ld (nn),hl	ld      (FAT_WRTMP2), hl
+basic/fat-prim-body.inc	973	FWR_FIRST	ED56	cell	ld (nn),hl	ld      (FWR_FIRST), hl
+basic/fat-prim-body.inc	975	FWR_CLUS	ED54	cell	ld (nn),hl	ld      (FWR_CLUS), hl
+basic/fat-prim-body.inc	977	FWR_CLUS	ED54	cell	ld hl,(nn)	ld      hl, (FWR_CLUS)
+basic/fat-prim-body.inc	978	FAT_WRTMP	ED63	cell	ld de,(nn)	ld      de, (FAT_WRTMP)
+basic/fat-prim-body.inc	988	FAT_FATSTART	ECAE	cell	ld hl,(nn)	ld      hl, (FAT_FATSTART)
+basic/fat-prim-body.inc	990	FWR_FIRST	ED56	cell	ld de,(nn)	ld      de, (FWR_FIRST)
+basic/fat-prim-body.inc	996	FWR_FIRST	ED56	cell	ld (nn),hl	ld      (FWR_FIRST), hl
+basic/fat-prim-body.inc	1013	FAT_DBUF	E8AD	cell	ld de,nn	ld      de, FAT_DBUF
+basic/fat-prim-body.inc	1016	FAT_B0	ECC4	cell	ld (nn),a	ld      (FAT_B0), a
+basic/fat-prim-body.inc	1021	FWR_FIRST	ED56	cell	ld hl,(nn)	ld      hl, (FWR_FIRST)
+basic/fat-prim-body.inc	1025	FAT_MBUF	EAAD	cell	ld a,(nn)	ld      a, (FAT_MBUF)
+basic/fat-prim-body.inc	1031	FWR_CLUS	ED54	cell	ld a,(nn)	ld      a, (FWR_CLUS)
+basic/fat-prim-body.inc	1033	FAT_B0	ECC4	cell	ld a,(nn)	ld      a, (FAT_B0)
+basic/fat-prim-body.inc	1046	FAT_WRTMP2	ED65	cell	ld hl,(nn)	ld      hl, (FAT_WRTMP2)
+basic/fat-prim-body.inc	1048	FAT_WRTMP2	ED65	cell	ld (nn),hl	ld      (FAT_WRTMP2), hl
+basic/fat-prim-body.inc	1049	FAT_BYTEIDX	ECC0	cell	ld de,(nn)	ld      de, (FAT_BYTEIDX)
+basic/fat-prim-body.inc	1054	FWR_CLUS	ED54	cell	ld hl,(nn)	ld      hl, (FWR_CLUS)
+basic/fat-prim-body.inc	1056	FWR_CLUS	ED54	cell	ld (nn),hl	ld      (FWR_CLUS), hl
+basic/fat-prim-body.inc	1059	FAT_WRTMP2	ED65	cell	ld de,(nn)	ld      de, (FAT_WRTMP2)
+basic/fat-prim-body.inc	1072	FWR_BUFLEN	ED59	cell	ld de,(nn)	ld      de, (FWR_BUFLEN)
+basic/fat-prim-body.inc	1079	FAT_DBUF	E8AD	cell	ld hl,nn	ld      hl, FAT_DBUF
+basic/fat-prim-body.inc	1090	FWR_CLUS	ED54	cell	ld hl,(nn)	ld      hl, (FWR_CLUS)
+basic/fat-prim-body.inc	1094	FWR_SECIDX	ED58	cell	ld a,(nn)	ld      a, (FWR_SECIDX)
+basic/fat-prim-body.inc	1095	FAT_SECPERCLUS	ECAD	cell	ld hl,nn	ld      hl, FAT_SECPERCLUS
+basic/fat-prim-body.inc	1108	FWR_CLUS	ED54	cell	ld de,(nn)	ld      de, (FWR_CLUS)
+basic/fat-prim-body.inc	1121	FWR_FIRST	ED56	cell	ld (nn),hl	ld      (FWR_FIRST), hl
+basic/fat-prim-body.inc	1123	FWR_CLUS	ED54	cell	ld (nn),hl	ld      (FWR_CLUS), hl
+basic/fat-prim-body.inc	1125	FWR_SECIDX	ED58	cell	ld (nn),a	ld      (FWR_SECIDX), a
+basic/fat-prim-body.inc	1129	FWR_CLUS	ED54	cell	ld hl,(nn)	ld      hl, (FWR_CLUS)
+basic/fat-prim-body.inc	1130	FWR_SECIDX	ED58	cell	ld a,(nn)	ld      a, (FWR_SECIDX)
+basic/fat-prim-body.inc	1132	FAT_DBUF	E8AD	cell	ld hl,nn	ld      hl, FAT_DBUF
+basic/fat-prim-body.inc	1135	FWR_SECIDX	ED58	cell	ld hl,nn	ld      hl, FWR_SECIDX
+basic/fat-prim-body.inc	1149	FAT_NAMEPTR	ECC6	cell	ld (nn),hl	ld      (FAT_NAMEPTR), hl
+basic/fat-prim-body.inc	1154	FAT_DIRSEC	ECC8	cell	ld de,(nn)	ld      de, (FAT_DIRSEC)
+basic/fat-prim-body.inc	1157	FAT_MBUF	EAAD	cell	ld hl,nn	ld      hl, FAT_MBUF
+basic/fat-prim-body.inc	1181	FAT_MBUF	EAAD	cell	ld de,nn	ld      de, FAT_MBUF
+basic/fat-prim-body.inc	1189	FAT_NAMEPTR	ECC6	cell	ld hl,(nn)	ld      hl, (FAT_NAMEPTR)
+basic/fat-prim-body.inc	1205	FWR_DIRSEC	ED5F	cell	ld de,(nn)	ld      de, (FWR_DIRSEC)
+basic/fat-prim-body.inc	1247	FWR_DIRSEC	ED5F	cell	ld de,(nn)	ld      de, (FWR_DIRSEC)
+basic/fat-prim-body.inc	1251	FWR_DIROFF	ED61	cell	ld hl,(nn)	ld      hl, (FWR_DIROFF)
+basic/fat-prim-body.inc	1252	FAT_MBUF	EAAD	cell	ld de,nn	ld      de, FAT_MBUF
+basic/fat-prim-body.inc	1258	FWR_FIRST	ED56	cell	ld de,(nn)	ld      de, (FWR_FIRST)
+basic/fat-prim-body.inc	1266	FWR_BYTES	ED5B	cell	ld hl,nn	ld      hl, FWR_BYTES
+basic/fat-delete-body.inc	35	FAT_FIRSTCLUS	ECB9	cell	ld hl,(nn)	ld      hl, (FAT_FIRSTCLUS)
+basic/fat-delete-body.inc	42	FWR_DIRSEC	ED5F	cell	ld de,(nn)	ld      de, (FWR_DIRSEC)
+basic/fat-delete-body.inc	47	FWR_DIROFF	ED61	cell	ld hl,(nn)	ld      hl, (FWR_DIROFF)
+basic/fat-delete-body.inc	48	FAT_DBUF	E8AD	cell	ld bc,nn	ld      bc, FAT_DBUF
+basic/fat-delete-body.inc	51	FAT_DBUF	E8AD	cell	ld hl,nn	ld      hl, FAT_DBUF
+basic/fatio-body.inc	42	FAT_FILESIZE	ECBB	cell	ld hl,nn	ld      hl, FAT_FILESIZE
+basic/fatio-body.inc	43	FREAD_LEFT	ED79	cell	ld de,nn	ld      de, FREAD_LEFT
+basic/fatio-body.inc	49	FREAD_OFF	ED81	cell	ld (nn),hl	ld      (FREAD_OFF), hl
+basic/fatio-body.inc	71	FREAD_LEFT	ED79	cell	ld hl,(nn)	ld      hl, (FREAD_LEFT)
+basic/fatio-body.inc	72	FREAD_LEFT	ED79	cell	ld de,(nn)	ld      de, (FREAD_LEFT + 2)
+basic/fatio-body.inc	79	FREAD_OFF	ED81	cell	ld hl,(nn)	ld      hl, (FREAD_OFF)
+basic/fatio-body.inc	87	FREAD_OFF	ED81	cell	ld (nn),hl	ld      (FREAD_OFF), hl
+basic/fatio-body.inc	90	FREAD_OFF	ED81	cell	ld hl,(nn)	ld      hl, (FREAD_OFF)
+basic/fatio-body.inc	91	FAT_DBUF	E8AD	cell	ld de,nn	ld      de, FAT_DBUF
+basic/fatio-body.inc	95	FREAD_OFF	ED81	cell	ld hl,(nn)	ld      hl, (FREAD_OFF)
+basic/fatio-body.inc	97	FREAD_OFF	ED81	cell	ld (nn),hl	ld      (FREAD_OFF), hl
+basic/fatio-body.inc	99	FREAD_LEFT	ED79	cell	ld hl,nn	ld      hl, FREAD_LEFT
+basic/fatiocreate-body.inc	60	FAT_FILESIZE	ECBB	cell	ld (nn),hl	ld      (FAT_FILESIZE), hl
+basic/fatiocreate-body.inc	61	FAT_FILESIZE	ECBB	cell	ld (nn),hl	ld      (FAT_FILESIZE + 2), hl
+basic/fatiocreate-body.inc	64	DISK_FCB_NAME	EF49	cell	ld hl,nn	ld      hl, DISK_FCB_NAME
+basic/fatiow-body.inc	58	FWR_BUFLEN	ED59	cell	ld hl,(nn)	ld      hl, (FWR_BUFLEN)
+basic/fatiow-body.inc	67	FWR_BUFLEN	ED59	cell	ld (nn),hl	ld      (FWR_BUFLEN), hl
+basic/fatiow-body.inc	79	FAT_DBUF	E8AD	cell	ld de,nn	ld      de, FAT_DBUF
+basic/fatiow-body.inc	83	FWR_BUFLEN	ED59	cell	ld hl,(nn)	ld      hl, (FWR_BUFLEN)
+basic/fatiow-body.inc	85	FWR_BUFLEN	ED59	cell	ld (nn),hl	ld      (FWR_BUFLEN), hl
+basic/fatiow-body.inc	88	FWR_BYTES	ED5B	cell	ld hl,nn	ld      hl, FWR_BYTES
+basic/fatiow-body.inc	112	FWR_BUFLEN	ED59	cell	ld hl,(nn)	ld      hl, (FWR_BUFLEN)
+basic/sv-savdisk.inc	46	FAT_DEFER	EDB9	cell	ld (nn),a	ld      (FAT_DEFER),a
+basic/sv-savdisk.inc	53	DSV_PTR	EF59	cell	ld (nn),hl	ld      (DSV_PTR),hl
+basic/sv-savdisk.inc	56	DSV_END	EF5B	cell	ld (nn),hl	ld      (DSV_END),hl
+basic/sv-savdisk.inc	58	DSV_PTR	EF59	cell	ld hl,(nn)	ld      hl,(DSV_PTR)
+basic/sv-savdisk.inc	61	DSV_PTR	EF59	cell	ld hl,(nn)	ld      hl,(DSV_PTR)
+basic/sv-savdisk.inc	62	DSV_END	EF5B	cell	ld de,(nn)	ld      de,(DSV_END)
+basic/sv-savdisk.inc	68	DSV_PTR	EF59	cell	ld (nn),hl	ld      (DSV_PTR),hl
+disk/runtime.asm	34	FAT_WRTMP2	ED65	cell	ld de,(nn)	ld      de, (FAT_WRTMP2)
+disk/runtime.asm	40	FAT_WRTMP2	ED65	cell	ld (nn),hl	ld      (FAT_WRTMP2), hl
+disk/runtime.asm	115	PRN_ECHO	F23B	cell	ld a,(nn)	ld      a, (PRN_ECHO)
+disk/runtime.asm	198	DRVCNT	F347	cell	ld a,(nn)	ld      a, (DRVCNT)
+disk/runtime.asm	372	BR_MAININ	DDC5	cell	call nn (RAM code)	call    BR_MAININ
+disk/runtime.asm	447	BR_BACK	DE0D	cell	jp nn (RAM code)	jp      pe, BR_BACK + (brb_iff - br_back_tmpl)
+disk/runtime.asm	467	BR_TGT	DF11	cell	ld a,(nn)	ld      a, (BR_TGT)
+disk/runtime.asm	485	BR_BACK_DI	DE45	cell	jp nn (RAM code)	jp      po, BR_BACK_DI
+disk/runtime.asm	537	BASENT_REQ	F33D	cell	ld hl,(nn)	ld      hl, (BASENT_REQ)
+disk/runtime.asm	540	BASENT_REQ	F33D	cell	ld (nn),hl	ld      (BASENT_REQ), hl
+disk/runtime.asm	563	BOOT_ENTRY	C01E	const	call nn (RAM code)	call    BOOT_ENTRY
+disk/runtime.asm	571	BASENT_REQ	F33D	cell	ld (nn),hl	ld      (BASENT_REQ), hl
+disk/runtime.asm	623	FREAD_LEFT	ED79	cell	ld hl,(nn)	ld      hl,(FREAD_LEFT+2)
+disk/runtime.asm	627	FREAD_LEFT	ED79	cell	ld bc,(nn)	ld      bc,(FREAD_LEFT)
+disk/runtime.asm	631	TXTMAX	E7AD	const	ld de,nn	ld      de,TXTMAX+1
+disk/runtime.asm	635	FREAD_LEFT	ED79	cell	ld hl,(nn)	ld      hl,(FREAD_LEFT)
+disk/runtime.asm	644	FREAD_LEFT	ED79	cell	ld (nn),hl	hd_rest:        ld      (FREAD_LEFT),hl
+disk/runtime.asm	645	FAT_DBUF	E8AD	cell	ld hl,nn	ld      hl,FAT_DBUF+1
+disk/runtime.asm	659	FREAD_LEFT	ED79	cell	ld hl,(nn)	hd_full:        ld      hl,(FREAD_LEFT)
+disk/runtime.asm	665	FREAD_LEFT	ED79	cell	ld (nn),hl	ld      (FREAD_LEFT),hl
+disk/runtime.asm	701	GP_CLIDX	F081	cell	ld hl,(nn)	ld      hl, (GP_CLIDX)
+disk/runtime.asm	709	GP_CLIDX	F081	cell	ld (nn),hl	ld      (GP_CLIDX), hl
+disk/runtime.asm	717	GP_CLUS	F07F	cell	ld hl,(nn)	ld      hl, (GP_CLUS)
+disk/runtime.asm	720	GP_SECINCL	F083	cell	ld a,(nn)	ld      a, (GP_SECINCL)
+disk/runtime.asm	722	GP_PHYS	F084	cell	ld (nn),de	ld      (GP_PHYS), de
+disk/runtime.asm	741	BDOS_WRBYTES	ED5B	cell	ld hl,(nn)	ld      hl, (BDOS_WRBYTES)
+disk/runtime.asm	744	BDOS_WRBYTES	ED5B	cell	ld hl,(nn)	ld      hl, (BDOS_WRBYTES + 2)
+disk/runtime.asm	757	GP_WITHIN	F07D	cell	ld de,(nn)	ld      de, (GP_WITHIN)
+disk/runtime.asm	761	GP_LEFT	EE79	cell	ld hl,(nn)	ld      hl, (GP_LEFT)
+disk/runtime.asm	768	GP_LEFT	EE79	cell	ld (nn),hl	ld      (GP_LEFT), hl
+disk/runtime.asm	801	BDOS_WRCLUS	ED54	cell	ld hl,(nn)	ld      hl, (BDOS_WRCLUS)
+disk/runtime.asm	818	BDOS_WRFIRST	ED56	cell	ld hl,(nn)	ld      hl, (BDOS_WRFIRST)
+disk/runtime.asm	833	INT_H_HIRAM	DDAE	cell	ld de,nn	ld      de, INT_H_HIRAM
+disk/runtime.asm	843	WA_JMPTAB	F368	cell	ld (nn),a	ld      (WA_JMPTAB), a
+disk/runtime.asm	844	WA_JMPTAB	F368	cell	ld (nn),a	ld      (WA_JMPTAB + 3), a
+disk/runtime.asm	848	WA_SEG_ROM	DEB2	cell	ld hl,nn	ld      hl, WA_SEG_ROM
+disk/runtime.asm	849	WA_JMPTAB	F368	cell	ld (nn),hl	ld      (WA_JMPTAB + 1), hl
+disk/runtime.asm	850	WA_SEG_RAM	DEB8	cell	ld hl,nn	ld      hl, WA_SEG_RAM
+disk/runtime.asm	851	WA_JMPTAB	F368	cell	ld (nn),hl	ld      (WA_JMPTAB + 4), hl
+disk/runtime.asm	869	DOS_DTAPTR	F23D	cell	ld hl,(nn)	ld      hl, (DOS_DTAPTR)
+disk/runtime.asm	870	BDOS_DTA	ECCD	cell	ld (nn),hl	ld      (BDOS_DTA), hl
+disk/runtime.asm	883	BOOT_LOAD	C000	const	ld hl,nn	ld      hl, BOOT_LOAD
+disk/runtime.asm	886	BOOT_LOAD	C000	const	ld a,(nn)	ld      a, (BOOT_LOAD)

@@ -1,0 +1,347 @@
+## D DOS block $DD0E-$DF92: 50 sites
+   jp nn (RAM code) 10, call nn (RAM code) 10, dw nn (data) 7, ld hl,(nn) 5, ld (nn),a 4, ld (nn),hl 4, ld hl,nn 4, ld a,(nn) 2, ld de,nn 2, ld (nn),de 1, ld iy,(nn) 1
+## F fixed-area $F1C9-$F37F: 76 sites
+   ld (nn),a 20, ld (nn),hl 16, ld hl,(nn) 13, ld a,(nn) 12, ld de,nn 4, ld hl,nn 3, ld (nn),de 3, ld bc,nn 2, ld de,(nn) 2, dw nn (data) 1
+## H H.RUNC-claim $E000-$F194: 516 sites
+   ld hl,(nn) 130, ld (nn),hl 121, ld de,(nn) 64, ld a,(nn) 59, ld (nn),a 49, ld hl,nn 40, ld (nn),de 23, ld de,nn 9, ld bc,(nn) 7, dw nn (data) 4, jp nn (RAM code) 4, call nn (RAM code) 2, ld (nn),bc 2, ld (nn),sp 1, ld sp,(nn) 1
+## H H.RUNC-claim $E000-$F194 [shared w/ main]: 212 sites
+   ld hl,nn 48, ld de,nn 33, ld a,(nn) 29, ld hl,(nn) 28, ld (nn),a 23, ld (nn),hl 21, ld de,(nn) 12, ld (nn),de 8, ld bc,nn 6, cp imm 2, jp nn (RAM code) 2
+## I INIT-private $F195-$F1C8: 11 sites
+   ld a,(nn) 4, ld ix,nn 3, ld (nn),a 2, ld hl,nn 1, ld de,nn 1
+## K const: 17 sites
+   ld hl,nn 7, ld de,nn 3, call nn (RAM code) 3, dw nn (data) 2, ld (nn),hl 1, ld a,(nn) 1
+
+## per cell (value name region total : forms)
+C000 BOOT_LOAD        K      5 : ld de,nn 2, ld (nn),hl 1, ld hl,nn 1, ld a,(nn) 1
+C01E BOOT_ENTRY       K      3 : call nn (RAM code) 3
+DD0E GETWRK_AREA      K      2 : ld hl,nn 1, dw nn (data) 1
+DDAE INT_H_HIRAM      D      2 : dw nn (data) 1, ld de,nn 1
+DDC5 BR_MAININ        D      2 : call nn (RAM code) 2
+DDC9 BR_P0IN          D      1 : call nn (RAM code) 1
+DE0D BR_BACK          D      3 : jp nn (RAM code) 2, ld hl,nn 1
+DE45 BR_BACK_DI       D      1 : jp nn (RAM code) 1
+DE48 BR_RDSLT         D      1 : dw nn (data) 1
+DE4F BR_WRSLT         D      1 : dw nn (data) 1
+DE56 BR_CALSLT        D      1 : dw nn (data) 1
+DE59 BR_ENASLT        D      3 : call nn (RAM code) 2, dw nn (data) 1
+DE74 BR_CALLF         D      1 : dw nn (data) 1
+DE77 DISK_HIMEM       K      1 : ld hl,nn 1
+DEB2 WA_SEG           D      1 : ld de,nn 1
+DEB2 WA_SEG_ROM       D      2 : call nn (RAM code) 1, ld hl,nn 1
+DEB8 WA_SEG_RAM       D      2 : call nn (RAM code) 1, ld hl,nn 1
+DECD BR_BDOS          D      2 : jp nn (RAM code) 1, dw nn (data) 1
+DEE7 BR_P1SV          D      2 : ld (nn),a 1, ld a,(nn) 1
+DEE8 BR_GO            D      4 : jp nn (RAM code) 4
+DEEE BR_FRAME         D      1 : jp nn (RAM code) 1
+DF11 BR_TGT           D      4 : ld (nn),hl 2, ld hl,(nn) 1, ld a,(nn) 1
+DF13 BR_FRM           D      2 : ld (nn),hl 1, ld hl,(nn) 1
+DF15 BR_HL            D      2 : ld (nn),hl 1, ld hl,(nn) 1
+DF17 BR_CFOP          D      6 : ld (nn),a 3, ld hl,(nn) 2, ld hl,nn 1
+DF1D BR_CALS          D      1 : jp nn (RAM code) 1
+DF79 BC_FIELD         D      2 : call nn (RAM code) 2
+DF82 BC_JPIX          D      1 : call nn (RAM code) 1
+DF84 BC_TMP           D      2 : ld (nn),de 1, ld iy,(nn) 1
+DF93 DOS_RESV_TOP     K      2 : dw nn (data) 1, ld hl,nn 1
+E48D CTRL_HIMEM       K      1 : ld hl,nn 1
+E7AD TXTMAX           K      2 : ld hl,nn 1, ld de,nn 1
+E8AD BD_LINE          H      2 : ld hl,nn 1, ld de,nn 1
+E8AD FAT_DBUF         H     34 : ld hl,nn 14, ld de,nn 8, ld a,(nn) 5, ld hl,(nn) 4, ld bc,nn 2, ld de,(nn) 1
+E8AD SECTOR_BUF       H     20 : ld hl,nn 7, ld de,nn 6, ld a,(nn) 4, jp nn (RAM code) 2, ld bc,nn 1
+E8C6 BD_DAY           H      2 : ld (nn),a 1, ld de,(nn) 1
+E8C7 BD_MON           H      1 : ld (nn),a 1
+EAAD FAT_MBUF         H     19 : ld de,nn 6, ld hl,nn 6, ld bc,nn 3, cp imm 2, ld a,(nn) 2
+EAAD FWBUF            H      1 : ld hl,nn 1
+ECA1 WRBLK_MULACC     H      7 : ld hl,nn 2, ld (nn),hl 1, ld (nn),de 1, ld hl,(nn) 1, ld a,(nn) 1, ld de,nn 1
+ECAD FAT_SECPERCLUS   H     19 : ld a,(nn) 12, ld hl,nn 5, ld hl,(nn) 1, ld (nn),a 1
+ECAE FAT_FATSTART     H      4 : ld hl,(nn) 2, ld de,(nn) 1, ld (nn),hl 1
+ECB0 FAT_FIRSTROOT    H      8 : ld hl,(nn) 3, ld de,(nn) 3, ld bc,(nn) 1, ld (nn),hl 1
+ECB2 FAT_TOTCLUS      H      2 : ld de,(nn) 1, ld (nn),de 1
+ECB4 FAT_FIRSTDATA    H      4 : ld de,(nn) 2, ld hl,(nn) 1, ld (nn),hl 1
+ECB6 FAT_CURCLUS      H     13 : ld hl,(nn) 8, ld (nn),hl 5
+ECB8 FAT_CLUSSEC      H     10 : ld (nn),a 5, ld a,(nn) 4, ld hl,nn 1
+ECB9 FAT_FIRSTCLUS    H     20 : ld hl,(nn) 12, ld (nn),hl 3, ld (nn),de 2, ld de,(nn) 1, ld hl,nn 1, ld bc,(nn) 1
+ECBB FAT_FILESIZE     H     21 : ld hl,nn 8, ld hl,(nn) 4, ld (nn),hl 4, ld a,(nn) 2, ld de,(nn) 2, ld de,nn 1
+ECBF FAT_PARITY       H      4 : ld a,(nn) 3, ld (nn),a 1
+ECC0 FAT_BYTEIDX      H      8 : ld (nn),a 2, ld hl,(nn) 2, ld de,(nn) 2, ld bc,(nn) 1, ld (nn),de 1
+ECC2 FAT_FATSEC       H      8 : ld hl,(nn) 5, ld (nn),hl 2, ld de,(nn) 1
+ECC4 FAT_B0           H      4 : ld (nn),a 2, ld hl,(nn) 1, ld a,(nn) 1
+ECC5 FAT_B1           H      1 : ld hl,nn 1
+ECC6 FAT_NAMEPTR      H      6 : ld de,(nn) 2, ld (nn),hl 2, ld (nn),de 1, ld hl,(nn) 1
+ECC8 FAT_DIRSEC       H     16 : ld de,(nn) 9, ld (nn),hl 4, ld hl,(nn) 2, ld (nn),de 1
+ECCA FAT_DIRREM       H      5 : ld (nn),hl 3, ld hl,(nn) 2
+ECCC BDOS_RECIDX      H      8 : ld a,(nn) 4, ld (nn),a 4
+ECCD BDOS_DTA         H      6 : ld (nn),hl 3, ld de,(nn) 1, ld (nn),de 1, ld hl,(nn) 1
+ED4F BDOS_BYTESLEFT   H     14 : ld hl,nn 4, ld (nn),a 4, ld (nn),hl 3, ld de,nn 1, ld hl,(nn) 1, ld de,(nn) 1
+ED53 BDOS_WRMODE      H      7 : ld (nn),a 4, ld a,(nn) 3
+ED54 BDOS_WRCLUS      H      4 : ld hl,(nn) 2, ld hl,nn 1, ld (nn),hl 1
+ED54 FWR_CLUS         H     15 : ld hl,(nn) 7, ld (nn),hl 6, ld a,(nn) 1, ld de,(nn) 1
+ED56 BDOS_WRFIRST     H      6 : ld (nn),hl 4, ld bc,(nn) 1, ld hl,(nn) 1
+ED56 FWR_FIRST        H     10 : ld (nn),hl 6, ld hl,(nn) 2, ld de,(nn) 2
+ED58 BDOS_WRSECIDX    H      2 : ld a,(nn) 1, ld hl,nn 1
+ED58 FWR_SECIDX       H      9 : ld a,(nn) 4, ld (nn),a 3, ld hl,nn 2
+ED59 BDOS_WRBUFLEN    H      5 : ld hl,(nn) 3, ld (nn),hl 1, ld hl,nn 1
+ED59 FWR_BUFLEN       H     10 : ld hl,(nn) 4, ld (nn),hl 3, ld de,(nn) 2, ld (nn),de 1
+ED5B BDOS_WRBYTES     H      4 : ld hl,(nn) 2, ld de,nn 1, ld hl,nn 1
+ED5B FWR_BYTES        H      9 : ld hl,(nn) 3, ld (nn),hl 3, ld hl,nn 3
+ED5F BDOS_DIRSEC      H      1 : ld (nn),de 1
+ED5F FWR_DIRSEC       H     12 : ld de,(nn) 7, ld hl,(nn) 2, ld (nn),hl 2, ld (nn),de 1
+ED61 BDOS_DIROFF      H      1 : ld (nn),hl 1
+ED61 FWR_DIROFF       H     11 : ld hl,(nn) 7, ld (nn),hl 3, ld de,(nn) 1
+ED63 FAT_WRTMP        H     10 : ld (nn),de 5, ld de,(nn) 5
+ED65 FAT_WRTMP2       H     12 : ld (nn),hl 8, ld de,(nn) 3, ld hl,(nn) 1
+ED67 FAT_NUMFATS      H      3 : ld a,(nn) 2, ld (nn),a 1
+ED68 FAT_SECPERFAT    H      3 : ld de,(nn) 1, ld a,(nn) 1, ld (nn),de 1
+ED6B BDOS_SRCHIDX     H      5 : ld hl,(nn) 2, ld (nn),hl 2, ld a,(nn) 1
+ED6D BOOT_SV_A8       H      2 : ld (nn),a 1, ld a,(nn) 1
+ED6E BOOT_SV_SEC      H      2 : ld (nn),a 1, ld a,(nn) 1
+ED79 FREAD_LEFT       H     12 : ld hl,(nn) 5, ld bc,(nn) 2, ld (nn),hl 2, ld de,nn 1, ld de,(nn) 1, ld hl,nn 1
+ED79 RDBLK_REQ        H      2 : ld (nn),hl 1, ld de,(nn) 1
+ED7B RDBLK_RECSIZE    H      5 : ld (nn),hl 2, ld hl,(nn) 2, ld de,(nn) 1
+ED7D RDBLK_DONE       H      5 : ld hl,(nn) 3, ld (nn),hl 2
+ED7F RDBLK_CNT        H      9 : ld hl,(nn) 6, ld (nn),hl 3
+ED81 FREAD_OFF        H     10 : ld hl,(nn) 5, ld (nn),hl 3, ld (nn),de 1, ld de,(nn) 1
+ED81 RDBLK_BUFPOS     H      4 : ld (nn),hl 3, ld hl,(nn) 1
+ED83 RDBLK_DST        H      3 : ld (nn),hl 2, ld hl,(nn) 1
+ED85 P1_DEST          H      7 : ld de,(nn) 2, ld (nn),hl 1, ld hl,(nn) 1, ld (nn),a 1, ld hl,nn 1, ld (nn),de 1
+ED87 COPY_STAMP       H      2 : ld de,nn 1, ld hl,nn 1
+ED87 WRBLK_REC        H     12 : ld hl,(nn) 4, ld (nn),hl 3, ld (nn),a 2, ld hl,nn 2, ld de,(nn) 1
+ED8A WRBLK_RECSEC     H      3 : ld a,(nn) 2, ld (nn),a 1
+ED8B DPSAVE_SP        H      2 : ld (nn),sp 1, ld sp,(nn) 1
+ED8B WRBLK_RS         H      4 : ld (nn),de 1, ld de,(nn) 1, ld bc,(nn) 1, ld (nn),hl 1
+ED8D WRBLK_CNT        H      5 : ld (nn),hl 2, ld hl,(nn) 2, ld de,(nn) 1
+ED8F WRBLK_REQ        H      5 : ld hl,(nn) 3, ld (nn),hl 1, ld de,(nn) 1
+ED91 WRBLK_PREVCLUS   H      3 : ld de,(nn) 2, ld (nn),hl 1
+ED93 WRBLK_KEEPCNT    H      3 : ld (nn),de 2, ld de,(nn) 1
+ED95 WRBLK_NEXTCLUS   H      4 : ld (nn),hl 2, ld hl,(nn) 2
+ED97 WRBLK_CURVALID   H      4 : ld (nn),a 2, ld a,(nn) 2
+ED98 WRBLK_CURSEC     H      5 : ld (nn),bc 2, ld (nn),hl 1, ld de,(nn) 1, ld hl,(nn) 1
+ED9A FAT_ALLOCHINT    H      4 : ld (nn),hl 3, ld hl,(nn) 1
+ED9C RDBLK_RRSTART    H      4 : ld a,(nn) 3, ld de,nn 1
+ED9F DRV_TRAMP        H      5 : dw nn (data) 4, ld hl,nn 1
+EDB3 BDOS_SEQREC      H      7 : ld (nn),hl 5, ld de,(nn) 1, ld hl,(nn) 1
+EDB5 DBUF_PTR         H      1 : ld (nn),hl 1
+EDB7 MBUF_PTR         H      1 : ld (nn),hl 1
+EDB9 FAT_DEFER        H     18 : ld (nn),a 9, ld a,(nn) 8, ld (nn),hl 1
+EDBA FAT_FCACHE       H      2 : ld a,(nn) 1, ld (nn),a 1
+EDBB RND_HSEC         H      5 : ld (nn),hl 3, ld hl,(nn) 2
+EDBD DSK_STAMP        H      2 : ld (nn),hl 1, ld de,(nn) 1
+EE4D FCH_RECLENS      H      2 : ld de,nn 2
+EE77 GP_SRC           H      5 : ld (nn),hl 2, ld de,(nn) 1, ld (nn),de 1, ld hl,(nn) 1
+EE79 GP_LEFT          H      4 : ld hl,(nn) 2, ld (nn),de 1, ld (nn),hl 1
+EE7D GP_RECNO         H      6 : ld hl,nn 3, ld (nn),hl 1, ld (nn),de 1, ld de,nn 1
+EEC3 FLD_CUROFF       H      3 : ld (nn),hl 2, ld hl,(nn) 1
+EEC6 LRSET_JUST       H      1 : ld (nn),a 1
+EEEE COPY_SRC         H      8 : ld hl,nn 5, ld de,nn 3
+EEF9 COPY_CLUS        H      2 : ld de,nn 1, ld hl,(nn) 1
+EEFB COPY_LEFT        H      8 : ld hl,(nn) 3, ld a,(nn) 2, ld de,(nn) 1, ld (nn),hl 1, ld hl,nn 1
+EF48 DK_FCB_DRV       H      6 : ld (nn),a 5, ld a,(nn) 1
+EF49 DISK_FCB_NAME    H     14 : ld hl,nn 9, ld de,nn 5
+EF59 DSV_PTR          H      6 : ld (nn),hl 3, ld hl,(nn) 3
+EF5B DSV_END          H      5 : ld de,(nn) 2, ld hl,(nn) 1, ld hl,nn 1, ld (nn),hl 1
+EF62 FMT_RESULT       H      1 : ld (nn),a 1
+EF63 FILES_ENTIDX     H      4 : ld a,(nn) 2, ld (nn),a 2
+EFDA F37D_STUB        H      3 : ld hl,nn 1, ld de,nn 1, ld (nn),a 1
+EFF6 DSK_MEDIA        H      6 : ld (nn),a 4, ld a,(nn) 2
+EFF7 FDC_IFF          H      6 : ld a,(nn) 4, ld (nn),a 2
+EFF8 FDC_CNT          H      5 : ld a,(nn) 3, ld (nn),a 2
+EFF9 FDC_LSEC         H      4 : ld hl,(nn) 2, ld (nn),de 1, ld (nn),hl 1
+EFFB FDC_DEST         H      9 : ld hl,(nn) 5, ld (nn),hl 4
+EFFD FDC_TRY          H      3 : ld (nn),a 2, ld a,(nn) 1
+EFFE P1_BLIT          H      7 : jp nn (RAM code) 4, call nn (RAM code) 2, ld de,nn 1
+F019 FLD_END          H      2 : ld (nn),hl 1, ld hl,(nn) 1
+F022 DSK_CURDRV       H      3 : ld hl,nn 2, ld (nn),a 1
+F07B GP_SEC           H      5 : ld hl,(nn) 3, ld (nn),de 1, ld (nn),hl 1
+F07D GP_WITHIN        H      5 : ld hl,(nn) 2, ld (nn),de 1, ld (nn),hl 1, ld de,(nn) 1
+F07F GP_CLUS          H      5 : ld (nn),hl 2, ld hl,(nn) 2, ld de,(nn) 1
+F081 GP_CLIDX         H      7 : ld hl,(nn) 3, ld (nn),hl 3, ld (nn),de 1
+F083 GP_SECINCL       H      2 : ld (nn),a 1, ld a,(nn) 1
+F084 GP_PHYS          H      3 : ld hl,(nn) 1, ld de,(nn) 1, ld (nn),de 1
+F088 GP_FLAGS         H      3 : ld a,(nn) 2, ld (nn),a 1
+F09A GP_RECLEN        H      4 : ld de,(nn) 3, ld (nn),de 1
+F09D FILES_HASPAT     H      3 : ld (nn),a 2, ld a,(nn) 1
+F195 DRVA_DPB         I      5 : ld ix,nn 3, ld (nn),a 1, ld hl,nn 1
+F195 INIT_HIMEM       K      1 : ld hl,nn 1
+F1AA W50A9_RET_DE     I      1 : ld de,nn 1
+F1C8 HOOK_SLOT        I      5 : ld a,(nn) 4, ld (nn),a 1
+F1C9 RES_PRINT        F      2 : dw nn (data) 1, ld de,nn 1
+F23B PRN_ECHO         F      2 : ld (nn),a 1, ld a,(nn) 1
+F23D DOS_DTAPTR       F     11 : ld hl,(nn) 4, ld (nn),de 3, ld (nn),hl 2, ld de,(nn) 2
+F242 W50A9_WRKB       F      1 : ld (nn),a 1
+F247 CURDRV_CELL      F      6 : ld (nn),a 3, ld a,(nn) 3
+F24E RES_STUBS        F      3 : ld hl,nn 1, ld de,nn 1, ld bc,nn 1
+F2B8 RES_STUBS_END    F      1 : ld bc,nn 1
+F323 DISKVE           F      5 : ld a,(nn) 3, ld hl,(nn) 1, ld (nn),a 1
+F33B DATE_DAYS        F      3 : ld (nn),hl 2, ld hl,(nn) 1
+F33D BASENT_REQ       F     13 : ld (nn),hl 8, ld hl,(nn) 5
+F340 DOS_F340         F      1 : ld (nn),a 1
+F341 RAMAD0           F      5 : ld (nn),a 4, ld a,(nn) 1
+F346 DOS_F346         F      3 : ld (nn),a 2, ld a,(nn) 1
+F347 DRVCNT           F      5 : ld a,(nn) 3, ld (nn),a 1, ld hl,(nn) 1
+F348 DRVTBL           F      2 : ld (nn),a 1, ld de,nn 1
+F351 DSKBUF_PTR       F      2 : ld hl,(nn) 1, ld (nn),hl 1
+F359 W50A9_RET_HL     F      1 : ld hl,nn 1
+F365 F365_STUB        F      1 : ld de,nn 1
+F368 WA_JMPTAB        F      7 : ld (nn),a 4, ld (nn),hl 2, ld hl,nn 1
+F37D SYSTEM           F      2 : ld (nn),a 1, ld (nn),hl 1
+
+# cost arithmetic (wasize_cost.py, re-run from its own directory 2026-11-26; the first run here failed on a relative path)
+B (base word in a fixed cell, inline-offset helper) per region: sites, +B low, +B high
+  I     11 sites  +   24 .. +   38 B
+  Hd   516 sites  + 1863 .. + 2531 B
+  Hs   212 sites  +  559 .. +  811 B
+  D     50 sites  +  175 .. +  201 B
+  ALL  789 sites  + 2621 .. + 3581 B   (+ helpers ~30 B, + dw-table fixup loop ~15 B)
+A best IY window from $ECAD: 446 sites, +1062 B as IY+d (vs +1635 B as B-helper)
+
+# inventory: addr | size | names | class | region | owner | sites | N_min
+| `$F37D` | 2 | SYSTEM | P | fixed area | disk | 2 | 2 |
+| `$F368` | 21 | WA_JMPTAB | P | fixed area | disk | 7 | 4 |
+| `$F365` | ? | F365_STUB | P | fixed area | disk | 1 | 27 |
+| `$F359` | ? | W50A9_RET_HL | P | fixed area | disk | 1 | 39 |
+| `$F351` | 2 | DSKBUF_PTR | P | fixed area | main+disk | 2 | 46 |
+| `$F348` | 16 | DRVTBL | P | fixed area | disk | 2 | 41 |
+| `$F347` | 1 | DRVCNT | P | fixed area | disk | 5 | 57 |
+| `$F346` | 1 | DOS_F346 | P | fixed area | disk | 3 | 58 |
+| `$F341` | 4 | RAMAD0 | P | fixed area | disk | 5 | 60 |
+| `$F340` | 1 | DOS_F340 | P | fixed area | disk | 1 | 64 |
+| `$F33D` | 2 | BASENT_REQ | Z* | fixed area | disk | 13 | 66 |
+| `$F33B` | 2 | DATE_DAYS | P | fixed area | disk | 3 | 68 |
+| `$F323` | 2 | DISKVE | P | fixed area | disk | 5 | 92 |
+| `$F2B8` | ? | RES_STUBS_END | P | fixed area | disk | 1 | 200 |
+| `$F24E` | ? | RES_STUBS | P | fixed area | disk | 3 | 306 |
+| `$F247` | 1 | CURDRV_CELL | P | fixed area | disk | 6 | 313 |
+| `$F242` | 1 | W50A9_WRKB | P | fixed area | disk | 1 | 318 |
+| `$F23D` | 2 | DOS_DTAPTR | P | fixed area | disk | 11 | 322 |
+| `$F23B` | 1 | PRN_ECHO | P | fixed area | disk | 2 | 325 |
+| `$F1C9` | ? | RES_PRINT | P | fixed area | disk | 2 | 439 |
+| `$F1C8` | 1 | HOOK_SLOT | Z | INIT claim | disk | 5 | 440 |
+| `$F1AA` | ? | W50A9_RET_DE | Z | INIT claim | disk | 1 | 470 |
+| `$F195` | 18 | DRVA_DPB/INIT_HIMEM | Z | INIT claim | disk | 5 | 474 |
+| `$F09D` | 1 | FILES_HASPAT | Z | H.RUNC claim | main+disk | 3 | 739 |
+| `$F09A` | 2 | GP_RECLEN | Z | H.RUNC claim | main+disk | 4 | 741 |
+| `$F088` | 1 | GP_FLAGS | Z | H.RUNC claim | main+disk | 3 | 760 |
+| `$F084` | 2 | GP_PHYS | Z | H.RUNC claim | main+disk | 3 | 763 |
+| `$F083` | 1 | GP_SECINCL | Z | H.RUNC claim | main+disk | 2 | 765 |
+| `$F081` | 2 | GP_CLIDX | Z | H.RUNC claim | main+disk | 7 | 766 |
+| `$F07F` | 2 | GP_CLUS | Z | H.RUNC claim | main+disk | 5 | 768 |
+| `$F07D` | 2 | GP_WITHIN | Z | H.RUNC claim | main+disk | 5 | 770 |
+| `$F07B` | 2 | GP_SEC | Z | H.RUNC claim | main+disk | 5 | 772 |
+| `$F022` | 1 | DSK_CURDRV | Z | H.RUNC claim | disk | 3 | 862 |
+| `$F019` | 2 | FLD_END | Z | H.RUNC claim | main+disk | 2 | 870 |
+| `$EFFE` | 27 | P1_BLIT | Z | H.RUNC claim | disk | 7 | 872 |
+| `$EFFD` | 1 | FDC_TRY | Z | H.RUNC claim | disk | 3 | 899 |
+| `$EFFB` | 2 | FDC_DEST | Z | H.RUNC claim | disk | 9 | 900 |
+| `$EFF9` | 2 | FDC_LSEC | Z | H.RUNC claim | disk | 4 | 902 |
+| `$EFF8` | 1 | FDC_CNT | Z | H.RUNC claim | disk | 5 | 904 |
+| `$EFF7` | 1 | FDC_IFF | Z | H.RUNC claim | disk | 6 | 905 |
+| `$EFF6` | 1 | DSK_MEDIA | Z | H.RUNC claim | disk | 6 | 906 |
+| `$EFDA` | 28 | F37D_STUB | Z | H.RUNC claim | disk | 3 | 907 |
+| `$EF63` | 1 | FILES_ENTIDX | Z | H.RUNC claim | main+disk | 4 | 1053 |
+| `$EF62` | 1 | FMT_RESULT | Z | H.RUNC claim | main+disk | 1 | 1054 |
+| `$EF61` | 1 | FMT_GEOMSEL | Z | H.RUNC claim | main+disk | 0 | 1055 |
+| `$EF5B` | 2 | DSV_END | Z | H.RUNC claim | main+disk | 5 | 1060 |
+| `$EF59` | 2 | DSV_PTR | Z | H.RUNC claim | main+disk | 6 | 1062 |
+| `$EF49` | 11 | DISK_FCB_NAME | Z | H.RUNC claim | main+disk | 14 | 1069 |
+| `$EF48` | 1 | DK_FCB_DRV | Z | H.RUNC claim | main+disk | 6 | 1080 |
+| `$EEFB` | 4 | COPY_LEFT | Z | H.RUNC claim | main+disk | 8 | 1154 |
+| `$EEF9` | 2 | COPY_CLUS | Z | H.RUNC claim | main+disk | 2 | 1158 |
+| `$EEEE` | 11 | COPY_SRC | Z | H.RUNC claim | main+disk | 8 | 1160 |
+| `$EEC6` | 1 | LRSET_JUST | Z | H.RUNC claim | main+disk | 1 | 1210 |
+| `$EEC3` | 2 | FLD_CUROFF | Z | H.RUNC claim | main+disk | 3 | 1212 |
+| `$EE7D` | 4 | GP_RECNO | Z | H.RUNC claim | main+disk | 6 | 1280 |
+| `$EE79` | 2 | GP_LEFT | Z | H.RUNC claim | main+disk | 4 | 1286 |
+| `$EE77` | 2 | GP_SRC | Z | H.RUNC claim | main+disk | 5 | 1288 |
+| `$EE4D` | 32 | FCH_RECLENS | Z | H.RUNC claim | main+disk | 2 | 1300 |
+| `$EDBD` | 2 | DSK_STAMP | Z | H.RUNC claim | main+disk | 2 | 1474 |
+| `$EDBB` | 2 | RND_HSEC | Z | H.RUNC claim | disk | 5 | 1476 |
+| `$EDBA` | 1 | FAT_FCACHE | Z | H.RUNC claim | main+disk | 2 | 1478 |
+| `$EDB9` | 1 | FAT_DEFER | Z | H.RUNC claim | main+disk | 18 | 1479 |
+| `$EDB7` | 2 | MBUF_PTR | Z | H.RUNC claim | disk | 1 | 1480 |
+| `$EDB5` | 2 | DBUF_PTR | Z | H.RUNC claim | disk | 1 | 1482 |
+| `$EDB3` | 2 | BDOS_SEQREC | Z | H.RUNC claim | disk | 7 | 1484 |
+| `$ED9F` | 20 | DRV_TRAMP | Z | H.RUNC claim | disk | 5 | 1486 |
+| `$ED9C` | 3 | RDBLK_RRSTART | Z | H.RUNC claim | disk | 4 | 1506 |
+| `$ED9A` | 2 | FAT_ALLOCHINT | Z | H.RUNC claim | disk | 4 | 1509 |
+| `$ED98` | 2 | WRBLK_CURSEC | Z | H.RUNC claim | disk | 5 | 1511 |
+| `$ED97` | 1 | WRBLK_CURVALID | Z | H.RUNC claim | disk | 4 | 1513 |
+| `$ED95` | 2 | WRBLK_NEXTCLUS | Z | H.RUNC claim | disk | 4 | 1514 |
+| `$ED93` | 2 | WRBLK_KEEPCNT | Z | H.RUNC claim | disk | 3 | 1516 |
+| `$ED91` | 2 | WRBLK_PREVCLUS | Z | H.RUNC claim | disk | 3 | 1518 |
+| `$ED8F` | 2 | WRBLK_REQ | Z | H.RUNC claim | disk | 5 | 1520 |
+| `$ED8D` | 2 | WRBLK_CNT | Z | H.RUNC claim | disk | 5 | 1522 |
+| `$ED8B` | 2 | DPSAVE_SP/WRBLK_RS | Z | H.RUNC claim | disk | 6 | 1524 |
+| `$ED8A` | 1 | WRBLK_RECSEC | Z | H.RUNC claim | disk | 3 | 1526 |
+| `$ED87` | 4 | COPY_STAMP/WRBLK_REC | Z | H.RUNC claim | disk | 14 | 1526 |
+| `$ED85` | 2 | P1_DEST | Z | H.RUNC claim | disk | 7 | 1530 |
+| `$ED83` | 2 | RDBLK_DST | Z | H.RUNC claim | disk | 3 | 1532 |
+| `$ED81` | 2 | FREAD_OFF/RDBLK_BUFPOS | Z | H.RUNC claim | disk | 14 | 1534 |
+| `$ED7F` | 2 | RDBLK_CNT | Z | H.RUNC claim | disk | 9 | 1536 |
+| `$ED7D` | 2 | RDBLK_DONE | Z | H.RUNC claim | disk | 5 | 1538 |
+| `$ED7B` | 2 | RDBLK_RECSIZE | Z | H.RUNC claim | disk | 5 | 1540 |
+| `$ED79` | ? | FREAD_LEFT/RDBLK_REQ | Z | H.RUNC claim | disk | 14 | 1543 |
+| `$ED6E` | 1 | BOOT_SV_SEC/RRND_CLUSSEC | Z | H.RUNC claim | disk | 2 | 1554 |
+| `$ED6D` | 1 | BOOT_SV_A8/RRND_RECSEC | Z | H.RUNC claim | disk | 2 | 1555 |
+| `$ED6B` | 2 | BDOS_SRCHIDX | Z | H.RUNC claim | disk | 5 | 1556 |
+| `$ED68` | 2 | FAT_SECPERFAT | Z | H.RUNC claim | disk | 3 | 1559 |
+| `$ED67` | 1 | FAT_NUMFATS | Z | H.RUNC claim | disk | 3 | 1561 |
+| `$ED65` | ? | FAT_WRTMP2 | Z | H.RUNC claim | disk | 12 | 1563 |
+| `$ED63` | 2 | FAT_WRTMP | Z | H.RUNC claim | disk | 10 | 1564 |
+| `$ED61` | 2 | BDOS_DIROFF/FWR_DIROFF | Z | H.RUNC claim | disk | 12 | 1566 |
+| `$ED5F` | 2 | BDOS_DIRSEC/FWR_DIRSEC | Z | H.RUNC claim | disk | 13 | 1568 |
+| `$ED5B` | 4 | BDOS_WRBYTES/FWR_BYTES | Z | H.RUNC claim | disk | 13 | 1570 |
+| `$ED59` | 2 | BDOS_WRBUFLEN/FWR_BUFLEN | Z | H.RUNC claim | disk | 15 | 1574 |
+| `$ED58` | 1 | BDOS_WRSECIDX/FWR_SECIDX | Z | H.RUNC claim | disk | 11 | 1576 |
+| `$ED56` | 2 | BDOS_WRFIRST/FWR_FIRST | Z | H.RUNC claim | disk | 16 | 1577 |
+| `$ED54` | 2 | BDOS_WRCLUS/FWR_CLUS | Z | H.RUNC claim | disk | 19 | 1579 |
+| `$ED53` | 1 | BDOS_WRMODE | Z | H.RUNC claim | disk | 7 | 1581 |
+| `$ED4F` | 4 | BDOS_BYTESLEFT | Z | H.RUNC claim | disk | 14 | 1582 |
+| `$ECCD` | 2 | BDOS_DTA | Z | H.RUNC claim | disk | 6 | 1714 |
+| `$ECCC` | ? | BDOS_RECIDX | Z | H.RUNC claim | disk | 8 | 1716 |
+| `$ECCA` | 2 | FAT_DIRREM | Z | H.RUNC claim | disk | 5 | 1717 |
+| `$ECC8` | 2 | FAT_DIRSEC | Z | H.RUNC claim | disk | 16 | 1719 |
+| `$ECC6` | 2 | FAT_NAMEPTR | Z | H.RUNC claim | disk | 6 | 1721 |
+| `$ECC5` | 1 | FAT_B1 | Z | H.RUNC claim | disk | 1 | 1723 |
+| `$ECC4` | 1 | FAT_B0 | Z | H.RUNC claim | disk | 4 | 1724 |
+| `$ECC2` | 2 | FAT_FATSEC | Z | H.RUNC claim | disk | 8 | 1725 |
+| `$ECC0` | 2 | FAT_BYTEIDX | Z | H.RUNC claim | disk | 8 | 1727 |
+| `$ECBF` | 1 | FAT_PARITY | Z | H.RUNC claim | disk | 4 | 1729 |
+| `$ECBB` | 4 | FAT_FILESIZE | Z | H.RUNC claim | disk | 21 | 1730 |
+| `$ECB9` | 2 | FAT_FIRSTCLUS | Z | H.RUNC claim | disk | 20 | 1734 |
+| `$ECB8` | 1 | FAT_CLUSSEC | Z | H.RUNC claim | disk | 10 | 1736 |
+| `$ECB6` | 2 | FAT_CURCLUS | Z | H.RUNC claim | disk | 13 | 1737 |
+| `$ECB4` | 2 | FAT_FIRSTDATA | Z | H.RUNC claim | disk | 4 | 1739 |
+| `$ECB2` | 2 | FAT_TOTCLUS | Z | H.RUNC claim | disk | 2 | 1741 |
+| `$ECB0` | 2 | FAT_FIRSTROOT | Z | H.RUNC claim | disk | 8 | 1743 |
+| `$ECAE` | 2 | FAT_FATSTART | Z | H.RUNC claim | disk | 4 | 1745 |
+| `$ECAD` | 1 | FAT_SECPERCLUS | Z | H.RUNC claim | disk | 19 | 1747 |
+| `$ECA9` | 3 | WRBLK_MULN | Z | H.RUNC claim | disk | 0 | 1749 |
+| `$ECA5` | 4 | WRBLK_MULOP | Z | H.RUNC claim | disk | 0 | 1752 |
+| `$ECA1` | 4 | WRBLK_MULACC | Z | H.RUNC claim | disk | 7 | 1756 |
+| `$EAAD` | 512 | FAT_MBUF/FWBUF/WBUF | Z | H.RUNC claim | main+disk | 20 | 1748 |
+| `$E8C7` | 1 | BD_MON | Z | H.RUNC claim | disk | 1 | 2745 |
+| `$E8C6` | 1 | BD_DAY | Z | H.RUNC claim | disk | 2 | 2746 |
+| `$E8AD` | 512 | BD_LINE/FAT_DBUF/FSECTOR_BUF/SECTOR_BUF | Z | H.RUNC claim | main+disk | 56 | 2260 |
+| `$DF84` | ? | BC_TMP | Z | DOS block | disk | 2 | 5116 |
+| `$DF82` | ? | BC_JPIX | Z | DOS block | disk | 1 | 5118 |
+| `$DF79` | ? | BC_FIELD | Z | DOS block | disk | 2 | 5127 |
+| `$DF1D` | ? | BR_CALS | Z | DOS block | disk | 1 | 5219 |
+| `$DF17` | ? | BR_CFOP | Z | DOS block | disk | 6 | 5225 |
+| `$DF15` | ? | BR_HL | Z | DOS block | disk | 2 | 5227 |
+| `$DF13` | ? | BR_FRM | Z | DOS block | disk | 2 | 5229 |
+| `$DF11` | ? | BR_TGT | Z | DOS block | disk | 4 | 5231 |
+| `$DEEE` | ? | BR_FRAME | Z | DOS block | disk | 1 | 5266 |
+| `$DEE8` | ? | BR_GO | Z | DOS block | disk | 4 | 5272 |
+| `$DEE7` | ? | BR_P1SV | Z | DOS block | disk | 2 | 5273 |
+| `$DECD` | ? | BR_BDOS | Z | DOS block | disk | 2 | 5299 |
+| `$DEB8` | ? | WA_SEG_RAM | Z | DOS block | disk | 2 | 5320 |
+| `$DEB2` | ? | WA_SEG/WA_SEG_ROM | Z | DOS block | disk | 3 | 5326 |
+| `$DE74` | ? | BR_CALLF | Z | DOS block | disk | 1 | 5388 |
+| `$DE59` | ? | BR_ENASLT | Z | DOS block | disk | 3 | 5415 |
+| `$DE56` | ? | BR_CALSLT | Z | DOS block | disk | 1 | 5418 |
+| `$DE4F` | ? | BR_WRSLT | Z | DOS block | disk | 1 | 5425 |
+| `$DE48` | ? | BR_RDSLT | Z | DOS block | disk | 1 | 5432 |
+| `$DE45` | ? | BR_BACK_DI | Z | DOS block | disk | 1 | 5435 |
+| `$DE0D` | ? | BR_BACK | Z | DOS block | disk | 3 | 5491 |
+| `$DDC9` | ? | BR_P0IN | Z | DOS block | disk | 1 | 5559 |
+| `$DDC5` | ? | BR_MAININ | Z | DOS block | disk | 2 | 5563 |
+| `$DDAE` | ? | INT_H_HIRAM | Z | DOS block | disk | 2 | 5586 |

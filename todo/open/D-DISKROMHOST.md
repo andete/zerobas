@@ -176,3 +176,17 @@
       HIT); BOTH-RUN 98 -> 99, UNSETTLED 19 -> 17; YOUMAKOR, xak2eng3 / 4 / 5 UNSETTLED -> BOTH-RUN, and TestameB
       UNSETTLED -> ZB-ONLY -- the CF-3300 crashes on it (D-DISKRUN, 2026-10-23), so zerobas alone running it is the
       expected reading (scratchpad/AE_s4_diskcorpus.out).
+      📏 STEP 4 (d) SIZED (2026-11-26, [AE_wasize.md](../../scratchpad/AE_wasize.md)): the full base-addressed rewrite is 789 code sites
+      naming zerobas's own cells below $F1C9 -- +2.3 to +3.6 KB by scheme (a base in SLTWRK through a helper: ~90 cycles
+      a reach instead of 14-17), 4-6x the room; the ~2.5 KB estimate was right for THAT. But the references do not do
+      that rewrite: with a foreign claim of N bytes everything they keep BELOW $F1C9 (SLTWRK's base, the DPB, the
+      sector buffers, the $4030 pointer and MSX-DOS's $0006, HIMEM at every moment, FRE) moves down by exactly N, and
+      $F1C9-$F37F stays at its addresses -- written over the foreign claim, 439 of 439 bytes
+      ([AE_wasize_claimN.out](../../scratchpad/AE_wasize_claimN.out), [AE_wasize_threshold.out](../../scratchpad/AE_wasize_threshold.out)). Both references fail to reach Disk BASIC at N = 474
+      ([AE_wasize_threshold2.out](../../scratchpad/AE_wasize_threshold2.out), [AE_wasize_threshold_hbd.out](../../scratchpad/AE_wasize_threshold_hbd.out)). So the outside can be matched with every
+      cell left where it is and only the NUMBERS shifted: scheme D, ~41 B (CLAIM_D = -N in INIT; init_gate declines
+      only N > 439, or 472 with HOOK_SLOT moved into a free fixed-area byte; layout_rebuild, the $4030 entry and
+      DRVTBL +1 / +3 add it), +~25 B to publish SLTWRK as the references do. NEXT: build D.
+      🔴 probes/disk/claimer.asm claims 32 B on the references, not 16: its 16 KB image is mirrored into page 2 and its
+      INIT runs twice there (once on zerobas's C-BIOS machine) -- the "$DE57 with the claimer" above is that. A
+      comparison needs a claim-once cartridge.

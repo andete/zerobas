@@ -1,0 +1,90 @@
+python3 tools/pick_gates.py --run 
+=== warm-up (serial build of shared artifacts) ===
+warm-up 10s
+=== refcache REFS for every unit: REFERENCE readings (VG-8020, CF-3300) are replayed from the store, zerobas is MEASURED on every run and never replayed (docs/spec-refcache.md §6) ===
+=== unit-test SKIPPED (A5): its inputs are byte-identical to a green unit-test's (cf1e7841a65da6120784) -- no ROM source, test, tool, probe or Makefile change ===
+=== SKIPPING 250 emulator target(s): --static: the emulator tier was NOT run ===
+=== ⏱ 15 daily suite(s) not in this run (Joost 2026-11-01; `make gates-sweeps` runs them) ===
+=== ⏱ kwtime / kwram not in this run (daily, Joost 2026-10-13): the tier sheet reads their last pins and says which build they describe ===
+=== the keyword sweeps are NOT in this run: tiers-md-check reads the PREVIOUS run's pins, kept across the build wipe ===
+=== 4 tree-mutating unit(s), SERIAL (they rewrite a shared tracked file) ===
+  (switch-build-check: 1 restored file(s) given back their mtime: basic/sysvars.inc)
+  rc=0              1s  switch-build-check
+  rc=0              5s  diskdep-check
+  rc=0              0s  wall-literal-check
+  (selftest-check: 3 restored file(s) given back their mtime: Makefile basic/sysvars.inc probes/basic/basic_probe_clear.py)
+  rc=0             66s  selftest-check
+  (post-mutator refresh 5s -- the plants moved mtimes, so the pool would otherwise race a rebuild)
+=== 52 units, J=8, nice=0 solo=None ===
+  rc=0              6s  basic-reloc
+  rc=0              0s  kwidx-check
+  rc=0              0s  deps-check
+  rc=0              0s  subrom-abi-check
+  rc=0              0s  diskrom-abi-check
+  rc=0              0s  cbios-abi-check
+  rc=0              0s  rom-parts-check
+  rc=0              1s  subrom-closure-check
+  rc=0              1s  deadcode
+  rc=0              6s  wall-assertion-check
+  rc=0              0s  ram-claim-check
+  rc=0              3s  ram-map-check
+  rc=0              6s  pin-check
+  rc=0              0s  build-assert-check
+  rc=0              7s  needle-case-check
+  rc=0              0s  redundant-load-check
+  rc=0              0s  stubinl-check
+  rc=0              3s  rowshape-check
+  rc=0             10s  injector-check
+  rc=0              0s  dead-alias-check
+  rc=0              0s  alias-order-check
+  rc=0              0s  size-check
+  rc=0              3s  hostkill-check
+  rc=2              1s  session-path-check
+  rc=0              1s  temp-root-check
+  rc=0              0s  tracked-inputs-check
+  rc=0              3s  todo-citation-check
+  rc=0              1s  todo-marker-check
+  rc=0              0s  todo-items-check
+  rc=0              0s  deferral-pin-check
+  rc=0              2s  error-alphabet-check
+  rc=0              4s  chokepoint-check
+  rc=0              0s  filed-pin-check
+  rc=0              4s  disk-mount-check
+  rc=0              0s  bios-spec-index-check
+  rc=0              0s  kw-spec-index-check
+  rc=0             14s  spec-rules-check
+  rc=0            125s  spec-live
+  rc=0              0s  shared-body-check
+  rc=0              0s  probe-reach-check
+  rc=0              0s  battery-membership-check
+  rc=0              0s  fixture-integrity-check
+  rc=0              0s  hook-equate-check
+  rc=0              2s  preflight-check
+  rc=0              4s  latch-check
+  rc=0             11s  patch-freshness-check
+  rc=0              3s  refcache-check
+  rc=0              0s  knife-guard-check
+  rc=0              1s  knife-rom-guard-check
+  rc=0              0s  deffn-selftest
+  rc=0              0s  probe-sides-selftest
+  rc=0              0s  z80flow-selftest
+=== 1 post-pool unit(s), SERIAL (they read what the pool just wrote) ===
+  rc=0             33s  tiers-md-check
+
+=== retrying 1 red unit(s) SERIALLY (flake vs real) ===
+  retry session-path-check: rc 2->2  REAL (still red)
+
+=== wall 254s (10s build + 244s gates) ===
+=== CPU 642 s over 60 unit(s); the most: spec-live 402, selftest-check 90, tiers-md-check 33, spec-rules-check 14, injector-check 10, patch-freshness-check 7, needle-case-check 7, _warmup 7, wall-assertion-check 6, pin-check 6 ===
+GATES: 56/57 green [STATIC TIER ONLY]
+  ⚠️  250 EMULATOR TARGET(S) NOT RUN — --static: the emulator tier was NOT run
+  ⚠️  this is NOT a full battery; `make gates-full` to force one
+RED: session-path-check
+hashes: b8b78902 a8e3dfe3 b9b56380 6dabc43b
+GATE TIER: STATIC
+  why: no ROM, probe or tool change
+  hours since the last full green: 1.1 (full once a day, at every hand-off, and on a RAM-address move)
+  ⏱ the 15 daily suites are due (last green 80 h ago): run `make gates-sweeps` ALONE, not beside a battery
+  ⏱ kwtime / kwram are due (last measured 80 h ago, 80 h ago): run `make gates-sweeps` ALONE, not beside a battery
+GATE TIER RAN: STATIC
+make: *** [gates-scoped] Error 1
