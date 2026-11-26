@@ -324,3 +324,13 @@
       [`AE_s4_diskcorpus.out`](../../scratchpad/AE_s4_diskcorpus.out)): BOTH-RUN 99, FILES-DIFF 8, FILES-EMPTY 2,
       FILES-SAME 11, UNSETTLED 17, ZB-ONLY 6 -- no row down; YOUMAKOR, xak2eng3 / 4 / 5 UNSETTLED -> BOTH-RUN; TestameB
       UNSETTLED -> ZB-ONLY (the CF-3300 crashes on it, above).
+      📏 2026-11-26 (D-DISKREREAD slice B, after a89a93d15; [`AE_apB_diskcorpus.out`](../../scratchpad/AE_apB_diskcorpus.out)):
+      every class as slice A's ([`AE_apA_diskcorpus.out`](../../scratchpad/AE_apA_diskcorpus.out)) but **YOUMAKOR BOTH-RUN -> UNSETTLED**,
+      re-run twice: deterministic. A 10..90 s timeline, both builds and the CF-3300 (modes only): zerobas sits at
+      `A>M` in SCREEN 0 and moves to a blank SCREEN 1 loop between 45 and 50 s on slice A
+      ([`AE_apA_youm_zb.out`](../../scratchpad/AE_apA_youm_zb.out)), between 40 and 45 s on slice B
+      ([`AE_apB_youm_zb.out`](../../scratchpad/AE_apB_youm_zb.out)) -- the same loop, so the flip is the 45 s sample's
+      PHASE; the CF-3300 is in SCREEN 2 from 20 s on ([`AE_apB_youm_ref.out`](../../scratchpad/AE_apB_youm_ref.out)).
+      - [ ] **YOUMAKOR.DSK: M.COM takes ~45 s to start under zerobas's MSX-DOS and then stays on a blank SCREEN 1**
+            -- 🎚️ TIER 1 — the CF-3300 shows its SCREEN 1 stage at 10..15 s and SCREEN 2 from 20 s. Both the load
+            time and the stall are zerobas's; where it waits (which BDOS call, which file) is not measured yet.

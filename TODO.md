@@ -2781,6 +2781,7 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
 - [ ] **CTRL-C AND CTRL-P DO NOTHING IN THE BDOS LINE INPUT: THEY ARE STORED AS CHARACTERS (D-BUFINCTL, found 2026-...** -> [D-BUFINCTL](todo/open/D-BUFINCTL.md) <!-- item:open/D-BUFINCTL -->
 - [ ] **BDOS $00 (TERMINATE) THROUGH $F37D RETURNS ON ZEROBAS; ON THE CF-3300 IT ENDS THE BASIC PROGRAM (D-F37DTERM...** -> [D-F37DTERM](todo/open/D-F37DTERM.md) <!-- item:open/D-F37DTERM -->
 - [ ] **THE DISK ROM PAIRED WITH A FOREIGN BASIC -- a goal, at LOWER priority (Joost 2026-11-26: "this is a goal, b...** -> [D-FOREIGNBASIC](todo/open/D-FOREIGNBASIC.md) <!-- item:open/D-FOREIGNBASIC -->
+- [ ] **DISK-ROM ROOM BY RE-READING THE CODE, NEVER BY ADDING ROM SPACE (D-DISKREREAD, Joost 2026-11-26).** -> [D-DISKREREAD](todo/open/D-DISKREREAD.md) <!-- item:open/D-DISKREREAD -->
 - [x] **D-NMSHOST — ZEROBAS WITHOUT ITS DISK ROM HOSTS A DISK INTERFACE CARTRIDGE AND RUNS MSX-DOS (the host half o...** -> [D-NMSHOST](todo/done/D-NMSHOST.md) <!-- item:done/D-NMSHOST -->
 
 - [ ] **D-INITEDGES — INITXT / INIT32 / DSPFNK / ERAFNK / FNKSB: THE KEY LINE'S ROW AND MARGINS, R0'S KEPT BITS, TH...** -> [D-INITEDGES](todo/open/D-INITEDGES.md) <!-- item:open/D-INITEDGES -->

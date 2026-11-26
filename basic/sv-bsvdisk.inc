@@ -1,7 +1,7 @@
 ; Copyright (c) 2026 Joost Yervante Damad
 ; SPDX-License-Identifier: BSD-2-Clause
 
-; sv-bsvdisk.inc -- BSAVE's DISK write engine (bsv_open .. bsv_fin, disk_putword).
+; sv-bsvdisk.inc -- BSAVE's DISK write engine (bsv_open .. bsv_data, disk_putword).
 ; ===========================================================================
 ; 🏗️ D-ROMSIZE step 1 (2026-10-19): INCLUDED BY disk.rom ALONE (disk/kernel.asm,
 ; in the hole after the pinned $50E0 CONIN entry), reached through H_FOPEN with
@@ -48,8 +48,8 @@ disk_putword:
                 ld      hl,(DSV_PTR)        ; reload (disk_putbyte clobbered HL)
                 inc     hl
                 ld      a,(hl)              ; high byte
-                call    disk_putbyte
-                ret
+                jp      disk_putbyte        ; tail call (D-DISKREREAD 2026-11-26, 1 B:
+                                            ; its error path resets SP, sv_load_error)
 
 bsv_open:
                 ; --- create the file and set the DTA -----------------------
@@ -103,19 +103,14 @@ bsv_data_put:
                 call    disk_putbyte
                 ld      hl,(CURPTR)
                 ld      de,(DSV_END)
-                ld      a,h
-                cp      d
-                jr      nz,bsv_next         ; high bytes differ -> more to do
-                ld      a,l
-                cp      e
-                jr      z,bsv_fin           ; cur == end -> last byte written
-bsv_next:
-                ld      hl,(CURPTR)
-                inc     hl
+                or      a                   ; D-DISKREREAD (2026-11-26): one 16-bit
+                sbc     hl,de               ; compare, and HL kept for the advance
+                add     hl,de               ; (16-bit add: Z stays the sbc's) -- 7 B
+                jp      z,disk_write_end    ; cur == end -> last byte written: flush +
+                                            ; Close + back to the prompt
+                inc     hl                  ; HL = CURPTR still
                 ld      (CURPTR),hl
                 jr      bsv_data
-bsv_fin:
-                jp      disk_write_end      ; flush + Close + back to the prompt
 ; bsv_full -- the CF-3300's refusal: close the file as it stands (its CLOSE adds
 ; the Ctrl-Z; the successful path does not -- a 263 B BSAVE is 263 B there), then
 ; 66. A close that cannot even place the header (no free cluster at all) fails
@@ -128,7 +123,9 @@ bsv_full:
 ; (D-CALLSTMT carve, 2026-11-13: its 14 B copy in front of $5FE5 went).
 sav_full:
                 call    fat_io_close        ; header + Ctrl-Z, stamped
-                jp      c,sv_load_error     ; its code is already pending
+                jr      c,sf_x              ; its code is already pending (D-DISKREREAD
+                                            ; 2026-11-26: the jp below, 1 B)
                 ld      a,66                ; Disk full
                 ld      (DISKOP_ERR),a
+sf_x:
                 jp      sv_load_error

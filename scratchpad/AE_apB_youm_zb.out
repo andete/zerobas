@@ -1,0 +1,18 @@
+   10 S0 RUNNING   curlin=0000 pc=31240 rows=4
+   15 S0 RUNNING   curlin=0000 pc=25776 rows=4
+   20 S0 RUNNING   curlin=0000 pc=31236 rows=4
+   25 S0 RUNNING   curlin=0000 pc=61459 rows=4
+   30 S0 RUNNING   curlin=0000 pc=31238 rows=4
+   35 S0 RUNNING   curlin=0000 pc=17977 rows=4
+   40 S0 RUNNING   curlin=0000 pc=31242 rows=4
+   45 S1 UNSETTLED curlin=0000 pc=28450 rows=0
+   50 S1 UNSETTLED curlin=0000 pc=28448 rows=0
+   55 S1 UNSETTLED curlin=0000 pc=28453 rows=0
+   60 S1 UNSETTLED curlin=0000 pc=28450 rows=0
+   65 S1 UNSETTLED curlin=0000 pc=28448 rows=0
+   70 S1 UNSETTLED curlin=0000 pc=28455 rows=0
+   75 S1 UNSETTLED curlin=0000 pc=28453 rows=0
+   80 S1 UNSETTLED curlin=0000 pc=28448 rows=0
+   85 S1 UNSETTLED curlin=0000 pc=28455 rows=0
+   90 S1 UNSETTLED curlin=0000 pc=28453 rows=0
+refcache: 1 hit, 0 miss, 1 of the hits were ZEROBAS readings

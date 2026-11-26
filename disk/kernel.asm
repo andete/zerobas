@@ -70,23 +70,20 @@ dskchg_body:
 ; (moved here from runtime.asm by the D-DSKFMT defrag)
 ; --- conin_body - the $5445 CONIN canonical entry (M22a) --------------------------
 ; Blocking read: CHGET ($009F), then echo via conout_body (E=char, its ABI) —
-; the published BDOS $01 CONIN contract (read-with-echo). B/C/D preserved;
-; A/E end up holding the char (conout_body's own A:=E return).
+; the published BDOS $01 CONIN contract (read-with-echo). BC/DE/HL preserved;
+; A holds the char (bb_conout's A:=E return; the caller's E is popped back).
 ; CLEAN-ROOM: published CONIN contract (map.grauw.nl) + our own CHGET/conout_body
 ; primitives; no oracle bytes.
 ; 💰 D-DSKFMT carve 15: the read is innoe_body's (the same CHGET with the same paging).
 conin_body:
-                push    bc
-                push    de
-                push    hl
+                push    de                  ; D-DISKREREAD (2026-11-26): DE alone -- innoe_body
+                                            ; keeps BC/DE/HL and bb_conout BC/HL; 4 B
                 call    innoe_body          ; A := char, BIOS paged back out
                 ld      e, a                ; echo via conout_body (E = char, its ABI) --
                 call    bb_conout           ; through bb_conout: A := E after it. conout_body's
                                             ; TAB answers A 0 (the DOS CONOUT's, measured); CONIN
                                             ; returns the key, $09 too (D-F37DCONIN, CONIN.md R-BC-CTRL)
-                pop     hl
                 pop     de
-                pop     bc
                 ret
 ; bb_conout -- $F37D's CONOUT ($02; bb_dirio's output half): the references leave the
 ; character in A. (Moved here from in front of $543C by D-F37DCONIN.)
@@ -254,9 +251,8 @@ wr_sbuf:
                 ld      hl, SECTOR_BUF
                 jp      write_sector
 fgr_media:
-                ld      (DSK_MEDIA), a
-                or      a                   ; CF = 0
-                ret
+                ld      (DSK_MEDIA), a      ; CF = 0: reached by `jr nc` alone, and fat_mount
+                ret                         ; tests CF only (D-DISKREREAD 2026-11-26: no `or a`, 1 B)
 ; fat_media -- in: FAT_DBUF = logical sector 1. A media ID $F8..$FF there: its
 ; format's fields written over FAT_DBUF + 11 .. + 23 in the BPB's own layout (so
 ; fat_mount and getdpb read them as before), CF = 0. Otherwise CF = 1 and nothing
@@ -687,11 +683,13 @@ w50a9_stub:
                 ld      (DOS_F346), a   ; reads 255 after it (scratchpad/f346_run.out)
                 sub     a               ; A=$00, F=$42 (Z+N) -- the exact exit AF
                 ld      (W50A9_WRKB), a ; $F242 := $00  (the only persistent write)
-                ld      de, DOS_SIG     ; D-BOOTDATE: MSXDOS.SYS is running, so the
-                ld      (BASENT_REQ), de ; mark says MSX-DOS was booted (our own
-                                        ; cell, not the contract's; DE is set below)
+                ld      hl, DOS_SIG     ; D-BOOTDATE: MSXDOS.SYS is running, so the
+                ld      (BASENT_REQ), hl ; mark says MSX-DOS was booted (our own
+                                        ; cell, not the contract's; HL is set below --
+                                        ; D-DISKREREAD 2026-11-26: HL, not DE, 1 B)
                 ld      de, W50A9_RET_DE ; DE = $F1AA
-                ld      ix, W50A9_RET_DE ; IX = $F1AA (= DE)
+                push    de              ; IX = $F1AA (= DE; push / pop, 1 B: no
+                pop     ix              ; flag touched, the exit AF stays $0042)
                 ld      hl, W50A9_RET_HL ; HL = $F359
                 ret                     ; AF=$0042, BC/IY untouched
 
@@ -977,9 +975,10 @@ hk_lrset:
                 ret
 hklr_tm:
                 ld      ix,type_mismatch_error
-                jp      calbak              ; raises; never returns
+                jr      hklr_raise          ; D-DISKREREAD (2026-11-26): one jp calbak; 1 B
 hklr_syn:
                 ld      ix,stmt_error
+hklr_raise:
                 jp      calbak              ; raises; never returns
 
 ; --- hk_dsk: DSKI$ / DSKO$'s sector I/O in the disk ROM (MSX2 TH hooks H.DSKI / H.DSKO) ---
@@ -1014,8 +1013,8 @@ hk_dsk:
                 cp      3               ; D-DSKIB: 2 is B:, the swap prompt (dskib_run.out)
                 jr      c,hkd_drv
                 ld      a,62            ; Bad drive name (DSKI$(3,0), measured)
-                ld      ix,raise_error
-                jp      calbak          ; raises; never returns
+                jp      hkf_raise       ; raise_error; never returns (D-DISKREREAD
+                                        ; 2026-11-26: hk_field's copy of the raise; 4 B)
 hkd_drv:
                 ld      (DK_FCB_DRV),a  ; D-DSKIB: this drive, and the swap prompt if it
                 push    hl              ; is the other one -- DSKI$/DSKO$ read the sector
@@ -1024,9 +1023,9 @@ hkd_drv:
                 ld      ix,skip_comma
                 call    calbak          ; A = the next non-blank byte
                 cp      ','
-                jr      z,hkd_comma
-                ld      ix,stmt_error   ; ERR 2 the statement's way (D-STMTPEND)
-                jp      calbak          ; raises; never returns
+                jr      nz,hklr_syn     ; ERR 2 the statement's way (D-STMTPEND) --
+                                        ; D-DISKREREAD (2026-11-26): hk_lrset's own
+                                        ; `ld ix,stmt_error / jp calbak`; 7 B
 hkd_comma:
                 inc     hl
                 ld      ix,eval_int16_checked
@@ -1097,9 +1096,12 @@ hkf_ch:
                 pop     hl
                 call    hkp_sp
                 cp      ','                 ; FIELD #f , w AS v$
-                jr      nz,hkf_syn
+                jp      nz,hklr_syn         ; ERR 2, as req_comma raised it --
+                                            ; D-DISKREREAD (2026-11-26): its copy
+                                            ; hkf_syn went; 6 B
                 inc     hl
-                ld      (FN_RESUME),hl
+hkf_next:                                   ; D-DISKREREAD (2026-11-26): the item loop
+                ld      (FN_RESUME),hl      ; re-enters HERE -- one store, not two; 3 B
 hkf_item:
                 ; 🔁 D-DISKREST slice 5 (2026-10-20): field_item only PARSES now
                 ; (`w AS v$`: DE = w, BC = the variable's key, TGT_ADDR, HL past
@@ -1126,8 +1128,7 @@ hkf_item:
                 cp      ','
                 jr      nz,hkf_done
                 inc     hl
-                ld      (FN_RESUME),hl
-                jr      hkf_item
+                jr      hkf_next
 hkf_done:
                 ld      (FN_RESUME),hl      ; the end of the field list
                 scf
@@ -1140,9 +1141,6 @@ hkf_bfm:
 hkf_raise:
                 ld      ix,raise_error
                 jp      calbak              ; raises; never returns
-hkf_syn:
-                ld      ix,stmt_error       ; ERR 2, as req_comma raised it
-                jp      calbak
 
 ; dsm_p1_pre / dsm_p1_post -- D-P1SRCH (2026-10-22): SFIRST / SNEXT's 33-byte entry
 ; reaches a DTA in page 1. The fill (disk/kernel.asm dsm_found) stores byte by byte
@@ -1345,22 +1343,38 @@ bdos_tab:
                 dw      rdabs_body          ; boot loader -- f1sp3d-1's reads 8 sectors
                 db      $30                 ; into the DTA before MSX-DOS exists; the
                 dw      wrabs_body          ; CF-3300 does, this answered $FF
-                db      0                   ; (scratchpad/f1sp3d_slotcalls.out)
+                                            ; (scratchpad/f1sp3d_slotcalls.out)
 bdos_more2:                                 ; A = C = the function
+; D-DISKREREAD (2026-11-26): the scan COUNTS the rows (djnz) instead of stopping on a
+; `db 0` terminator; 3 B. The handler sees what it did: B = the function, the flags of
+; an equal compare (`cp (hl)` and `cp b` with the same value set the same flags).
+; The table ends where this code starts (no `bdos_tab_end` label: only an equ read it,
+; and check_dead_code saw an empty span no instruction reaches).
+BDOS_TAB_ROWS   equ     (bdos_more2 - bdos_tab) / 3
+    IF (bdos_more2 - bdos_tab) - BDOS_TAB_ROWS * 3
+                db      BDOS_TAB_ROW_IS_NOT_3_BYTES
+    ENDIF
+    IF BDOS_TAB_ROWS > 255
+                db      BDOS_TAB_HAS_MORE_ROWS_THAN_DJNZ_COUNTS
+    ENDIF
                 push    hl                  ; 🔴 D-BDOSABS: the CALLER'S HL rides through
                 ld      hl, bdos_tab        ; to the handler -- RDABS / WRABS take the
+                ld      b, BDOS_TAB_ROWS
 bm_loop:
-                ld      b, (hl)
-                inc     b
-                dec     b
-                jr      z, bm_none          ; end of the table
+                cp      (hl)
                 inc     hl
-                cp      b
                 jr      z, bm_hit
                 inc     hl
                 inc     hl
-                jr      bm_loop
+                djnz    bm_loop             ; past the last row: B = 0, as before
+bm_none:
+                pop     hl                  ; the caller's HL back
+                xor     a                   ; 🔴 D-F37DHIGH (2026-11-26, D-DISKCONTRACT gap 6): a function with no
+                ret                         ; row answers A = 0 (Z / P set, F $44) on the CF-3300 -- $31, $40,
+                                            ; $5F, $6F (DOS 2's _DOSVER), $7F, $FF all measured; this was $FF
+                                            ; (bdosf37d-acceptance's high rows, scratchpad/AE_f37d_high.out)
 bm_hit:
+                ld      b, a                ; B = the function, as `ld b,(hl)` left it
                 ld      a, (hl)
                 inc     hl
                 ld      h, (hl)
@@ -1368,12 +1382,6 @@ bm_hit:
                 ex      (sp), hl            ; sector count in H; `jp (hl)` handed them
                 ret                         ; the handler's address (77 sectors for
                                             ; f1sp3d-1's 8: scratchpad/f1sp3d_rdabs.out)
-bm_none:
-                pop     hl                  ; the caller's HL back
-                xor     a                   ; 🔴 D-F37DHIGH (2026-11-26, D-DISKCONTRACT gap 6): a function with no
-                ret                         ; row answers A = 0 (Z / P set, F $44) on the CF-3300 -- $31, $40,
-                                            ; $5F, $6F (DOS 2's _DOSVER), $7F, $FF all measured; this was $FF
-                                            ; (bdosf37d-acceptance's high rows, scratchpad/AE_f37d_high.out)
 ; (bb_dirio, bb_conout and bb_dskrst moved to the pads in front of $47BE, $4E4B and
 ; $461D by D-F37DCONIN: bdos_tab's $01 / $07 / $08 / $0A rows needed these bytes)
 ; (moved here from init.asm by the D-DSKFMT defrag)
@@ -1881,20 +1889,19 @@ hk_mki:
                 jr      nz,hkmi_ovf
                 jr      hkmi_store
 hkmi_neg:
-                ld      a,h                 ; negative: magnitude at most 32768
-                cp      $80
-                jr      c,hkmi_negate
-                jr      nz,hkmi_ovf
-                ld      a,l
-                or      a
-                jr      nz,hkmi_ovf
-hkmi_negate:
                 xor     a                   ; HL = -HL
                 sub     l
                 ld      l,a
                 sbc     a,a
                 sub     h
-                ld      h,a
+                ld      h,a                 ; (A = H)
+                ; negative: magnitude at most 32768. D-DISKREREAD (2026-11-26):
+                ; negate FIRST, then check -- |x| 1..32768 is $FFFF..$8000 (bit 15
+                ; set), 0 stays 0, 32769..65535 is $7FFF..$0001: overflow; 4 B
+                bit     7,h
+                jr      nz,hkmi_store
+                or      l
+                jr      nz,hkmi_ovf
 hkmi_store:
                 ld      (STRSCR+1),hl       ; low byte then high: MKI$'s packed form
 hkmi_done:
@@ -2060,14 +2067,14 @@ hkc_df:         ld      a,(de)
 hkc_dk:         inc     hl
                 inc     de
                 djnz    hkc_df
-                ld      hl,COPY_SRC
-                ld      de,DISK_FCB_NAME
-                ld      b,11
-hkc_same:       ld      a,(de)              ; CASE-FOLDED (OPEN twice, 2026-10-28): the
+                ld      b,11                ; D-DISKREREAD (2026-11-26): compare BACKWARDS
+                                            ; from where hkc_df left HL / DE (+11 each) --
+                                            ; "all 11 equal" has no order; 6 B
+hkc_same:       dec     hl
+                dec     de
+                ld      a,(de)              ; CASE-FOLDED (OPEN twice, 2026-10-28): the
                 call    toupper_cmp
                 jr      nz,hkc_differ
-                inc     hl
-                inc     de
                 djnz    hkc_same
                 jp      hkc_ill             ; all 11 bytes equal: a self-copy
 hkc_differ:     ld      hl,COPY_SRC
@@ -2076,13 +2083,14 @@ hkc_differ:     ld      hl,COPY_SRC
                 ld      de,22               ; D-COPYDATE: keep the SOURCE's time/date
                 add     hl,de               ; (+22..25) for the destination
                 ld      de,COPY_STAMP
-                call    copy4
-                ld      hl,(FAT_FIRSTCLUS)
-                ld      (COPY_CLUS),hl
-                ld      hl,(FAT_FILESIZE)
-                ld      (COPY_LEFT),hl
-                ld      hl,(FAT_FILESIZE+2)
-                ld      (COPY_LEFT+2),hl
+                call    copy4               ; (its ldir leaves B = 0)
+                ld      hl,FAT_FIRSTCLUS    ; D-DISKREREAD (2026-11-26): first cluster +
+                ld      de,COPY_CLUS        ; 32-bit size in ONE block copy (both pairs
+                ld      c,6                 ; are 2 + 4 contiguous -- guarded below),
+                ldir                        ; not three word copies; 8 B
+    IF (FAT_FILESIZE - FAT_FIRSTCLUS - 2) or (COPY_LEFT - COPY_CLUS - 2)
+                db      HKC_BLOCK_COPY_NEEDS_CLUS_THEN_SIZE_CONTIGUOUS
+    ENDIF
                 call    fat_delete          ; an old destination; Cy = 1 "none" is fine
                 ld      hl,DISK_FCB_NAME
                 call    fat_dir_create
@@ -2434,6 +2442,7 @@ hk_fmake:
                 jr      z, hk_asav          ; no channel: SAVE"name",A (below)
                 call    dout_open
                 jr      c, hfm_fail
+hfm_create:                                 ; (hk_frnd's create joins here: D-DISKREREAD)
                 push    ix
                 pop     hl
                 inc     hl
@@ -2441,6 +2450,7 @@ hk_fmake:
                 jr      c, hfm_fail
 hfm_ok:
                 call    dout_dirpos         ; (S10.E: no LOF / LOC mirror -- they
+hfm_zero:                                   ; (hk_asav ends here: D-DISKREREAD)
                 xor     a                   ; read the FCB, din_lofloc)
                 jp      hdl_answer          ; status 0, selector disarmed, claimed
 hfm_fail:
@@ -2543,8 +2553,8 @@ hk_asav:
                 ld      a, 4                ; 🐌 D-ASAVEFAT (2026-11-12): hold the FAT sector for
                 ld      (FAT_DEFER), a      ; the whole listing, as tokenised SAVE does
                                             ; (D-SAVEFAT); hk_chclose_e writes it at the end
-                xor     a
-                jp      hdl_answer          ; status 0, selector disarmed, claimed
+                jr      hfm_zero            ; status 0, selector disarmed, claimed (D-DISKREREAD
+                                            ; 2026-11-26: hfm_ok's `xor a / jp hdl_answer`; 2 B)
 hk_chout_e:
                 push    af
                 ld      a, (FCH_ACTIVE)
@@ -2590,10 +2600,11 @@ hco_byte:
                 or      a
                 sbc     hl, de
                 ld      (FWR_BYTES), hl
-                ld      hl, (FWR_BYTES + 2)
-                ld      de, 0
-                sbc     hl, de              ; the borrow into the high word
-                ld      (FWR_BYTES + 2), hl
+                jr      nc, hcb_nb          ; the borrow into the high word, as a
+                ld      hl, (FWR_BYTES + 2) ; `dec` (D-DISKREREAD 2026-11-26: not
+                dec     hl                  ; `sbc hl,0`; 2 B -- fat_dir_update
+                ld      (FWR_BYTES + 2), hl ; loads its own DE / HL)
+hcb_nb:
                                             ; (D-ASAVEFAT: no flush needed here -- a 66
                                             ; comes only from ffds_alloc's failure, whose
                                             ; ffds_undefer -> frl_xfail already wrote the
@@ -2636,9 +2647,7 @@ hfa_nf:                                     ; S10.C: hk_finp's refusal too (disk
                 ld      (DISKOP_ERR), a     ; main's own APPEND open raised it (its
                 jp      hfm_fail            ; df_or_loaderr keyed on fat_find's OP)
 hfa_found:
-                ld      hl, (FAT_FIRSTCLUS)
-                ld      (ix+DOUT_FIRST), l
-                ld      (ix+DOUT_FIRST+1), h
+                call    set_first           ; the row's first cluster (D-DISKREREAD)
                 ld      hl, (FAT_FILESIZE)
                 ld      (ix+16), l
                 ld      (ix+17), h          ; the size (a 64 KB file at most, as
@@ -2693,19 +2702,13 @@ hfa_clus:
                 inc     h
 hfa_src:
                 push    hl
-                call    dout_pos
-                inc     hl
-                inc     hl
-                inc     hl
+                call    rnd_rec             ; D-DISKREREAD (2026-11-26): dout_pos +3
                 ex      de, hl              ; DE = the record
                 pop     hl                  ; HL = its bytes on disk
                 ld      c, b
                 ld      b, 0
-                ld      a, c
-                or      a
-                jr      nz, hfa_cnt
-                inc     b                   ; BC = 256
-hfa_cnt:
+                dec     c                   ; D-DISKREREAD (2026-11-26): BC = B, or 256
+                inc     bc                  ; for B = 0 (C $FF + 1 carries into B); 3 B
                 push    bc
                 ldir
                 pop     bc
@@ -2719,8 +2722,9 @@ hfa_pos:
                 ld      (hl), c             ; the position in the record
                 ld      a, b
                 or      a
-                jp      z, hfm_ok           ; under 256: a partial record
+                jr      z, hfa_ok           ; under 256: a partial record
                 set     DOUT_RFULL, (ix+DOUT_FLG)   ; 256: whole, to be rewritten
+hfa_ok:                                     ; D-DISKREREAD (2026-11-26): one jp; 1 B
                 jp      hfm_ok
 
 ; hk_chout -- PRINT# to an OUTPUT channel (H_CHOUT): A = the byte.
@@ -2788,10 +2792,8 @@ dout_write:
                 jp      c, dwr_fail
                 ld      de, FAT_DBUF+256
 dwr_copy:
-                call    dout_pos
-                inc     hl
-                inc     hl
-                inc     hl                  ; HL = the record
+                call    rnd_rec             ; HL = the record (D-DISKREREAD 2026-11-26:
+                                            ; dout_pos +3, spelled out here and at hfa_src; 6 B)
                 pop     bc
                 push    bc
                 ldir
@@ -2988,8 +2990,8 @@ root_pos:
                 and     $0F
                 ld      l, a
                 ld      h, 0
-                call    hl_x32            ; HL = (index mod 16) x 32
-                ret
+                jp      hl_x32            ; HL = (index mod 16) x 32 (tail call:
+                                          ; D-DISKREREAD 2026-11-26, 1 B)
 ; dta_rec / dta_chunk -- SECTOR_BUF + HL := RECSIZE (dta_rec) or BC (dta_chunk) bytes
 ; from the DTA (BDOS_DTA). Out: HL / DE past the source / the destination, BC = 0.
 ; 💰 D-DSKFMT carve 22 (2026-11-10): it stood inline in bsw_m34_buffer, wrrnd_body and
@@ -3049,10 +3051,10 @@ dta_chunk:
 ; hk_fmake's tail: status 0 open; 1 with the code pending.
 hk_frnd:
                 call    hk_openfind         ; IX = the row; FAT_FIRSTCLUS / ... / the entry
-                jr      c, hfr_make
-                ld      hl, (FAT_FIRSTCLUS)
-                ld      (ix+DOUT_FIRST), l
-                ld      (ix+DOUT_FIRST+1), h
+                jp      c, hfm_create       ; D-DISKREREAD (2026-11-26): hk_fmake's create,
+                                            ; byte for byte (a new, empty entry -- dout_open
+                                            ; zeroed the first cluster and the size); 12 B
+                call    set_first           ; the row's first cluster (D-DISKREREAD)
 hfr_size:                                   ; (hk_finp joins here: D-DSKFMT carve 14)
                 push    ix
                 pop     hl
@@ -3062,13 +3064,13 @@ hfr_size:                                   ; (hk_finp joins here: D-DSKFMT carv
                 ld      hl, FAT_FILESIZE
                 call    copy4                ; the whole 32-bit size (D-PUTU32)
                 jp      hfm_ok              ; the entry's place, LOF, status 0
-hfr_make:
-                push    ix
-                pop     hl
-                inc     hl                  ; HL = the FCB's name
-                call    fat_dir_create      ; a new, empty entry (dout_open zeroed the
-                jp      c, hfm_fail         ; first cluster and the size)
-                jp      hfm_ok              ; the entry's place, LOF, status 0
+; set_first -- the row's DOUT_FIRST := FAT_FIRSTCLUS (HL = it on return). D-DISKREREAD
+; (2026-11-26): it stood inline in hk_frnd and hk_fapp's hfa_found; 2 B.
+set_first:
+                ld      hl, (FAT_FIRSTCLUS)
+                ld      (ix+DOUT_FIRST), l
+                ld      (ix+DOUT_FIRST+1), h
+                ret
 
 ; toupper_cmp -- D-DISKROMHOST step 2b: the run it replaces stood at 3 sites (fat-prim-body.inc, kernel.asm)
 toupper_cmp:

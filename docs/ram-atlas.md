@@ -29,8 +29,8 @@ SPDX-License-Identifier: BSD-2-Clause
 | `$D40F-$D412` | 4 |   | D:DR |   | D:DR |   |   | D:R |   |  |
 | `$D413-$D428` | 22 |   | D:R |   | D:R |   |   | D:R |   |  |
 | `$D429-$D42A` | 2 |   | D:R |   | D:R B:R |   |   | D:R B:R |   |  |
-| `$D42B-$D4F2` | 200 |   | D:R |   | D:R |   |   | D:R |   |  |
-| `$D4F3-$D518` | 38 |   | D:R |   | D:R |   |   | D:MR |   |  |
+| `$D42B-$D4FA` | 208 |   | D:R |   | D:R |   |   | D:R |   |  |
+| `$D4FB-$D518` | 30 |   | D:R |   | D:R |   |   | D:MR |   |  |
 | `$D519-$D51E` | 6 |   | D:R B:R |   | D:R B:R |   |   | D:MR B:R |   |  |
 | `$D51F-$D526` | 8 |   | D:R B:R |   | D:R B:R |   |   | D:R B:R |   |  |
 | `$D527-$D528` | 2 |   | D:R B:DR |   | D:R B:R |   |   | D:R B:R |   |  |

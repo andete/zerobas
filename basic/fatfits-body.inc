@@ -32,8 +32,7 @@ fat_fits:
                 ld      (FWR_FIRST),hl
                 pop     af
                 ld      c,a
-                ld      a,(FAT_SECPERCLUS)
-                ld      l,a
+                ld      hl,(FAT_SECPERCLUS) ; L = spc (H unread; D-DISKREREAD 2026-11-26, 1 B)
                 ld      b,0
 ffit_cl:
                 inc     b                   ; B = clusters needed = ceil(C / spc)
@@ -43,10 +42,9 @@ ffit_cl:
                 jr      z,ffit_cld
                 jr      nc,ffit_cl
 ffit_cld:
-                ld      a,d
-                or      a
-                ld      a,0                 ; (flags kept) 256+ free: anything fits
-                ret     nz
+                xor     a                   ; D-DISKREREAD (2026-11-26): A = 0 and CF iff
+                cp      d                   ; D > 0 -- 256+ free: anything fits (both
+                ret     c                   ; callers test A alone, `or a`); 2 B
                 ld      a,e
                 cp      b
                 sbc     a,a                 ; $FF: free < needed
