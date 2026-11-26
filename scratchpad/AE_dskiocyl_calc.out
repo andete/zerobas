@@ -1,0 +1,5 @@
+ZB T10 S0 RUNNING curlin=0000 ['  Loading CALCULUS ...']
+ZB T20 S0 UNSETTLED curlin=0000 []
+ZB T45 S0 RUNNING curlin=3900 ['     press any key to retry', '     * FATAL ERROR *  Not enough', '       TPA-memory (at least #0000)']
+ZB F S0 RUNNING curlin=3900 ['     press any key to retry', '     * FATAL ERROR *  Not enough', '       TPA-memory (at least #0000)']
+refcache: 0 hit, 1 miss, 1 stored

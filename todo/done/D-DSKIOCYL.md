@@ -1,10 +1,15 @@
-- [ ] **D-DSKIOCYL — DSKIO ON A CYLINDER PAST THE LAST ANSWERS 8 (RECORD NOT FOUND); THE CF-3300 ANSWERS 2 (NOT READY)**
+- [x] **D-DSKIOCYL — DSKIO ON A CYLINDER PAST THE LAST ANSWERS 8 (RECORD NOT FOUND); THE CF-3300 ANSWERS 2 (NOT READY)**
       🎚️ TIER 6 — every error (a sector past the media's end; filed 2026-11-17, D-DISKCONTRACT gap 2).
       🤖 **AUTONOMOUS** — PHYDIO / DSKIO with sector 1440, 1500 or 2000 on the 720 KB disk; sector $FFFF reads fine on
       BOTH (an 8-bit cylinder wrapping in range, read as a result). Our driver maps the FDC's status faithfully; the
       fix is a cylinder range check in DSKIO (~5 B) -- the disk ROM has 0 B free, so a carve first (Joost: the disk ROM
       stays in its allotted space). Pinned in phydioerr-acceptance (rows read_far / read_1440 / read_1500), and since
       D-DISKVE in bdos-acceptance's BDOSXE allowlist (RDABS 1440's C, ours 8). (1) FORMAT -- its body is the DISK ROM's (H.FORM): only the main-BIOS
+      ✅ **FIXED 2026-11-26.** disk/driver.asm dskio_head: after lsec_chs, a track >= 80 answers 2 (NOT READY) with Cy,
+      through dskio_err (B = the sectors left), +8 B. lsec_chs's 8-bit track count already wraps $FFFF in range, as on
+      the CF-3300. phydioerr-acceptance 9/9 SAME with its three pins dropped ([AE_dskiocyl1.out](../../scratchpad/AE_dskiocyl1.out)); BDOSXE a 0-byte
+      diff with its two allowlisted bytes dropped ([AE_dskiocyl2.out](../../scratchpad/AE_dskiocyl2.out)). The limit is the 3.5" drive's 80 tracks
+      for every medium; a 40-track (5.25") medium's 41st..80th cylinder is not measured.
       side is in focus.
 
       - [x] **Two power-on work-area defaults differ: CLIKSW and CLMLST** -- 🎚️ TIER 3 —

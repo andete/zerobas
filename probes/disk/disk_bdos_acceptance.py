@@ -260,14 +260,8 @@ ALLOWLIST = {
         0x01E3: "regs rec0 FREN($17) H — register UNDEFINED on return (contract pins A only)",
         0x01E4: "regs rec0 FREN($17) L — ditto (undefined; A=FF is pinned)",
     },
-    "BDOSXE": {
-        # D-DSKIOCYL (TODO, TIER 6): RDABS of sector 1440, past the 720 KB disk's last
-        # cylinder -- DSKIO's code is 8 (record not found) here, 2 (not ready) on the
-        # CF-3300. OURS is pinned, so the excuse cannot hide a regression
-        # (scratchpad/DVE_run2.out).
-        0x0250: (0x08, "regs rec2 RDABS C -- the code the handler was given (D-DSKIOCYL)"),
-        0x0267: (0x08, "hrec slot 2 C -- the handler's C on that read (D-DSKIOCYL)"),
-    },
+    # BDOSXE: D-DSKIOCYL's two pins dropped 2026-11-26 -- DSKIO now answers 2 past the last cylinder, as the
+    # CF-3300 (the handler's C and RDABS's C, scratchpad/AE_dskiocyl2.out).
     # BDOSXT: D-STIMERANGE's four pins dropped 2026-11-26 -- hour / minute / second were fixed by
     # D-F37DSETDATE (2026-11-22), hundredths 100 the same day as the drop (scratchpad/AE_stime1.out).
     "BDOSX8": {

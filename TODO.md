@@ -2907,7 +2907,7 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
 
 - [x] **D-CONCOL — THE BDOS CONSOLE'S LOGICAL COLUMN AFTER A CONTROL CODE: TAB LANDS WRONG AFTER FF / BS / BEL / ESC** -> [D-CONCOL](todo/done/D-CONCOL.md) <!-- item:done/D-CONCOL -->
 
-- [ ] **D-DSKIOCYL — DSKIO ON A CYLINDER PAST THE LAST ANSWERS 8 (RECORD NOT FOUND); THE CF-3300 ANSWERS 2 (NOT READY)** -> [D-DSKIOCYL](todo/open/D-DSKIOCYL.md) <!-- item:open/D-DSKIOCYL -->
+- [x] **D-DSKIOCYL — DSKIO ON A CYLINDER PAST THE LAST ANSWERS 8 (RECORD NOT FOUND); THE CF-3300 ANSWERS 2 (NOT READY)** -> [D-DSKIOCYL](todo/done/D-DSKIOCYL.md) <!-- item:done/D-DSKIOCYL -->
 - [ ] **omsx_repl: a typed line whose CHUNK ends on `\` breaks the Tcl** -> [X-OMSX-REPL-A-TYPED-LINE-WHOSE](todo/open/X-OMSX-REPL-A-TYPED-LINE-WHOSE.md) <!-- item:open/X-OMSX-REPL-A-TYPED-LINE-WHOSE -->
 - [ ] **A PLAY zeroes the OTHER voices' amplitudes on the VG-8020, not here** -> [X-A-PLAY-ZEROES-THE-OTHER-VOICES](todo/open/X-A-PLAY-ZEROES-THE-OTHER-VOICES.md) <!-- item:open/X-A-PLAY-ZEROES-THE-OTHER-VOICES -->
 - [ ] **lptout_upframes: two VG-8020 readings of the same bytes disagree** -> [X-LPTOUT-UPFRAMES-TWO-VG-8020-READINGS](todo/open/X-LPTOUT-UPFRAMES-TWO-VG-8020-READINGS.md) <!-- item:open/X-LPTOUT-UPFRAMES-TWO-VG-8020-READINGS -->

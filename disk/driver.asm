@@ -95,8 +95,14 @@ dskio_head:
                 jr      z, dh_none
                 ld      hl, (FDC_LSEC)
                 call    lsec_chs        ; C = sector, D = track, E = side (D-SIDES)
+                ld      a, d            ; D-DSKIOCYL (2026-11-26): a track past the drive's 80 answers
+                cp      80              ; 2 (NOT READY) at once, as the CF-3300 -- sectors 1440 / 1500 /
+                jr      nc, dh_far      ; 2000 of a 720 KB disk; $FFFF wraps in range on both (8-bit q)
                 ld      hl, (FDC_DEST)
                 ret
+dh_far:
+                ld      a, 2            ; NOT READY, Cy: out through dskio_err like a failed transfer
+                scf
 dh_none:
                 inc     sp
                 inc     sp              ; drop the loop's return (flags kept): DSKIO ends

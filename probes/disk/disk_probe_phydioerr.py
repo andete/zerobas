@@ -47,8 +47,9 @@ ROWS = {"read_ok": (False, 0, "rw"), "write_ok": (True, 13, "rw"), "write_wp": (
 # last (80+ on this 720 KB disk) -- the CF-3300 answers A = 2 (not ready), zerobas A = 8
 # (record not found, the FDC's status mapped faithfully). $FFFF wraps back in range on both.
 # Both sides' readings are PINNED: a change on either side fails the row.
-KNOWN = {n: ("[R F 1  A 2  B 1 ]", "[R F 1  A 8  B 1 ]")
-         for n in ("read_far", "read_1440", "read_1500")}
+# FIXED 2026-11-26 (disk/driver.asm dskio_head: a track >= 80 answers 2 at once) -- the pins dropped; a pin set
+# here again is a new KNOWN difference (scratchpad/AE_dskiocyl1.out).
+KNOWN = {}
 
 
 def stub(write, sector):

@@ -343,3 +343,9 @@
             under BASIC) fails on zerobas, and the BDOS column counter changes HOW** -- 🎚️ TIER 1 — a lead: the
             column rule was measured under MSX-DOS (BDOSXL); under BASIC's $F37D it is not measured. Measure $F237 and
             the $F37D console calls this loader makes (RAM cells, the calls' registers) on both machines.
+            📏 SAME DAY, after D-DSKIOCYL (DSKIO answers 2 past the last cylinder): back to ZB-ONLY, and now FURTHER
+            than ever -- zerobas loads the program, which prints its own "* FATAL ERROR *  Not enough TPA-memory (at
+            least #0000)  press any key to retry" ([AE_dskiocyl_calc.out](../../scratchpad/AE_dskiocyl_calc.out)). So the loader also reads past the disk's end
+            (it took 8 as something else), and the program then judges the TPA by a cell zerobas fills differently
+            under this boot (no MSXDOS.SYS: $0006? the disk ROM's $4030 / HIMEM?). Next: read which RAM cells it
+            consults (RAM reads only) on both machines.
