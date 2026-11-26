@@ -11,7 +11,7 @@ SPDX-License-Identifier: BSD-2-Clause
 ## Summary
 
 With E ≠ $FF, `DIRIO` writes E to the screen directly: no TAB expansion and no column count.
-zerobas counts the column there too and expands a TAB itself (TODO D-CONCOL).
+zerobas does the same since 2026-11-26 (D-CONCOL, fixed: it counted the column there too and expanded a TAB itself).
 
 ## The specification — output
 
@@ -40,7 +40,8 @@ In: C = $06, E = the byte (any value but $FF; $FF is DIRIO's INPUT, a separate s
   - **[A]** Whether DIRIO-out skips the console checks (Ctrl-S / Ctrl-C / Ctrl-P / STOP) that
     CONOUT may make (CONOUT §3).
 
-zerobas (part of D-CONCOL), three differences:
+zerobas (part of D-CONCOL) -- ✅ all three FIXED 2026-11-26 (`conout_dirio_out`, disk/runtime.asm: E straight to CHPUT,
+the count left, A = E; BDOSXL SAME). As they were:
 - **The count:** DIRIO-out updates it as zerobas's CONOUT does; the reference leaves it
   [XM 256–510; L 70–75, 85, 150, 152].
 - **TAB on screen:** zerobas expands a DIRIO TAB from the count. From count 36 / CSRX 8, zerobas

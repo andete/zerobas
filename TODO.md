@@ -2905,7 +2905,7 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
 
 - [ ] **D-SLACK — A NEW FILE'S NEVER-WRITTEN RECORDS HOLD DIFFERENT GARBAGE** -> [D-SLACK](todo/open/D-SLACK.md) <!-- item:open/D-SLACK -->
 
-- [ ] **D-CONCOL — THE BDOS CONSOLE'S LOGICAL COLUMN AFTER A CONTROL CODE: TAB LANDS WRONG AFTER FF / BS / BEL / ESC** -> [D-CONCOL](todo/open/D-CONCOL.md) <!-- item:open/D-CONCOL -->
+- [x] **D-CONCOL — THE BDOS CONSOLE'S LOGICAL COLUMN AFTER A CONTROL CODE: TAB LANDS WRONG AFTER FF / BS / BEL / ESC** -> [D-CONCOL](todo/done/D-CONCOL.md) <!-- item:done/D-CONCOL -->
 
 - [ ] **D-DSKIOCYL — DSKIO ON A CYLINDER PAST THE LAST ANSWERS 8 (RECORD NOT FOUND); THE CF-3300 ANSWERS 2 (NOT READY)** -> [D-DSKIOCYL](todo/open/D-DSKIOCYL.md) <!-- item:open/D-DSKIOCYL -->
 - [ ] **omsx_repl: a typed line whose CHUNK ends on `\` breaks the Tcl** -> [X-OMSX-REPL-A-TYPED-LINE-WHOSE](todo/open/X-OMSX-REPL-A-TYPED-LINE-WHOSE.md) <!-- item:open/X-OMSX-REPL-A-TYPED-LINE-WHOSE -->

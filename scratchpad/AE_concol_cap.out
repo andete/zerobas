@@ -1,0 +1,39 @@
+=== capture: regs+mem at occurrence #1 of 0x0a00 ===
+  ALIGNED: both hit occurrence #1  (stock t=19.0101, ours t=17.9079, dt=1.1022)
+
+  reg   STOCK  OURS
+  PC    0A00   0A00
+  SP    D529   D529
+  AF    A544   A544
+  BC    A702   A702
+  DE    000A   000A
+  HL    A70A   A70A
+  IX    0B45   0B45
+  IY    DA40   DA40
+
+  head stock: A5 1D 00 03 04 04 05 03 04 03 04 03 04 03 04 03 04 03 04 02 03 08 09 03 04 00 01 00 01 00 01 03 04 03 04 03 04 03 04 03 04 03 04 03 04 03 04 03 04 03 04 03 04 03 04 03 04 03 05 02 03 03 04 03
+  head ours : A5 1D 00 03 04 04 05 03 04 03 04 03 04 03 04 03 04 03 04 02 03 08 09 03 04 03 01 00 01 00 01 03 04 03 04 03 04 03 04 03 04 03 04 03 04 03 04 03 04 03 04 03 04 03 04 03 04 03 05 03 03 03 04 03
+
+  memory 0x0a10+309: 19 of 309 bytes differ
+    0A29: stock=00 ours=03
+    0A4B: stock=02 ours=03
+    0A51: stock=02 ours=04
+    0A9F: stock=00 ours=03
+    0AA1: stock=00 ours=02
+    0AA3: stock=00 ours=08
+    0AA7: stock=00 ours=03
+    0AA9: stock=00 ours=03
+    0ABD: stock=02 ours=05
+    0AE9: stock=00 ours=24
+    0AF5: stock=23 ours=24
+    0AF9: stock=23 ours=25
+    0AFF: stock=FF ours=00
+    0B01: stock=FF ours=01
+    0B13: stock=00 ours=03
+    0B17: stock=02 ours=03
+    0B19: stock=02 ours=04
+    0B43: stock=24 ours=28
+    0B44: stock=09 ours=0C
+    diff runs: 0A29, 0A4B, 0A51, 0A9F, 0AA1, 0AA3, 0AA7, 0AA9, 0ABD, 0AE9, 0AF5, 0AF9, 0AFF, 0B01, 0B13, 0B17, 0B19, 0B43-0B44
+
+  register diffs: NONE

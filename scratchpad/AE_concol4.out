@@ -1,0 +1,7 @@
+ZEROBAS_OURS_MACHINE=C-BIOS_MSX1_EU_REPACK_DISK python3 probes/disk/disk_bdos_acceptance.py --only 'BDOSXL'
+
+===== BDOSXL (build_bdosxl_disk.py) =====
+  PASS  BDOSXL capture 0x0a10:0x135: 0-byte-diff (anchor t=19.8 ≥ keys-at; stock 19.8 s, ours 20.4 s)
+
+===== BDOSX acceptance: 1/1 gated differentials converged (0 screen skipped) =====
+ALL CONVERGED — the BDOS surface still matches the stock oracle byte-for-byte.

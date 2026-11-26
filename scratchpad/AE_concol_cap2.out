@@ -1,0 +1,19 @@
+=== capture: regs+mem at occurrence #1 of 0x0a00 ===
+  ALIGNED: both hit occurrence #1  (stock t=19.0101, ours t=17.9170, dt=1.0931)
+
+  reg   STOCK  OURS
+  PC    0A00   0A00
+  SP    D529   D529
+  AF    A544   A544
+  BC    A702   A702
+  DE    000A   000A
+  HL    A70A   A70A
+  IX    0B45   0B45
+  IY    DA40   DA40
+
+  head stock: A5 1D 00 03 04 04 05 03 04 03 04 03 04 03 04 03 04 03 04 02 03 08 09 03 04 00 01 00 01 00 01 03 04 03 04 03 04 03 04 03 04 03 04 03 04 03 04 03 04 03 04 03 04 03 04 03 04 03 05 02 03 03 04 03
+  head ours : A5 1D 00 03 04 04 05 03 04 03 04 03 04 03 04 03 04 03 04 02 03 08 09 03 04 00 01 00 01 00 01 03 04 03 04 03 04 03 04 03 04 03 04 03 04 03 04 03 04 03 04 03 04 03 04 03 04 03 05 02 03 03 04 03
+
+  memory 0x0a10+309: 0 of 309 bytes differ
+
+  register diffs: NONE

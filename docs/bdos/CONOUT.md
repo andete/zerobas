@@ -12,8 +12,8 @@ SPDX-License-Identifier: BSD-2-Clause
 
 An MSX-DOS program writes one character with `CONOUT` (C = $02, E = the character). The BDOS
 passes it to the screen, expands a TAB into spaces itself, and keeps its own count of the column
-($F237) for that purpose. zerobas writes the same characters to the screen but counts the column
-differently for control codes, so a TAB after one lands in the wrong place (TODO D-CONCOL).
+($F237) for that purpose. zerobas writes the same characters and, since 2026-11-26, counts the
+column by the same rule (D-CONCOL, fixed: before, a TAB after a control code landed in the wrong place).
 
 ## The specification
 
@@ -32,7 +32,7 @@ VRAM — is the BIOS's CHPUT contract, specified in
 adds: TAB expansion, the logical column, and the registers.
 
 Reference: the Panasonic CF-3300 under MSX-DOS 1. Ours: zerobas's disk ROM on the C-BIOS repack.
-Open TODO item: **D-CONCOL** (§4).
+TODO item **D-CONCOL** (§4): ✅ fixed 2026-11-26 -- BDOSXL is a 0-byte diff against the CF-3300 (scratchpad/AE_concol4.out).
 
 **Evidence tags.**
 - **[XM n]**: case `n` of the BDOSXM matrix, [`scratchpad/XM_table.out`](../../scratchpad/XM_table.out)
@@ -143,10 +143,15 @@ bytes only: `#`, `*`, TAB and `5` [L 41–44, 40, 123, 124]. **[A]** beyond thos
   mid-call observer separates them.
 - At program entry the count was 0 [L head; XM head].
 
-### 4.4 zerobas, and the difference (D-CONCOL)
+### 4.4 zerobas, and the difference (D-CONCOL) -- ✅ FIXED 2026-11-26
 
-zerobas's CONOUT (`conout_emit_e`, `disk/runtime.asm`, read from our own source) zeroes the count
-on CR, leaves it on LF, and adds 1 for every other byte. Its TAB counts from the cell as the
+**Now:** zerobas's `ce_col` (`disk/runtime.asm`) applies §4.2's rule -- printable +1; CR, FF and HOME
+0; BS, cursor-left and DEL −1; every other control code unchanged -- and DIRIO-out leaves the count
+(DIRIO.md). Every BDOSXL row is SAME (scratchpad/AE_concol_cap2.out, AE_concol4.out). What follows
+is the difference as it was, kept as the record of what the fix changed.
+
+**Before the fix:** zerobas's CONOUT (`conout_emit_e`, `disk/runtime.asm`, read from our own source) zeroed
+the count on CR, left it on LF, and added 1 for every other byte. Its TAB counts from the cell as the
 reference's does [XM 1280, 1281: identical on both machines].
 
 Per class, the BDOSXL rows that show it:

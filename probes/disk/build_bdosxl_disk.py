@@ -56,7 +56,10 @@ def build(dos_src: str, out: str, tmp_dir: str) -> dict:
     shutil.copyfile(dos_src, out)
     img = bytearray(open(out, "rb").read())
     fat12_add(img, "BDOSXL", "COM", com_bytes)
-    fat12_add(img, "AUTOEXEC", "BAT", b"BDOSXL\r\n")
+    # MODE 32 first, as BDOSXC / BDOSXK / BDOSXB (D-DISKROMHOST step 2b): the start-up screen is the host's, and a
+    # C-BIOS host starts at another width than the CF-3300 -- the CSRX bytes would differ for that alone
+    # (scratchpad/AE_concol_bdos.out, 2026-11-26: every column SAME, LINLEN and the cursor not)
+    fat12_add(img, "AUTOEXEC", "BAT", b"MODE 32\r\nBDOSXL\r\n")
     open(out, "wb").write(img)
     addrs["sig"] = com_bytes[2]                   # byte at $0102 (resident-program arm)
     addrs["len"] = addrs["results"] + 2 * NCASES - addrs["mark"]

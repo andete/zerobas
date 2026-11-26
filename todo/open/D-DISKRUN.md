@@ -334,3 +334,12 @@
       - [ ] **YOUMAKOR.DSK: M.COM takes ~45 s to start under zerobas's MSX-DOS and then stays on a blank SCREEN 1**
             -- 🎚️ TIER 1 — the CF-3300 shows its SCREEN 1 stage at 10..15 s and SCREEN 2 from 20 s. Both the load
             time and the stall are zerobas's; where it waits (which BDOS call, which file) is not measured yet.
+      📏 2026-11-26 (D-CONCOL, the BDOS console column rule): **calculus.dsk ZB-ONLY -> FILES-DIFF**, reproduced alone
+      ([AE_concol_calc.out](../../scratchpad/AE_concol_calc.out)). It NEVER ran on zerobas: before the change zerobas was still at "Loading CALCULUS ..." at
+      45 s (the CF-3300 has loaded by 20 s and waits at its program's prompt) and FILES then showed a garbage SCREEN 1;
+      after it, zerobas passes the loading sooner and lands on a garbage SCREEN 0. Bisected to the column RULE (not the
+      DIRIO path, not the stack depth -- a JP-tail with the old depth reads the same).
+      - [ ] **calculus.dsk: its own boot loader (no MSXDOS.SYS -- the boot sector loads CALCULUS.COM through $F37D
+            under BASIC) fails on zerobas, and the BDOS column counter changes HOW** -- 🎚️ TIER 1 — a lead: the
+            column rule was measured under MSX-DOS (BDOSXL); under BASIC's $F37D it is not measured. Measure $F237 and
+            the $F37D console calls this loader makes (RAM cells, the calls' registers) on both machines.

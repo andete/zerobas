@@ -84,6 +84,9 @@ EXERCISERS = [
     # BDOSXT (D-DISKCONTRACT gap 11, 2026-11-17): SDATE / STIME with valid and invalid input,
     # each read back by GDATE / GTIME -- 13 ten-byte rows.
     ("BDOSXT", "build_bdosxt_disk.py"),
+    # BDOSXL (D-CONCOL, 2026-11-17; gated 2026-11-26 with the fix): the BDOS console's logical column
+    # ($F237) and the cursor (CSRX) after every kind of output, case by case.
+    ("BDOSXL", "build_bdosxl_disk.py"),
     # BDOSXB (D-DISKCONTRACT gap 8, D-DOSDRVB, 2026-11-17): drive B on a one-drive machine under
     # MSX-DOS -- SELDSK 1, CURDRV, SFIRST *.* on the default drive: the swap prompt on the
     # screen (read back through the VDP's ports), the key typed by the harness, the DTA.

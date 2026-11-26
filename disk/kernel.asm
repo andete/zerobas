@@ -7730,6 +7730,19 @@ cinl_echo:
                 add     a, $40
                 ld      e, a
                 jp      conout_body
+; conout_dirio_out -- BDOS $06 DIRIO with E <> $FF: the char straight to CHPUT. On the CF-3300 it neither
+; moves the logical column nor expands TAB (BDOSXL R2a / H / R2l: `XYZ` leaves it 0, from 2 it stays 2,
+; a TAB at 36 stays 36). (disk/runtime.asm's conout_body jumps here.) Entry as conout_not_dispatch: caller's HL then AF on the stack.
+conout_dirio_out:
+                pop     hl
+                ld      a, ($F237)
+                push    af
+                call    conout_emit_e       ; CHPUT (its column step undone below)
+                pop     af
+                ld      ($F237), a
+                pop     af
+                ld      a, e
+                ret
                 ds      $75A5 - $, $00
                 jp      k_75A5          ; $75A5
 

@@ -98,7 +98,7 @@ conout_body:
                 jr      nz, conout_not_dispatch
                 ld      a, e
                 inc     a                   ; E = $FF? (D-DISKREREAD: not `cp $FF`, 1 B --
-                jr      nz, conout_not_dispatch ; both continuations reload A)
+                jp      nz, conout_dirio_out ; both continuations reload A) -- DIRIO OUTPUT: raw (D-CONCOL)
                 pop     hl                  ; restore caller's HL
                 pop     af                  ; restore caller's AF for dirio_in_body
                 jr      dirio_in_body
@@ -897,6 +897,42 @@ write_sector:
                 xor     a               ; drive 0 (ignored); the scf below sets Cy again
                 scf                     ; Cy = 1 = WRITE direction (MSX2 TH DSKIO)
                 jp      bdos_dskio      ; tail-call (D-DISKVE: DISKVE's handler on an error)
+; ce_col -- conout_emit_e's logical column ($F237) after the char in CONOUT_CHAR, the CF-3300's rule
+; (D-CONCOL, 2026-11-26; BDOSXL, scratchpad/XL2_stock.out, AE_concol_cap.out): printable +1; CR, FF and
+; HOME ($0B) -> 0; BS, cursor-left ($1D) and DEL ($7F) -1 (also at 0: $FF, as the CF-3300); every other
+; control code (LF, BEL, ESC ...) leaves it. Was: CR 0, LF unchanged, everything else +1 -- a TAB after
+; FF / BS / BEL / ESC landed wrong. DIRIO's output does not count at all: conout_dirio_out below.
+; CLEAN-ROOM: the published column cell and black-box readings (BDOSXL's ($F237) per case).
+; Entered by conout_emit_e's JP, with its BC / DE / HL on the stack: it pops them and returns for it.
+; Out: A = the column.
+ce_col:
+                ld      hl, $F237
+                ld      a, (CONOUT_CHAR)
+                cp      $7F
+                jr      z, cec_dec          ; DEL: -1
+                cp      $20
+                jr      nc, cec_inc         ; printable: +1
+                cp      $0D
+                jr      z, cec_zero         ; CR
+                cp      $0C
+                jr      z, cec_zero         ; FF
+                cp      $0B
+                jr      z, cec_zero         ; HOME
+                cp      $08
+                jr      z, cec_dec          ; BS
+                cp      $1D
+                jr      nz, cec_done        ; other control codes: unchanged
+cec_dec:        dec     (hl)                ; BS, cursor-left, DEL
+                jr      cec_done
+cec_inc:        inc     (hl)
+                jr      cec_done
+cec_zero:       ld      (hl), 0
+cec_done:       ld      a, (hl)
+                pop     hl                  ; conout_emit_e's
+                pop     de
+                pop     bc
+                ret
+; (conout_dirio_out: in front of $75A5, disk/kernel.asm -- this region is full)
                 ds      $7F7C - $, $00
 k_7F7C:         jp      disk_show_banner    ; $7F7C: emit "zerobas Disk BASIC"
                 IF ($ > $7F80)
@@ -946,22 +982,10 @@ conout_emit_e:
                 call    $00A2               ; CHPUT - emit A; preserves all registers
                 call    pg0_mainrom_out     ; restore page 0
                 ei
-                ld      hl, $F237           ; column cell (HL saved above -> caller HL safe)
-                ld      a, (CONOUT_CHAR)
-                cp      $0D                 ; CR -> column := 0
-                jr      z, conout_emit_cr
-                cp      $0A                 ; LF -> column unchanged (BIOS CHPUT owns the row)
-                jr      z, conout_emit_done
-                inc     (hl)                ; printable/other -> column++ (post-increment)
-                jr      conout_emit_done
-conout_emit_cr:
-                ld      (hl), 0             ; CR -> column := 0
-conout_emit_done:
-                ld      a, (hl)             ; A := the updated column (HL still $F237)
-                pop     hl
-                pop     de
-                pop     bc
-                ret
+                jp      ce_col              ; the column rule (D-CONCOL) and this routine's exit: A := the
+                                            ; updated column. A JP, not a call: no deeper on the stack than
+                                            ; before -- a `call` here (2 B more) broke calculus.dsk's boot
+                                            ; loader (D-CONCOL's corpus run, scratchpad/AE_concol_diskcorpus.out)
 
 ; --- pad to a full 16 KB page ($4000-$7FFF) --------------------------------
                 ds      $8000 - $, $00
