@@ -50,6 +50,8 @@ SUB_BUILD       equ     0
 ; a CALSLT into whatever disk ROM holds the slot. DISK_BUILD gates that, on the
 ; SUB_BUILD pattern above -- "it gates body .inc files that genuinely differ by
 ; side" (sub/sub.asm:54).
+; (Since then the engine left the other ROMs: today only disk/kernel.asm includes
+; basic/fat-prim-body.inc -- checked 2026-11-26, D-DISKREREAD.)
 DISK_BUILD      equ     0
                 include "basic/sysvars.inc"
                 include "basic/aliases-early.inc"   ; D-PASMO053: before any use

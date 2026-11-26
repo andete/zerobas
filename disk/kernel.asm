@@ -4652,7 +4652,7 @@ wz_out:
 
 ; fren_wild -- BDOS $17 FREN (D-FRENWILD, 2026-11-10). The FCB holds the OLD name /
 ; pattern at +1..11 and the NEW at +17..27. EVERY root entry matching the old pattern
-; (name_cmp_wild; volume labels and directories skipped) is renamed: new[k] = the
+; (name_cmp, with `?`; volume labels and directories skipped) is renamed: new[k] = the
 ; new pattern's byte, or the entry's own where that byte is `?` -- the CF-3300 turns
 ; "X?.TMP" -> "Z?.TMP" into X1 -> Z1, X2 -> Z2 (probes/disk/dosl/d5rendel.asm,
 ; scratchpad/dosl_d5_1.out). A built name that already exists is refused: A = $FF
@@ -4699,7 +4699,7 @@ fw_lp:
                 pop     hl
                 jr      nz, fw_next
                 push    hl
-                call    name_cmp_wild
+                call    name_cmp            ; (D-DISKREREAD: was name_cmp_wild, the same code)
                 pop     de                  ; DE = the entry
                 jr      nz, fw_next
                 ld      hl, 4
@@ -6266,12 +6266,9 @@ hk_kill:
                 ; back the way hkn_exists's 65 does: DISKOP_ERR + status 2, which
                 ; main's kill_status already sends to disk_error -- no main byte.
                 call    hkk_open_check  ; CF=1: an open file matches the pattern
-                jr      nc,hkk_none_open
-                ld      a,64            ; File still open
-                ld      (DISKOP_ERR),a
-                ld      a,2
-                jr      hkk_done
-hkk_none_open:
+                jr      c,hkn_open      ; File still open: DISKOP_ERR := 64, status 2, the
+                                        ; shared tail -- NAME's arm, the same 9 bytes this
+                                        ; carried (D-DISKREREAD 2026-11-26, 9 B)
                 ld      c,0             ; C = deleted-any flag
 hkk_loop:
                 push    bc
@@ -6412,7 +6409,7 @@ hkn_a:
                 jr      c,hkn_io
                 ld      a,1                 ; renamed
                 jr      hkn_done
-hkn_open:
+hkn_open:                                   ; (KILL's and COPY's open arms too: D-DISKREREAD)
                 ld      a,64                ; `File still open` (D-COPYNAMEOPEN)
                 jr      hkn_err
 hkn_exists:
@@ -6521,20 +6518,15 @@ hkc_to:
                 call    fat_mount           ; LOCAL, for hkk_open_check's reads;
                 jr      c,hkc_go            ; on failure hkc_body reports it
                 call    hkk_open_check      ; the destination
-                jr      c,hkc_open
-                call    hkc_swap
-                call    hkk_open_check      ; the source
-                push    af
+                jr      c,hkn_open          ; `File still open`: NAME's arm (DISKOP_ERR := 64,
+                call    hkc_swap            ; status 2, hk_claim_status) -- hkc_open was the
+                call    hkk_open_check      ; same 9 bytes (D-DISKREREAD 2026-11-26, 9 B)
+                push    af                  ; (the source)
                 call    hkc_swap            ; DISK_FCB_NAME = the destination again
                 pop     af
-                jr      c,hkc_open
+                jr      c,hkn_open
 hkc_go:
                 call    hkc_body            ; LOCAL: A = 0/1/2/3
-                jr      hkc_done
-hkc_open:
-                ld      a,64                ; `File still open`
-                ld      (DISKOP_ERR),a
-                ld      a,2                 ; -> disk_error raises DISKOP_ERR
                 jr      hkc_done
 hkc_noto:
                 ; 🔴 D-NOASTO (2026-09-29): ...but only if the SOURCE exists. The
@@ -6808,30 +6800,21 @@ df_emit:
                 call    op_lfiles
                 jr      z,de_field
                 ld      a,(CSRX)
-                dec     a                   ; 0-based column (0 = line start)
-                or      a
-                jr      z,de_field          ; first field on the line
+                dec     a                   ; 0-based column (0 = line start): Z = first
                 ; D-DFEND: the space is a TRAILING one shared with the printer,
                 ; not a separator emitted BEFORE the next field -- the two are
                 ; indistinguishable row by row and differ where the cursor comes
                 ; to REST, which is the one place the reference could be read.
                 ; The `cp 13` is DELIBERATELY UNCHANGED: requiring field+space to
                 ; fit is what keeps the trailing space off the last column.
-                ld      b,a                 ; B = current 0-based column
-                ld      a,(LINLEN)
-                sub     b                   ; A = columns left on this line
-                cp      13                  ; need 12 (field) + 1 (its space)
-                jr      nc,de_field         ; room -> emit the field here
-                call    df_crlf             ; no room -> wrap to a new line
+                ; D-DISKREREAD (2026-11-26): the room test is the tail's own (df_room
+                ; below: `ret nc` = room, else it falls into df_crlf and wraps), 12 B
+                call    nz,df_room          ; mid-line: wrap unless 13 columns are left
 de_field:
                 ld      b,8                 ; 8 name chars, raw off the disk
-de_name:
-                ld      a,(hl)
-                push    hl
-                push    bc
-                call    df_out
-                pop     bc
-                pop     hl
+de_name:                                    ; D-DISKREREAD (2026-11-26): no push / pop round
+                ld      a,(hl)              ; df_out here or in de_ext -- it keeps HL / DE / BC
+                call    df_out              ; itself (below), 8 B
                 inc     hl
                 djnz    de_name
                 push    hl                  ; '.' between name and extension -- or a
@@ -6850,11 +6833,7 @@ de_dot:
                 ld      b,3                 ; 3 extension chars
 de_ext:
                 ld      a,(hl)
-                push    hl
-                push    bc
                 call    df_out
-                pop     bc
-                pop     hl
                 inc     hl
                 djnz    de_ext
                 ; R-LF2, widened by D-DFEND: the trailing space is emitted on
@@ -6873,10 +6852,11 @@ de_ext:
                 ; pre-check above: field + its trailing space.
                 ld      a,(CSRX)
                 dec     a                   ; 0-based column
+df_room:                                    ; (df_emit's pre-check calls here, D-DISKREREAD)
                 ld      b,a
                 ld      a,(LINLEN)
                 sub     b                   ; columns left on this line
-                cp      13
+                cp      13                  ; need 12 (field) + 1 (its space)
                 ret     nc                  ; room for another field: stay here
                 ; fall through -> CR/LF
 
@@ -6924,7 +6904,9 @@ dfo_done:
 ; Microsoft FAT spec's 12-bit packing). Clobbers A, DE. 💰 D-DISKCARVE (2026-11-07): the
 ; same 19 instructions stood inline in getalloc's scan, fat_have_free_cluster's loop and
 ; fat_write_fat_entry_hot (scratchpad/diskcarve_ngram.out); basic/fat-prim-body.inc keeps
-; its own three copies (the sub ROM assembles that body too).
+; its own three copies. (The reason given then -- "the sub ROM assembles that body too" --
+; no longer holds: only this ROM includes it, D-DISKREREAD 2026-11-26. Its copies could
+; call fat_locate; not done yet.)
 fat_locate:
                 ld      a, l
                 and     1
@@ -7494,9 +7476,7 @@ fmt_pr:
                 or      a
                 ret     z
                 ld      e,a
-                push    hl
-                call    conout_emit_e
-                pop     hl
+                call    conout_emit_e       ; (keeps HL itself: D-DISKREREAD 2026-11-26, 2 B)
                 inc     hl
                 jr      fmt_pr
 ; (fmt_key / fmt_echo -- MOVED by D-DISKCARVE6 step 2 to the pad in front of $504E.)
@@ -7545,15 +7525,22 @@ ccd_out:
 ; for a fresh destination too); one copy gives the disk ROM ~30 B for D-WCACHE.
 ; out A = 0, HL = 0 (bdos_create_body's next store relies on HL = 0).
 wr_reset:
+                ; D-DISKREREAD (2026-11-26): WRCLUS .. WRBYTES+3 are 11 contiguous bytes
+                ; (disk/equates.inc, guarded below), so one fill loop, 10 B. Out as before:
+                ; A = 0, HL = 0 (1654 relies on it), the flags of `xor a`; B = 0 now.
                 xor     a
-                ld      (BDOS_WRSECIDX), a
-                ld      hl, 0
-                ld      (BDOS_WRCLUS), hl
-                ld      (BDOS_WRFIRST), hl
-                ld      (BDOS_WRBUFLEN), hl
-                ld      (BDOS_WRBYTES), hl
-                ld      (BDOS_WRBYTES + 2), hl
+                ld      hl, BDOS_WRCLUS
+                ld      b, 11
+wrr_lp:
+                ld      (hl), a
+                inc     hl
+                djnz    wrr_lp
+                ld      h, a
+                ld      l, a
                 ret
+    IF (BDOS_WRBYTES + 4 - BDOS_WRCLUS - 11) or (BDOS_WRFIRST - BDOS_WRCLUS - 2) or (BDOS_WRSECIDX - BDOS_WRCLUS - 4) or (BDOS_WRBUFLEN - BDOS_WRCLUS - 5)
+                db      WR_RESET_NEEDS_WRCLUS_TO_WRBYTES_CONTIGUOUS
+    ENDIF
 ; sdw_end: the close of SAVE (basic/sv-diskwr.inc) and SAVE ,A (hk_chclose_e) under the
 ; FAT hold (FAT_DEFER bit 2). The order is D-ASAVEEND's (2026-11-12): (1) the buffered
 ; last sector FIRST, still under the hold -- it often starts a new cluster, and its
@@ -7576,17 +7563,19 @@ sdw_end:
 ; 📍 D-IFFREAD2 (2026-11-14): MOVED HERE from after bdos_seqwrite_body (its one
 ; caller, a `call`), for the 10 B the two IFF re-reads need past $782B.
 wrbytes_add_recsize:
+                ; D-DISKREREAD (2026-11-26): one `adc` loop over all 4 bytes, the addend in A
+                ; (RECSIZE, then 0 -- `ld` and 16-bit `inc` keep the carry), 2 B. A = 0 out
+                ; now; the one caller (bdos_seqwrite_body) goes straight to
+                ; fat_flush_data_sector, which takes no A.
                 ld      hl, BDOS_WRBYTES
-                ld      a, (hl)
-                add     a, RECSIZE
-                ld      (hl), a
-                inc     hl
-                ld      b, 3                ; carry through the upper 3 bytes
+                ld      a, RECSIZE
+                ld      b, 4
+                or      a                   ; Cy = 0
 wba_loop:
-                ld      a, (hl)
-                adc     a, 0
+                adc     a, (hl)
                 ld      (hl), a
                 inc     hl
+                ld      a, 0
                 djnz    wba_loop
                 ret
 ; (rh_init moved to the pad in front of $4EDE by D-DISKROMHOST: this region's bytes went to hrunc_h.)
@@ -7627,9 +7616,10 @@ fcb_mark_written:
                 inc     hl
                 ld      (hl), d             ; +20..21 date
                 inc     hl
-                ld      (hl), 0
-                inc     hl
-                ld      (hl), 0             ; +22..23 time
+                xor     a                   ; D-DISKREREAD (2026-11-26): A = 0, 1 B -- A / flags
+                ld      (hl), a             ; out were date_fat_word's / `add`'s; no caller
+                inc     hl                  ; (7632, 7778, 9108, runtime.asm 792) reads them
+                ld      (hl), a             ; +22..23 time
                 inc     hl
                 res     6, (hl)             ; +24
                 ret
@@ -7739,12 +7729,11 @@ ws_walk:
                 push    de
                 call    fat_next_cluster    ; HL := its link (clobbers A/BC/DE)
                 pop     de
-                ld      a, h
-                cp      $0F
-                jr      c, ws_ok            ; < $0F00: a real link
-                ld      a, l
-                cp      $F8
-                jr      c, ws_ok            ; < $0FF8: a real link
+                ld      a, l                ; D-DISKREREAD (2026-11-26): one 16-bit test,
+                add     a, 8                ; frl_have's -- CF iff HL >= $0FF8 (a 12-bit
+                ld      a, h                ; entry: the two tests agree on every value), 2 B
+                adc     a, $F0
+                jr      nc, ws_ok           ; < $0FF8: a real link
                 pop     hl                  ; the chain ENDS after this cluster
                 ld      (FAT_CURCLUS), hl
                 ld      a, (FAT_SECPERCLUS)
@@ -7871,10 +7860,7 @@ k47b2_geom:
                 ld      (BDOS_BYTESLEFT + 3), a
                 ret     c                   ; O > size: nothing to deliver
                 ; HL := O >> 9 (the sector index in the file; O is 24-bit)
-                ld      a, (WRBLK_REC + 2)
-                ld      h, a
-                ld      a, (WRBLK_REC + 1)
-                ld      l, a
+                ld      hl, (WRBLK_REC + 1) ; D-DISKREREAD (2026-11-26): one word load, 5 B
                 srl     h
                 rr      l
                 ; FAT_CLUSSEC := sector-in-cluster, HL := ci (spc is a power of two)
@@ -7913,12 +7899,11 @@ k47b2_walked:
                 ld      (ix+31), h          ; +30 := its index in the chain
                 ; prime the byte source at O: a whole-sector start refills on the
                 ; first byte; otherwise read the sector now and start inside it
-                ld      a, (WRBLK_REC + 1)
+                ld      hl, (WRBLK_REC)     ; D-DISKREREAD (2026-11-26): a word load, 3 B
+                ld      a, h
                 and     1
-                ld      h, a
-                ld      a, (WRBLK_REC)
-                ld      l, a                ; HL = O & 511
-                or      h
+                ld      h, a                ; HL = O & 511
+                or      l
                 jr      nz, k47b2_mid
                 ld      hl, 512
                 ld      (RDBLK_BUFPOS), hl  ; force a sector refill on the first byte
@@ -7985,23 +7970,20 @@ srd_pos:
 ; (moved here from kernel.asm by the D-DSKFMT defrag)
 ; mulacc_cmp -- WRBLK_MULACC vs FAT_FILESIZE, 32-bit unsigned, MSB first: Z = equal,
 ; Cy = MULACC below. Shared by wrblk_zero_path and wrblk_size_max (the chain stood
-; twice, 28 B each -- D-WRZER's carve, 2026-11-09). Clobbers A, HL.
+; twice, 28 B each -- D-WRZER's carve, 2026-11-09). Clobbers A, HL, DE, B -- D-DISKREREAD
+; (2026-11-26): a 4-pass loop, 10 B (16-bit `dec` and `djnz` keep the last `cp`'s flags);
+; both callers load DE / BC before they use them (to_wrbytes, wrblk_shrink's).
 mulacc_cmp:
-                ld      a, (WRBLK_MULACC + 3)
+                ld      de, WRBLK_MULACC + 3
                 ld      hl, FAT_FILESIZE + 3
+                ld      b, 4
+mc_lp:
+                ld      a, (de)
                 cp      (hl)
                 ret     nz
-                ld      a, (WRBLK_MULACC + 2)
+                dec     de
                 dec     hl
-                cp      (hl)
-                ret     nz
-                ld      a, (WRBLK_MULACC + 1)
-                dec     hl
-                cp      (hl)
-                ret     nz
-                ld      a, (WRBLK_MULACC)
-                dec     hl
-                cp      (hl)
+                djnz    mc_lp
                 ret
 ; fmt_bkey -- CALL FORMAT's key, through main's CHGET (MOVED here by D-DISKCARVE6 step 4 (2026-11-17)).
 fmt_bkey:
@@ -8360,7 +8342,7 @@ install_res_print:
 ; (the body is in front of the $55E6 pin since D-SFIRSTVOL)
 
 ; ===== M19: runtime directory search (BDOS SFIRST $11 / SNEXT $12) =============
-; sfirst_body / snext_body / dirscan_match / name_cmp_wild — the bodies behind the
+; sfirst_body / snext_body / dirscan_match (name_cmp_wild went to name_cmp, D-DISKREREAD) — the bodies behind the
 ; $4FB8 (SFIRST) / $5006 (SNEXT) page-1 kernel entries. They walk our own root
 ; directory (reusing fat_mount + the fat_find ff_secloop/ff_entloop structure),
 ; match each 8.3 name against the kernel's search-FCB pattern (with the ? wildcard),
@@ -8478,8 +8460,10 @@ ga_fail:
                                                  ; success path; harmless -- A=0 already
                                                  ; forces free_bytes=0 either way)
                 ld      bc, $0200                ; BC := 512 (belt-and-braces)
-                ld      de, 0
-                ld      hl, 0
+                ld      d, a                     ; DE = HL = 0 from clr_f306's A = 0 --
+                ld      e, a                     ; D-DISKREREAD (2026-11-26), 2 B
+                ld      h, a
+                ld      l, a
                 ret
 
 ; sfirst_body — BDOS SFIRST ($11): find the FIRST matching root-dir entry.
@@ -8503,7 +8487,7 @@ snext_body:
                 ; fall through: BDOS_SRCHIDX already points at the next entry.
 
 ; dirscan_match — walk the root dir from BDOS_SRCHIDX; on the first entry matching
-; the pattern (name_cmp_wild) copy its drive-byte + 32-byte image to the DTA, set
+; the pattern (name_cmp, `?` = any) copy its drive-byte + 32-byte image to the DTA, set
 ; BDOS_SRCHIDX := match-index + 1, return A=$00. On $00 end-mark or all sectors
 ; scanned, return A=$FF. Reconstructs the sector cursor from BDOS_SRCHIDX alone
 ; (idx>>4 = sectors to skip; idx&15 = entry-in-sector) so it never persists
@@ -8516,21 +8500,15 @@ dsm_shr:
                 srl     h
                 rr      l
                 djnz    dsm_shr             ; HL = idx >> 4 = sector offset
+                push    hl                  ; D-DISKREREAD (2026-11-26): kept for DIRREM below, not
+                                            ; shifted a second time, 14 B
                 ; FAT_DIRSEC := FAT_FIRSTROOT + sectorOffset
                 ld      de, (FAT_FIRSTROOT)
                 add     hl, de
                 ld      (FAT_DIRSEC), hl
                 ; FAT_DIRREM := FAT_ROOTSECS - sectorOffset
-                ld      hl, (BDOS_SRCHIDX)
-                ld      b, 4
-dsm_shr2:
-                srl     h
-                rr      l
-                djnz    dsm_shr2            ; HL = idx >> 4 again (sector offset)
-                ex      de, hl              ; DE = sector offset
-                push    de
-                call    fat_rootsecs        ; HL = root sectors (D-WCACHE W1)
-                pop     de
+                call    fat_rootsecs        ; HL = root sectors (D-WCACHE W1; no inputs)
+                pop     de                  ; DE = sector offset
                 or      a
                 sbc     hl, de
                 jp      z, ds_none          ; already past the last root sector
@@ -8574,7 +8552,7 @@ dsm_entloop:
                 ld      de, (FAT_NAMEPTR)
                 push    hl
                 push    bc
-                call    name_cmp_wild       ; Z if the 8.3 name matches the pattern
+                call    name_cmp            ; Z if the 8.3 name matches the pattern
                 pop     bc
                 pop     hl
                 jr      z, dsm_found
@@ -8610,10 +8588,8 @@ dsm_found:
                 push    de                  ; save DTA base
                 ; zero DTA[0..32] (33 bytes) so all gap/unset fields are $00.
                 ld      h, d
-                ld      l, e                ; HL = DTA base
-                ld      (hl), 0
-                push    hl
-                pop     de                  ; DE = DTA base
+                ld      l, e                ; HL = DTA base = DE (D-DISKREREAD 2026-11-26:
+                ld      (hl), 0             ; the `push hl / pop de` that re-made it went, 2 B)
                 inc     de                  ; DE = DTA+1
                 ld      bc, 32
                 ldir                        ; propagate the $00 across DTA[1..32]
@@ -8625,8 +8601,7 @@ dsm_found:
                 ld      (de), a
                 inc     de                  ; DE = DTA+1
                 ; DTA[1..11] = entry[0..10] (name)
-                push    hl                  ; keep entry base
-                call    ldir_11
+                call    ldir_11             ; HL = entry+11, DE = DTA+12
                 ; DTA[12] stays 0; DTA[13] = entry[11] (attr)
                 inc     de                  ; DE = DTA+13
                 ld      a, (hl)             ; entry[11] = attribute
@@ -8636,16 +8611,14 @@ dsm_found:
                 ; disk's creation / access dates: probes/disk/dosl/d4dir.asm,
                 ; scratchpad/dosl_d4_3.out); this left DTA[16..22] zero. DIR never
                 ; reads them, which is why the black-box pin above missed it.
-                pop     hl                  ; HL = entry base
-                ld      bc, 15
+                ; D-DISKREREAD (2026-11-26): both pointers walked on from where ldir_11 left
+                ; them -- no push / pop of the entry, no DTAPTR + 16 add (DE = DTA+13 here,
+                ; and DOS_DTAPTR is the base DE came from), 10 B
+                ld      bc, 4
                 add     hl, bc              ; HL = entry+15
-                ld      de, (DOS_DTAPTR)
-                ld      a, e
-                add     a, 16
-                ld      e, a
-                jr      nc, dsm_nohc
-                inc     d
-dsm_nohc:
+                inc     de
+                inc     de
+                inc     de                  ; DE = DTA+16
                 ld      bc, 17
                 ldir                        ; -> DTA[16..32]
                 call    dsm_p1_post         ; D-P1SRCH: the 33 bytes to the real DTA
@@ -8657,26 +8630,10 @@ ds_none:
                 ret
 
 
-; name_cmp_wild — compare an 11-byte dir name against the search pattern, with the
-; FCB ? wildcard: a pattern byte of $3F matches any single character. Otherwise
-; identical to name_cmp (case-insensitive via toupper). (Published CP/M-2.2 /
-; MSX-DOS FCB match rule; M19 §4.5 — verified DIR issues an all-? pattern.)
-;   in:  HL = directory-entry name, DE = search pattern ; out: Z set if match;
-;        trashes A, B, DE, HL (HL/DE advanced 11 bytes; C preserved)
-name_cmp_wild:
-                ld      b, 11
-ncw_loop:
-                ld      a, (de)
-                cp      $3F                 ; '?' pattern byte matches anything
-                jr      z, ncw_next
-                ld      a, (de)
-                call    toupper_cmp
-                ret     nz                  ; mismatch -> Z clear
-ncw_next:
-                inc     hl                  ; 16-bit inc: leaves flags intact
-                inc     de
-                djnz    ncw_loop
-                ret                         ; Z set (all 11 positions matched)
+; (name_cmp_wild -- the FCB `?` compare -- went by D-DISKREREAD (2026-11-26), 17 B: it ran
+; the very instructions of name_cmp (basic/fat-prim-body.inc: `?` matches anything, else
+; toupper_cmp; Z = match), with one redundant `ld a,(de)`. Its two callers call name_cmp.
+; Its "C preserved" note was false: toupper_cmp loads C, and neither caller reads C.)
 
 ; --- M24 slice B relocated bodies (tier2-m24-fclose-multicluster-spec.md §6) --
 
@@ -8740,7 +8697,8 @@ fdc_rd_drain:
 fdc_rd_status:
                 ld      a, (FDC_STATUS)
                 and     ST_NOTRDY + ST_RNF + ST_CRC + ST_LOST
-                jr      z, fdc_rd_ok
+                ret     z               ; A = 0, Cy = 0 (the `and`) -- D-DISKREREAD (2026-11-26):
+                                        ; fdc_rd_ok's `or a / ret` made the same, 3 B
                 ld      b, a            ; keep the error bits
                 call    fdc_lostwin     ; D-FDCDI: lost data under a window? try again
                 jp      nz, fwd_nowin   ; 💰 D-DISKCARVE5: the write path's decoder (disk/
@@ -8751,9 +8709,6 @@ fdc_rd_status:
 ; (fdc_rd_nowin -- the FDC status -> DSKIO error code decode -- was a byte-for-byte
 ; copy of fat.asm's fwd_nowin; D-DISKCARVE5 (2026-11-08, scratchpad/diskngram.py)
 ; jumps there instead.)
-fdc_rd_ok:
-                or      a               ; A = 0, Cy = 0
-                ret
 
 ; bdos_seqwrite_body — relocated bdos_seqwrite (M26, tier2-m26-spec.md): its old
 ; span at disk/fat.asm's $46EE collided with the real kernel's canonical $30
@@ -8790,9 +8745,8 @@ bdos_seqwrite_body:
                 jr      c, bsw_m34_buffer   ; room in current cluster -> no new one
 bsw_m34_needclus:
                 call    fat_have_free_cluster ; Cy=0 a $000 cluster exists; Cy=1 none
-                jr      nc, bsw_m34_buffer
-                ld      a, $01              ; disk full -- BEFORE any buffering
-                ret
+                jr      c, bsw_full         ; disk full -- BEFORE any buffering (A = 1, Cy = 1:
+                jr      bsw_m34_buffer      ; the same 3 bytes there -- D-DISKREREAD 2026-11-26, 1 B)
                 ; D-BDOSFCB B3 (2026-11-10): the FIRST cluster is claimed at record 0,
                 ; not at the first sector flush -- the CF-3300's FCB has +26 / +28 from
                 ; its first SEQWRITE (scratchpad/bdosfcb_run5.out, rows 2-4). The flush
@@ -8897,10 +8851,8 @@ fdel_more:
                 jr      z, fdel_more        ; another one gone
                 cp      $FF
                 ret     nz                  ; an I/O error: A = 2, as fdel_one left it
-                call     clr_f306   ; M20 dispatcher-flag rule
-                ld      h, a
-                ld      l, a                ; HL = $0000 on success (pinned exit value)
-                ret
+                jr      fdel_ok             ; D-DISKREREAD (2026-11-26): fdel_relocate's identical
+                                            ; success tail (clr_f306, HL = 0), 4 B
 fdel_one:
                 push    de
                 pop     ix                  ; IX = kernel FCB-copy pointer (held throughout)
@@ -8932,6 +8884,7 @@ fdel_relocate:
                 ld      de, (FAT_DIRSEC)
                 call    wr_sbuf
                 jr      c, fdel_ioerr
+fdel_ok:                                    ; (fdel_body's success exit too)
                 call     clr_f306   ; M20 dispatcher-flag rule
                 ld      h, a
                 ld      l, a                ; HL = $0000 on success (pinned exit value)
@@ -8957,9 +8910,10 @@ mnt_find:
                 jr      c, mf_miss
 mf_find:
                 push    ix
-                pop     de
-                inc     de                  ; DE -> FCB+1 (the 8.3 name)
-                ex      de, hl              ; HL -> name (fat_find's contract)
+                pop     hl
+                inc     hl                  ; HL -> FCB+1, the 8.3 name (fat_find's contract;
+                                            ; it reads no DE and sets it in fat_dir_start) --
+                                            ; D-DISKREREAD (2026-11-26): straight into HL, 1 B
                 call    fat_find
                 ret     nc
 mf_miss:
@@ -9126,10 +9080,8 @@ rdrnd_body:
                 ld      (ix+32), a          ; -- record 199 left $C7 where the CF-3300 has $47,
                                             ; scratchpad/rndfcb_stock.out / rndfcb_ours.out)
                 call    rdrnd_ex            ; ... and +12 EX := RR >> 7, +14 := 0 (D-RNDFCB (b))
-                xor     a
-                ld      h, a
-                ld      l, a                ; HL = $0000 (pinned exit value, success)
-                jr      rrnd_finish
+                jr      wrrnd_zero          ; A = 0, HL = $0000, the shared tail -- D-DISKREREAD
+                                            ; (2026-11-26): WRRND's identical 5 bytes, 3 B
 rrnd_eof:
                 ld      a, $01              ; positioned past end-of-file
                 jr      rrnd_finish
@@ -9163,6 +9115,7 @@ wrrnd_body:
 wrrnd_ok:
                 ld      a, (ix+33)          ; CR (copy+32) := r0 (stock's random-op side effect)
                 ld      (ix+32), a
+wrrnd_zero:                                 ; (RDRND's success exit too)
                 xor     a
                 ld      h, a
                 ld      l, a                ; HL = $0000 (pinned exit value, success)

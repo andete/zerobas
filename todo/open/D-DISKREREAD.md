@@ -17,5 +17,14 @@
         YOUMAKOR (phase, back to BOTH-RUN) and three no-readings that re-ran to their old classes
         ([`AE_apC_corpus3.out`](../../scratchpad/AE_apC_corpus3.out)). Left for later: fat.asm's wrblk_full can `jp wrblk_fin_req`
         (3 B before $46E6, reach unchecked).
-      * Slice D -- OPEN: [`AE_reread_D.md`](../../scratchpad/AE_reread_D.md), ~295 B claimed in the low-risk rows (2026-11-26, at a89a93d15).
-      Medium-risk rows (an inline-word call-back helper, a table reorder) are skipped until the low rows are spent.
+      * Slice D (fat-prim-body: mount, FAT12 pack / unpack, the sector entries, directory search; kernel.asm's
+        SFIRST / SNEXT, FDEL, RDRND, RDBLK, WRBLK, sequential write, FILES, CALL FORMAT) -- DONE 2026-11-26: 293 B
+        (four list miscounts; one item kept 1 B short on purpose to keep fat_find's exit A / Z), room 424 -> 718 B
+        in runs of 16 B or more ([`AE_apD_apply.md`](../../scratchpad/AE_apD_apply.md), [`AE_reread_D.md`](../../scratchpad/AE_reread_D.md)). Disk corpus: every class as
+        slice C's resolved classes ([`AE_apD_diskcorpus.out`](../../scratchpad/AE_apD_diskcorpus.out)).
+      ✅ THE ROOM IS MADE: ~8 B -> 718 B (2026-11-26, after slice D), every byte from re-reading. What is left is a
+      RESERVE, to spend when a fix needs more -- not work to do for its own sake:
+        - the medium / low-medium rows of all four lists (an inline-word call-back helper, a table reorder, ...);
+        - fat.asm's wrblk_full can `jp wrblk_fin_req` (3 B before $46E6, jp reach unchecked);
+        - basic/fat-prim-body.inc keeps three inline copies of fat_locate's 19 instructions; only the disk ROM
+          includes it now, so they can call fat_locate (not measured).

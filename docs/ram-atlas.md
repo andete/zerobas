@@ -14,7 +14,7 @@ SPDX-License-Identifier: BSD-2-Clause
 
 > **Power-on:** the main ROM's writes before any cartridge's INIT are left out of the rows (they are the RAM test and clear, not a use of the RAM). Addresses of the range the main ROM writes at boot, per run: VG plain 12235, VGHBD dos 12235, VGHBD basic 12235, CF dos 12235, CF basic 12235, ZBND plain 3476, ZBD dos 3437, ZBD basic 3437.
 
-717 rows.
+716 rows.
 
 | range | B | VG plain | VGHBD dos | VGHBD basic | CF dos | CF basic | ZBND plain | ZBD dos | ZBD basic | zerobas |
 |---|---:|---|---|---|---|---|---|---|---|---|
@@ -30,8 +30,8 @@ SPDX-License-Identifier: BSD-2-Clause
 | `$D40F-$D412` | 4 |   | D:DR |   | D:DR |   |   | D:R |   |  |
 | `$D413-$D428` | 22 |   | D:R |   | D:R |   |   | D:R |   |  |
 | `$D429-$D42A` | 2 |   | D:R |   | D:R B:R |   |   | D:R B:R |   |  |
-| `$D42B-$D4FA` | 208 |   | D:R |   | D:R |   |   | D:R |   |  |
-| `$D4FB-$D518` | 30 |   | D:R |   | D:R |   |   | D:MR |   |  |
+| `$D42B-$D500` | 214 |   | D:R |   | D:R |   |   | D:R |   |  |
+| `$D501-$D518` | 24 |   | D:R |   | D:R |   |   | D:MR |   |  |
 | `$D519-$D51E` | 6 |   | D:R B:R |   | D:R B:R |   |   | D:MR B:R |   |  |
 | `$D51F-$D526` | 8 |   | D:R B:R |   | D:R B:R |   |   | D:R B:R |   |  |
 | `$D527-$D528` | 2 |   | D:R B:DR |   | D:R B:R |   |   | D:R B:R |   |  |
@@ -94,21 +94,20 @@ SPDX-License-Identifier: BSD-2-Clause
 | `$DB93-$DB93` | 1 |   | D:R B:MDR |   | D:R | B:MD |   | D:R | B:M |  |
 | `$DB94-$DB96` | 3 |   | D:R B:MD |   | D:R | B:MD |   | D:R | B:M |  |
 | `$DB97-$DB97` | 1 |   | D:R B:MD |   | D:R |   |   | D:R |   |  |
-| `$DB98-$DBA7` | 16 |   | D:R |   | D:R |   |   | D:R |   |  |
-| `$DBA8-$DBA9` | 2 |   | D:R |   | D:R |   |   | D:MR |   |  |
+| `$DB98-$DBA3` | 12 |   | D:R |   | D:R |   |   | D:R |   |  |
+| `$DBA4-$DBA9` | 6 |   | D:R |   | D:R |   |   | D:MR |   |  |
 | `$DBAA-$DBAF` | 6 |   | D:R |   | D:DR B:D |   |   | D:MR |   |  |
 | `$DBB0-$DBB1` | 2 |   | D:R |   | D:DR B:DR |   |   | D:MR |   |  |
-| `$DBB2-$DBB3` | 2 |   | D:MR B:M |   | D:MDR B:DR |   |   | D:MR B:M |   |  |
+| `$DBB2-$DBB3` | 2 |   | D:MR B:M |   | D:MDR B:DR |   |   | D:MR |   |  |
 | `$DBB4-$DBBB` | 8 |   | D:MDR B:MD |   | D:MDR B:MDR |   |   | D:MR B:M |   |  |
 | `$DBBC-$DBC5` | 10 |   | D:MDR B:MDR |   | D:MDR B:MDR |   |   | D:MR B:M |   |  |
 | `$DBC6-$DBCB` | 6 |   | D:MDR B:MR |   | D:MDR B:MDR |   |   | D:MR B:M |   |  |
-| `$DBCC-$DBCF` | 4 |   | D:MDR B:M |   | D:MDR B:MDR |   |   | D:MR B:M |   |  |
-| `$DBD0-$DBD7` | 8 |   | D:MDR B:M |   | D:MDR B:MDR |   |   | D:MR B:MR |   |  |
+| `$DBCC-$DBD1` | 6 |   | D:MDR B:M |   | D:MDR B:MDR |   |   | D:MR B:M |   |  |
+| `$DBD2-$DBD7` | 6 |   | D:MDR B:M |   | D:MDR B:MDR |   |   | D:MR B:MR |   |  |
 | `$DBD8-$DBE7` | 16 |   | D:MDR B:M |   | D:MDR B:MDR |   |   | D:MDR B:MDR |   |  |
 | `$DBE8-$DBEB` | 4 |   | D:MDR B:MR |   | D:MDR B:MDR |   |   | D:MDR B:MDR |   |  |
-| `$DBEC-$DBED` | 2 |   | D:MDR B:MDR |   | D:MDR B:MDR |   |   | D:MDR B:MD |   |  |
-| `$DBEE-$DBF5` | 8 |   | D:DR B:DR |   | D:DR B:DR |   |   | D:MDR B:MD |   |  |
-| `$DBF6-$DBF7` | 2 |   | D:DR B:DR |   | D:DR B:DR |   |   | D:MDR B:MDR |   |  |
+| `$DBEC-$DBED` | 2 |   | D:MDR B:MDR |   | D:MDR B:MDR |   |   | D:MDR B:MDR |   |  |
+| `$DBEE-$DBF7` | 10 |   | D:DR B:DR |   | D:DR B:DR |   |   | D:MDR B:MDR |   |  |
 | `$DBF8-$DBFD` | 6 |   | D:DR B:DR |   | D:DR B:DR |   |   | D:DR B:DR |   |  |
 | `$DBFE-$DBFF` | 2 |   | D:R B:R |   | D:R B:R |   |   | D:R B:R |   |  |
 | `$DC00-$DC60` | 97 |   | D:R |   | D:R |   |   | D:R |   |  |

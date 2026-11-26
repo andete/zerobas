@@ -89,6 +89,36 @@
 ; tenant's disk reads, which disk.rom's hk_dpbload does now -- with `ei` at its
 ; entry and the driver keeping the caller's state per sector (fdc_di_save), the
 ; same TIME behaviour by another road (D-LOADDI).
+; read_sector / fatprim_write_sector and the two buffers' entries -- HERE, in front of
+; dskio_calslt, so the read path FALLS INTO it (the comments further down say what each
+; entry promises). 💰 D-DISKREREAD (2026-11-26): both directions share `ld bc,$0100`
+; (B = 1 sector, C = 0 = not a media ID, D-SIDES / D-SIDEWRITE) and fall into the DSKIO
+; call instead of each loading B/C/A and `jr dskio_calslt`, 8 B.
+fws_mbuf:                                    ; D-DISKROMHOST step 2b: the 3 sites' `ld      hl, FAT_MBUF`, in front
+                ld      hl, FAT_MBUF
+fatprim_write_sector:
+                xor     a               ; drive 0 (ignored)
+                scf                     ; Cy = 1 = WRITE direction (MSX2 TH DSKIO)
+                jr      rw_go           ; (ld bc leaves Cy alone)
+; 💰 D-DISKROMHOST step 2b (2026-11-24): the two buffers' own entries, in front -- `ld hl,<buf>`
+; + `call read_sector` stood at 15 sites (8 FAT_DBUF, 7 FAT_MBUF); they call / jump here now.
+rs_mbuf:
+                ld      hl, FAT_MBUF    ; the metadata buffer
+                jr      read_sector
+rs_dbuf:
+                ld      hl, FAT_DBUF    ; the data buffer; falls into read_sector
+read_sector:
+                call    rh_check        ; D-PUTCACHE: a held PUT sector -- served or
+                                        ; written out first (disk/driver.asm)
+read_sector_nh:                         ; D-LOADHOLD: past the check (frs_to's entry)
+                xor     a               ; drive 0 (ignored); also Cy = 0 = read
+rw_go:
+                ld      bc, $0100       ; B = one sector; C = 0: not a media ID -> DSKIO keeps the
+                                        ; mounted disk's (D-SIDES; fat_geom_read records it). 🔴
+                                        ; D-SIDEWRITE (2026-11-10): the write's C was $F9 once, which
+                                        ; DSKIO seats by -- a write to a SINGLE-SIDED disk landed on
+                                        ; another sector. Falls into dskio_calslt: returns to our
+                                        ; caller with DSKIO's CY (and the DISKOP_ERR mapping, §6.6o)
 dskio_calslt:
                 call    bdos_dskio          ; LOCAL (D-DISKVE: through DISKVE's handler); no slot to cross, and the
                                             ; inter-slot call disappears with it
@@ -142,24 +172,8 @@ dc_map:
 ; sides.
 ; 💰 D-DISKROMHOST step 2b (2026-11-24): the two buffers' own entries, in front -- `ld hl,<buf>`
 ; + `call read_sector` stood at 15 sites (8 FAT_DBUF, 7 FAT_MBUF); they call / jump here now.
-rs_mbuf:
-                ld      hl, FAT_MBUF    ; the metadata buffer
-                jr      read_sector
-rs_dbuf:
-                ld      hl, FAT_DBUF    ; the data buffer; falls into read_sector
-read_sector:
-                call    rh_check        ; D-PUTCACHE: a held PUT sector -- served or
-                                        ; written out first (disk/driver.asm)
-read_sector_nh:                         ; D-LOADHOLD: past the check (frs_to's entry)
-                ld      b, 1            ; one sector
-                xor     a               ; drive 0 (ignored); also Cy = 0 = read
-                ld      c, 0            ; media: not an ID -> DSKIO keeps the mounted disk's
-                                        ; (D-SIDES; fat_geom_read records it)
-                jr      dskio_calslt    ; tail-call: returns to our caller with DSKIO's
-                                        ; CY (A=0 cleared CY here -> read direction).
-                                        ; ONE name for both ROMs now: the local-vs-
-                                        ; cross-slot difference lives INSIDE it, so
-                                        ; both get the DISKOP_ERR mapping (§6.6o)
+; (rs_mbuf / rs_dbuf / read_sector / read_sector_nh: moved in front of dskio_calslt,
+; D-DISKREREAD 2026-11-26 -- they fall into it now.)
 
 ; write_sector — write one logical sector from a buffer via cross-slot DSKIO.
 ;   in:  DE = logical sector number, HL = buffer (512 bytes)
@@ -177,18 +191,8 @@ read_sector_nh:                         ; D-LOADHOLD: past the check (frs_to's e
 ; collision there). Zero-byte rename either way (EQU never emits bytes).
 ; (fatprim_write_sector: disk.rom only since 2026-10-19, and the name still
 ; matters there -- disk/kernel.asm has a `write_sector` of its own.)
-fws_mbuf:                                    ; D-DISKROMHOST step 2b: the 3 sites' `ld      hl, FAT_MBUF`, in front
-                ld      hl, FAT_MBUF
-fatprim_write_sector:
-                ld      b, 1            ; one sector
-                ld      c, 0            ; 🔴 D-SIDEWRITE (2026-11-10): NOT a media ID, as read_sector's --
-                                        ; it was $F9, which DSKIO takes as one since D-SIDES and seats
-                                        ; by: every write went to the 2-sided place while reads used
-                                        ; the mounted disk's, so a write to a SINGLE-SIDED disk landed
-                                        ; on another sector (DSKFMT choice 1's round trip read $E5)
-                ld      a, 0            ; drive 0 (ignored)
-                scf                     ; Cy = 1 = WRITE direction (MSX2 TH DSKIO)
-                jr      dskio_calslt    ; tail-call, as read_sector above
+; (fws_mbuf / fatprim_write_sector: in front of dskio_calslt with the read entries,
+; D-DISKREREAD 2026-11-26.)
 
 ; ===========================================================================
 ; FAT12 READ layer (ported verbatim from disk.asm §FAT12 layer).
@@ -204,14 +208,16 @@ fat_mount:
                 call    fat_geom_read   ; FAT_DBUF = BPB fields (disk/fat.asm)
                 ret     c
                 ; require 512 bytes per sector ($0200 LE) — matches FAT_DBUF
-                ld      a, (FAT_DBUF + BPB_BYTSPERSEC)
-                or      a
-                jr      nz, fat_mount_bad   ; low byte must be 0
-                ld      a, (FAT_DBUF + BPB_BYTSPERSEC + 1)
-                cp      2
-                jr      nz, fat_mount_bad   ; high byte must be 2 ($0200 = 512)
+                ; D-DISKREREAD (2026-11-26): one word load and `xor 2 / or l`, 4 B
+                ld      hl, (FAT_DBUF + BPB_BYTSPERSEC)
+                ld      a, h
+                xor     2
+                or      l
+                jr      nz, fat_mount_bad   ; must be $0200 = 512
                 ld      a, (FAT_DBUF + BPB_SECPERCLUS)
                 ld      (FAT_SECPERCLUS), a
+                ld      c, a                ; D-DISKREREAD (2026-11-26): C = SPC for fm_div, kept from
+                                            ; here (nothing below touches C, hl_x32 included), 3 B
                 ld      hl, (FAT_DBUF + BPB_RSVDSECCNT)
                 ld      (FAT_FATSTART), hl  ; first FAT sector = reserved sectors
                 ; first root sector = reserved + numFATs * secPerFAT
@@ -220,28 +226,24 @@ fat_mount:
                 ld      b, a
                 ld      de, (FAT_DBUF + BPB_FATSZ16)
                 ld      (FAT_SECPERFAT), de ; cache for per-copy sector stride
-                ld      hl, 0
+                ; D-DISKREREAD (2026-11-26): HL still holds RSVDSECCNT (= FAT_FATSTART), so
+                ; accumulate onto it instead of from 0 and re-adding FATSTART, 8 B
 fm_fatacc:
                 add     hl, de
-                djnz    fm_fatacc           ; HL = numFATs * secPerFAT
-                ld      de, (FAT_FATSTART)
-                add     hl, de
+                djnz    fm_fatacc           ; HL = reserved + numFATs * secPerFAT
                 ld      (FAT_FIRSTROOT), hl
+                push    hl                  ; D-DISKREREAD: kept for FIRSTDATA below
                 ; root sectors = (rootEnts*32 + 511) / 512  (512 B per sector)
                 ld      hl, (FAT_DBUF + BPB_ROOTENTCNT)
-                add     hl, hl
-                add     hl, hl
-                add     hl, hl
-                add     hl, hl
-                add     hl, hl              ; HL = rootEnts * 32
+                call    hl_x32              ; HL = rootEnts * 32 -- D-DISKREREAD (2026-11-26):
+                                            ; the shared x32 (disk/driver.asm: HL and flags only), 2 B
                 ld      de, 511
                 add     hl, de
-                ld      a, h
-                srl     a                   ; HL >> 9  (== H >> 1, result < 256)
-                ld      l, a
-                ld      h, 0                ; HL = root sectors (not kept: fat_rootsecs)
+                ld      e, h
+                srl     e                   ; DE = HL >> 9 (== H >> 1, < 256) = root sectors
+                ld      d, 0                ; (not kept: fat_rootsecs)
                 ; first data sector = firstRoot + rootSecs
-                ld      de, (FAT_FIRSTROOT)
+                pop     hl                  ; D-DISKREREAD (2026-11-26): FIRSTROOT from the stack, 3 B
                 add     hl, de
                 ld      (FAT_FIRSTDATA), hl
                 ; 🔴 D-WCACHE W1 (docs/spec-diskwcache.md): THE CLUSTER COUNT, ONCE, HERE.
@@ -255,9 +257,9 @@ fm_fatacc:
                 ld      hl, (FAT_DBUF + 19) ; total sectors 16-bit (BPB +19)
                 or      a
                 sbc     hl, de              ; HL = data sectors
-                ld      de, 0               ; DE accumulates dataSectors / secPerClus
-                ld      a, (FAT_SECPERCLUS)
-                ld      c, a
+                ld      de, 2               ; DE accumulates 2 + dataSectors / secPerClus (D-DISKREREAD
+                                            ; 2026-11-26: the +2 up front, not two `inc de` after, 2 B;
+                                            ; C = SPC since the top, 3 B)
 fm_div:
                 ld      a, l
                 or      h
@@ -270,9 +272,7 @@ fm_div:
 fm_nob:
                 inc     de
                 jr      fm_div
-fm_divdone:
-                inc     de
-                inc     de                  ; + 2 (first data cluster is 2)
+fm_divdone:                                 ; DE = + 2 (first data cluster is 2) already
                 ld      (FAT_TOTCLUS), de
                 xor     a
                 ld      (FAT_DEFER), a      ; D-WCACHE W3a: no FAT write deferred
@@ -290,8 +290,8 @@ fm_divdone:
                 ; (tier2-m30-alloc-hint-spec.md §2/§3.2).
                 ld      hl, 2
                 ld      (FAT_ALLOCHINT), hl
-                or      a                   ; Cy = 0 success
-                ret
+                ret                         ; Cy = 0 success: the `xor a` above (no flag-setting op
+                                            ; since) -- D-DISKREREAD (2026-11-26): its `or a` went, 1 B
 fat_mount_bad:
                 scf
                 ret
@@ -350,31 +350,34 @@ ff_found:
                 ; record the entry's location (sector + byte offset) for fat_delete.
                 ; FWR_DIRSEC/FWR_DIROFF are write-side scratch the read path ignores
                 ; and the write path re-sets, so reusing them here is safe.
-                ld      de, (FAT_DIRSEC)
-                ld      (FWR_DIRSEC), de
-                push    hl
                 ld      de, FAT_DBUF
-                or      a
-                sbc     hl, de              ; HL = entry offset within the sector
-                ld      (FWR_DIROFF), hl
-                pop     hl
+                call    slot_rec            ; D-DISKREREAD (2026-11-26): shared with fdcr_useslot, 9 B net
                 push    hl
                 ld      de, 26
                 add     hl, de
-                ld      a, (hl)             ; first cluster low (+26)
+                ld      a, (hl)             ; first cluster low (+26) -- kept in A: the `or a`
+                ld      e, a                ; below sets fat_find's exit Z from it, as before
                 inc     hl
-                ld      h, (hl)             ; first cluster high (+27)
-                ld      l, a
-                ld      (FAT_FIRSTCLUS), hl
-                pop     hl
-                push    hl
-                ld      de, 28
-                add     hl, de
+                ld      d, (hl)             ; first cluster high (+27)
+                inc     hl                  ; D-DISKREREAD (2026-11-26): walk on to +28, not a
+                ld      (FAT_FIRSTCLUS), de ; second pop / push / `add` from the entry, 4 B
                 ld      de, FAT_FILESIZE
-                ld      bc, 4
-                ldir                        ; file size (+28..31, LE)
+                call    copy4               ; file size (+28..31, LE) -- D-DISKREREAD: copy4, 2 B
                 pop     hl
                 or      a                   ; Cy = 0 found
+                ret
+; slot_rec -- D-DISKREREAD (2026-11-26): record a directory slot's place for fat_delete /
+; fat_dir_update: FWR_DIRSEC := FAT_DIRSEC, FWR_DIROFF := HL - DE (the slot's offset in the
+; sector buffer DE). The two writers (ff_found, fdcr_useslot) each carried it inline.
+;   in HL = the slot, DE = its sector buffer; out HL kept, DE = FAT_DIRSEC, A kept
+slot_rec:
+                push    hl
+                or      a
+                sbc     hl, de              ; HL = the offset within the sector
+                ld      (FWR_DIROFF), hl
+                ld      de, (FAT_DIRSEC)
+                ld      (FWR_DIRSEC), de
+                pop     hl
                 ret
 
 ; name_cmp — compare two 11-byte 8.3 name fields, case-insensitive.
@@ -499,17 +502,8 @@ fnc_read:       ld      h, b
                 call    read_sector
                 pop     bc
 fnc_have:       ; byte0 = buf[byteidx]
-                ld      hl, (FAT_BYTEIDX)
-                add     hl, bc
-                ld      a, (hl)
-                ld      (FAT_B0), a
-                inc     hl
-                ld      a, (hl)             ; byte1 -- unless the entry straddles
-                ld      hl, (FAT_BYTEIDX)
-                ld      de, 511
-                or      a
-                sbc     hl, de
-                jr      nz, fnc_combine
+                call    fat_b01             ; B0 stored, A = byte1 -- unless the entry straddles (Z)
+                jr      nz, fnc_combine     ; D-DISKREREAD (2026-11-26): fat_b01 shared with fac, 16 B here
 fnc_straddle:
                 ld      hl, (FAT_FATSEC)
                 inc     hl
@@ -517,35 +511,44 @@ fnc_straddle:
                 call    rs_dbuf
                 ld      a, (FAT_DBUF)
 fnc_combine:
-                ld      (FAT_B1), a
+                ; D-DISKREREAD (2026-11-26): FAT_B0 / FAT_B1 are ADJACENT cells (disk/equates.inc), so the
+                ; odd case nibble-rotates them in place with two `rrd` and both cases end in ONE word
+                ; load -- 20 B. Out as before: HL = the entry, Cy = 0 (`and`); A = H now, not B0.
+                ; The rotation leaves B0/B1 changed: no reader after this (fcf writes its own B0).
+                ld      hl, FAT_B1
+                ld      (hl), a
                 ld      a, (FAT_PARITY)
                 or      a
-                jr      nz, fnc_odd
+                jr      z, fnc_even
+                ; odd cluster: next = (B1 << 4) | (B0 >> 4)
+                xor     a
+                rrd                         ; (B1) := B1 >> 4; A low = B1 low
+                dec     hl
+                rrd                         ; (B0) := B1 low << 4 | B0 >> 4
+fnc_even:
                 ; even cluster: next = B0 | ((B1 & $0F) << 8)
-                ld      a, (FAT_B1)
+                ld      hl, (FAT_B0)        ; L = B0, H = B1
+                ld      a, h
                 and     $0F
                 ld      h, a
-                ld      a, (FAT_B0)
-                ld      l, a
                 ret
-fnc_odd:
-                ; odd cluster: next = (B1 << 4) | (B0 >> 4)
-                ld      a, (FAT_B1)
-                ld      l, a
-                ld      h, 0
-                add     hl, hl
-                add     hl, hl
-                add     hl, hl
-                add     hl, hl              ; HL = B1 << 4
-                ld      a, (FAT_B0)
-                rrca
-                rrca
-                rrca
-                rrca
-                and     $0F                 ; A = B0 >> 4
-                ld      e, a
-                ld      d, 0
-                add     hl, de
+
+; fat_b01 -- D-DISKREREAD (2026-11-26): the "B0 / byte1 / straddle?" fetch fnc_have and
+; fac_entry_from_wbuf each carried inline (22 B net). in BC = the FAT sector's buffer,
+; FAT_BYTEIDX = the entry's low byte (0..511). out FAT_B0 = buf[idx], A = buf[idx+1] (a
+; speculative read of buf[512] when idx = 511), HL = &buf[idx+1], Z = the entry straddles
+; (idx == 511); DE clobbered, BC kept.
+fat_b01:
+                ld      hl, (FAT_BYTEIDX)
+                add     hl, bc
+                ld      a, (hl)
+                ld      (FAT_B0), a
+                inc     hl
+                ld      a, (hl)
+                ld      de, (FAT_BYTEIDX)
+                inc     de
+                dec     d
+                dec     d                   ; idx + 1 == $0200 <=> idx == 511
                 ret
 
 ; fat_read_file_sector — read the open file's next data sector into FAT_DBUF.
@@ -645,9 +648,8 @@ fat_read_fat_sector:
                 call    fat_locate          ; 💰 D-DISKCARVE4: HL = the entry's FAT sector,
                                             ; PARITY / BYTEIDX set (disk/kernel.asm; the
                                             ; sub ROM no longer assembles this body)
-                ld      (FAT_FATSEC), hl
-                ex      de, hl
-                jp      rs_mbuf
+                jp      rd_fatsec           ; D-DISKREREAD (2026-11-26): FAT_FATSEC := HL, read into
+                                            ; FAT_MBUF -- disk/kernel.asm's copy of these 3 lines, 4 B
 
 ; fat_alloc_cluster — find a free ($000) cluster, mark it EOC, sync all FATs.
 ;   out: Cy = 0 ok, HL = the allocated cluster number; Cy = 1 = disk full / error
@@ -728,10 +730,9 @@ fac_found:
                 ret     c                   ; write error propagates (Cy set)
                 ; M30: advance the scan hint past this claimed cluster WITHOUT
                 ; disturbing HL, which must return as the allocated cluster.
-                push    hl
                 inc     hl
                 ld      (FAT_ALLOCHINT), hl
-                pop     hl
+                dec     hl                  ; D-DISKREREAD (2026-11-26): not a push / pop, 1 B
                 or      a                   ; Cy = 0 success, HL = cluster
                 ret
 fac_full:
@@ -749,31 +750,17 @@ fac_full:
 ; (byteidx == 511) read the FOLLOWING FAT sector for the high byte.
 ;   out: DE = 12-bit entry value; preserves nothing but DE
 fac_entry_from_wbuf:
-                ld      hl, (FAT_BYTEIDX)
-                ld      de, FAT_MBUF
-                add     hl, de
-                ld      a, (hl)
-                ld      (FAT_B0), a
-                ld      hl, (FAT_BYTEIDX)
-                ld      de, 511
-                or      a
-                sbc     hl, de
-                jr      z, fac_straddle
-                ld      hl, (FAT_BYTEIDX)
-                ld      de, FAT_MBUF + 1
-                add     hl, de
-                ld      a, (hl)
-                jr      fac_comb
+                ld      bc, FAT_MBUF        ; D-DISKREREAD (2026-11-26): fat_b01 (above), 24 B here;
+                call    fat_b01             ; BC is clobbered now on this path too (the straddle's
+                jr      nz, fac_comb        ; read always did) -- HL = &MBUF[idx+1] at fac_comb, as before
 fac_straddle:
                 ; read the next FAT sector into FAT_MBUF and cache it -- a dirty
                 ; buffer written out first (🐌 D-RECSLOW; B0 is already taken).
                 call    fac_flushdirty
                 ld      hl, (FAT_FATSEC)
                 inc     hl
-                ld      (FAT_FATSEC), hl
                 ld      (FAT_WRTMP2), hl
-                ex      de, hl
-                call    rs_mbuf
+                call    rd_fatsec           ; D-DISKREREAD (2026-11-26): FAT_FATSEC := HL + the read, 4 B
                 ld      a, (FAT_MBUF)
 fac_comb:
                 ; the 12-bit unpack is fnc_combine's (above), with the result in DE --
@@ -820,31 +807,29 @@ fwe_have:
                 or      a
                 jr      nz, fwe_odd0
                 ; even: buf[byteidx] = value & $FF
-                ld      a, e
-                ld      (hl), a
+                ld      (hl), e             ; D-DISKREREAD (2026-11-26): not via A, 1 B
                 jr      fwe_byte1
 fwe_odd0:
                 ; odd: buf[byteidx] = (buf[byteidx] & $0F) | ((value & $0F) << 4)
-                ld      a, (hl)
-                and     $0F
-                ld      b, a
+                ; D-DISKREREAD (2026-11-26): a masked merge (x ^ ((x ^ y) & m)), no B, 3 B
                 ld      a, e
-                and     $0F
                 rlca
                 rlca
                 rlca
-                rlca
-                or      b
+                rlca                        ; high nibble = value & $0F
+                xor     (hl)
+                and     $F0
+                xor     (hl)                ; low nibble from buf[byteidx]
                 ld      (hl), a
 fwe_byte1:
                 pop     hl                  ; HL = &buf[byteidx]
                 ; the second byte may live in the next FAT sector.
+                ; D-DISKREREAD (2026-11-26): byteidx + 1 == $0200 <=> byteidx == 511, one
+                ; test instead of two (4 B) -- still the 9-bit test D-FATSTRAD demands:
                 ld      bc, (FAT_BYTEIDX)
-                ld      a, c
-                cp      $FF
-                jr      nz, fwe_b1_same     ; byteidx != 511 -> same sector
-                ld      a, b
-                dec     a
+                inc     bc
+                dec     b
+                dec     b
                 jr      nz, fwe_b1_same     ; 🔴 D-FATSTRAD: byteidx is 9-bit (0..511),
                                             ; so the straddle case 511 = $01FF has HIGH
                                             ; BYTE 1 -- straddle iff (c==$FF AND b==1).
@@ -890,30 +875,24 @@ fwe_b1_store:                               ; (the straddle path joins with HL =
                 or      a
                 jr      nz, fwe_same_odd
                 ; even: buf[byteidx+1] = (buf[byteidx+1] & $F0) | ((value>>8)&$0F)
+                ; D-DISKREREAD (2026-11-26): the masked merge, no B, 3 B
                 ld      a, (hl)
+                xor     d
                 and     $F0
-                ld      b, a
-                ld      a, d
-                and     $0F
-                or      b
+                xor     d
                 ld      (hl), a
                 jr      fwe_finish
 fwe_same_odd:
                 ; odd: buf[byteidx+1] = (value >> 4) & $FF
-                ld      a, e
-                rrca
-                rrca
-                rrca
-                rrca
-                and     $0F
-                ld      b, a
+                ; D-DISKREREAD (2026-11-26): merge d.lo / e.hi, then swap nibbles, 7 B
                 ld      a, d
-                rlca
-                rlca
-                rlca
-                rlca
-                and     $F0
-                or      b
+                xor     e
+                and     $0F
+                xor     e                   ; A = e.hi : d.lo
+                rrca
+                rrca
+                rrca
+                rrca                        ; A = d.lo : e.hi
                 ld      (hl), a
 fwe_finish:
                 pop     hl                  ; discard saved cluster
@@ -934,12 +913,11 @@ fwe_finish:
                 and     $FE
                 or      2                   ; request -> dirty; D-SAVEFAT: bit 2 (a
                 ld      (FAT_DEFER), a      ; SAVE's hold) survives -- 1 / 3 -> 2 as before
-                or      a                   ; Cy = 0
-                ret
-fwe_err:
+                ret                         ; Cy = 0 and NZ from the `or 2` -- D-DISKREREAD (2026-11-26):
+                                            ; the `or a` of the same A set the same flags, 1 B
+fwe_err:                                    ; (both entries are `jr c`: Cy = 1 already --
                 pop     hl                  ; discard saved cluster (keep stack sane)
-                scf                         ; report the I/O error
-                ret
+                ret                         ; D-DISKREREAD 2026-11-26: its `scf` went, 1 B)
 
 ; (fat_write_buf_allfats -- FAT_MBUF back to (FAT_FATSEC) in every FAT copy -- and
 ; the fat_write_fat_entry_hot entry above are disk.rom's in disk/fat.asm's $47C1
@@ -1023,53 +1001,46 @@ fcf_have:
                 call    fat_wclus_x15
                 and     1
                 ld      h, a                ; HL = byteidx (0..511)
-                ; byte0 = FAT_DBUF[byteidx]
-                push    hl
+                ; D-DISKREREAD (2026-11-26): the straddle test FIRST, on a copy of the index, and
+                ; byte0 / byte1 fetched under its Z (`ld` / `add hl` / 16-bit `inc` leave Z), so
+                ; the same-sector case falls into fcf_haveb1 -- 11 B (was a push / pop of the
+                ; index, a two-byte compare and a `jr` round the same-sector fetch)
+                ld      d, h
+                ld      e, l
+                inc     de
+                dec     d
+                dec     d                   ; Z: byteidx + 1 == $0200, i.e. byteidx == 511
                 ld      de, FAT_DBUF
                 add     hl, de
                 ld      a, (hl)
-                ld      (FAT_B0), a
-                pop     hl                  ; HL = byteidx
-                ; byte1 = byteidx==511 ? next FAT sector[0] : FAT_DBUF[byteidx+1]
-                ld      a, h
-                cp      1
-                jr      nz, fcf_b1_same
-                ld      a, l
-                cp      $FF
-                jr      nz, fcf_b1_same     ; byteidx != 511 -> same sector
+                ld      (FAT_B0), a         ; byte0 = FAT_DBUF[byteidx]
+                inc     hl
+                ld      a, (hl)             ; byte1 = FAT_DBUF[byteidx+1] (a speculative read at 511)
+                jr      nz, fcf_haveb1
                 ; straddle: byte1 lives in the next FAT sector (read into FAT_MBUF).
                 ld      hl, (FWR_FIRST)
                 inc     hl
                 ex      de, hl
                 call    rs_mbuf
                 ld      a, (FAT_MBUF)
-                jr      fcf_haveb1
-fcf_b1_same:
-                inc     hl                  ; byteidx+1
-                ld      de, FAT_DBUF
-                add     hl, de
-                ld      a, (hl)
-fcf_haveb1:
-                ld      (FAT_B1), a
+fcf_haveb1:                                 ; A = byte1
                 ; the 12-bit entry is zero iff the relevant nibbles are all zero.
+                ; D-DISKREREAD (2026-11-26): byte1 kept in C (B / C are dead in this loop,
+                ; which reloads everything from RAM) instead of FAT_B1, one OR per case, 16 B
+                ld      c, a
                 ld      a, (FWR_CLUS)
-                and     1
-                jr      nz, fcf_odd
-                ; even: zero iff byte0==0 and (byte1 & $0F)==0
+                rra                         ; Cy = odd cluster
                 ld      a, (FAT_B0)
-                or      a
-                jr      nz, fcf_used
-                ld      a, (FAT_B1)
+                jr      nc, fcf_even
+                and     $F0                 ; odd: zero iff (byte0 & $F0) | byte1 == 0
+                or      c
+                jr      fcf_test
+fcf_even:
+                ld      b, a                ; even: zero iff byte0 | (byte1 & $0F) == 0
+                ld      a, c
                 and     $0F
-                jr      nz, fcf_used
-                jr      fcf_free
-fcf_odd:
-                ; odd: zero iff (byte0 & $F0)==0 and byte1==0
-                ld      a, (FAT_B0)
-                and     $F0
-                jr      nz, fcf_used
-                ld      a, (FAT_B1)
-                or      a
+                or      b
+fcf_test:
                 jr      nz, fcf_used
 fcf_free:
                 ld      hl, (FAT_WRTMP2)
@@ -1107,15 +1078,13 @@ fat_flush_data_sector:
                 ld      c, l                ; BC = pad count
                 ld      hl, FAT_DBUF
                 add     hl, de              ; HL = FAT_DBUF + WRBUFLEN = first pad byte
-ffds_padloop:
+ffds_padloop:                               ; D-DISKREREAD (2026-11-26): a do-while (the
+                ld      (hl), 0             ; count is >= 1 here: both 0 and "negative"
+                inc     hl                  ; left above), 2 B
+                dec     bc
                 ld      a, b
                 or      c
-                jr      z, ffds_nopad
-                xor     a
-                ld      (hl), a
-                inc     hl
-                dec     bc
-                jr      ffds_padloop
+                jr      nz, ffds_padloop
 ffds_nopad:
                 ; ensure we have a data cluster to write into.
                 ld      hl, (FWR_CLUS)
@@ -1140,10 +1109,8 @@ ffds_alloc:
                 ld      a, d
                 or      e
                 jr      z, ffds_first       ; no previous cluster -> this is first
-                push    hl                  ; save new cluster
-                ex      de, hl              ; HL = previous cluster
-                pop     de                  ; DE = new cluster (value to link)
-                push    de
+                ex      de, hl              ; HL = previous cluster, DE = new cluster (value to
+                push    de                  ; link) -- D-DISKREREAD (2026-11-26): one `ex`, 2 B
                 call    fdh_rehold          ; D-SAVEFAT: ... and this link
                 call    fat_write_fat_entry_hot ; previous -> new (12-bit link; W2:
                                             ; the allocation just left FAT_MBUF/FATSEC)
@@ -1165,11 +1132,9 @@ ffds_haveclus:
                 ld      hl, FAT_DBUF
                 call    fatprim_write_sector
                 ret     c
-                ld      a, (FWR_SECIDX)
-                inc     a
-                ld      (FWR_SECIDX), a
-                or      a                   ; Cy = 0 success
-                ret
+                ld      hl, FWR_SECIDX      ; D-DISKREREAD (2026-11-26): `inc (hl)`, 4 B -- Cy = 0
+                inc     (hl)                ; still (the `ret c` above; `inc` keeps it); A / HL
+                ret                         ; differ, and all 6 callers test Cy only
 ffds_undefer:
                 jp      frl_xfail           ; D-SAVEFAT: a HELD FAT sector reaches the
                                             ; disk first (what was linked, as before);
@@ -1213,14 +1178,8 @@ fdcr_useslot:
                 pop     hl                  ; HL = dir entry slot in FAT_MBUF
                 pop     bc
                 ; record the slot's sector + byte offset for fat_dir_update.
-                ld      de, (FAT_DIRSEC)
-                ld      (FWR_DIRSEC), de
-                push    hl
                 ld      de, FAT_MBUF
-                or      a
-                sbc     hl, de              ; HL = offset within the sector
-                ld      (FWR_DIROFF), hl
-                pop     hl
+                call    slot_rec            ; D-DISKREREAD (2026-11-26): ff_found's too (above), 9 B net
                 ; write the 11-byte name, UPPER-CASED here: the caller's name keeps
                 ; the typed case since 2026-10-28 (OPEN twice), and the CF-3300
                 ; writes an upper-case entry from any of them -- SAVE"ts.dat", an
@@ -1230,14 +1189,12 @@ fdcr_useslot:
                 ld      hl, (FAT_NAMEPTR)
                 call    cpy_up11            ; name -> entry +0..10, upper-cased
                 ; +11 = attribute $00 (normal file; ORACLE: matches MSX-DOS Create).
+                ; zero +11 too, then +12..+31 (S1/S2, rec-count, alloc-map, date/time,
+                ; first cluster, size), then stamp the date. D-DISKREREAD (2026-11-26):
+                ; one loop of 21 with A = 0 outside it, 3 B
                 xor     a
-                ld      (de), a             ; +11 = $00
-                inc     de
-                ; zero +12..+31 (S1/S2, rec-count, alloc-map, date/time, first
-                ; cluster, size), then stamp the date.
-                ld      b, 20               ; +12..+31 is 20 bytes
+                ld      b, 21               ; +11..+31 is 21 bytes
 fdcr_zero:
-                xor     a
                 ld      (de), a
                 inc     de
                 djnz    fdcr_zero
@@ -1246,10 +1203,9 @@ fdcr_zero:
                 ; write the dir sector back.
 fdir_wrback:                                ; (fat_dir_update's tail too: carve step 4)
                 ld      de, (FWR_DIRSEC)
-                call    fws_mbuf
-                ret     c
-                or      a                   ; Cy = 0 success
-                ret
+                jp      fws_mbuf            ; D-DISKREREAD (2026-11-26): a tail jump, 3 B -- dc_result's
+                                            ; success exit is `xor a` (A = 0, Z, Cy = 0), exactly what
+                                            ; the `or a` made; its error exit is the same Cy = 1
 fdcr_full:
                 scf
                 ret
@@ -1297,19 +1253,16 @@ fat_dir_update:
                 add     hl, de
                 call    dir_stamp_date      ; a written file is dated as the CF-3300's
                 ; +26 first cluster (LE) = FWR_FIRST
-                push    hl
                 ld      de, DIRENT_FIRSTCLUS
                 add     hl, de
                 ld      de, (FWR_FIRST)
                 ld      (hl), e
                 inc     hl
                 ld      (hl), d
-                pop     hl
-                ; +28 file size (4-byte LE) = FWR_BYTES
-                ld      de, DIRENT_FILESIZE
-                add     hl, de
+                ; +28 file size (4-byte LE) = FWR_BYTES -- D-DISKREREAD (2026-11-26): HL is at
+                ; +27, so one `inc hl` instead of push / pop and `add 28`, 5 B
+                inc     hl
                 ex      de, hl              ; DE = &entry+28
                 ld      hl, FWR_BYTES
-                ld      bc, 4
-                ldir
+                call    copy4               ; D-DISKREREAD (2026-11-26): copy4, 2 B
                 jr      fdir_wrback         ; write the dir sector back (carve step 4)
