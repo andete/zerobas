@@ -1,4 +1,4 @@
-- [ ] ⏱ **D-GATESPEED — THE BATTERY'S WALL TIME, EVERY ITEM OF THE 2026-11-25 REVIEW (Joost: "fix all of these please,
+- [x] ⏱ **D-GATESPEED — THE BATTERY'S WALL TIME, EVERY ITEM OF THE 2026-11-25 REVIEW (Joost: "fix all of these please,
       this is the biggest issue with zerobas development").**
       🎚️ APPARATUS — every commit pays for the batteries; Joost ranks it first (2026-11-25).
       🤖 **AUTONOMOUS** — the review is [docs/gate-time-review-2026-11-25.md](../../docs/gate-time-review-2026-11-25.md);
@@ -48,7 +48,19 @@
       ⚠️ FULL 2 of batch 2 still missed 435 references (badfnum, programs, lof, sessions, the trap suites) though
       every one of them hits on a second run alone; FULL 1's entries did not match FULL 2's keys for a reason the
       overwritten logs no longer show. The next pair of FULL runs re-tests it.
-      OPEN: B4 one host-wide slot budget (A/B) · A6 programs / intarg daily (knife check first) · the 435 misses ·
-      B1 step 3: split the
-      own-live probes by group (the long pole is now one probe's serial cases) · check_disk_deps --selftest (30 s,
-      a planter, alone) and tier_table --selftest (33 s): why so slow.
+      ✅ THE 435 (batch 3's pair): FULL 1 re-measured (2474 misses), FULL 2 replayed with 11 misses left (9 of them
+      refcache-check's own selftest) -- the batch-2 figure was that pair's mismatch, not a standing hole.
+      FULL 2: 287/287, wall 849 s, CPU 4928 s (AE_speed3_full2.out) -- against 1387 s / 8106 s re-measuring.
+      ❌ B4, MEASURED AND REJECTED (2026-11-26): a host-wide emulator budget (probes/lib/emu_slot.py: flock + exec
+      under ZEROBAS_EMU_SLOTS, from omsx_preflight.guarded()), A/B after a warm-up battery, 3 pairs: OFF (J 8, no
+      slots) 847 / 855 / 837 s, ON (10 slots, J 12) 904 / 914 / 903 s -- ON is ~60 s SLOWER every time, and uses
+      more CPU (scratchpad/AE_speed_b4_ab.out). The wrapper stays, opt-in and off; nothing runs it by default.
+      ✅ A6, NO CHANGE, by the rule: intarg is no longer >= 60 s (46 s wall, 16 s CPU since its references
+      replay), and programs is no longer never-red (4 reds in 187 gate runs in the 2026-11-26 census). Neither
+      qualifies, so both stay in the battery -- no catch traded.
+      ✅ W11: the excluded-five are timed. ✅ A red MUTATOR's log is now kept (gate_flakes): it is never retried, and
+      selftest-check's one red in the A/B (OFF3) had been eaten by the next battery. ✅ check_selftests re-runs a
+      pooled selftest that fails ALONE once and prints it as a FLAKE when it then passes (red alone stays red).
+      LEFT (small, not the review's): spec-live's long pole is one own-live probe's serial groups; check_disk_deps
+      --selftest (30 s, a planter, alone) and tier_table --selftest (33 s) are slow for unknown reasons; the store
+      holds 1.8 GB of entries the 14-day expiry will prune now that temp paths no longer mint new keys (W4).

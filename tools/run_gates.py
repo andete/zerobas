@@ -1048,6 +1048,17 @@ def main():
                       flush=True)
             mut_results.append((g, rc, dt, None))
             print(f"  rc={rc:<3d} {dt:12.0f}s  {g}", flush=True)
+            if rc:
+                # 🔴 D-FLAKEKEEP for MUTATORS TOO (2026-11-26): they are never retried, so their red log was the
+                # one the next battery's `rm -rf {OUT}` ate unkept -- selftest-check went red once in a B4 A/B
+                # run (OFF3) and nothing could say why. Kept under the temp root like a retried unit's.
+                try:
+                    keep = os.path.join(probe_tmp.ROOT, "gate_flakes", f"{time.strftime('%Y%m%d-%H%M%S')}-{g}")
+                    os.makedirs(keep, exist_ok=True)
+                    shutil.copy(f"{OUT}/{g}.log", keep)
+                    print(f"  (log kept: {keep})", flush=True)
+                except OSError:
+                    pass
         # 🔴 A RESTORED PLANT IS NOT A RESTORED TREE. The selftests put the
         # bytes back but the MTIME moves, so both repack ROMs are stale the
         # moment this phase ends -- and the pool's first units then race the

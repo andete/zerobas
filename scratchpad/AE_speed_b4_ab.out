@@ -1,0 +1,8 @@
+WARM wall=1381s GATES: 287/287 cpu=8173s retries=0 stall-kill-logs=0
+OFF1 wall=847s GATES: 287/287 cpu=4927s retries=0 stall-kill-logs=0
+ON1 wall=904s GATES: 287/287 cpu=5177s retries=0 stall-kill-logs=0
+OFF2 wall=855s GATES: 287/287 cpu=5042s retries=0 stall-kill-logs=0
+ON2 wall=914s GATES: 287/287 cpu=5100s retries=1 stall-kill-logs=0
+OFF3 wall=837s GATES: 286/287 cpu=4836s retries=0 stall-kill-logs=0
+ON3 wall=903s GATES: 287/287 cpu=5175s retries=0 stall-kill-logs=0
+DONE

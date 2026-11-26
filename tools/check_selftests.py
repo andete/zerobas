@@ -144,6 +144,17 @@ def main(argv):
         results += list(ex.map(run_one, pool_list))
     after = tracked_stat()
     planted = sorted(f for f in set(before) | set(after) if before.get(f) != after.get(f))
+    # ⏱ B2 follow-up (2026-11-26): a POOLED selftest that fails is re-run ALONE once -- the battery's own
+    # flake-vs-real rule. selftest-check went red once in a B4 A/B battery and green in 6 runs alone; a mutator is
+    # never retried by run_gates, so the pool's contention must be told from a defect HERE. Green alone = FLAKE,
+    # printed with its pooled output, never silent; red alone stays RED.
+    flakes = []
+    for k, (rel, rc, out) in enumerate(results):
+        if rc != 0 and rel in pool_list:
+            r2 = run_one(rel)
+            if r2[1] == 0:
+                flakes.append((rel, rc, out))
+                results[k] = r2
     for rel, rc, out in results:
         (green if rc == 0 else red).append((rel, rc, out))
     print(f"check_selftests — {len(green) + len(red)} script(s) run ({len(plant_list)} planter(s) alone, "
@@ -153,6 +164,11 @@ def main(argv):
         print(f"  SKIP  {rel}\n        {EXPECT_ARG[rel]}")
     for rel, unit in sorted(elsewhere.items()):
         print(f"  BY    {rel}  ({unit})")
+    for rel, rc, out in flakes:
+        tail = [l for l in out.strip().split("\n") if l.strip()][-4:]
+        print(f"  FLAKE {rel}  (rc={rc} on the pool, GREEN alone -- contention, not a defect; its pooled output:)")
+        for l in tail:
+            print(f"        {l}")
     if planted:
         print(f"  🔴 A SELFTEST NOT IN PLANTERS MOVED TRACKED FILE(S) while the pool ran: {' '.join(planted)} -- "
               f"run `python3 tools/check_selftests.py --classify` and add it to PLANTERS")

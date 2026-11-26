@@ -29,7 +29,7 @@ item — do **one item per session** to keep context lean.
 - [ ] **D-REREAD — REREAD EACH ROUTINE AGAINST ITS CONTRACT: 82 B FROM THE FIRST TEN (2026-10-30).** -> [D-REREAD](todo/open/D-REREAD.md) <!-- item:open/D-REREAD -->
 
 - [ ] **WHICH GATE SUITES EARN THEIR TIME? A CENSUS, THEN A MUTATION SWEEP (D-SUITESWEEP, Joost 2026-11-01: "I have...** -> [D-SUITESWEEP](todo/open/D-SUITESWEEP.md) <!-- item:open/D-SUITESWEEP -->
-- [ ] **D-GATESPEED — THE BATTERY'S WALL TIME, EVERY ITEM OF THE 2026-11-25 REVIEW (Joost: "fix all of these please...** -> [D-GATESPEED](todo/open/D-GATESPEED.md) <!-- item:open/D-GATESPEED -->
+- [x] **D-GATESPEED — THE BATTERY'S WALL TIME, EVERY ITEM OF THE 2026-11-25 REVIEW (Joost: "fix all of these please...** -> [D-GATESPEED](todo/done/D-GATESPEED.md) <!-- item:done/D-GATESPEED -->
 
 - [ ] **BOULDER DASH II IS FRAGILE TO LOW-REGION CHANGES THAT PRESERVE EVERY VALUE (D-BD2FRAGILE, 2026-10-31).** -> [D-BD2FRAGILE](todo/open/D-BD2FRAGILE.md) <!-- item:open/D-BD2FRAGILE -->
 

@@ -800,8 +800,9 @@ def main(argv):
         rc = subprocess.run(["python3", "tools/run_gates.py", "--full", "--skip-proven",
                              "--exclude", skip, "--keep", keep], cwd=ROOT, env=env).returncode
     for t in x5:
+        _t0 = time.time()       # ⏱ W11 (2026-11-26): the excluded-five run serially after FULL -- now timed
         r = subprocess.run(["make", t], cwd=ROOT, capture_output=True, text=True)
-        print(f"{t} exit={r.returncode}")
+        print(f"{t} exit={r.returncode} {time.time() - _t0:.0f}s")
         # 🔴 D-X5LOG (2026-09-30): a failing suite's output used to be DROPPED.
         # bdos-acceptance exited 2 in a FULL run and was 12/12 green alone, and
         # the failing run had left nothing to read -- "read the log before

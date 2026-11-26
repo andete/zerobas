@@ -343,6 +343,10 @@ def guarded(cmd):
         `after`, as variant J does."""
     cmd = isolate(cmd)
     guard_cmd(cmd)
+    # ⏱ B4 (2026-11-25): with ZEROBAS_EMU_SLOTS=N, every emulator holds one of N host-wide slots while it runs
+    # (probes/lib/emu_slot.py: flock + exec, same pid). Unset: the argv is unchanged.
+    if os.environ.get("ZEROBAS_EMU_SLOTS") and cmd and "openmsx" in os.path.basename(str(cmd[0])).lower():
+        cmd = [sys.executable, os.path.join(os.path.dirname(os.path.abspath(__file__)), "emu_slot.py"), *cmd]
     return cmd
 
 
