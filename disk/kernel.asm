@@ -3589,6 +3589,11 @@ bt_keep:
                 ; claim from it again, and init_gate's guard declines a HIMEM that is not $F380 -- MSX-DOS's
                 ; $DF93 (or Disk BASIC's, from a program) left here read as "a cartridge claimed before us",
                 ; and A>BASIC came up with no disk (scratchpad/AE_room_dosbasic.out).
+                ; Scheme D (2026-11-26): STILL $F380, not $F380 - N, with a foreign claim. Main reruns EVERY
+                ; cartridge INIT from here, the foreign one too, and it claims again from what it is handed:
+                ; $F380 hands it the power-on state, so it takes its N again and init_gate measures the same N
+                ; (the CF-3300 reruns no INIT and keeps $DE77 - N: the same HIMEM). $F380 - N would make a
+                ; claimer that subtracts from HIMEM take 2N (scratchpad/AE_schemeD.md).
                 ld      hl, $F380
                 ld      (HIMEM), hl
                 ld      sp, $F2EC           ; the SP the BIOS enters INIT with
@@ -3891,18 +3896,28 @@ ig_out:
                 ld      (DISKSLOT_OK), a    ; 0: no disk ROM (D-DRVTBLNODISK: main no longer inc's it)
                 ret
 ig_init:
-                ; 🔴 D-DISKROMHOST step 4(d), THE GUARD (Joost 2026-11-25: "guard first"). This ROM's work
-                ; area sits at FIXED addresses, right only when it is the first to claim RAM. If HIMEM is not
-                ; the untouched $F380, a cartridge scanned before us claimed some: decline exactly as SHIFT
-                ; held does (no hooks, no claim, DISKSLOT_OK 0) instead of writing into its RAM. Cy is SET
-                ; here (the jr c above), so `sbc hl,$F37F` IS `HIMEM - $F380`. HL / DE are free: init reads A
-                ; only. The base-addressed work area (host independence) is the later step.
+                ; 🔴 D-DISKROMHOST step 4(d), SCHEME D (2026-11-26, scratchpad/AE_schemeD.md; was THE GUARD
+                ; of 2026-11-25, which declined any HIMEM but $F380). A cartridge scanned before us that
+                ; claimed N bytes leaves HIMEM = $F380 - N. MEASURED on both references (black box:
+                ; scratchpad/AE_wasize.md, AE_wasize_claimN.out, AE_wasize_threshold*.out): they install
+                ; anyway, keep every cell of $F1C9-$F37F at its address (written over the claim) and move
+                ; every NUMBER they publish -- HIMEM at each claim step, FRE, the $4030 value (and with it
+                ; MSX-DOS's $0006), DRVTBL+1 / +3 -- down by exactly N. So do we, for N <= NMAX: our
+                ; first own cell below $F1C9 is HOOK_SLOT ($F1C8), which N = 440 reaches. Above NMAX (or a
+                ; HIMEM over $F380) decline exactly as SHIFT held does. Cy is SET here (the jr c above),
+                ; so the sbc gives HIMEM - $F381 = -N-1, and adding NMAX+1 carries iff 0 <= N <= NMAX.
+                ; CLEAN-ROOM: HIMEM ($FC4A, MSX2 TH work area) and the references' published cells,
+                ; read as a black box; own code. HL / DE are free: init reads A only.
                 ld      hl, (HIMEM)
-                ld      de, $F37F
-                sbc     hl, de
-                jr      nz, ig_out          ; someone claimed before us
-                pop     af
-                jp      init
+                ld      de, $F380
+                sbc     hl, de              ; HL = -N-1
+                ld      de, CLAIM_NMAX + 1
+                add     hl, de              ; HL = NMAX - N; Cy: 0 <= N <= NMAX
+                jr      nc, ig_out          ; a claim we cannot follow: decline
+                ld      de, GETWRK_AREA - CLAIM_NMAX
+                add     hl, de
+                ld      (CLAIM_D), hl       ; GETWRK_AREA - N (disk/equates.inc)
+                jp      sltwrk_pub          ; publish SLTWRK, then init (the room is there)
 
 ; (calslt_body, CALSLT for a page-0 target under MSX-DOS -- D-DOSMODE40 -- was here;
 ; D-TPAP1's br_calslt enters the main BIOS's own CALSLT, which covers that case.)
@@ -5690,7 +5705,9 @@ install_basic_hooks:
                 ; the engine table rows 1..FCH_CEIL reserved (D-FCBSHAPE S2 / D-ENGROW0;
                 ; asserted there). Before: ONE step to $DE77 here and no rebuild, so an
                 ; MS-BASIC host kept the layout of HIMEM $F380 inside the claim.
-                ld      hl, INIT_HIMEM
+                ; Scheme D (D-DISKROMHOST 4 (d)): every HIMEM is passed as an offset from
+                ; GETWRK_AREA; layout_rebuild adds CLAIM_D (= GETWRK_AREA - N).
+                ld      hl, INIT_HIMEM - GETWRK_AREA
                 call    layout_rebuild
                 ld      hl, FWBUF           ; D-DSKIO: publish the DSKI$/DSKO$ buffer at the
                 ld      (DSKBUF_PTR), hl    ; cell the MSX idiom PEEKs (docs/spec-basic-dskio.md)
@@ -5866,9 +5883,9 @@ hrunc_h:
                 ld      a, 6
                 call    $0141               ; SNSMAT row 6, bit 1 low = CTRL held
                 and     $02
-                ld      hl, DISK_HIMEM
+                ld      hl, DISK_HIMEM - GETWRK_AREA    ; offsets: layout_rebuild adds CLAIM_D
                 jr      nz, hrh_him
-                ld      hl, CTRL_HIMEM
+                ld      hl, CTRL_HIMEM - GETWRK_AREA
 hrh_him:
     IF DISK_HIMEM > TXTMAX-FCH_CEIL*FCH_STATESZ
                 db      DISK_HIMEM_ABOVE_THE_ENGINE_TABLE   ; rows 1..FCH_CEIL must stay reserved
@@ -5877,8 +5894,8 @@ hrh_him:
                 db      CTRL_HIMEM_ABOVE_THE_ENGINE_TABLE   ; the CTRL boot's too (disk/init.asm)
     ENDIF
                 push    hl                  ; Disk BASIC's HIMEM, for when init_p2 returns
-                ld      hl, DOS_RESV_TOP
-                call    layout_rebuild      ; the H.RUNC claim: MSX-DOS runs with $DF93
+                ld      hl, DOS_RESV_TOP - GETWRK_AREA
+                call    layout_rebuild      ; the H.RUNC claim: MSX-DOS runs with $DF93 (- N)
                 call    init_p2             ; MSX-DOS: no return. Otherwise BASIC is next --
                 pop     hl
                 jr      layout_rebuild      ; -- so the last claim, and back to H.RUNC's caller
@@ -5919,7 +5936,14 @@ hr_rdmain:
 ; are the values at both calls (INIT and the cold start's H.RUNC). On zerobas the main ROM
 ; recomputes the same cells from HIMEM at its next clear_vars (D-BOOTCELLS), so this only
 ; moves an MS-BASIC host's layout out of the claim. Clobbers AF? no: BC, DE, HL.
+; 🔴 SCHEME D (D-DISKROMHOST 4 (d), 2026-11-26): HL comes in as HIMEM - GETWRK_AREA, and the
+; HIMEM stored is that + CLAIM_D (= GETWRK_AREA - N), so every claim step lands N below the
+; constant, as both references' do under a foreign claim of N bytes (scratchpad/AE_wasize.md).
+; CLEAN-ROOM: HIMEM and the MS-BASIC layout cells (MSX2 TH work area), measured as a black box.
+; (The F of "AF? no" above: its own `add hl,de`s always changed the carry; A is kept.)
 layout_rebuild:
+                ld      de, (CLAIM_D)
+                add     hl, de              ; the HIMEM of this claim step, N below the constant
                 ld      (HIMEM), hl
                 ld      de, -265
                 add     hl, de              ; FCB #1
@@ -5951,6 +5975,36 @@ layout_rebuild:
                 dec     hl
                 ld      (SAVSTK), hl
                 ret
+
+; --- sltwrk_pub: our SLTWRK entry, then INIT (D-DISKROMHOST 4 (d) scheme D; owner's ruling 2026-11-26) ---
+; CLEAN-ROOM: SLTWRK ($FD09, MSX2 TH work area: 2 B per primary x secondary slot x page) and the value
+; the references keep in their own page-1 entry, read as RAM cells only (scratchpad/AE_wasize_ref.out,
+; AE_wasize_claimN.out): the CF-3300 $F1BF - N, written at its INIT (already there at its first H.RUNC).
+; In: HL = CLAIM_D (GETWRK_AREA - N), the INIT's AF on the stack (A = our slot byte, F000SSPP).
+sltwrk_pub:
+                ld      de, SLTWRK_BASE - GETWRK_AREA
+                add     hl, de
+                ex      de, hl              ; DE = SLTWRK_BASE - N
+                pop     af
+                push    af
+                ld      l, a
+                and     $03
+                rrca
+                rrca
+                rrca                        ; PP * 32
+                ld      h, a
+                ld      a, l
+                and     $0C
+                add     a, a                ; SS * 8
+                or      h
+                add     a, low (SLTWRK + 2) ; + page 1's word
+                ld      l, a
+                ld      h, high SLTWRK
+                ld      (hl), e
+                inc     hl
+                ld      (hl), d
+                pop     af
+                jp      init
 
 ; 🏗️ D-FATENG Option 2 (Joost, 2026-09-18): ONE FAT12 ENGINE, ONE SOURCE, TWO
 ; ROMs -- the same file sub.rom assembles. disk/fat.asm keeps only the

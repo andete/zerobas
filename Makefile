@@ -2654,7 +2654,9 @@ filesnl-acceptance: repack-machine $(DISK_TEST_DSK)
 dskib-acceptance: repack-machine $(DISK_TEST_DSK)
 	python3 probes/disk/disk_probe_dskib.py
 
-# --- diskguard-acceptance: the disk ROM's INIT guard declines after a foreign HIMEM claim (D-DISKROMHOST 4(d)) ---
+# --- diskguard-acceptance: a foreign HIMEM claim of N bytes before the disk ROM (D-DISKROMHOST 4(d) scheme D) ---
+# probes/disk/claimonce.asm claims N once; zerobas vs the CF-3300 at N = 0/16/300/439 (SAME: HIMEM at INIT,
+# MSX-DOS, A> and Disk BASIC, $0006, FRE, DSKF, SLTWRK) and N = 440 (KNOWN: zerobas declines, the CF installs).
 diskguard-acceptance: repack-machine $(DISK_TEST_DSK)
 	python3 -u probes/disk/disk_probe_guard.py
 

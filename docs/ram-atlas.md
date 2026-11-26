@@ -29,8 +29,8 @@ SPDX-License-Identifier: BSD-2-Clause
 | `$D40F-$D412` | 4 |   | D:DR |   | D:DR |   |   | D:R |   |  |
 | `$D413-$D428` | 22 |   | D:R |   | D:R |   |   | D:R |   |  |
 | `$D429-$D42A` | 2 |   | D:R |   | D:R B:R |   |   | D:R B:R |   |  |
-| `$D42B-$D4F4` | 202 |   | D:R |   | D:R |   |   | D:R |   |  |
-| `$D4F5-$D518` | 36 |   | D:R |   | D:R |   |   | D:MR |   |  |
+| `$D42B-$D4F8` | 206 |   | D:R |   | D:R |   |   | D:R |   |  |
+| `$D4F9-$D518` | 32 |   | D:R |   | D:R |   |   | D:MR |   |  |
 | `$D519-$D51E` | 6 |   | D:R B:R |   | D:R B:R |   |   | D:MR B:R |   |  |
 | `$D51F-$D526` | 8 |   | D:R B:R |   | D:R B:R |   |   | D:R B:R |   |  |
 | `$D527-$D528` | 2 |   | D:R B:DR |   | D:R B:R |   |   | D:R B:R |   |  |
@@ -410,8 +410,8 @@ SPDX-License-Identifier: BSD-2-Clause
 | `$F1BF-$F1BF` | 1 |   | I:D H:D | I:D H:D | I:D H:D D:D B:D | I:D H:D B:D |   |   |   |  |
 | `$F1C0-$F1C0` | 1 |   | I:D | I:D | I:D H:D D:D B:D | I:D H:D B:D |   |   |   |  |
 | `$F1C1-$F1C5` | 5 |   | I:D | I:D | I:D | I:D |   |   |   |  |
-| `$F1C6-$F1C6` | 1 |   | I:D H:D D:D | I:D H:D B:D | I:D D:D B:D | I:D |   |   |   |  |
-| `$F1C7-$F1C7` | 1 |   | I:D | I:D | I:D H:D D:D B:D | I:D H:D |   |   |   |  |
+| `$F1C6-$F1C6` | 1 |   | I:D H:D D:D | I:D H:D B:D | I:D D:D B:D | I:D |   | b:D | b:D | CLAIM_D |
+| `$F1C7-$F1C7` | 1 |   | I:D | I:D | I:D H:D D:D B:D | I:D H:D |   | b:D | b:D | (in CLAIM_D) |
 | `$F1C8-$F1C8` | 1 |   | I:D | I:D | I:D | I:D |   | b:D | b:D | HOOK_SLOT |
 | `$F1C9-$F1D5` | 13 |   | I:D H:D | I:D H:D | I:D H:D | I:D H:D |   | H:D | H:D | RES_PRINT |
 | `$F1D6-$F22B` | 86 |   | I:D H:D | I:D H:D | I:D H:D | I:D H:D |   |   |   |  |
@@ -691,10 +691,10 @@ SPDX-License-Identifier: BSD-2-Clause
 | `$FD02-$FD03` | 2 |   |   |   | I:M | I:M |   |   |   |  |
 | `$FD04-$FD05` | 2 |   |   |   |   |   |   |   |   |  |
 | `$FD06-$FD07` | 2 |   |   |   | I:M | I:M |   |   |   |  |
-| `$FD08-$FD2A` | 35 |   |   |   |   |   |   |   |   | SUBSLOT2, SUB_PING, SUB_INT_DELTA, STRPTR |
+| `$FD08-$FD2A` | 35 |   |   |   |   |   |   |   |   | SUBSLOT2, SUB_PING, SUB_INT_DELTA, STRPTR, SLTWRK |
 | `$FD2B-$FD2C` | 2 |   | I:D | I:D |   |   |   |   |   |  |
 | `$FD2D-$FD72` | 70 |   |   |   |   |   |   |   |   |  |
-| `$FD73-$FD74` | 2 |   |   |   | I:D | I:D |   |   |   |  |
+| `$FD73-$FD74` | 2 |   |   |   | I:D | I:D |   | b:D | b:D |  |
 | `$FD75-$FD98` | 36 |   |   |   |   |   |   |   |   | PROCNM |
 | `$FD99-$FD99` | 1 |   | I:D H:D | I:D H:D | I:D H:D | I:D H:D |   |   |   |  |
 | `$FD9A-$FD9E` | 5 |   |   |   |   |   |   |   |   |  |

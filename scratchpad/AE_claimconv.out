@@ -1,0 +1,40 @@
+ORDER  slot1 CF: HIMEM=DF83 BOTTOM=8000 TXTTAB=8001 SLTWRK(p1)=[3-1:F1AF ]
+  sig@F1AF: not our signature
+  sig@F370: not our signature
+ORDER  slot1 ZB: HIMEM=DF83 BOTTOM=8000 TXTTAB=8001 SLTWRK(p1)=[3-1:F1AF ]
+  sig@F1AF: not our signature
+  sig@F370: INTACT but its last 3 B
+ORDER  slot2 CF: HIMEM=DF83 BOTTOM=8000 TXTTAB=8001 SLTWRK(p1)=[3-1:F1AF ]
+  sig@F1AF: not our signature
+  sig@F370: not our signature
+ORDER  slot2 ZB: HIMEM=DF83 BOTTOM=8000 TXTTAB=8001 SLTWRK(p1)=[3-1:F1AF ]
+  sig@F1AF: not our signature
+  sig@F370: INTACT but its last 3 B
+TOPREC slot1 CF: HIMEM=DF83 BOTTOM=8000 TXTTAB=8001 SLTWRK(p1)=[1-0:F370 3-1:F1AF ]
+  sig@F1AF: not our signature
+  sig@F370: not our signature
+TOPREC slot1 ZB: HIMEM=DF83 BOTTOM=8000 TXTTAB=8001 SLTWRK(p1)=[1-0:F370 3-1:F1AF ]
+  sig@F1AF: not our signature
+  sig@F370: INTACT but its last 3 B
+TOPREC slot2 CF: HIMEM=DF83 BOTTOM=8000 TXTTAB=8001 SLTWRK(p1)=[2-0:F370 3-1:F1AF ]
+  sig@F1AF: not our signature
+  sig@F370: not our signature
+TOPREC slot2 ZB: HIMEM=DF83 BOTTOM=8000 TXTTAB=8001 SLTWRK(p1)=[2-0:F370 3-1:F1AF ]
+  sig@F1AF: not our signature
+  sig@F370: INTACT but its last 3 B
+BOTTOM slot1 CF: HIMEM=DF93 BOTTOM=8040 TXTTAB=8041 SLTWRK(p1)=[1-0:8000 3-1:F1BF ]
+  sig@8000: INTACT
+  sig@F1BF: not our signature
+  sig@F370: not our signature
+BOTTOM slot1 ZB: HIMEM=DF93 BOTTOM=8040 TXTTAB=8001 SLTWRK(p1)=[1-0:8000 3-1:F1BF ]
+  sig@8000: INTACT
+  sig@F1BF: not our signature
+  sig@F370: not our signature
+BOTTOM slot2 CF: HIMEM=DF93 BOTTOM=8040 TXTTAB=8041 SLTWRK(p1)=[2-0:8000 3-1:F1BF ]
+  sig@8000: INTACT
+  sig@F1BF: not our signature
+  sig@F370: not our signature
+BOTTOM slot2 ZB: HIMEM=DF93 BOTTOM=8040 TXTTAB=8001 SLTWRK(p1)=[2-0:8000 3-1:F1BF ]
+  sig@8000: INTACT
+  sig@F1BF: not our signature
+  sig@F370: not our signature

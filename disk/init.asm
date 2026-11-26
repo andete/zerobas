@@ -67,8 +67,9 @@
 k_4025:         jp      fmt_dos         ; $4025: FORMAT (kernel.asm)
                 ds      $402D - $, $00  ; pad $4028-$402C (not measured: check before using)
                 jp      k_402D          ; $402D: COMMAND.COM-load kernel entry (Tier-2)
-                ld      hl, GETWRK_AREA ; $4030: return our work-area base
-                ret                     ; ($4033) HL = work area, all else preserved
+                ld      hl, (CLAIM_D)   ; $4030: return our work-area base -- GETWRK_AREA - N, N the
+                ret                     ; ($4033) foreign claim (D-DISKROMHOST 4 (d) scheme D, init_gate);
+                                        ; HL = work area, all else preserved
 
 ; --- INIT -------------------------------------------------------------------
 ; Called by the BIOS boot scan (or by zerobas-BASIC's slot scan, which finishes
@@ -700,6 +701,15 @@ bdt_tramp:
                 ld      de, DRVTBL + 1
                 ld      bc, 15
                 ldir
+                ; D-DISKROMHOST 4 (d) scheme D (2026-11-26): +3 and +1 follow a foreign claim of N
+                ; bytes, as the CF-3300's $F34B does (scratchpad/AE_wasize.md: $DD0E - N). +3 is
+                ; $4030's value; +1 the HIMEM MSX-DOS runs with, the same N below DOS_RESV_TOP.
+                ; CLEAN-ROOM: the published DRVTBL words, read as a black box; own code.
+                ld      hl, (CLAIM_D)               ; GETWRK_AREA - N
+                ld      (DRVTBL + 3), hl
+                ld      de, DOS_RESV_TOP - GETWRK_AREA
+                add     hl, de
+                ld      (DRVTBL + 1), hl            ; DOS_RESV_TOP - N
                 ; --- DRVCNT ($F347, M17) + CURDRV ($F247, M18) are now seeded
                 ; UNCONDITIONALLY in the set_ramad prologue (above the $FF gate), because
                 ; MSX-DOS reads them on EVERY host that boots DOS -- including C-BIOS, where

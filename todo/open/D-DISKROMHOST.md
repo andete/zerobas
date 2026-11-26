@@ -190,3 +190,23 @@
       🔴 probes/disk/claimer.asm claims 32 B on the references, not 16: its 16 KB image is mirrored into page 2 and its
       INIT runs twice there (once on zerobas's C-BIOS machine) -- the "$DE57 with the claimer" above is that. A
       comparison needs a claim-once cartridge.
+      ✅ STEP 4 (d) SCHEME D BUILT (2026-11-26, [AE_schemeD.md](../../scratchpad/AE_schemeD.md)): a foreign claim of N <= 439 B
+      before the disk ROM -- zerobas installs, every cell stays, every published number moves by N: HIMEM at INIT /
+      MSX-DOS / A> / Disk BASIC, FRE, MEMSIZ / STKTOP, $0006, the $4030 value, DRVTBL+1 / +3, and (owner's ruling the
+      same day) SLTWRK's page-1 entry $F1BF - N. diskguard-acceptance (claim-once cartridge probes/disk/claimonce.asm):
+      N = 0 / 16 / 300 / 439 SAME as the CF-3300 in a DOS boot + A>BASIC and a data-disk boot; N = 440 KNOWN (zerobas
+      declines, the CF-3300 installs up to 473). +59 B disk ROM, +2 B RAM (CLAIM_D $F1C6 = GETWRK_AREA - N). A knife
+      (numbers fixed, no SLTWRK) turned 8 of 8 rows RED. OPEN: is 439 B enough (no real cartridge's claim measured;
+      the owner: "dunno"); 440..473 would need HOOK_SLOT and CLAIM_D out of $F195-$F1C8.
+      📏 SCHEME D's PREMISE CHECKED ON THE CF-3300 (Joost 2026-11-26: "the CF-3300 is the more interesting one";
+      [AE_claimconv.out](../../scratchpad/AE_claimconv.out), scratchpad/claimconv_probe.py): (1) a cartridge in external slot 1 AND in slot 2 is
+      initialised BEFORE the internal disk ROM (3-1) -- its top claim lands (HIMEM $DF83 = $DF93 - 16, SLTWRK 3-1 $F1AF);
+      (2) RECORDING that claim in the cartridge's own SLTWRK entry changes nothing: the CF-3300 still writes its fixed area
+      over the claimed bytes (zerobas, scheme D, leaves all but the last 3 of them alone -- inside; the numbers match);
+      (3) the PUBLISHED convention -- MSX2 Technical Handbook ch.5 §7: 1-2 B in SLTWRK, more from BOTTOM (BOTTOM into
+      SLTWRK, BOTTOM += n), "the safest and most reliable method" -- is what survives: the CF-3300 keeps the claimed bytes
+      and starts BASIC's text above them (TXTTAB $8041 for BOTTOM $8040). So a top-of-memory claim before the disk ROM
+      is a cartridge breaking the convention, and the references own $F1C9-$F37F regardless; scheme D copies that.
+      zerobas's BASIC ignores BOTTOM: filed [D-BOTTOMIGN](D-BOTTOMIGN.md).
+      🧭 JOOST 2026-11-26: a SECOND DISK INTERFACE initialised before ours (a ~491 B top claim, over NMAX) is "deferred
+      as very low prio" -- not built for. On the claim limit (439 B) Joost had no view ("dunno"): kept as measured.

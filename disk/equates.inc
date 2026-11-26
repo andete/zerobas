@@ -199,6 +199,11 @@ STKTOP          equ     $F674   ; PUBLISHED: top of BASIC's stack
 SAVSTK          equ     $F6B1   ; PUBLISHED: BASIC's saved stack pointer
 FILTAB          equ     $F860   ; PUBLISHED: -> the file pointer table (its next word: NULBUF)
 NULBUF          equ     $F862   ; PUBLISHED: -> file #0's buffer
+SLTWRK          equ     $FD09   ; PUBLISHED: 2 B per slot x page, a ROM's work-area pointer (MSX2 TH work area)
+; D-DISKROMHOST 4 (d) scheme D (owner's ruling 2026-11-26): our slot's page-1 entry holds the work-area
+; base the references publish there -- the CF-3300 $F1BF (3-1), the HBD-F1 $F1C0 (1-0), each = its INIT
+; HIMEM + $2A, and N lower under a foreign claim of N (scratchpad/AE_wasize_ref.out, AE_wasize_claimN.out).
+SLTWRK_BASE     equ     INIT_HIMEM + $2A   ; NOT-A-CELL: $F1BF, the CF-3300's value at N = 0
 RDSLT           equ     $000C   ; MSX BIOS: A = the byte at HL in slot A (MSX2 TH)
 STARTUP_WORD    equ     $7D2F   ; main ROM: the word naming the machine's start-up-screen routine (item 4)
 INIT_HIMEM      equ     $F195   ; INIT's (first) claim: the CF-3300's HIMEM at its H.RUNC entry,
@@ -347,6 +352,16 @@ FAT_SECPERFAT   equ     $ED68   ; sectors per FAT copy (word; from BPB +22)
 ; disk ROM's own work area (AE_claimuse_cf.out / AE_claimuse_hbd.out), so this is
 ; ours to arrange.
 HOOK_SLOT       equ     $F1C8   ; our slot byte for the HPHYD inter-slot hook (1)
+; CLAIM_D -- D-DISKROMHOST step 4 (d), scheme D (2026-11-26, scratchpad/AE_schemeD.md): a cartridge
+; scanned BEFORE ours that claimed N bytes (HIMEM = $F380 - N at our INIT) moves every NUMBER the
+; references publish by -N and leaves every cell where it is (scratchpad/AE_wasize.md). init_gate
+; stores the claim here as the value $4030 hands MSX-DOS, GETWRK_AREA - N (N = 0: $DD0E), so $4030
+; stays `ld hl,(CLAIM_D) / ret`; layout_rebuild's callers pass their HIMEM as an offset from
+; GETWRK_AREA and it adds this cell. In the INIT-private block below HOOK_SLOT: written by nothing
+; else through an MSX-DOS session, BASIC at A> and a Disk BASIC file write (AE_claimuse_zb2.out:
+; $F195-$F1C7 unwritten), and below $F1C9, so a foreign claim of N <= 439 (NMAX) cannot reach it.
+CLAIM_D         equ     $F1C6   ; $4030's work-area value, GETWRK_AREA - N (2 B)
+CLAIM_NMAX      equ     $F380 - (HOOK_SLOT + 1)   ; NOT-A-CELL: 439, the largest foreign claim followed
 ; BDOS_SRCHIDX (M19) — persistent root-directory search cursor for the runtime
 ; SFIRST ($11) / SNEXT ($12) dir-search entries ($4FB8/$5006). Absolute 0-based
 ; index of the NEXT root-dir entry to examine: SFIRST sets it to (first-match+1),
