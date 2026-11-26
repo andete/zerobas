@@ -417,10 +417,12 @@ fwe_cmp:
                 pop     hl
                 jp      z, fwe_have         ; already loaded: no read
                 push    hl
-                ld      a, (FAT_DEFER)      ; D-WCACHE W3a: a deferred write of the
-                and     2                   ; sector we are about to replace goes
-                call    nz, fat_write_buf_allfats   ; out FIRST (it clears the flag;
+                call    fac_flushdirty      ; D-WCACHE W3a: a deferred write of the
+                                            ; sector we are about to replace goes
+                                            ; out FIRST (it clears the flag;
                                             ; bit 1 = dirty since D-RECSLOW)
+                                            ; D-DISKREREAD (2026-11-26): the same test
+                                            ; and call, fac_flushdirty's -- 5 B
                 pop     hl
                 call    rd_fatsec           ; FAT_FATSEC := HL, read it into FAT_MBUF (Cy)
                 jp      fwe_have
@@ -581,29 +583,21 @@ fwd_chk:
                 ld      a, CMD_WRITE
                 ld      (FDC_STATUS), a
                 jr      fdc_write_data_body
+; D-DISKREREAD (2026-11-26): `bit` tests and one shared `scf / ret` -- 9 B. Same
+; priority, same codes, B kept; `ld a,n` leaves the `bit` flags, which for these
+; one-bit masks match the old `and`'s S/Z/H/PV/N/C on every arm.
 fwd_nowin:
-                ld      a, b
-                and     ST_NOTRDY
-                jr      z, fwd_n1
                 ld      a, 2            ; not ready
-                scf
-                ret
-fwd_n1:
-                ld      a, b
-                and     ST_RNF
-                jr      z, fwd_n2
+                bit     7, b            ; ST_NOTRDY
+                jr      nz, fwn_e
                 ld      a, 8            ; record not found
-                scf
-                ret
-fwd_n2:
-                ld      a, b
-                and     ST_CRC
-                jr      z, fwd_n3
+                bit     4, b            ; ST_RNF
+                jr      nz, fwn_e
                 ld      a, 4            ; CRC / data error
-                scf
-                ret
-fwd_n3:
+                bit     3, b            ; ST_CRC
+                jr      nz, fwn_e
                 ld      a, 12           ; lost data / other
+fwn_e:
                 scf
                 ret
 fwd_ok:
@@ -846,20 +840,13 @@ dnm_body:
                 jr      z, dnm_tail
                 call    din_take            ; A = the byte
                 cp      $0A                 ; 🔴 D-INPLF (2026-11-06): an LF INSIDE a
-                jr      z, dnm_body         ; number is skipped -- `5<LF>6` is 56,
+                call    nz, dst_put         ; number is skipped -- `5<LF>6` is 56,
                                             ; `-<LF>5` -5, `5.<LF>5` 5.5 on the CF-3300
                                             ; (scratchpad/inplf_grid2.out 3 / 7 / 8);
                                             ; it was stored and ended the number
-                ld      c, a
-                ld      hl, STRSCR
-                ld      a, (hl)
-                cp      STRMAX
-                jr      nc, dnm_body        ; full: read it and drop it
-                inc     (hl)
-                ld      e, (hl)
-                ld      d, 0
-                add     hl, de
-                ld      (hl), c
+                                            ; D-DISKREREAD (2026-11-26): dst_put, not
+                                            ; an inline copy of it (a full STRSCR is
+                                            ; read and dropped there too) -- 14 B
                 jr      dnm_body
 dnm_tail:
                 call    din_peek
@@ -1013,10 +1000,11 @@ BD_SCNCNT       equ     $F3F6   ; MSX work area: SCNCNT, the key-scan countdown 
 BD_LINE         equ     SECTOR_BUF          ; the typed line (own choice: scratch --
                                             ; the BASENT path skips the boot read)
 BD_MAX          equ     24                  ; own choice: the longest line kept
-BD_MON          equ     BD_LINE + BD_MAX + 1 ; the month, while the rest is parsed (1 B)
-BD_DAY          equ     BD_MON + 1          ; the day (1 B)
+BD_DAY          equ     BD_LINE + BD_MAX + 1 ; the day, while the rest is parsed (1 B)
+BD_MON          equ     BD_DAY + 1          ; the month (1 B) -- MUST follow BD_DAY:
+                                            ; bp_set loads both as one word (E, D)
 
-; basent_resume -- boot_disk's BASENT branch. In: HL = the mark (basent_pending).
+; basent_resume -- init's BASENT branch (init.asm, just before boot_disk). In: HL = the mark (basent_pending).
 ; 'B','A' (from MSX-DOS): the mark becomes DOS_SIG, as before (D-CALLSYSTEM).
 ; 'B','D' (a boot loader's fallback): MSX-DOS never ran, so the mark is cleared --
 ; first, so a reset during the question boots normally -- and the date is asked,
@@ -1126,12 +1114,10 @@ bl_bs:
                 jr      z, bl_key           ; nothing to take back
                 dec     hl
                 dec     b
-                ld      a, 8
-                call    bd_out              ; back
-                ld      a, ' '
-                call    bd_out              ; blank it
-                ld      a, 8
-                call    bd_out              ; back again
+                push    hl                  ; D-DISKREREAD (2026-11-26): back, blank it,
+                ld      hl, cinl_bs         ; back again -- conin_line_body's own text
+                call    bd_puts             ; (kernel.asm), not three bd_out calls -- 7 B
+                pop     hl
                 jr      bl_key
 bl_end:
                 ld      (hl), 0
@@ -1175,10 +1161,8 @@ bp_add:
 bp_noyear:
                 call    gdate_core          ; HL = the year of the date kept so far
 bp_set:
-                ld      a, (BD_MON)
-                ld      d, a
-                ld      a, (BD_DAY)
-                ld      e, a
+                ld      de, (BD_DAY)        ; E = day, D = month -- D-DISKREREAD (2026-11-26):
+                                            ; one word load, the cells swapped for it: 4 B
                 jp      sdate_body          ; A = 0 stored / $FF not a date
 bp_bad:
                 ld      a, $FF
@@ -1383,29 +1367,23 @@ lsec_chs:
                 ; seated by DSK_MEDIA as the references seat it: bit 1 set = 8 sectors
                 ; a track (else 9), bit 0 set = two sides (track = q / 2, side = q & 1),
                 ; clear = one side (track = q, side 0). Was div9: always 2 sides x 9.
+                ; D-DISKREREAD (2026-11-26): a 16-bit `sbc hl,de` loop with the divisor in
+                ; DE (free on entry: the tail below rewrites D and E) -- 9 B, and faster.
+                ; `inc b` keeps the carry, and after a looping `sbc` it is 0, so the one
+                ; `or a` serves every pass; the overshoot is added back.
                 ld      a, (DSK_MEDIA)
-                ld      c, 9
+                ld      de, 9
                 bit     1, a
                 jr      z, lc_div
-                dec     c                   ; 8 sectors a track
+                dec     e                   ; 8 sectors a track
 lc_div:
-                ld      b, 0
-fdc_div_loop:
-                ld      a, h
+                ld      b, $FF
                 or      a
-                jr      nz, fdc_div_sub     ; HL >= 256 -> definitely >= C
-                ld      a, l
-                cp      c
-                jr      c, fdc_div_done     ; HL < C -> remainder in L
-fdc_div_sub:
-                ld      a, l
-                sub     c
-                ld      l, a
-                jr      nc, fdc_div_nob
-                dec     h
-fdc_div_nob:
+fdc_div_loop:
                 inc     b
-                jr      fdc_div_loop
+                sbc     hl, de
+                jr      nc, fdc_div_loop
+                add     hl, de              ; L = remainder, H = 0
 fdc_div_done:                               ; B = q, L = sector - 1
                 inc     l
                 ld      c, l                ; C = sector
@@ -1644,12 +1622,10 @@ fopen_fill_body:
                 ld      a, l
                 and     $7F
                 ld      b, a
-                ld      a, 7
-ffb_shift:
-                srl     h
-                rr      l
-                dec     a
-                jr      nz, ffb_shift
+                add     hl, hl              ; D-DISKREREAD (2026-11-26): HL >> 7 as
+                ld      l, h                ; (HL << 1) >> 8, bit 15 back in through
+                ld      h, 0                ; the carry -- not a 7-pass loop: 3 B
+                rl      h
                 ld      a, b
                 or      a
                 jr      z, ffb_noround
@@ -1690,9 +1666,10 @@ ffb_rcok:
                 ld      (ix+27), h
                 ld      (ix+28), l
                 ld      (ix+29), h
-                ; +30/31 relloc = 0
-                ld      (ix+30), 0
-                ld      (ix+31), 0
+                ; +30/31 relloc = 0 (D-DISKREREAD: through A, 1 B; fat_open sets its own)
+                xor     a
+                ld      (ix+30), a
+                ld      (ix+31), a
                 ; Prime the READ-side iterator (M25, tier2-m24-fclose-
                 ; multicluster-spec.md "UPDATE 2"): this body previously only
                 ; populated FCB display fields, never the internal read state
@@ -1716,9 +1693,8 @@ ffb_rcok:
                 ; read-iterator seeding above (wrseq_writeback increments it).
                 ld      hl, 0
                 ld      (BDOS_SEQREC), hl
-                call     clr_f306   ; M20 dispatcher-flag rule
-                ld      hl, 0
-                ret
+                jp      clr_f306    ; M20 dispatcher-flag rule; HL = 0 out (clr_f306
+                                    ; keeps it) -- D-DISKREREAD (2026-11-26): 4 B
 ; (ffb_miss -- byte-identical to fren_miss below -- removed by D-DISKCARVE, 2026-11-07:
 ; its two callers jump to fren_miss)
 
@@ -1839,8 +1815,8 @@ abs_go:
                 jr      z, abs_ign
                 pop     bc                  ; B := original count again (dskio clobbers B/C)
                 pop     de
-                ld      a, b                ; A := original count
-                ld      c, a                ; C := count (pinned exit value)
+                ld      c, b                ; C := count (pinned exit value; D-DISKREREAD:
+                                            ; not through A, 1 B -- `sub a` needs no input)
                 sub     a                   ; A = 0, F = $42 as on the CF-3300 (not xor's $44)
                 ld      b, a                ; B := $00 (pinned exit value)
                 ld      ($F306), a          ; M20 dispatcher-flag rule
@@ -1854,10 +1830,10 @@ abs_ign:
                 pop     hl                  ; (the count)
                 pop     de                  ; the sector
                 ld      hl, $01FF
+                ld      ($F306), a          ; M20 dispatcher-flag rule (A = 0 here: the
+                                            ; `inc a` above gave Z) -- D-DISKREREAD
+                                            ; (2026-11-26): clr_f306 inlined, 2 B
                 dec     a                   ; A = $FF
-                push    af
-                call    clr_f306            ; M20 dispatcher-flag rule
-                pop     af
                 ret
 abs_err:
                 pop     bc

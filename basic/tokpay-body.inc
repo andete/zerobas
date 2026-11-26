@@ -36,9 +36,8 @@ tok_payload:
                 jr      c,tpl_0             ; below the constant prefixes
                 cp      $0F
                 jr      c,tpl_c             ; $0B..$0E: two bytes
-                jr      nz,tpl_0            ; $10..$1B, $1E, $20 and up: none
-                dec     c                   ; $0F: one byte
-                jr      tpl_c
+                ld      c,1                 ; $0F: one byte (D-DISKREREAD 2026-11-26:
+                jr      z,tpl_c             ; `ld` keeps the Z of `cp $0F`; 1 B)
 tpl_0:
                 ld      c,0                 ; $10..$1B (inline digits) and the rest
 tpl_c:

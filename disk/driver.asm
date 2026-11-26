@@ -37,13 +37,7 @@ dskio_keep:
                 jr      c, dskio_write
                 ; --- read path ---
 dskio_next:
-                ld      a, (FDC_CNT)
-                or      a
-                jr      z, dskio_ok
-                ; logical sector -> CHS (track/side/sector)
-                ld      hl, (FDC_LSEC)
-                call    lsec_chs        ; C = sector, D = track, E = side (D-SIDES)
-                ld      hl, (FDC_DEST)
+                call    dskio_head      ; count 0: leaves DSKIO; else C/D/E = CHS, HL = dest
                 ; page-1 bounce: if destination in $4000-$7FFF (page 1 = our disk
                 ; ROM under DOS) read into SECTOR_BUF then blit to the real target
                 ; with page 1 remapped to RAM (a3 §8.35 / p1_blit_tmpl below).
@@ -89,30 +83,36 @@ dskio_bump:
                 dec     a
                 ld      (FDC_CNT), a
                 ret
-dskio_ok:
-                call    mtoff           ; spin the motor down
-                ld      b, 0            ; B = 0: all sectors done (DSKIO success contract)
-                or      a               ; Cy = 0
+; dskio_head -- 💰 D-DISKREREAD (2026-11-26): both loop heads, once (6 B), and the
+; old dskio_ok tail folded into dskio_err (7 B). Count left: C = sector, D = track,
+; E = side (lsec_chs), HL = FDC_DEST, return. Count 0: DROP the loop's return and
+; leave DSKIO through dskio_err with A = 0 and F from `or a` on 0 (Z, NC, PE) --
+; there FDC_CNT = 0 gives B = 0, which is exactly what the old dskio_ok returned
+; (mtoff's `xor a`, `ld b,0`, `or a`).
+dskio_head:
+                ld      a, (FDC_CNT)
+                or      a
+                jr      z, dh_none
+                ld      hl, (FDC_LSEC)
+                call    lsec_chs        ; C = sector, D = track, E = side (D-SIDES)
+                ld      hl, (FDC_DEST)
                 ret
+dh_none:
+                inc     sp
+                inc     sp              ; drop the loop's return (flags kept): DSKIO ends
 dskio_err:
                 push    af              ; save error code + carry
                 call    mtoff
                 ld      a, (FDC_CNT)
                 ld      b, a            ; B = sectors not transferred
                 pop     af
-                ret                     ; Cy still set, A = error code
+                ret                     ; Cy still set, A = error code (dh_none: A = 0, NC)
 ; --- write path -------------------------------------------------------------
 ; Mirrors the read loop's structure exactly: loop the sector count, convert each
 ; logical sector -> CHS via lsec_chs, and call fdc_write_phys (the write twin of
 ; fdc_read_phys). Entered from dskio's shared setup (carve 16), Cy = 1.
 dskio_write:
-                ld      a, (FDC_CNT)
-                or      a
-                jr      z, dskio_ok
-                ; logical sector -> CHS (track/side/sector), same as the read path
-                ld      hl, (FDC_LSEC)
-                call    lsec_chs        ; C = sector, D = track, E = side (D-SIDES)
-                ld      hl, (FDC_DEST)
+                call    dskio_head      ; count 0: leaves DSKIO; else C/D/E = CHS, HL = dest
                 call    fdc_write_phys
                 jr      c, dskio_err
                 call    dskio_bump      ; HL advanced by 512 on success
@@ -251,9 +251,10 @@ dst_quoted:
                 jr      dst_quoted
 ; 📍 D-LOADFAT (2026-11-06): MOVED HERE from the $607B..$75A5 region, where LOAD's
 ; FAT cache needed the room; entered only by call / jp, so it can live in any hole.
-install_hook:
-                ld      a, $F7              ; +0: RST 30h (CALLF)
-                ld      (hl), a
+install_hook:                               ; (D-DISKREREAD 2026-11-26: `ld (hl),n`
+                                            ; for +0 / +4, 2 B; A out = the slot byte,
+                                            ; which ibh_lp reloads)
+                ld      (hl), $F7           ; +0: RST 30h (CALLF)
                 inc     hl
                 ld      a, (HOOK_SLOT)      ; +1: this ROM's slot byte
                 ld      (hl), a
@@ -262,8 +263,7 @@ install_hook:
                 inc     hl
                 ld      (hl), d             ; +3: target hi
                 inc     hl
-                ld      a, $C9              ; +4: RET
-                ld      (hl), a
+                ld      (hl), $C9           ; +4: RET
                 ret
                 ds      $4392 - $, $00      ; pad remainder up to the next canonical entry
 k_4392:
@@ -274,8 +274,7 @@ fdc_seek:
                 ld      a, d            ; track number via the Data register
                 ld      (FDC_DATA), a
                 ld      a, CMD_SEEK
-                ld      (FDC_STATUS), a
-                jr      fdc_wait_ready
+                jr      fdc_cmd         ; D-DISKREREAD (2026-11-26): fdc_restore's store -- 3 B
 ; fcf_zero -- fat_count_free's DE := 0 exit (MOVED here by D-DISKCARVE6 step 4 (2026-11-17)).
 fcf_zero:
                 ld      de, 0
@@ -345,6 +344,7 @@ fdc_wp_attempt:
 ; fdc_restore — recalibrate the head to track 0 (Type I restore).
 fdc_restore:
                 ld      a, CMD_RESTORE
+fdc_cmd:                                ; (fdc_seek's command store too)
                 ld      (FDC_STATUS), a
                 ; fall through to fdc_wait_ready
 
@@ -455,11 +455,9 @@ dta_put:
                 cp      $40
                 ld      a, c
                 jr      nz, dp_plain        ; not page 1: a plain store
-                ld      (P1_DEST), a
                 ex      de, hl              ; DE = the destination
-                ld      hl, P1_DEST
-                ld      bc, 1
-                call    P1_BLIT
+                call    blit1               ; D-DISKREREAD (2026-11-26): the shared
+                                            ; one-byte P1_BLIT (bsr_have's) -- 9 B
                 ex      de, hl              ; HL = past the destination
                 jr      dp_done
 dp_plain:
@@ -769,33 +767,34 @@ bsr_have:
                 ; n = real bytes this record = min(RECSIZE, BYTESLEFT).
                 ; BYTESLEFT is nonzero here; if the high word is set or low word
                 ; >= RECSIZE then a full RECSIZE record; otherwise n = low byte.
-                ld      hl, (BDOS_BYTESLEFT + 2)    ; high word
-                ld      a, h
-                or      l
-                jr      nz, bsr_full                ; >= 65536 left -> full record
-                ld      hl, (BDOS_BYTESLEFT)        ; low word
-                ld      a, h
-                or      a
+                ; D-DISKREREAD (2026-11-26): the three high bytes OR'd through HL
+                ; (3 B), and BC = n set before the source is computed -- hl_x128
+                ; touches only HL -- so n needs no pop / push there (3 B).
+                ld      hl, BDOS_BYTESLEFT + 3
+                ld      a, (hl)
+                dec     hl
+                or      (hl)
+                dec     hl
+                or      (hl)
                 jr      nz, bsr_full                ; >= 256 left -> full record
-                ld      a, l                        ; < 256 bytes left
+                dec     hl
+                ld      a, (hl)                     ; < 256 bytes left
                 cp      RECSIZE
                 jr      c, bsr_partial              ; < 128 -> partial record
 bsr_full:
                 ld      a, RECSIZE                  ; full 128-byte record
 bsr_partial:
                 ; A = n (real bytes, 1..128). Compute source in SECTOR_BUF.
-                push    af                          ; save n
+                push    af                          ; save n (for the pad and the decrement)
+                ld      c, a
+                ld      b, 0            ; BC = n real bytes
                 ld      a, (BDOS_RECIDX)
-                ld      h, 0
+                ld      h, b
                 ld      l, a
                 call    hl_x128            ; HL = RECIDX * 128
                 ld      de, SECTOR_BUF
                 add     hl, de          ; HL = source record in SECTOR_BUF
                 ld      de, (BDOS_DTA)  ; settable DTA (BDOS $1A); default $0080
-                pop     af              ; A = n
-                push    af              ; keep n for the decrement
-                ld      c, a
-                ld      b, 0            ; BC = n real bytes
                 call    P1_BLIT         ; copy n real bytes to the DTA -- D-P1DOS: with
                                         ; page 1 = RAM, so a page-1 DTA gets them too
                                         ; (an LDIR there wrote into this ROM)
@@ -809,11 +808,8 @@ bsr_partial:
                 ld      b, a            ; B = pad byte count
 bsr_padloop:
                 push    bc              ; D-P1DOS: each pad byte through P1_BLIT too
-                xor     a
-                ld      (P1_DEST), a    ; a $00 source byte (oracle: MSX-DOS pads with $00)
-                ld      hl, P1_DEST
-                ld      bc, 1
-                call    P1_BLIT         ; DE advances
+                xor     a               ; a $00 source byte (oracle: MSX-DOS pads with $00)
+                call    blit1           ; DE advances (D-DISKREREAD: shared, 9 B)
                 pop     bc
                 djnz    bsr_padloop
 bsr_nopad:
@@ -840,6 +836,14 @@ bsr_borrow:
 bsr_eof:
                 ld      a, $01          ; end-of-file
                 ret
+; blit1 -- D-DISKREREAD (2026-11-26): ONE byte, A, to (DE) through P1_BLIT (page 1 =
+; RAM), DE advanced. P1_DEST is dskio's bounce word, idle here. Clobbers A, BC, HL.
+; dta_put and bsr_padloop each had it inline (net 6 B, one extra stack level).
+blit1:
+                ld      (P1_DEST), a
+                ld      hl, P1_DEST
+                ld      bc, 1
+                jp      P1_BLIT
 
 ; bdos_rdblk ($27) is gone (D-BDOSFCB, 2026-11-10): the $F37D RDBLK is the kernel's
 ; k47b2_body -- RR-positioned, the zero-padded last record, RR written back -- on
@@ -913,10 +917,8 @@ seq_load:
                 ld      h, (hl)
                 ld      l, a
                 ld      (BDOS_WRFIRST), hl
-                pop     hl
-                push    hl
-                ld      bc, 16
-                add     hl, bc
+                ld      hl, 16              ; D-DISKREREAD (2026-11-26): DE is still the
+                add     hl, de              ; FCB -- no pop / push, no BC: 2 B
                 call    to_wrbytes          ; BDOS_WRBYTES := FCB +16..19
                 pop     de
                 ret
@@ -935,18 +937,18 @@ k_461D:
 ;   out: Cy = 0 ok (A = byte) / Cy = 1 chain ended (caller guards with BYTESLEFT).
 ; Uses RDBLK_BUFPOS (0..512). Clobbers A + flags only (works through HL/DE/C via the
 ; helper, which the caller does not rely on across the call).
+; D-DISKREREAD (2026-11-26): BUFPOS < 512 is H < 2 (unsigned), and HL stays the
+; position on both arms (the refill's 0 goes straight into the `inc`/store, not
+; through the cell) -- 9 B.
 rdblk_getbyte:
                 ld      hl, (RDBLK_BUFPOS)
-                ld      de, 512
-                or      a
-                sbc     hl, de
+                ld      a, h
+                cp      2
                 jr      c, rgb_have         ; BUFPOS < 512 -> a byte is buffered
                 call    fat_read_file_sector ; refill SECTOR_BUF with the next sector
                 ret     c                   ; chain ended -> Cy = 1
                 ld      hl, 0
-                ld      (RDBLK_BUFPOS), hl
 rgb_have:
-                ld      hl, (RDBLK_BUFPOS)
                 inc     hl
                 ld      (RDBLK_BUFPOS), hl  ; advance for next time
                 dec     hl                  ; HL = the byte's index

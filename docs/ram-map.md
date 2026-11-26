@@ -42,8 +42,8 @@ second one is the question a per-component map cannot answer.
 |---|---|---|---|---|---|
 | `$E8AD` | 512 B | `basic` | `FAT_DBUF/FSECTOR_BUF` | DISK-ONLY: file data / read sector buffer ($E8AD..$EAAC) |  |
 | `$E8AD` | 512 B | `disk` | `BD_LINE/FAT_DBUF/FSECTOR_BUF/SECTOR_BUF` | DISK-ONLY: file data / read sector buffer ($E8AD..$EAAC) |  |
-| `$E8C6` | 1 B | `disk` | `BD_MON` | the month, while the rest is parsed (1 B) | `basic` FAT_DBUF/FSECTOR_BUF |
-| `$E8C7` | 1 B | `disk` | `BD_DAY` | the day (1 B) | `basic` FAT_DBUF/FSECTOR_BUF |
+| `$E8C6` | 1 B | `disk` | `BD_DAY` | the day, while the rest is parsed (1 B) | `basic` FAT_DBUF/FSECTOR_BUF |
+| `$E8C7` | 1 B | `disk` | `BD_MON` | the month (1 B) -- MUST follow BD_DAY: | `basic` FAT_DBUF/FSECTOR_BUF |
 | `$EAAD` | 512 B | `basic` | `FAT_MBUF/FWBUF` | DISK-ONLY: FAT/dir metadata sector buffer ($EAAD..$ECAC) |  |
 | `$EAAD` | 512 B | `disk` | `FAT_MBUF/FWBUF/WBUF` | write-back FAT/dir sector buffer ($EAAD..$ECAC) = main FWBUF |  |
 | `$ECA1` | 4 B | `disk` | `WRBLK_MULACC` | 32-bit product accumulator (LE) | `basic` FAT_MBUF/FWBUF |

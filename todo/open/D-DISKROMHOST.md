@@ -167,6 +167,10 @@
       basent_body instead of jumping to the next byte, and write_sector shortened (10 -> 8 B) and moved in front of the
       $7F7C pin to make room for bt_keep's reset. What is left is under the wall tool's 16-byte floor.
       LEFT of step 4: (d)'s base-addressed work area (host independence, ~2.5 KB estimated -- no room for it).
+      🧭 JOOST 2026-11-26: the base-addressed work area (compatible with other devices claiming RAM) ranks AFTER the
+      disk-ROM re-read and D-BUFINCTL, and BEFORE the other filed disk fixes. The ~2.5 KB was never counted: first
+      SIZE it (every work-area reference and how it is reached; schemes: a base register for hot paths, a base kept
+      in SLTWRK as the references do, relocating only what can overlap a foreign claim), then build.
       ✅ STEP 4 (e) for (b) + (c) (2026-11-25): the disk collection (scratchpad/diskcorpus_run.py, 143 images) on
       0f5e72f1f against the last recorded run (scratchpad/diskcorpus_iffread.out): NO image worse (🔮 "none worse":
       HIT); BOTH-RUN 98 -> 99, UNSETTLED 19 -> 17; YOUMAKOR, xak2eng3 / 4 / 5 UNSETTLED -> BOTH-RUN, and TestameB

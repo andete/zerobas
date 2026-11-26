@@ -97,8 +97,8 @@ conout_body:
                 cp      $06
                 jr      nz, conout_not_dispatch
                 ld      a, e
-                cp      $FF
-                jr      nz, conout_not_dispatch
+                inc     a                   ; E = $FF? (D-DISKREREAD: not `cp $FF`, 1 B --
+                jr      nz, conout_not_dispatch ; both continuations reload A)
                 pop     hl                  ; restore caller's HL
                 pop     af                  ; restore caller's AF for dirio_in_body
                 jr      dirio_in_body
@@ -269,15 +269,14 @@ cinl_getchar:
                 jr      cinl_getchar
 cinl_store:
                 ld      c, a                ; C = the char to store/echo
-                ld      a, (CONIN_COUNT)
-                ld      b, a                ; B = current fill count
-                ld      a, (CONIN_MAX)
-                cp      b
+                ld      hl, (CONIN_MAX)     ; L = max, H = current fill count (CONIN_COUNT
+                ld      a, l                ; = CONIN_MAX + 1) -- D-DISKREREAD (2026-11-26):
+                cp      h                   ; one word load, not two bytes through B: 3 B
                 jr      z, cinl_getchar     ; buffer full -> drop the char (no room)
                 ld      de, (CONIN_BUF)
                 inc     de
                 inc     de                  ; DE -> buf[2 + count]
-                ld      l, b
+                ld      l, h
                 ld      h, 0
                 add     hl, de
                 ld      (hl), c             ; store the char
@@ -682,8 +681,9 @@ frl_cache:
                 ld      b, (ix+31)          ; BC = the cached index
                 ld      e, (ix+28)
                 ld      d, (ix+29)          ; DE = the cached cluster
-                ld      (ix+28), 0
-                ld      (ix+29), 0
+                xor     a                   ; D-DISKREREAD (2026-11-26): through A, 1 B
+                ld      (ix+28), a          ; (`ld a,d` below reloads it)
+                ld      (ix+29), a
                 ld      hl, (GP_CLIDX)
                 ld      (ix+30), l
                 ld      (ix+31), h          ; the index this walk lands on
@@ -718,12 +718,8 @@ close_size_upd:
                 add     hl, de
                 call    to_wrbytes
                 call    fat_dir_update      ; write true size + first cluster
-                jr      c, bdos_close_err
-                xor     a                   ; A = $00 success
-                ret
-bdos_close_err:
-                ld      a, $FF
-                ret
+                sbc     a, a                ; A = $00 success / $FF (CF kept) --
+                ret                         ; D-DISKREREAD (2026-11-26): 5 B
 ; fcb_size_keep -- FCB (IX) +16..19 := BDOS_WRBYTES, the file's size so far. It stood
 ; twice, in kernel.asm's wrblk_fcb_keep and wrseq_wr_writeback (D-DSKFMT carve 12,
 ; 2026-11-10: -11 B). Clobbers HL.
@@ -739,22 +735,21 @@ fcb_size_keep:
 ; carve 19 (2026-11-10) moved it here from in front of $543C, for bdos_tab's rows.
 ; frnd_pass_len -- BC := min(GP_LEFT, 512 - GP_WITHIN), and GP_LEFT -= BC: the
 ; bytes of the record that fit in the sector this pass holds. Clobbers A, DE, HL.
+; D-DISKREREAD (2026-11-26): no second `or a` (GP_WITHIN is 0..511 -- frnd_calc's
+; offset & 511, or rnd_step's 0 -- so 512 - WITHIN cannot borrow), and one store tail
+; for both arms (n into DE, GP_LEFT := 0 through it) -- 6 B.
 frnd_pass_len:
                 ld      hl, 512
                 ld      de, (GP_WITHIN)
                 or      a
-                sbc     hl, de              ; HL = room in the sector (1..512)
+                sbc     hl, de              ; HL = room in the sector (1..512); CF = 0
                 ex      de, hl
                 ld      hl, (GP_LEFT)
-                or      a
                 sbc     hl, de              ; left - room
                 jr      nc, fpl_split       ; left >= room: this pass takes the room
                 add     hl, de              ; the rest fits: n = left, none over
-                ld      b, h
-                ld      c, l
-                ld      hl, 0
-                ld      (GP_LEFT), hl
-                ret
+                ex      de, hl              ; DE = n
+                ld      hl, 0               ; GP_LEFT := 0
 fpl_split:
                 ld      (GP_LEFT), hl
                 ld      b, d

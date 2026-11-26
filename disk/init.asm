@@ -195,8 +195,17 @@ init_p2:
                 ; GDATE and every file stamp read it. NOT on a BASENT restart
                 ; (D-DOSBASIC): the date set in DOS must reach BASIC, as on the
                 ; CF-3300 (scratchpad/sdatebasic.out: SAVE stamped 279Fh).
+                ; D-DOSBASIC: a BASENT restart wants BASIC, not DOS -- clear the
+                ; request and fall through to BASIC as a non-system disk does.
+                ; basent_resume (fat.asm, in the $4C29 fill) sets the mark: DOS_SIG
+                ; after MSX-DOS's `BASIC` (D-CALLSYSTEM), and after a boot loader's
+                ; fallback first asks the date (D-BOOTDATE).
+                ; D-DISKREREAD (2026-11-26): tested ONCE, here -- boot_disk used to
+                ; ask again, and the stores below never touch BASENT_REQ, so its
+                ; answer was always NZ there -- 7 B.
                 call    basent_pending
-                jr      z, boot_disk        ; a BASENT restart keeps the DOS date
+                jp      z, basent_resume    ; HL = the mark; returns to H.RUNC's caller
+                                            ; (a BASENT restart keeps the DOS date)
                 ld      hl, 1461
                 ld      (DATE_DAYS), hl
                 xor     a                   ; D-F346: MSX-DOS not booted (the CF-3300's
@@ -383,15 +392,7 @@ DRV_TRAMP       equ     $ED9F   ; 4 CALLF trampolines, 5 bytes each ($ED9F-$EDB2
 ; above). We still advertise the stock $DF93 here for fidelity (MSXDOS reads it), but
 ; placement is governed by GETWRK_AREA, not this field.
 DOS_RESV_TOP    equ     $DF93   ; top-of-reserved-RAM advertised in DRVTBL+1 (not the lever)
-boot_disk:
-                ; D-DOSBASIC: a BASENT restart wants BASIC, not DOS -- clear the
-                ; request and fall through to BASIC as a non-system disk does.
-                ; basent_resume (fat.asm, in the $4C29 fill) sets the mark: DOS_SIG
-                ; after MSX-DOS's `BASIC` (D-CALLSYSTEM), and after a boot loader's
-                ; fallback first asks the date (D-BOOTDATE).
-                call    basent_pending
-                jr      nz, boot_disk_go
-                jp      basent_resume       ; HL = the mark; returns to H.RUNC's caller
+boot_disk:                              ; (the BASENT test is in init, above)
 boot_disk_go:
                 call    boot_rd         ; drive A's sector 0 -> $C000, its signature
                 ret     c               ; no disk / read error -> BASIC
@@ -441,31 +442,31 @@ boot_sig_ok:
 ; the RAM slot from page 3 (gap B: host-adaptive, never hardcoded slot 3-0).
 ; Caller MUST DI (while page 0 is RAM the $0038 int vector is not the BIOS). Saves
 ; the originals for page0_ram_out. Clobbers A, C. (provider-oracle-scope.md §8.2)
+; D-DISKREREAD (2026-11-26): each merge is a bit-merge in A (keep bits 7-2, bits
+; 1-0 := bits 7-6 via ((rot2(a) xor a) and 3) xor a) instead of mask/shift/reload
+; -- 14 B. $FFFF is now read AFTER `out ($A8)`: it lives in page 3, whose primary
+; slot that `out` leaves as it was, so the value read is the same.
 page0_ram_in:
                 in      a, ($A8)            ; primary slot config
                 ld      (BOOT_SV_A8), a
+                ; page-0 primary := page-3 primary  ($A8 bits 7-6 -> bits 1-0)
+                ld      c, a
+                rlca
+                rlca
+                xor     c
+                and     %00000011
+                xor     c
+                out     ($A8), a
                 ld      a, ($FFFF)          ; slot secondary reg (reads inverted)
                 cpl                         ; -> live value
                 ld      (BOOT_SV_SEC), a
-                ; page-0 primary := page-3 primary  ($A8 bits 7-6 -> bits 1-0)
-                ld      a, (BOOT_SV_A8)
-                and     %11000000
-                rlca
-                rlca
-                ld      c, a
-                ld      a, (BOOT_SV_A8)
-                and     %11111100
-                or      c
-                out     ($A8), a
                 ; page-0 subslot := page-3 subslot  ($FFFF bits 7-6 -> bits 1-0)
-                ld      a, (BOOT_SV_SEC)
-                and     %11000000
-                rlca
-                rlca
                 ld      c, a
-                ld      a, (BOOT_SV_SEC)
-                and     %11111100
-                or      c
+                rlca
+                rlca
+                xor     c
+                and     %00000011
+                xor     c
                 ld      ($FFFF), a
                 ret
 
@@ -475,6 +476,10 @@ page0_ram_out:
                 ld      ($FFFF), a
                 ld      a, (BOOT_SV_A8)
                 out     ($A8), a
+; wa_stub — the no-op body for the $F368 segment-switch hooks (RET; see build_wa_table).
+; D-DISKREREAD (2026-11-26): it is page0_ram_out's own RET (1 B) -- the slots need only
+; *a* RET in this ROM. Keep this label on a bare `ret`.
+wa_stub:
                 ret
 
 ; set_ramad — populate RAMAD0-3 ($F341-4) with the host's RAM-slot id, so MSX-DOS
@@ -530,17 +535,18 @@ set_ramad:
                 ; bitmap $FF (8 phantom drives) instead of $03 (drives A:/B:), and $F247
                 ; stayed $FF. See tier2-cbios-bdos-login-f347.md. Clean-room: published
                 ; single-drive convention ([[dual-drive-decision]]) + boot state, not stock.
-                push    bc                  ; D-BOOTKEYS CTRL (2026-10-27): CTRL held at
-                push    hl                  ; power-on gives ONE logical drive -- no B: --
+                                            ; D-BOOTKEYS CTRL (2026-10-27): CTRL held at
+                                            ; power-on gives ONE logical drive -- no B: --
                 ld      a, 6                ; as on the CF-3300 ($F347 reads 1, DSKF(2) and
                 call    $0141               ; FILES"B:" are 62: scratchpad/bootctrl_run.out).
-                pop     hl                  ; SNSMAT row 6, bit 1 low = CTRL held.
-                pop     bc
-                and     $02                 ; Z = CTRL held
-                ld      a, $01
-                jr      z, dc_one
-                inc     a                   ; otherwise two logical drives, A: and B:
-dc_one:
+                                            ; SNSMAT row 6, bit 1 low = CTRL held.
+                                            ; D-DISKREREAD (2026-11-26): no push/pop of BC /
+                                            ; HL around it (the RAMAD block below reloads
+                                            ; both on every path, and nothing between reads
+                                            ; them), and the count is arithmetic -- 7 B.
+                and     $02                 ; 0 = CTRL held, 2 = not
+                rrca                        ; 0 / 1
+                inc     a                   ; 1 drive (CTRL held), else 2: A: and B:
                 ld      (DRVCNT), a         ; $F347 logical-drive count (LOGIN/SELDSK read it)
                 xor     a
                 ld      (CURDRV_CELL), a    ; $F247 current drive = A: ($00)
@@ -664,50 +670,36 @@ bwt_loop:
 ; never read. Runs only under set_ramad's $FF gate (the real-CF-3300 DOS host).
 build_drvtbl:
                 ; --- four CALLF trampolines: F7 <slot> <target-lo> 40 C9 ---------
-                ld      hl, drv_targets ; ROM: low byte of each $40xx driver entry
-                ld      de, DRV_TRAMP   ; RAM: where the stubs are laid
+                ; D-DISKREREAD (2026-11-26): HL is the RAM destination now (`ld (hl),n`
+                ; for the two constant bytes), DE walks drv_targets -- 3 B.
+                ld      de, drv_targets ; ROM: low byte of each $40xx driver entry
+                ld      hl, DRV_TRAMP   ; RAM: where the stubs are laid
                 ld      b, DRV_NTRAMP
 bdt_tramp:
-                ld      a, $F7          ; RST 30h (CALLF) opcode
-                ld      (de), a
-                inc     de
-                ld      a, (HOOK_SLOT)  ; this ROM's slot byte
-                ld      (de), a
-                inc     de
-                ld      a, (hl)         ; target low byte (e.g. $10 = DSKIO)
-                ld      (de), a
-                inc     de
-                ld      a, high DSKIO_ENTRY ; $40: all driver entries are in page 1
-                ld      (de), a
-                inc     de
-                ld      a, $C9          ; RET
-                ld      (de), a
-                inc     de
+                ld      (hl), $F7       ; RST 30h (CALLF) opcode
                 inc     hl
+                ld      a, (HOOK_SLOT)  ; this ROM's slot byte
+                ld      (hl), a
+                inc     hl
+                ld      a, (de)         ; target low byte (e.g. $10 = DSKIO)
+                ld      (hl), a
+                inc     hl
+                ld      (hl), high DSKIO_ENTRY ; $40: all driver entries are in page 1
+                inc     hl
+                ld      (hl), $C9       ; RET
+                inc     hl
+                inc     de
                 djnz    bdt_tramp
                 ; --- the DRVTBL itself at $F348 ---------------------------------
-                ld      a, (HOOK_SLOT)
-                ld      (DRVTBL + 0), a             ; +0  slot id
-                ld      hl, DOS_RESV_TOP
-                ld      (DRVTBL + 1), hl            ; +1  reserved top-of-RAM
-                ld      hl, GETWRK_AREA
-                ld      (DRVTBL + 3), hl            ; +3  $4030 work-area pointer
-                ld      hl, DRV_TRAMP + 0
-                ld      (DRVTBL + 5), hl            ; +5  DSKIO  trampoline
-                ld      hl, DRV_TRAMP + 5
-                ld      (DRVTBL + 7), hl            ; +7  DSKCHG trampoline
-                ld      hl, DRV_TRAMP + 10
-                ld      (DRVTBL + 9), hl            ; +9  GETDPB trampoline
-                ld      hl, 0
-                ld      (DRVTBL + 11), hl           ; +11 unused (stock = $0000)
-                ld      hl, DRV_TRAMP + 15
-                ld      (DRVTBL + 13), hl           ; +13 DSKFMT trampoline (NOTE: stock +13 =
-                                                    ; $F195 = the drive-A DPB pointer, not a
-                                                    ; trampoline — §8.22's "driver pointers"
-                                                    ; reading of +5/+7/+9/+13 needs revisiting;
-                                                    ; but +13 is NOT the IX source, §8.30)
-                ld      a, $AA
-                ld      (DRVTBL + 15), a            ; +15 sentinel (stock = $AA)
+                ; D-DISKREREAD (2026-11-26): +1..+15 are assembly-time constants, so
+                ; they are one LDIR from drvtbl_tmpl (which follows drv_targets: DE
+                ; already points at it) -- 23 B. +0 (the slot id) is NOT rewritten
+                ; here: set_ramad stored it above the $FF gate and nothing since
+                ; touches it.
+                ex      de, hl                      ; HL = drvtbl_tmpl
+                ld      de, DRVTBL + 1
+                ld      bc, 15
+                ldir
                 ; --- DRVCNT ($F347, M17) + CURDRV ($F247, M18) are now seeded
                 ; UNCONDITIONALLY in the set_ramad prologue (above the $FF gate), because
                 ; MSX-DOS reads them on EVERY host that boots DOS -- including C-BIOS, where
@@ -808,9 +800,21 @@ drv_targets:
                 db      $13     ; DSKCHG ($4013)
                 db      $16     ; GETDPB ($4016)
                 db      $1C     ; DSKFMT ($401C)
-; wa_stub — the no-op body for the $F368 segment-switch hooks (RET; see above).
-wa_stub:
-                ret
+; drvtbl_tmpl — DRVTBL+1..+15, LDIR'd by build_drvtbl; MUST follow drv_targets.
+drvtbl_tmpl:
+                dw      DOS_RESV_TOP        ; +1  reserved top-of-RAM
+                dw      GETWRK_AREA         ; +3  $4030 work-area pointer
+                dw      DRV_TRAMP + 0       ; +5  DSKIO  trampoline
+                dw      DRV_TRAMP + 5       ; +7  DSKCHG trampoline
+                dw      DRV_TRAMP + 10      ; +9  GETDPB trampoline
+                dw      0                   ; +11 unused (stock = $0000)
+                dw      DRV_TRAMP + 15      ; +13 DSKFMT trampoline (NOTE: stock +13 =
+                                            ; $F195 = the drive-A DPB pointer, not a
+                                            ; trampoline — §8.22's "driver pointers"
+                                            ; reading of +5/+7/+9/+13 needs revisiting;
+                                            ; but +13 is NOT the IX source, §8.30)
+                db      $AA                 ; +15 sentinel (stock = $AA)
+; (wa_stub is page0_ram_out's RET, above.)
 
 ; res_print_tmpl now lives in the free tail (kernel.asm, next to p1_blit_tmpl /
 ; wa_seg_*_tmpl / f365_iord_tmpl) and is installed via install_res_print (M15 §9.3(ii)).

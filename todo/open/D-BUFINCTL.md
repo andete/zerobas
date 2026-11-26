@@ -18,3 +18,10 @@
       before the fix. The disk ROM has ~0 B usable (docs/disk/port-readiness.md row 5): carve first.
       The gate pins the four rows (ctrlc, ctrlp, type2, printer) as KNOWN differences; a fix turns it red until the
       pin is dropped.
+      📏 EVERY LINE-EDITING KEY ON THE CF-3300, one key per boot: `AB`, the key, `CD`, the line read after each
+      ([AE_bufinctl_keys.out](../../scratchpad/AE_bufinctl_keys.out), 2026-11-26) -- the spec the fix copies:
+      Ctrl-C `AB^C`, newline, fresh `A>` (abandoned) · Ctrl-U and ESC erase the line (`A>`, then `A>CD`) · Ctrl-H
+      backspace (zerobas matches) · Ctrl-E and Ctrl-S echo as caret + letter and stay (`AB^ECD`; Ctrl-S does NOT
+      pause at the prompt) · Ctrl-R and Ctrl-N: nothing visible (`ABCD`) · Ctrl-X: nothing visible, but the NEXT key
+      is swallowed (`ABD`) -- not understood; measure what the buffer holds before copying it.
+      Joost 2026-11-26: "I think we need to fix D-BUFINCTL probably" -- next after the disk-ROM re-read finds room.

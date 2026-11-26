@@ -19,8 +19,7 @@ SPDX-License-Identifier: BSD-2-Clause
 | range | B | VG plain | VGHBD dos | VGHBD basic | CF dos | CF basic | ZBND plain | ZBD dos | ZBD basic | zerobas |
 |---|---:|---|---|---|---|---|---|---|---|---|
 | `$D000-$D355` | 854 |   | D:R |   | D:R |   |   | D:R |   |  |
-| `$D356-$D356` | 1 |   | D:R B:R |   | D:R B:R |   |   | D:R B:R |   |  |
-| `$D357-$D3D7` | 129 |   | D:R B:R |   | D:R B:R |   |   | D:R |   |  |
+| `$D356-$D3D7` | 130 |   | D:R B:R |   | D:R B:R |   |   | D:R B:R |   |  |
 | `$D3D8-$D3D8` | 1 |   | D:R |   | D:R |   |   | D:R |   |  |
 | `$D3D9-$D3DA` | 2 |   | D:R |   | D:R B:R |   |   | D:R B:R |   |  |
 | `$D3DB-$D3ED` | 19 |   | D:R B:R |   | D:R B:R |   |   | D:R |   |  |
@@ -30,8 +29,8 @@ SPDX-License-Identifier: BSD-2-Clause
 | `$D40F-$D412` | 4 |   | D:DR |   | D:DR |   |   | D:R |   |  |
 | `$D413-$D428` | 22 |   | D:R |   | D:R |   |   | D:R |   |  |
 | `$D429-$D42A` | 2 |   | D:R |   | D:R B:R |   |   | D:R B:R |   |  |
-| `$D42B-$D4FA` | 208 |   | D:R |   | D:R |   |   | D:R |   |  |
-| `$D4FB-$D518` | 30 |   | D:R |   | D:R |   |   | D:MR |   |  |
+| `$D42B-$D4F2` | 200 |   | D:R |   | D:R |   |   | D:R |   |  |
+| `$D4F3-$D518` | 38 |   | D:R |   | D:R |   |   | D:MR |   |  |
 | `$D519-$D51E` | 6 |   | D:R B:R |   | D:R B:R |   |   | D:MR B:R |   |  |
 | `$D51F-$D526` | 8 |   | D:R B:R |   | D:R B:R |   |   | D:R B:R |   |  |
 | `$D527-$D528` | 2 |   | D:R B:DR |   | D:R B:R |   |   | D:R B:R |   |  |
@@ -42,9 +41,8 @@ SPDX-License-Identifier: BSD-2-Clause
 | `$D533-$DA3C` | 1290 |   | D:R |   | D:R |   |   | D:R |   |  |
 | `$DA3D-$DA3D` | 1 |   | D:R B:R |   | D:R B:R |   |   | D:R B:R |   |  |
 | `$DA3E-$DA40` | 3 |   | D:R |   | D:R B:R |   |   | D:R B:R |   |  |
-| `$DA41-$DA41` | 1 |   | D:DR B:D |   | D:DR B:DR |   |   | D:DR B:R |   |  |
-| `$DA42-$DA43` | 2 |   | D:DR B:D |   | D:DR B:DR |   |   | D:DR B:DR |   |  |
-| `$DA44-$DA45` | 2 |   | D:DR B:D |   | D:DR B:DR |   |   | D:DR B:R |   |  |
+| `$DA41-$DA42` | 2 |   | D:DR B:D |   | D:DR B:DR |   |   | D:DR B:DR |   |  |
+| `$DA43-$DA45` | 3 |   | D:DR B:D |   | D:DR B:DR |   |   | D:DR B:R |   |  |
 | `$DA46-$DA47` | 2 |   | D:DR B:D |   | D:DR B:R |   |   | D:DR B:R |   |  |
 | `$DA48-$DA4D` | 6 |   | D:DR |   | D:DR B:R |   |   | D:DR B:R |   |  |
 | `$DA4E-$DA4E` | 1 |   | D:DR |   | D:DR B:DR |   |   | D:DR B:R |   |  |
@@ -94,10 +92,11 @@ SPDX-License-Identifier: BSD-2-Clause
 | `$DB93-$DB93` | 1 |   | D:R B:MDR |   | D:R | B:MD |   | D:R | B:M |  |
 | `$DB94-$DB96` | 3 |   | D:R B:MD |   | D:R | B:MD |   | D:R | B:M |  |
 | `$DB97-$DB97` | 1 |   | D:R B:MD |   | D:R |   |   | D:R |   |  |
-| `$DB98-$DBA9` | 18 |   | D:R |   | D:R |   |   | D:R |   |  |
-| `$DBAA-$DBAB` | 2 |   | D:R |   | D:DR B:D |   |   | D:R |   |  |
-| `$DBAC-$DBAF` | 4 |   | D:R |   | D:DR B:D |   |   | D:MR |   |  |
-| `$DBB0-$DBB1` | 2 |   | D:R |   | D:DR B:DR |   |   | D:MR |   |  |
+| `$DB98-$DBA5` | 14 |   | D:R |   | D:R |   |   | D:R |   |  |
+| `$DBA6-$DBA7` | 2 |   | D:R |   | D:R |   |   | D:R B:M |   |  |
+| `$DBA8-$DBA9` | 2 |   | D:R |   | D:R |   |   | D:MR B:M |   |  |
+| `$DBAA-$DBAF` | 6 |   | D:R |   | D:DR B:D |   |   | D:MR B:M |   |  |
+| `$DBB0-$DBB1` | 2 |   | D:R |   | D:DR B:DR |   |   | D:MR B:M |   |  |
 | `$DBB2-$DBB3` | 2 |   | D:MR B:M |   | D:MDR B:DR |   |   | D:MR B:M |   |  |
 | `$DBB4-$DBBB` | 8 |   | D:MDR B:MD |   | D:MDR B:MDR |   |   | D:MR B:M |   |  |
 | `$DBBC-$DBC5` | 10 |   | D:MDR B:MDR |   | D:MDR B:MDR |   |   | D:MR B:M |   |  |
@@ -244,7 +243,7 @@ SPDX-License-Identifier: BSD-2-Clause
 | `$E793-$E89D` | 267 |   | H:D | B:D | H:D D:D | H:D |   |   |   |  |
 | `$E89E-$E8AC` | 15 |   | H:D | H:D B:D | H:D D:D | H:D |   |   |   |  |
 | `$E8AD-$E8B6` | 10 |   | H:D | H:D B:D | H:D D:D | H:D |   | H:D D:D B:D | H:D B:D | FAT_DBUF/FSECTOR_BUF, BD_LINE/FAT_DBUF/FSECTOR_BUF/SECTOR_BUF |
-| `$E8B7-$E97F` | 201 |   | H:D | B:D | H:D D:D | H:D |   | H:D D:D B:D | H:D B:D | (in FAT_DBUF/FSECTOR_BUF), BD_MON, BD_DAY |
+| `$E8B7-$E97F` | 201 |   | H:D | B:D | H:D D:D | H:D |   | H:D D:D B:D | H:D B:D | (in FAT_DBUF/FSECTOR_BUF), BD_DAY, BD_MON |
 | `$E980-$E984` | 5 |   | H:D | H:D B:D | H:D D:D | H:D |   | H:D D:D B:D | H:D B:D | (in FAT_DBUF/FSECTOR_BUF), (in BD_LINE/FAT_DBUF/FSECTOR_BUF/SECTOR_BUF) |
 | `$E985-$E98A` | 6 |   | H:D | B:D | H:D D:D | H:D |   | H:D D:D B:D | H:D B:D | (in FAT_DBUF/FSECTOR_BUF), (in BD_LINE/FAT_DBUF/FSECTOR_BUF/SECTOR_BUF) |
 | `$E98B-$E98B` | 1 |   | H:D | H:D B:D | H:D D:D | H:D |   | H:D D:D B:D | H:D B:D | (in FAT_DBUF/FSECTOR_BUF), (in BD_LINE/FAT_DBUF/FSECTOR_BUF/SECTOR_BUF) |
@@ -651,7 +650,8 @@ SPDX-License-Identifier: BSD-2-Clause
 | `$FBF1-$FBF1` | 1 |   | D:M B:M |   | D:M B:M |   |   | D:M |   |  |
 | `$FBF2-$FBF3` | 2 |   | D:M B:M |   | D:M |   |   | D:M |   |  |
 | `$FBF4-$FC15` | 34 |   | D:M |   | D:M |   |   | D:M |   |  |
-| `$FC16-$FC17` | 2 |   | B:M |   | B:M |   |   | B:M |   | DISKOP_A |
+| `$FC16-$FC16` | 1 |   | B:M |   | B:M |   |   | B:M |   |  |
+| `$FC17-$FC17` | 1 |   | B:M |   | B:M |   |   |   |   | DISKOP_A |
 | `$FC18-$FC1F` | 8 |   | D:M B:M | B:M | D:M B:M | B:M |   |   |   | GFX_SPATN |
 | `$FC20-$FC3F` | 32 |   | B:M |   |   | B:M |   |   |   | (in GFX_SPATN) |
 | `$FC40-$FC49` | 10 |   |   |   |   |   |   |   |   |  |
