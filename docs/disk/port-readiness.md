@@ -59,7 +59,7 @@ Philips VG-8020 with a Sony HBD-F1.
    as the CF-3300 -- the fix was a byte shorter); two filed and pinned in their gates (D-VERIFYREAD: VERIFY ON reads
    each written sector back on the CF-3300, `make verifyread-acceptance`; D-BUFINCTL: Ctrl-C / Ctrl-P were stored as
    characters by the line input -- ✅ FIXED 2026-11-26, below). **What is left of the entry contract is FIXES, not
-   unknowns** -- D-DOSDRVB, D-STIMERANGE, D-CONCOL, D-DSKIOCYL, D-VERIFYREAD -- and the room for them now exists
+   unknowns** -- D-CONCOL, D-DSKIOCYL, D-VERIFYREAD, D-F37DTERM (D-DOSDRVB closed 2026-11-17, D-STIMERANGE 2026-11-26) -- and the room for them now exists
    (D-DISKREREAD, the same day: ~8 B -> 718 B by re-reading the code).
    ✅ **D-BUFINCTL FIXED 2026-11-26:** under MSX-DOS the line input (BDOS $0A) now does what the CF-3300's does with
    every control key -- Ctrl-C abandons the program (`^C`, COMMAND.COM's A> again), Ctrl-P / Ctrl-N turn the printer

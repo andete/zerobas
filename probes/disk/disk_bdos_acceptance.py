@@ -265,15 +265,8 @@ ALLOWLIST = {
         0x0250: (0x08, "regs rec2 RDABS C -- the code the handler was given (D-DSKIOCYL)"),
         0x0267: (0x08, "hrec slot 2 C -- the handler's C on that read (D-DSKIOCYL)"),
     },
-    "BDOSXT": {
-        # D-STIMERANGE (TODO, TIER 6): STIME takes any time -- A = 0 where the CF-3300
-        # answers $FF for hour 25, minute 60, second 60 and hundredths 100. OURS pinned
-        # (scratchpad/XT_stock.out, XT_ours.out).
-        0x0392: (0x00, "row 8 STIME 25:00:00's A (D-STIMERANGE; the CF-3300 $FF)"),
-        0x039C: (0x00, "row 9 STIME 12:60:00's A (D-STIMERANGE)"),
-        0x03A6: (0x00, "row 10 STIME 12:34:60's A (D-STIMERANGE)"),
-        0x03B0: (0x00, "row 11 STIME hundredths 100's A (D-STIMERANGE)"),
-    },
+    # BDOSXT: D-STIMERANGE's four pins dropped 2026-11-26 -- hour / minute / second were fixed by
+    # D-F37DSETDATE (2026-11-22), hundredths 100 the same day as the drop (scratchpad/AE_stime1.out).
     "BDOSX8": {
         # Item 5 (WRSEQ FCB position write-back). The post-WRSEQ FCB position (+12
         # EX / +32 CR), running size (+16..19), first cluster (+26/27), current

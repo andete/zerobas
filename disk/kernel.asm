@@ -7647,6 +7647,10 @@ stime_body:
                 cp      l
                 jr      c, st_res           ; minute > 59
                 cp      d                   ; second > 59 -> Cy
+                jr      c, st_res
+                ld      a, 99               ; D-STIMERANGE (2026-11-26): hundredths > 99 -> Cy -- the
+                cp      e                   ; CF-3300 answers $FF to 100 under MSX-DOS too (BDOSXT row 11,
+                                            ; scratchpad/XT_stock.out); E is STIME's hundredths
 st_res:
                 sbc     a, a                ; A = $FF refused / 0 taken
                 ld      b, h
