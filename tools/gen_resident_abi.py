@@ -126,6 +126,8 @@ REQUIRED_DISK_CODE = [
 # argument the code half rests on.
 REQUIRED_DISK_RAM = [
     "ARGA",                     # the 15-digit working record
+    "ENDFLAG",                  # D-F37DTERM: BDOS $00 through $F37D ends the BASIC
+    "ONEFLG",                   # program as END does (ENDFLAG 1, ONEFLG 0)
     "STRSCR",                   # [len][bytes] staging buffer
     "FN_RESUME",                # D-DISKVERB: main stages the statement cursor
                                 # here for the handler, and fname_expr overwrites

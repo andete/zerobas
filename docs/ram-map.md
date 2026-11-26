@@ -34,7 +34,7 @@ names the other component's BUFFER this address falls within. That
 second one is the question a per-component map cannot answer.
 
 * **basic** — 70 declared addresses in this project's own workspace `$E000..$F37F` (69 with a machine-readable width), plus **459** in the MSX standard work area at or above `$F380`.
-* **disk** — 129 declared addresses in this project's own workspace `$E000..$F37F` (120 with a machine-readable width), plus **78** in the MSX standard work area at or above `$F380`.
+* **disk** — 129 declared addresses in this project's own workspace `$E000..$F37F` (120 with a machine-readable width), plus **80** in the MSX standard work area at or above `$F380`.
 
 ## This project's own workspace (`$E000..$F37F`)
 
@@ -435,6 +435,7 @@ extents the standard already fixes would be noise, not rigour.
 | `$F6B7` | 2 B | `basic` | `ERRRESUME_TXT` | 2 B: ERRRESUME's old [2..3], the erroring statement's |  |
 | `$F6B9` | 2 B | `basic` | `ONELIN` | 2 B: ON ERROR handler line's LINK address (the |  |
 | `$F6BB` | 1 B | `basic` | `ONEFLG` | 1 B: $FF = currently inside a handler (no RESUME |  |
+| `$F6BB` | 1 B | `disk` | `ONEFLG` | 1 B: $FF = currently inside a handler (no RESUME |  |
 | `$F6BC` | 2 B | `basic` | `FN_RESUME` | D-FNEXPR: cursor past a filename expr (2 B) -- published TEMP2 (D-WSZERO) |  |
 | `$F6BC` | 2 B | `disk` | `FN_RESUME` | D-FNEXPR: cursor past a filename expr (2 B) -- published TEMP2 (D-WSZERO) |  |
 | `$F6BE` | 2 B | `basic` | `CONTLINE` | saved CURLINE for CONT (2) |  |
@@ -469,6 +470,7 @@ extents the standard already fixes would be noise, not rigour.
 | `$F6FC` | 2 B | `basic` | `GOTOTGT` | pending branch-target line addr (2) |  |
 | `$F6FE` | 1 B | `basic` | `GOTOFLAG` | 1 = a branch (GOTO) is pending (1 B) |  |
 | `$F6FF` | 1 B | `basic` | `ENDFLAG` | 1 = END/STOP reached, stop the run (1 B) |  |
+| `$F6FF` | 1 B | `disk` | `ENDFLAG` | 1 = END/STOP reached, stop the run (1 B) |  |
 | `$F700` | 2 B | `basic` | `RESUMEPTR` | mid-line resume token pointer (2) |  |
 | `$F702` | 1 B | `basic` | `RESUMEFLAG` | 1 = resume at RESUMEPTR (set by RETURN / NEXT) (1 B) |  |
 | `$F703` | 4 B | `basic` | `GFX_DSUB` | $F703: the resolved values, 2 slots (M takes two) (4) |  |

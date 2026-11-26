@@ -1,4 +1,4 @@
-- [ ] 🐛 **BDOS $00 (TERMINATE) THROUGH $F37D RETURNS ON ZEROBAS; ON THE CF-3300 IT ENDS THE BASIC PROGRAM (D-F37DTERM,
+- [x] 🐛 **BDOS $00 (TERMINATE) THROUGH $F37D RETURNS ON ZEROBAS; ON THE CF-3300 IT ENDS THE BASIC PROGRAM (D-F37DTERM,
       found 2026-11-26 by D-DISKCONTRACT gap 6).**
       🎚️ TIER 6 — every edge: a program that calls function 0 through $F37D from BASIC.
       🤖 **AUTONOMOUS** — measured; the fix needs disk-ROM room and touches BASIC's program end.
@@ -11,3 +11,9 @@
       "terminate" means there is the port's question.
       FIX DIRECTION: a bdos_tab row for $00 that leaves to BASIC's program end as END does (the main ROM's -- so a
       BASIC-side seam, and a guard for the BASIC-less host). Disk-ROM room first (docs/disk/port-readiness.md row 5).
+      ✅ **FIXED 2026-11-26 (the program end; the same line's rest filed as [D-F37DTERMLINE](../open/D-F37DTERMLINE.md)).** A bdos_tab
+      row for $00 (disk/kernel.asm bb_term): under BASIC (DISKVE's high byte 0) it does what END does to the run --
+      ONEFLG 0, ENDFLAG 1 (zerobas's cells, now exported to the disk ROM's resident ABI) -- and returns A = 0; under
+      MSX-DOS nothing changes. New `make f37dterm-acceptance` (probes/disk/disk_probe_f37dterm.py): the next line no
+      longer runs and FRE(0) is kept -- SAME; the rest of the CALLING line still runs (AFTER printed) -- pinned
+      ([AE_f37dterm1.out](../../scratchpad/AE_f37dterm1.out), [AE_f37dterm2.out](../../scratchpad/AE_f37dterm2.out)).

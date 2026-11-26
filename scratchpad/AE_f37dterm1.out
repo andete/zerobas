@@ -1,0 +1,6 @@
+ROW after  CF=False  ZB=True   DIVERGES
+ROW next   CF=False  ZB=False  SAME
+ROW fre    CF=19581  ZB=19581  SAME
+
+FAIL: BDOS $00 through $F37D ends the BASIC program
+refcache: REFS MODE (references replayed, zerobas measured), 0 REFERENCE reading(s) replayed, 1 reference miss, 1 zerobas reading(s) MEASURED, 0 zerobas replayed, 1 stored

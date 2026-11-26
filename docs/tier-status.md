@@ -146,25 +146,25 @@ The six published entries, then every PINNED address in `disk/*.asm` -- the refe
 | $50D5 | `seldsk_drv` | BDOS $0E SELDSK (by its label): exercised | disk/kernel.asm:761 |
 | $50E0 | `conin` | BDOS $01 CONIN (by its label): exercised | disk/kernel.asm:767 |
 | $53A7 | `k_53A7` | BDOS $08 INNOE: exercised | disk/kernel.asm:1256 |
-| $543C | `k_543C` | BDOS $0B CONST: exercised | disk/kernel.asm:1392 |
-| $5445 | `k_5445` | BDOS $01 CONIN: exercised | disk/kernel.asm:1398 |
-| $544E | `k_544E` | BDOS $08 INNOE: exercised | disk/kernel.asm:1408 |
-| $5454 | `conout` | BDOS $02 CONOUT (by its label): exercised | disk/kernel.asm:1433 |
-| $5462 | `k_5462` | BDOS $07 DIRIN: exercised | disk/kernel.asm:1453 |
-| $546E | `k_546E` | BDOS $03 AUXIN: exercised | disk/kernel.asm:1491 |
-| $5474 | `k_5474` | BDOS $04 AUXOUT: exercised | disk/kernel.asm:1503 |
-| $553C | `gdate_handler` | BDOS $2A GDATE (by its label): exercised | disk/kernel.asm:1711 |
-| $5552 | `k_5552` | no BDOS function named | disk/kernel.asm:1738 |
-| $55DB | `k_55DB` | BDOS $2C GTIME: exercised | disk/kernel.asm:1809 |
-| $55E6 | `k_55E6` | BDOS $2D STIME: exercised | disk/kernel.asm:1819 |
-| $55FF | `k_55FF` | BDOS $2E VERIFY: exercised | disk/kernel.asm:1845 |
-| $5C11 | `k_5C11` | no BDOS function named | disk/kernel.asm:3109 |
-| $5E10 | `mb_5e10` | no BDOS function named | disk/kernel.asm:3525 |
-| $5FE5 | `(jp k_5FE5)` | no BDOS function named | disk/kernel.asm:3957 |
-| $607B | `(jp k_607B)` | BDOS $0C CPMVER: exercised | disk/kernel.asm:4077 |
-| $75A5 | `(jp k_75A5)` | no BDOS function named | disk/kernel.asm:7774 |
-| $77B8 | `(jp k_77B8)` | no BDOS function named | disk/kernel.asm:8172 |
-| $782B | `(jp k_782B)` | no BDOS function named | disk/kernel.asm:8261 |
+| $543C | `k_543C` | BDOS $0B CONST: exercised | disk/kernel.asm:1394 |
+| $5445 | `k_5445` | BDOS $01 CONIN: exercised | disk/kernel.asm:1400 |
+| $544E | `k_544E` | BDOS $08 INNOE: exercised | disk/kernel.asm:1410 |
+| $5454 | `conout` | BDOS $02 CONOUT (by its label): exercised | disk/kernel.asm:1435 |
+| $5462 | `k_5462` | BDOS $07 DIRIN: exercised | disk/kernel.asm:1455 |
+| $546E | `k_546E` | BDOS $03 AUXIN: exercised | disk/kernel.asm:1493 |
+| $5474 | `k_5474` | BDOS $04 AUXOUT: exercised | disk/kernel.asm:1505 |
+| $553C | `gdate_handler` | BDOS $2A GDATE (by its label): exercised | disk/kernel.asm:1713 |
+| $5552 | `k_5552` | no BDOS function named | disk/kernel.asm:1740 |
+| $55DB | `k_55DB` | BDOS $2C GTIME: exercised | disk/kernel.asm:1811 |
+| $55E6 | `k_55E6` | BDOS $2D STIME: exercised | disk/kernel.asm:1821 |
+| $55FF | `k_55FF` | BDOS $2E VERIFY: exercised | disk/kernel.asm:1847 |
+| $5C11 | `k_5C11` | no BDOS function named | disk/kernel.asm:3111 |
+| $5E10 | `mb_5e10` | no BDOS function named | disk/kernel.asm:3527 |
+| $5FE5 | `(jp k_5FE5)` | no BDOS function named | disk/kernel.asm:3959 |
+| $607B | `(jp k_607B)` | BDOS $0C CPMVER: exercised | disk/kernel.asm:4079 |
+| $75A5 | `(jp k_75A5)` | no BDOS function named | disk/kernel.asm:7792 |
+| $77B8 | `(jp k_77B8)` | no BDOS function named | disk/kernel.asm:8190 |
+| $782B | `(jp k_782B)` | no BDOS function named | disk/kernel.asm:8279 |
 | $7F7C | `k_7F7C` | no BDOS function named | disk/runtime.asm:936 |
 | $7FC0 | `fw_done` | no BDOS function named | disk/runtime.asm:940 |
 | $7FD1 | `(IF ($ <= $7FBF))` | no BDOS function named | disk/runtime.asm:953 |
@@ -603,7 +603,7 @@ A keyword's LEVEL is its highest UNBROKEN run of proven rungs from T1: `T1✓ T2
 | — | TIER 6 | 🤖 | CALATR / CALPAT in text mode; no title known. | T-EC2F8C |
 | — | TIER 6 | 🤖 | no program known to read them. | T-9326D7 |
 | — | TIER 6 | 🤖 | what an undefined read returns. | T-95A3F2 |
-| — | TIER 6 | 🤖 | a program that calls function 0 through $F37D from BASIC. | T-F17685 |
+| — | TIER 6 | 🤖 | a program that calls function 0 through $F37D, with more statements after the call. | T-AF6977 |
 | — | TIER 6 | 🤖 | behind the disk ROM's filed fixes for the C-BIOS port. | T-3C7062 |
 | — | TIER 6 | 🤖 | every edge (each needs a program that changes CRTCNT, garbles RG0SAV or sets LINL40 above 40; | T-B661A0 |
 | — | TIER 6 | ⛔ | POSTPONED (Joost 2026-11-23): "since we don't do MSX2 and MSX2+ and turbor yet, those should be | T-9D0B9E |

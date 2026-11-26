@@ -2865,6 +2865,11 @@ verifyread-acceptance: repack-machine
 dosctl-acceptance: repack-machine
 	python3 probes/disk/disk_probe_dosctl.py
 
+# --- f37dterm-acceptance: BDOS $00 through $F37D ends the BASIC program, as the CF-3300 (D-F37DTERM; the same
+# line's rest still runs -- D-F37DTERMLINE, pinned) ---
+f37dterm-acceptance: repack-machine $(DISK_TEST_DSK)
+	python3 probes/disk/disk_probe_f37dterm.py
+
 # --- bufinctl-acceptance: every line-editing key's effect on a BDOS $0A line under MSX-DOS (D-BUFINCTL) ---
 # BUFINX.COM's buffer and the printer log, one key between `AB` and `CD`, CF-3300 vs zerobas.
 bufinctl-acceptance: repack-machine

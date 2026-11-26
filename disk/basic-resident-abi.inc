@@ -17,6 +17,8 @@ round_and_finalize equ 03526H
 pu_deref_body equ 02C7EH
 subrom_call equ 03C24H
 ARGA equ 0F806H   ; operand A / working result, FPNUM record (18)
+ENDFLAG equ 0F6FFH   ; 1 = END/STOP reached, stop the run (1 B)
+ONEFLG equ 0F6BBH   ; 1 B: $FF = currently inside a handler (no RESUME
 STRSCR equ 0F55EH   ; = BUF ($F55E): [len][bytes:STRMAX] staging (256 B)
 FN_RESUME equ 0F6BCH   ; D-FNEXPR: cursor past a filename expr (2 B) -- published TEMP2 (D-WSZERO)
 DISKOP_STATUS equ 0FCAEH   ; tenant -> main: the disposition (1 B)

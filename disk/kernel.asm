@@ -1267,6 +1267,8 @@ bdos_tab:
                 ; 💰 D-DSKFMT carve 19 (2026-11-10): the rows bdos_entry (disk/driver.asm)
                 ; and bdos_more tested by `cp` / `jp`, the block and sequential reads first
                 ; (BLOAD and the boot loaders call them most).
+                db      $00                 ; D-F37DTERM (2026-11-26): TERMINATE
+                dw      bb_term
                 db      BDOS_F_RDBLK
                 dw      k47b2_body          ; RR-positioned, as the CF-3300 (D-BDOSFCB)
                 db      BDOS_F_SEQRD
@@ -7757,6 +7759,22 @@ dskio_verify:
                 pop     hl
                 ld      (FDC_DEST), hl
                 pop     hl
+                ret
+; bb_term -- BDOS $00 TERMINATE through $F37D (D-F37DTERM, 2026-11-26). From a BASIC program the CF-3300
+; ends the program SILENTLY -- no further statement, no message, `Ok`, the CLEAR kept (measured by hand, a USR stub
+; `ld c,0 / call $F37D / ret`; todo/done/D-F37DTERM.md). Here: what END does to the run -- ONEFLG 0, ENDFLAG 1
+; (zerobas's BASIC, through the resident ABI) -- and back with A = 0. Under MSX-DOS (DISKVE's high byte set)
+; nothing: A = 0 as before ($00 with no BASIC is the port's open question).
+; CLEAN-ROOM: the published BDOS function list and black-box readings of the screen.
+bb_term:
+                ld      a, (DISKVE + 1)
+                or      a
+                ld      a, 0
+                ret     nz                  ; MSX-DOS: as before
+                ld      (ONEFLG), a
+                inc     a
+                ld      (ENDFLAG), a
+                dec     a
                 ret
 ; conout_dirio_out -- BDOS $06 DIRIO with E <> $FF: the char straight to CHPUT. On the CF-3300 it neither
 ; moves the logical column nor expands TAB (BDOSXL R2a / H / R2l: `XYZ` leaves it 0, from 2 it stays 2,
