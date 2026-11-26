@@ -13,3 +13,8 @@
       CF-3300). A gate row: BOTTOM raised, a program typed, the signature intact and TXTTAB = BOTTOM + 1 on both.
       🤖 **AUTONOMOUS** — but a BASIC item: by Joost's focus it waits behind the disk ROM's readiness for C-BIOS, beside
       [D-CARTCLAIM](D-CARTCLAIM.md).
+      📏 REAL CARTRIDGES (2026-11-26, scratchpad/cartsurvey.py, [AE_cartsurvey2.out](../../scratchpad/AE_cartsurvey2.out) / [AE_cartsurvey3.out](../../scratchpad/AE_cartsurvey3.out)): FM-PAC (also after
+      CALL MUSIC), the Checkmark FM Stereo PAK and the Sanyo MRS-001 reserve NOTHING through HIMEM, BOTTOM or SLTWRK
+      on either machine -- they cannot show this bug and are not hurt by it. A real-product test needs an RS-232
+      cartridge (buffers at CALL COMINI): the Sony HBI-232, or the generic rs232 ROM in the version openMSX's config
+      names (sha1 47c78981...; the copy on hand is another version and openMSX refuses it, [AE_cartsurvey1.out](../../scratchpad/AE_cartsurvey1.out)).

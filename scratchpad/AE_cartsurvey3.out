@@ -1,0 +1,2 @@
+fmpac                    CF: HIMEM=DF93 BOTTOM=8000 TXTTAB=8001 MEMSIZ=DD7B STKTOP=DCB3 DRVCNT=2 SLTWRK=[3-1/p1:F1BF ]  screen=[]
+fmpac                    ZB: HIMEM=DE77 BOTTOM=8000 TXTTAB=8001 MEMSIZ=DC5F STKTOP=DB97 DRVCNT=2 SLTWRK=[3-1/p1:F1BF ]  screen=['zerobas Disk BASIC', 'ZB', 'color auto goto list run']

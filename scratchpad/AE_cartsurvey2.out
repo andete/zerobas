@@ -1,0 +1,8 @@
+(none)                   CF: HIMEM=DF93 BOTTOM=8000 TXTTAB=8001 MEMSIZ=DD7B STKTOP=DCB3 DRVCNT=2 SLTWRK=[3-1/p1:F1BF ]  screen=[]
+(none)                   ZB: HIMEM=DE77 BOTTOM=8000 TXTTAB=8001 MEMSIZ=DC5F STKTOP=DB97 DRVCNT=2 SLTWRK=[3-1/p1:F1BF ]  screen=['zerobas Disk BASIC', 'ZB', 'color auto goto list run']
+fmpac                    CF: HIMEM=DF93 BOTTOM=8000 TXTTAB=8001 MEMSIZ=DD7B STKTOP=DCB3 DRVCNT=2 SLTWRK=[3-1/p1:F1BF ]  screen=[]
+fmpac                    ZB: HIMEM=DE77 BOTTOM=8000 TXTTAB=8001 MEMSIZ=DC5F STKTOP=DB97 DRVCNT=2 SLTWRK=[3-1/p1:F1BF ]  screen=['zerobas Disk BASIC', 'ZB', 'color auto goto list run']
+Checkmark_FM_Stereo_PAK  CF: HIMEM=DF93 BOTTOM=8000 TXTTAB=8001 MEMSIZ=DD7B STKTOP=DCB3 DRVCNT=2 SLTWRK=[3-1/p1:F1BF ]  screen=[]
+Checkmark_FM_Stereo_PAK  ZB: HIMEM=DE77 BOTTOM=8000 TXTTAB=8001 MEMSIZ=DC5F STKTOP=DB97 DRVCNT=2 SLTWRK=[3-1/p1:F1BF ]  screen=['zerobas Disk BASIC', 'ZB', 'color auto goto list run']
+Sanyo_MRS-001            CF: HIMEM=DF93 BOTTOM=8000 TXTTAB=8001 MEMSIZ=DD7B STKTOP=DCB3 DRVCNT=2 SLTWRK=[3-1/p1:F1BF ]  screen=[]
+Sanyo_MRS-001            ZB: HIMEM=DE77 BOTTOM=8000 TXTTAB=8001 MEMSIZ=DC5F STKTOP=DB97 DRVCNT=2 SLTWRK=[3-1/p1:F1BF ]  screen=['zerobas Disk BASIC', 'ZB', 'color auto goto list run']
