@@ -1,0 +1,6 @@
+CF ON-state != OFF-state (and ON moved it): $DBCE 9F->00->03, $F3DC 08->0B->0E, $F3F8 F0->FA->05, $F3FA F0->FA->05, $F461 00->4E->46
+CF set by VERIFY ON and restored by VERIFY OFF: $D348 0A->09->0A, $DA41 0A->09->0A, $DBE6 0A->09->0A
+CF other changed cells: 76 $D349, $D34A, $D34B, $D34C, $D34D, $D34E, $D34F, $D350, $D351, $D352, $D519, $D51A, $D51D, $D51E, $D51F, $D522, $D523, $D524, $DA42, $DA43, $DA44, $DA45, $DA46, $DA47
+ZB ON-state != OFF-state (and ON moved it): $F3DC 08->0B->0E, $F3F8 F0->FA->05, $F3FA F0->FA->05
+ZB set by VERIFY ON and restored by VERIFY OFF: $D348 0A->09->0A, $DA41 0A->09->0A
+ZB other changed cells: 78 $D349, $D34A, $D34B, $D34C, $D34D, $D34E, $D34F, $D350, $D351, $D352, $D51D, $D51E, $D51F, $D522, $D523, $D524, $DA42, $DA43, $DA44, $DA45, $DA46, $DA47, $DA48, $DA49

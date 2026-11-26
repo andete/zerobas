@@ -1,0 +1,9 @@
+python3 probes/disk/disk_probe_verify.py
+ROW copyoff  CF: RRRRRRRRRRRRRRRRWWWWWWWWW
+ROW copyon   CF: RRRRRRRRRRRRRRRRWRWRWRWWWRRRWWWRRR
+ROW copyoff  ZB: RRRRRRRRRRRRRWRWWRWRW
+ROW copyon   ZB: RRRRRRRRRRRRRWRRWRWRRWRRWRWR
+ROW effect   CF=[+R 9] ZB=[+R 6] DIVERGES
+
+FAIL: what VERIFY ON adds to a write
+make: *** [verifyread-acceptance] Error 1

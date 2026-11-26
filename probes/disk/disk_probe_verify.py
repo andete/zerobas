@@ -18,8 +18,11 @@ Rows:
   copy-off   the command kinds of the COPY under VERIFY OFF -- reported, both machines (not compared: the two disk
              ROMs' read caching differs by design, D-WCACHE)
   copy-on    the same under VERIFY ON -- reported
-  effect     what VERIFY ON ADDS: the number of READs issued after a WRITE that the OFF stream did not have, as
-             `+R n` -- COMPARED: SAME when both machines add the same verify reads (or both add none)
+  effect     what VERIFY ON ADDS, as `+R n / W w`: the READs the ON stream has beyond the OFF stream's, against the
+             ON stream's WRITEs -- COMPARED as a verdict: "every written sector read back" (n == w), "none" (n == 0)
+             or the numbers. The raw counts are NOT compared: zerobas's COPY issues fewer writes than the CF-3300's
+             (its write caching, D-WCACHE), so 6 of 6 and 9 of 9 are the same behaviour (2026-11-26,
+             scratchpad/AE_verify3.out).
 
 Clean room: typed keys in; the FDC command register's written values and the cursor/screen out. Microsoft's DOS
 files run as they are.
@@ -73,11 +76,13 @@ def verify_reads(off, on):
     return on.count("R") - off.count("R")
 
 
-# 🔴 THE KNOWN DIFFERENCE, PINNED TO ITS EXACT VALUES (D-VERIFYREAD, measured 2026-11-26, scratchpad/AE_verify1.out):
-# the CF-3300 READS BACK every sector a write sends under VERIFY ON (9 writes, 9 extra reads); zerobas ignores the
-# switch (+0). The disk ROM has no room to fix it today (docs/disk/port-readiness.md row 5). A change on EITHER side
-# turns the row red: the reference moving means the instrument did, and zerobas matching means the pin must go.
-KNOWN = {"CF": 9, "ZB": 0}
+# D-VERIFYREAD (measured 2026-11-26, scratchpad/AE_verify1.out): the CF-3300 reads back every sector a write sends under
+# VERIFY ON; zerobas ignored the switch. FIXED the same day (disk/kernel.asm dskio_verify): the pin is gone.
+KNOWN = {}
+
+
+def verdict(n, w):
+    return "every written sector read back" if n == w and w else "none" if n == 0 else f"+R {n} / W {w}"
 
 
 def run(machine):
@@ -117,15 +122,11 @@ def main():
         print(f"\nINSTRUMENT FAULT: no WRITE command logged in a COPY on {', '.join(blind)} -- nothing measured")
         return 2
     eff = {side: verify_reads(s["copyoff"], s["copyon"]) for side, (s, _) in got.items()}
-    writes = got["CF"][0]["copyon"].count("W")
-    if eff["CF"] == eff["ZB"]:
-        v = "SAME" + (" -- 🔴 D-VERIFYREAD IS FIXED: drop the KNOWN pin" if KNOWN else "")
-    elif eff == KNOWN:
-        v = f"KNOWN DIFFERENCE (D-VERIFYREAD): the CF-3300 reads back each of its {writes} written sectors"
-    else:
-        v = "DIVERGES"
-    ok = v.startswith("KNOWN") or (v == "SAME" and not KNOWN)
-    print(f"ROW effect   CF=[+R {eff['CF']}] ZB=[+R {eff['ZB']}] {v}")
+    wr = {side: s["copyon"].count("W") for side, (s, _) in got.items()}
+    say = {side: verdict(eff[side], wr[side]) for side in eff}
+    v = "SAME" if say["CF"] == say["ZB"] else "DIVERGES"
+    ok = v == "SAME"
+    print(f"ROW effect   CF=[+R {eff['CF']} / W {wr['CF']}: {say['CF']}] ZB=[+R {eff['ZB']} / W {wr['ZB']}: {say['ZB']}] {v}")
     print(f"\n{'PASS' if ok else 'FAIL'}: what VERIFY ON adds to a write")
     return 0 if ok else 1
 

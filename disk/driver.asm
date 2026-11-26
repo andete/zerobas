@@ -121,6 +121,8 @@ dskio_write:
                 call    dskio_head      ; count 0: leaves DSKIO; else C/D/E = CHS, HL = dest
                 call    fdc_write_phys
                 jr      c, dskio_err
+                call    dskio_verify    ; D-VERIFYREAD: VERIFY on -> the sector read back; Cy its error
+                jr      c, dskio_err
                 call    dskio_bump      ; HL advanced by 512 on success
                 jr      dskio_write
 

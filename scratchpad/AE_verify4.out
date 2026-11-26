@@ -1,0 +1,8 @@
+python3 probes/disk/disk_probe_verify.py
+ROW copyoff  CF: RRRRRRRRRRRRRRRRWWWWWWWWW
+ROW copyon   CF: RRRRRRRRRRRRRRRRWRWRWRWWWRRRWWWRRR
+ROW copyoff  ZB: RRRRRRRRRRRRRWRWWRWRW
+ROW copyon   ZB: RRRRRRRRRRRRRWRRWRWRRWRRWRWR
+ROW effect   CF=[+R 9 / W 9: every written sector read back] ZB=[+R 6 / W 6: every written sector read back] SAME
+
+PASS: what VERIFY ON adds to a write

@@ -34,7 +34,7 @@ names the other component's BUFFER this address falls within. That
 second one is the question a per-component map cannot answer.
 
 * **basic** — 70 declared addresses in this project's own workspace `$E000..$F37F` (69 with a machine-readable width), plus **459** in the MSX standard work area at or above `$F380`.
-* **disk** — 128 declared addresses in this project's own workspace `$E000..$F37F` (119 with a machine-readable width), plus **78** in the MSX standard work area at or above `$F380`.
+* **disk** — 129 declared addresses in this project's own workspace `$E000..$F37F` (120 with a machine-readable width), plus **78** in the MSX standard work area at or above `$F380`.
 
 ## This project's own workspace (`$E000..$F37F`)
 
@@ -215,6 +215,7 @@ second one is the question a per-component map cannot answer.
 | `$F09D` | 1 B | `disk` | `FILES_HASPAT` | DISK-ONLY: FILES: 1 = a filespec pattern is in DISK_FCB_NAME (1) |  |
 | `$F195` | 18 B | `disk` | `DRVA_DPB/INIT_HIMEM` | INIT's (first) claim: the CF-3300's HIMEM at its H.RUNC entry, |  |
 | `$F1AA` |  | `disk` | `W50A9_RET_DE` | DE (= IX) on return: disk work-area pointer |  |
+| `$F1C5` | 1 B | `disk` | `VERIFY_F` | (1 B) BDOS VERIFY: 0 off, else on -- verify_body stores E, INIT clears it, |  |
 | `$F1C6` | 2 B | `disk` | `CLAIM_D` | $4030's work-area value, GETWRK_AREA - N (2 B) |  |
 | `$F1C8` | 1 B | `disk` | `HOOK_SLOT` | our slot byte for the HPHYD inter-slot hook (1) |  |
 | `$F1C9` |  | `disk` | `RES_PRINT` | resident $-string print routine the kernel CALLs (§8.28) |  |

@@ -1834,9 +1834,7 @@ drw_lp:
 ; verify_body -- BDOS $2E VERIFY (M22a): A = E. Moved here from disk/runtime.asm's
 ; $782B..$7F7C region (D-DISKCARVE, 2026-11-07); this pad was empty and never
 ; entered (scratchpad/padwatch_4ede.out).
-verify_body:
-                ld      a, e
-                ret
+; (verify_body moved in front of $75A5 by D-VERIFYREAD: it keeps the flag now, and this pad was full)
 ; (wrseq_body_write moved here by D-RNDFCB from the $7F7C region; entered only by
 ; driver.asm wrseq_body's `jp nz`.)
 ; (moved here from runtime.asm by the D-DSKFMT defrag)
@@ -3917,6 +3915,8 @@ ig_init:
                 ld      de, GETWRK_AREA - CLAIM_NMAX
                 add     hl, de
                 ld      (CLAIM_D), hl       ; GETWRK_AREA - N (disk/equates.inc)
+                xor     a
+                ld      (VERIFY_F), a       ; D-VERIFYREAD: VERIFY starts OFF (an own cell, nothing else clears it)
                 jp      sltwrk_pub          ; publish SLTWRK, then init (the room is there)
 
 ; (calslt_body, CALSLT for a page-0 target under MSX-DOS -- D-DOSMODE40 -- was here;
@@ -7730,6 +7730,34 @@ cinl_echo:
                 add     a, $40
                 ld      e, a
                 jp      conout_body
+; dskio_verify -- D-VERIFYREAD (2026-11-26): with BDOS VERIFY on (VERIFY_F), read the sector just written back
+; and hand its result to the write: the CF-3300 reads back every sector it writes under VERIFY ON (BDOSXE-style
+; FDC log, scratchpad/AE_verify1.out: +9 READs to 9 WRITEs; its order WWW RRR, here W R per sector -- the
+; count is what the gate scores). The data lands at $4000.. -- this ROM's own page, mapped during DSKIO, so
+; the stores are dropped and no buffer is touched. Not measured: what the CF-3300 answers when the read-back
+; FAILS (here: that read's error code, as the write's).
+; CLEAN-ROOM: the published VERIFY function, the FDC's command register watched; no stock routine read.
+; In: HL = the buffer + 512 (fdc_write_phys's). Out: Cy / A = the read's result; HL kept.
+verify_body:                                ; BDOS $2E VERIFY ($55FF's and bdos_tab's): A = E, and
+                ld      a, e                ; D-VERIFYREAD: E kept for DSKIO's write
+                ld      (VERIFY_F), a
+                ret
+dskio_verify:
+                ld      a, (VERIFY_F)
+                or      a
+                ret     z               ; off: Cy = 0
+                push    hl
+                ld      hl, (FDC_DEST)
+                push    hl
+                ld      hl, $4000
+                ld      (FDC_DEST), hl
+                ld      hl, (FDC_LSEC)
+                call    lsec_chs        ; C / D / E for this sector again
+                call    fdc_read_phys
+                pop     hl
+                ld      (FDC_DEST), hl
+                pop     hl
+                ret
 ; conout_dirio_out -- BDOS $06 DIRIO with E <> $FF: the char straight to CHPUT. On the CF-3300 it neither
 ; moves the logical column nor expands TAB (BDOSXL R2a / H / R2l: `XYZ` leaves it 0, from 2 it stays 2,
 ; a TAB at 36 stays 36). (disk/runtime.asm's conout_body jumps here.) Entry as conout_not_dispatch: caller's HL then AF on the stack.

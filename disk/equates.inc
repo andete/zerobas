@@ -361,6 +361,8 @@ HOOK_SLOT       equ     $F1C8   ; our slot byte for the HPHYD inter-slot hook (1
 ; else through an MSX-DOS session, BASIC at A> and a Disk BASIC file write (AE_claimuse_zb2.out:
 ; $F195-$F1C7 unwritten), and below $F1C9, so a foreign claim of N <= 439 (NMAX) cannot reach it.
 CLAIM_D         equ     $F1C6   ; $4030's work-area value, GETWRK_AREA - N (2 B)
+VERIFY_F        equ     $F1C5   ; (1 B) BDOS VERIFY: 0 off, else on -- verify_body stores E, INIT clears it,
+                                ; DSKIO's write reads each sector back while set (D-VERIFYREAD); own cell
 CLAIM_NMAX      equ     $F380 - (HOOK_SLOT + 1)   ; NOT-A-CELL: 439, the largest foreign claim followed
 ; BDOS_SRCHIDX (M19) — persistent root-directory search cursor for the runtime
 ; SFIRST ($11) / SNEXT ($12) dir-search entries ($4FB8/$5006). Absolute 0-based

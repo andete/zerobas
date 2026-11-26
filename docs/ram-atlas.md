@@ -14,7 +14,7 @@ SPDX-License-Identifier: BSD-2-Clause
 
 > **Power-on:** the main ROM's writes before any cartridge's INIT are left out of the rows (they are the RAM test and clear, not a use of the RAM). Addresses of the range the main ROM writes at boot, per run: VG plain 12235, VGHBD dos 12235, VGHBD basic 12235, CF dos 12235, CF basic 12235, ZBND plain 3476, ZBD dos 3437, ZBD basic 3437.
 
-716 rows.
+717 rows.
 
 | range | B | VG plain | VGHBD dos | VGHBD basic | CF dos | CF basic | ZBND plain | ZBD dos | ZBD basic | zerobas |
 |---|---:|---|---|---|---|---|---|---|---|---|
@@ -411,7 +411,8 @@ SPDX-License-Identifier: BSD-2-Clause
 | `$F1BE-$F1BE` | 1 |   | I:D H:D | I:D H:D | I:D H:D | I:D H:D |   |   |   |  |
 | `$F1BF-$F1BF` | 1 |   | I:D H:D | I:D H:D | I:D H:D D:D B:D | I:D H:D B:D |   |   |   |  |
 | `$F1C0-$F1C0` | 1 |   | I:D | I:D | I:D H:D D:D B:D | I:D H:D B:D |   |   |   |  |
-| `$F1C1-$F1C5` | 5 |   | I:D | I:D | I:D | I:D |   |   |   |  |
+| `$F1C1-$F1C4` | 4 |   | I:D | I:D | I:D | I:D |   |   |   |  |
+| `$F1C5-$F1C5` | 1 |   | I:D | I:D | I:D | I:D |   | b:D | b:D | VERIFY_F |
 | `$F1C6-$F1C6` | 1 |   | I:D H:D D:D | I:D H:D B:D | I:D D:D B:D | I:D |   | b:D | b:D | CLAIM_D |
 | `$F1C7-$F1C7` | 1 |   | I:D | I:D | I:D H:D D:D B:D | I:D H:D |   | b:D | b:D | (in CLAIM_D) |
 | `$F1C8-$F1C8` | 1 |   | I:D | I:D | I:D | I:D |   | b:D | b:D | HOOK_SLOT |
