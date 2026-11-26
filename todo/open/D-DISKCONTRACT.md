@@ -74,7 +74,23 @@
       every row (valid 0; month 13, Feb 30, 1979, 2100, month 0 all $FF and the date kept; the leap day valid). STIME:
       the CF-3300 answers $FF for hour 25, minute 60, second 60, hundredths 100; ours 0 every time
       ([`XT_stock.out`](../../scratchpad/XT_stock.out), [`XT_ours.out`](../../scratchpad/XT_ours.out)). Those 4 bytes are pinned at ours in the gate. 🔮 "the CF-3300 keeps the time STIME set": MISS --
-      its GTIME reads 00:00:00 throughout, as ours (no clock on an MSX1). Left: (12) VERIFY, (5) Ctrl-P / C / S, (6) > $30.
+      its GTIME reads 00:00:00 throughout, as ours (no clock on an MSX1). Left: ~~(12) VERIFY~~, ~~(5) Ctrl-P / C~~ (Ctrl-S, Ctrl-C during output: D-BUFINCTL's to measure), ~~(6) > $30~~.
+      🔴 **(12) VERIFY'S EFFECT, 2026-11-26 -- A REAL DIFFERENCE, FILED [D-VERIFYREAD](D-VERIFYREAD.md).** New `make
+      verifyread-acceptance` (probes/disk/disk_probe_verify.py): a COPY at A> under VERIFY OFF and ON, the FDC's command
+      register watched. The CF-3300 reads back each of the 9 sectors it writes; zerobas sends the same commands either
+      way. Pinned at both exact values (no disk-ROM room for the fix yet).
+      ✅ **(6) FUNCTIONS PAST $30 THROUGH $F37D, 2026-11-26 -- A REAL DIFFERENCE, FIXED (D-F37DHIGH).** bdosf37d-acceptance
+      gained six rows: $31, $40, $5F, $6F (MSX-DOS 2's _DOSVER, how a program tells DOS 1 from DOS 2), $7F, $FF. The
+      CF-3300 answers A = 0 with Z / P set (F $44) to every one; zerobas answered $FF. bdos_tab's no-row exit is `xor a`
+      now -- one byte SHORTER than the `ld a,$FF` it replaces; every row PASS, flags included
+      (scratchpad/AE_f37d_high.out before, AE_f37d_high2.out after). Through $0005 the dispatch is MSXDOS.SYS's
+      (Microsoft's, the same file on both machines) -- not measured. The in-range numbers with no function ($1C-$20, $25, $29) answer 0
+      on the CF-3300 too (the same exit; they were $FF as well). $00 (TERMINATE) does NOT return there -- it ends the BASIC
+      program silently: filed [D-F37DTERM](D-F37DTERM.md); the unit test pins ours.
+      🔴 **(5) CTRL-C / CTRL-P AT A>, 2026-11-26 -- A REAL DIFFERENCE, FILED [D-BUFINCTL](D-BUFINCTL.md).** New `make
+      dosctl-acceptance` (probes/disk/disk_probe_dosctl.py; CTRL held in the key matrix around the letter): the CF-3300
+      echoes `^C` and gives a fresh A>, and Ctrl-P prints DIR's listing too; zerobas's line input stores both as
+      characters -- no `^C`, nothing printed, and the stray Ctrl-P later swallows a TYPE. Pinned as KNOWN rows.
       💰 **D-DISKCARVE6 STEP 1 (2026-11-17): a 61 B hole at $7568, in front of the $75A5 pin.** A read-only agent's plan
       (checked against the source): the span [$607B, $75A5) has no pin inside, so any byte freed there lands in front of
       $75A5. Four call-only routines MOVED into exact-fit pads in front of other pins -- wrblk_mul_rr_rs (14 B -> $4FF8),

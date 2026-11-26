@@ -54,7 +54,18 @@ ROWS = [(0x1A, DTA, "SETDTA", ()), (0x0C, 0, "VERSION", ("HL", "B")),
         (0x17, F["R"], "FREN THIRD->RENAMED", ()), (0x13, F["D"], "FDEL RENAMED", ()),
         (0x16, F["N"], "FMAKE NEWFILE", ()), (0x22, F["N"], "WRRND rec 2", ()),
         (0x28, F["N"], "WRZER rec 2", ()), (0x10, F["N"], "FCLOSE NEWFILE", ()),
-        (0x0B, 0, "CONST", ()), (0x06, 0x00FF, "DIRIO in", ()), (0x02, 0x51, "CONOUT 'Q'", ())]
+        (0x0B, 0, "CONST", ()), (0x06, 0x00FF, "DIRIO in", ()), (0x02, 0x51, "CONOUT 'Q'", ()),
+        # D-DISKCONTRACT gap 6 (2026-11-26): FUNCTION NUMBERS PAST MSX-DOS 1's LAST ($30), never called before --
+        # $31 and $40 / $5F undefined; $6F, MSX-DOS 2's _DOSVER, the call a program makes to tell DOS 1 from DOS 2;
+        # $7F and $FF the far end. Whatever comes back is the contract a program meets.
+        # ...and the numbers INSIDE DOS 1's range that have no function ($1C-$20, $25, $29: CP/M's, unused here)
+        (0x1C, 0, "F$1C (none)", ("B", "DE", "HL")), (0x1D, 0, "F$1D (none)", ("B", "DE", "HL")),
+        (0x1E, 0, "F$1E (none)", ("B", "DE", "HL")), (0x1F, 0, "F$1F (none)", ("B", "DE", "HL")),
+        (0x20, 0, "F$20 (none)", ("B", "DE", "HL")), (0x25, 0, "F$25 (none)", ("B", "DE", "HL")),
+        (0x29, 0, "F$29 (none)", ("B", "DE", "HL")),
+        (0x31, 0, "F$31 (none in DOS 1)", ("B", "DE", "HL")), (0x40, 0, "F$40 (none)", ("B", "DE", "HL")),
+        (0x5F, 0, "F$5F (none)", ("B", "DE", "HL")), (0x6F, 0, "F$6F _DOSVER (DOS 2)", ("B", "C", "DE", "HL")),
+        (0x7F, 0, "F$7F (none)", ("B", "DE", "HL")), (0xFF, 0, "F$FF (none)", ("B", "DE", "HL"))]
 UNSCORED_A = {0x1A, 0x02}           # SETDTA / CONOUT: A is no contract
 DUMP = 0xCA00
 STRIDE = 10

@@ -1,0 +1,38 @@
+ROW partial  '~DIR'                 SAME
+   == A>DIR
+ROW ctrlc    '^C'                   DIVERGES
+   CF |A>DIR^C
+   CF |A>
+   ZB |A>DIR
+ROW ctrlp    '^P'                   DIVERGES
+   CF |A>DIR^C
+   CF |A>
+   ZB |A>DIR
+ROW dirp     'DIR'                  SAME
+   ==       42 files   374784 bytes free
+   == A>
+ROW ctrlp2   '^P'                   SAME
+   ==       42 files   374784 bytes free
+   == A>
+ROW type2    'TYPE HELLO.TXT'       DIVERGES
+   CF |SCR0     BAS      51 02-03-22 12:14a
+   CF |RYTHM    BAS    1799 02-03-25  6:03p
+   CF |SIMPLE   BAS     104 02-04-11  4:17p
+   CF |      42 files   374784 bytes free
+   CF |A>TYPE HELLO.TXT
+   CF |HELLO FROM THE SESSION
+   CF |SECOND LINE
+   CF |A>
+   ZB |MOD      BAS    1793 02-01-25  9:58p
+   ZB |MUS      BAS    1793 02-01-25  9:58p
+   ZB |SCR0     BAS      51 02-03-22 12:14a
+   ZB |RYTHM    BAS    1799 02-03-25  6:03p
+   ZB |SIMPLE   BAS     104 02-04-11  4:17p
+   ZB |      42 files   374784 bytes free
+   ZB |A>TYPE HELLO.TXT
+   ZB |A>
+ROW printer  1689 B / 0 B  DIVERGES
+   CF b'DIR\r\nLIST            1415 02-00-04 12:04p\r\nOPENMSX1 MBK   32824 02-05-03 10:10a\r\nOPENMSX1 MBM     450 02-05-03 10:10a\r\nAAA      BAS    1793 02-06-28  8:24p\r\nIDEFDISK COM    7340 02-10-14  5:59p\r\nCOMMAND  COM    6528 02-10-16  8:00p\r\nMSXDOS   SYS    2432 02-10-16  8:01p\r\nDUMP-DEL BIN   16391 02-10-16  9:21p\r\nDUMP     BIN   16391 02-10-16  9:25p\r\nKANJI    BAS     252 02-11-01 10:53a\r\nKANJI2   BAS     252 02-11-01 10:53a\r\nB        BAS     252 02-11-17  1:39p\r\nBUNSDUMP BAS     226 02-12-16  8:48p\r\nBUNSDUMP BIN     400 02-12-16  8:48p\r\nNAME     ASC    2554 02-12-16  9:54p\r\nBUNSDUMP ASC    2701 02-12-16 10:08p\r\nMSXBUNSE ROM   32768 02-12-17  8:09p\r\nMSXBUDIC ROM  131072 02-12-17  8:10p\r\nLINES    BAS     118 03-03-25 10:59p\r\nL        BAS     130 03-03-25 11:40p\r\nSPRITES1 BAS     141 03-04-10  6:49p\r\nSPRITES2 BAS     156 03-04-10  6:52p\r\nSCROLL   BAS     146 03-04-12  2:17p\r\nSDR      COM     630 03-04-13  9:31p\r\nSDR      TXT    3000 03-04-14  8:57p\r\nSPLIT1   ASM    6476 03-04-23  6:07p\r\nSCORES   HIG     540 99-08-16  1:36p\r\nSPLIT1   COM     674 03-04-23  6:07p\r\nSPLIT2   ASM    7012 03-04-23  6:07p\r\nSPLIT2   COM     700 03-04-23  6:07p\r\nSPLIT3   ASM    6751 03-04-23  6:07p\r\nSPLIT3   COM     696 03-04-23  6:07p\r\nSPLIT4   ASM    7379 03-04-23  6:07p\r\nSPLIT4   COM     707 03-04-23  6:07p\r\nHELLO    TXT      38 90-05-05\r\nREADME   TXT     687 99-08-16  2:01p\r\nTEST     BAS    1793 02-01-25  9:58p\r\nMOD      BAS    1793 02-01-25  9:58p\r\nMUS      BAS    1793 02-01-25  9:58p\r\nSCR0     BAS      51 02-03-22 12:14a\r\nRYTHM    BAS    1799 02-03-25  6:03p\r\nSIMPLE   BAS     104 02-04-11  4:17p\r\n      42 files   374784 bytes free\r\nA>TYPE HELLO.TXT\r\nHELLO FROM THE SESSION\r\nSECOND LINE\r\n\r\nA>'
+   ZB b''
+
+FAIL: Ctrl-C / Ctrl-P at A> (ctrlc, ctrlp, type2, printer)

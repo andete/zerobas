@@ -1,0 +1,5 @@
+ROW disk  VG=[CLOSED (File not OPEN)]  CF=[CLOSED (File not OPEN)]  ZB=[OPEN (no error: the PRINT # went into the file)]
+ROW crt   VG=[CLOSED (File not OPEN)]  CF=[CLOSED (File not OPEN)]  ZB=[OPEN ([X] printed)]
+
+PASS: both references close every file at END (zerobas's open files pinned: D-ENDCLOSE)
+refcache: REFS MODE (references replayed, zerobas measured), 4 REFERENCE reading(s) replayed, 0 reference miss, 2 zerobas reading(s) MEASURED, 0 zerobas replayed

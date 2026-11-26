@@ -112,10 +112,14 @@ def run():
               f"BDOS ${fn:02X} -> {body}: reached with DE {[hex(d) for d in seen]}, "
               f"A ${cpu.a:02X} (want DE $C100 once, A ${a_back:02X})")
 
-    for fn in (0x00, 0x31):     # ($30 WRABS answers since D-BDOSABS; $21..$28 since D-BDOSFCB)
+    # ⏱ D-F37DHIGH (2026-11-26): a function with no row answers A = 0 -- the CF-3300's answer to every undefined
+    # number measured through $F37D ($1C-$20, $25, $29, $31, $40, $5F, $6F, $7F, $FF; bdosf37d-acceptance). It was
+    # $FF ("not answered yet"). $00 (TERMINATE) is pinned at the same 0 but is NOT the reference's behaviour: on the
+    # CF-3300 it never returns (D-F37DTERM).
+    for fn in (0x00, 0x31):
         m = Machine(ROM, SYM, rom_base=DISK_BASE)
         cpu = m.call("bdos_entry", c=fn, de=0xC0DA)
-        check(cpu.a == 0xFF, f"BDOS ${fn:02X} (not answered yet): A = ${cpu.a:02X} (want $FF)")
+        check(cpu.a == 0x00, f"BDOS ${fn:02X} (no row): A = ${cpu.a:02X} (want $00, the CF-3300's answer)")
 
     # --- slice 2: the $F37D stub (install_f37d) -----------------------------
     for page0, label, want in ((0, "page 0 = the BIOS (a BASIC program)", "calslt"),

@@ -1370,8 +1370,10 @@ bm_hit:
                                             ; f1sp3d-1's 8: scratchpad/f1sp3d_rdabs.out)
 bm_none:
                 pop     hl                  ; the caller's HL back
-                ld      a, $FF              ; still unanswered here
-                ret
+                xor     a                   ; 🔴 D-F37DHIGH (2026-11-26, D-DISKCONTRACT gap 6): a function with no
+                ret                         ; row answers A = 0 (Z / P set, F $44) on the CF-3300 -- $31, $40,
+                                            ; $5F, $6F (DOS 2's _DOSVER), $7F, $FF all measured; this was $FF
+                                            ; (bdosf37d-acceptance's high rows, scratchpad/AE_f37d_high.out)
 ; (bb_dirio, bb_conout and bb_dskrst moved to the pads in front of $47BE, $4E4B and
 ; $461D by D-F37DCONIN: bdos_tab's $01 / $07 / $08 / $0A rows needed these bytes)
 ; (moved here from init.asm by the D-DSKFMT defrag)

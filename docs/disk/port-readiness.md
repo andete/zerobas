@@ -5,7 +5,8 @@ SPDX-License-Identifier: BSD-2-Clause
 
 # The disk ROM: readiness for C-BIOS
 
-> **Status (2026-11-26):** gaps 1-3 done (room, the guard, a BASIC-less host); 4 and 5 open. The priority (Joost, 2026-11-25): *"getting the disk rom in the best
+> **Status (2026-11-26):** gaps 1-5 done -- room, the guard, a BASIC-less host, the entry rows and END measured. What is
+> left is FIXES (six filed, pinned in their gates), and each needs disk-ROM room: row 5 is the next lever. The priority (Joost, 2026-11-25): *"getting the disk rom in the best
 > possible shape to port it to C-BIOS"*. This page is the map: what "ready" means, what is shown, and what is not.
 
 ## What "ready" means
@@ -53,8 +54,16 @@ Philips VG-8020 with a Sony HBD-F1.
    MSX-DOS from zerobas's disk ROM with no BASIC anywhere; row 1's session and the BDOS exercisers pass there. The
    machine is a C-BIOS checkout's state, so its suite runs on request (`make nobasic-dossession-acceptance
    CBIOS=...`), not in the battery.
-4. **The open entry rows (2b)** in D-DISKCONTRACT, one by one against the CF-3300.
-5. **END and open disk files** ([D-ENDCLOSE](../../todo/open/D-ENDCLOSE.md)): measure on both references, then decide
-   (Disk BASIC behaviour; a BASIC-less C-BIOS does not need it, so it ranks last here).
+4. ✅ **The open entry rows (2b)**, MEASURED 2026-11-26: every row D-DISKCONTRACT's inventory left open now has a
+   reading against the CF-3300. One fixed on the spot (D-F37DHIGH: an undefined function through $F37D answers A = 0,
+   as the CF-3300 -- the fix was a byte shorter); two filed and pinned in their gates (D-VERIFYREAD: VERIFY ON reads
+   each written sector back on the CF-3300, `make verifyread-acceptance`; D-BUFINCTL: Ctrl-C / Ctrl-P are stored as
+   characters by the line input, `make dosctl-acceptance`). **What is left of the entry contract is FIXES, not
+   unknowns** -- D-DOSDRVB, D-STIMERANGE, D-CONCOL, D-DSKIOCYL, D-VERIFYREAD, D-BUFINCTL -- and every one of them
+   needs disk-ROM bytes: row 5 (room) is the bottleneck again.
+5. ✅ **END and open disk files** ([D-ENDCLOSE](../../todo/open/D-ENDCLOSE.md)), MEASURED 2026-11-26: the
+   references do not split -- the VG-8020 + HBD-F1 and the CF-3300 both close every open file at END, a disk file
+   and `CRT:` alike (`make endclose-acceptance`); zerobas keeps them open. The fix is BASIC-side and waits; a
+   BASIC-less C-BIOS does not need it.
 
 The free-space figures on this page are dated; re-run `make basic-reloc` before relying on one.

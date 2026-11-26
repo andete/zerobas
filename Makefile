@@ -2854,6 +2854,19 @@ dosmode-acceptance: repack-machine
 dossession-acceptance: repack-machine
 	python3 probes/disk/disk_probe_dossession.py
 
+# --- verifyread-acceptance: what VERIFY ON adds to a write -- the FDC's commands (D-DISKCONTRACT gap 12) ---
+# The CF-3300 reads back every written sector; zerobas does not (D-VERIFYREAD), pinned at both exact values.
+verifyread-acceptance: repack-machine
+	python3 probes/disk/disk_probe_verify.py
+
+# --- dosctl-acceptance: Ctrl-C / Ctrl-P at A> against the CF-3300 (D-DISKCONTRACT gap 5; D-BUFINCTL pinned) ---
+dosctl-acceptance: repack-machine
+	python3 probes/disk/disk_probe_dosctl.py
+
+# --- endclose-acceptance: END closes open files on both references, disk and CRT: (D-ENDCLOSE pinned) ---
+endclose-acceptance: repack-machine $(DISK_TEST_DSK)
+	python3 probes/disk/disk_probe_endclose.py
+
 # --- nobasic-dossession-acceptance: the SAME session on the C-BIOS port's host (docs/disk/port-readiness.md gap 3) ---
 # A C-BIOS checkout's OWN MSX1 build with NO BASIC, zerobas's disk ROM in slot 3-1. Needs a built checkout:
 #   make nobasic-dossession-acceptance CBIOS=~/projects/cbios

@@ -43,10 +43,12 @@ No arguments.
   program, the next error is caught normally, and a typed `RESUME` is
   `RESUME without error`. ([`STOP`](STOP.md) is different: it only pauses,
   and `CONT` resumes inside the handler.)
-- **`END` closes the open files** on the VG-8020: after `OPEN "CRT:" ... AS #1:END`,
-  `PRINT #1` is `File not OPEN` (KST FY 2). An older measurement on the
-  CF-3300 had a disk file stay open after `END`; whether the references split
-  there is open (D-ENDCLOSE).
+- **`END` closes the open files**, a disk file and `CRT:` alike, on the
+  VG-8020 (with a Sony HBD-F1 drive) and on the CF-3300: after `OPEN ... AS #1:END`
+  and `RUN`, `PRINT #1` is `File not OPEN` (KST FY 2;
+  [`disk_probe_endclose.py`](../../probes/disk/disk_probe_endclose.py), 2026-11-26).
+  An older note had a disk file stay open on the CF-3300; the measurement does not
+  bear it out.
 - **Music keeps playing.** A `PLAY` queue still sounding when the program
   ends is left to finish; only an error or a break silences it.
 - **Common errors: not applicable.** `END` has no arguments to get wrong;
@@ -127,7 +129,8 @@ and predicts the WHOLE screen -- every prompt (so a hang cannot pass as "does no
 ## Differences from the reference
 
 - **END leaves files open** (rule R-END-CLOSE, case KST FY 2; [D-ENDCLOSE](../../todo/open/D-ENDCLOSE.md)):
-  the VG-8020 closes them; on zerobas a `PRINT #1` after END still prints.
+  both references close them (a disk file and `CRT:`); on zerobas a `PRINT #1` after
+  END still prints, or goes into the still-open disk file.
 
 The rung not yet proven is **RAM usage**.
 
