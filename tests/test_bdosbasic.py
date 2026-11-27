@@ -147,7 +147,9 @@ def run():
             ok = log == [("bridge", 0x11, 0xD020)]
         check(ok, f"$F37D stub, {label}: {log} (want {want}; IX/IY kept "
                   f"{m.cpu.ix:04X}/{m.cpu.iy:04X})")
-    # ... and the page-0 table lays $0005 = JP BR_BDOS for the boot (D-TPAPTAIL, D-BOOTREGS)
+    # ... and the page-0 table lays the RST vectors ONLY -- no $0005 entry (D-BOOTP0, 2026-11-27: the CF-3300's
+    # page 0 at the boot code's entry has vectors at $000C/$0014/$001C/$0024/$0030/$0038 and zeros elsewhere,
+    # scratchpad/AE_bootp0_page0.out; D-BOOTREGS's $0005 -> BR_BDOS, pinned here until then, came from a misread trace)
     m = Machine(ROM, SYM, rom_base=DISK_BASE)
     tab, rows = m.addr("p0_env_tab"), []
     while True:
@@ -158,8 +160,8 @@ def run():
         tgt = m.peek(tab + 2, 2)
         rows.append((cell, tgt[0] | tgt[1] << 8))
         tab += 4
-    check((0x0005, m.addr("BR_BDOS")) in rows,
-          f"p0_env_tab lays $0005 -> BR_BDOS: {[f'{c:04X}->{t:04X}' for c, t in rows]}")
+    check(sorted(c for c, _ in rows) == [0x000C, 0x0014, 0x001C, 0x0024, 0x0030, 0x0038],
+          f"p0_env_tab lays the six RST vectors and no $0005: {[f'{c:04X}->{t:04X}' for c, t in rows]}")
 
     print()
     print("ALL PASS — bdos_entry answers STROUT / SFIRST / SNEXT and sets $F23D"

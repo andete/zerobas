@@ -24,7 +24,7 @@ set f [open {{{log}}} w]
 set n 0
 proc hx {{a k}} {{ set s ""; for {{set i 0}} {{$i < $k}} {{incr i}} {{ append s [format %02X [peek [expr {{$a+$i}}]]] }}; return $s }}
 proc snap {{t}} {{ global f
-  set z "ROM(not read)"; if {{([debug read ioports 0xA8] & 3) == 3 && (([peek 0xFFFF] ^ 0xFF) & 3) == 0}} {{ set z [hx 0 8] }}
+  set z "ROM(not read)"; if {{([debug read ioports 0xA8] & 3) == 3 && (([peek 0xFFFF] ^ 0xFF) & 3) == 0}} {{ set z [hx 0 64] }}
   puts $f "t=$t 0000=$z HIMEM=[format %04X [peek16 0xFC4A]] F37D=[hx 0xF37D 3] RAMAD=[hx 0xF341 4] A8=[format %02X [debug read ioports 0xA8]] SS=[format %02X [expr {{[peek 0xFFFF]^0xFF}}]]"
   flush $f }}
 debug set_watchpoint read_mem {{0x0006 0x0007}} {{[expr {{[machine_info time] > 3}}]}} {{

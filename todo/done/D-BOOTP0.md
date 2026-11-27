@@ -1,4 +1,4 @@
-- [ ] 🔴 **AT THE BOOT CODE'S STEP-7 ENTRY ZEROBAS HAS PAGE 0 = `jp $0005` / `jp $DECD`; THE CF-3300 HAS $0000-$0007 ALL ZERO --
+- [x] 🔴 **AT THE BOOT CODE'S STEP-7 ENTRY ZEROBAS HAS PAGE 0 = `jp $0005` / `jp $DECD`; THE CF-3300 HAS $0000-$0007 ALL ZERO --
       CALCULUS READS $0006 AS ITS TPA TOP ($0000 = 64 KB there, $DECD here) AND REFUSES: "Not enough TPA-memory"
       (D-BOOTP0, found 2026-11-27 from D-DISKRUN's calculus.dsk lead).**
       🎚️ TIER 1 — a disk that boots and runs on the CF-3300 (calculus.dsk, ZB-ONLY in every corpus run).
@@ -16,3 +16,16 @@
       ⚠️ scratchpad/wboot_run.out / wboot_run2.out / bootcallf_run.out / bootcallf_run2.out record SAMPLED PC VALUES
       on the reference machine -- a clean-room breach, raised with Joost 2026-11-27 (not read further).
       ACCEPTANCE: calculus.dsk BOTH-RUN; the fray disks and the rest of the collection no row worse.
+      📏 THE CF-3300'S WHOLE PAGE 0 at that entry ($0000-$003F, [AE_bootp0_page0.out](../../scratchpad/AE_bootp0_page0.out)): `jp` vectors at $000C / $0014 / $001C /
+      $0024 / $0030 / $0038 ONLY, every other byte 0 -- no $0000 jump, no $0005 entry. zerobas: the same RST vectors plus
+      `jp $0005` at $0000 and `jp BR_BDOS` at $0005, and $FF fill between.
+      ✅ FIXED 2026-11-27: install_dos_env zeroes $0000-$003F (DE kept: it runs on into WA_SEG) before lay_page0_env lays
+      the RST vectors; the $0000 jump and p0_env_tab's $0005 row are gone ($F37D's stub still bridges through BR_BDOS).
+      A boot code's `jp 0` now NOP-slides into the RDSLT vector at $000C, as on the CF-3300.
+      calculus.dsk ZB-ONLY -> FILES-SAME; the fray disks D-BOOTREGS fixed (frayd1 / frayg1 / frayd1i / frayg1i, frayd0)
+      still BOTH-RUN ([AE_bootp0_try1.out](../../scratchpad/AE_bootp0_try1.out)). Corpus ([AE_bp0_diskcorpus.out](../../scratchpad/AE_bp0_diskcorpus.out)): two rows moved -- calculus as above, and
+      Seedofda.dsk UNSETTLED -> ZB-ONLY: on the old ROM zerobas sat in a page-0 loop (PC ~$01BE, SCREEN 0, blank) from
+      20 s; now it is in SCREEN 1 like the CF-3300 (which is UNSETTLED itself on it, blank, PC in ROM) -- sampled 10..90 s
+      on both ROMs ([AE_bp0_seedofda.out](../../scratchpad/AE_bp0_seedofda.out)); not worse. nobasic / dossession / bdos / bdos-cfhost / diskbasic / boot5e10 /
+      callsystem / bdosf37d acceptance green; unit tests 101/101 (test_bdosbasic pinned $0005 -> BR_BDOS: inverted to "the
+      six RST vectors, no $0005"); knife re-pinned.

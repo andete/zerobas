@@ -1,0 +1,6 @@
+[  1/1] FILES-SAME (1, 1)  ref S1 pc=  rom  zb S0 pc=13691  calculus.dsk
+[  1/1] BOTH-RUN    5183  ref S1 pc=  ram  zb S0 pc= 1091  frayd1.dsk
+[  1/1] BOTH-RUN    5183  ref S1 pc=  ram  zb S0 pc= 1091  frayg1.dsk
+[  1/1] BOTH-RUN    5183  ref S1 pc=  ram  zb S0 pc= 1091  frayd1i.dsk
+[  1/1] BOTH-RUN    5183  ref S1 pc=  ram  zb S0 pc= 1091  frayg1i.dsk
+[  1/1] BOTH-RUN    5183  ref S1 pc=  ram  zb S0 pc= 1091  frayd0.dsk

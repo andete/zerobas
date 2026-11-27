@@ -1,0 +1,12 @@
+OLD t=10: [  1/1] UNSETTLED    ref  ref S1 pc=  rom  zb S0 pc=49308  Seedofda.dsk
+OLD t=20: [  1/1] UNSETTLED  refzb  ref S1 pc=  rom  zb S0 pc=  446  Seedofda.dsk
+OLD t=30: [  1/1] UNSETTLED  refzb  ref S1 pc=  rom  zb S0 pc=  446  Seedofda.dsk
+OLD t=45: [  1/1] UNSETTLED     zb  ref S1 pc=  rom  zb S0 pc=  446  Seedofda.dsk
+OLD t=60: [  1/1] UNSETTLED     zb  ref S1 pc=  rom  zb S0 pc=  446  Seedofda.dsk
+OLD t=90: [  1/1] UNSETTLED     zb  ref S1 pc=  rom  zb S0 pc=  447  Seedofda.dsk
+NEW t=10: [  1/1] UNSETTLED    ref  ref S1 pc=  rom  zb S1 pc=17953  Seedofda.dsk
+NEW t=20: [  1/1] UNSETTLED    ref  ref S1 pc=  rom  zb S1 pc=17955  Seedofda.dsk
+NEW t=30: [  1/1] UNSETTLED    ref  ref S1 pc=  rom  zb S1 pc=17953  Seedofda.dsk
+NEW t=45: [  1/1] ZB-ONLY     None  ref S1 pc=  rom  zb S1 pc=17955  Seedofda.dsk
+NEW t=60: [  1/1] ZB-ONLY     None  ref S1 pc=  rom  zb S1 pc=17956  Seedofda.dsk
+NEW t=90: [  1/1] ZB-ONLY     None  ref S1 pc=  rom  zb S1 pc=17953  Seedofda.dsk

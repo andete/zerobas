@@ -842,9 +842,19 @@ install_dos_env:
                 ld      a, $C3
                 ld      (WA_JMPTAB), a
                 ld      (WA_JMPTAB + 3), a
-                ld      ($0000), a          ; D-BOOTREGS: the warm boot goes on into the
-                ld      hl, $0005           ; BDOS with the caller's C, as on the CF-3300
-                ld      ($0001), hl         ; before MSXDOS.SYS (scratchpad/wboot_run.out)
+                ; 🔴 D-BOOTP0 (2026-11-27): page 0 is ZERO before the RST vectors go in, as on the CF-3300 at
+                ; the boot code's entry ($0000-$003F: vectors at $000C/$0014/$001C/$0024/$0030/$0038 only,
+                ; every other byte 0 -- scratchpad/AE_bootp0_page0.out). D-BOOTREGS laid `jp $0005` at $0000
+                ; and `jp BR_BDOS` at $0005 "as on the CF-3300", read from a PC trace: the CF-3300's `jp 0`
+                ; NOP-slides through the zeros. CALCULUS reads $0006 as its TPA top ($0000 there, $DECD here:
+                ; "Not enough TPA-memory"). CLEAN-ROOM: page-0 RAM read as RAM on the CF-3300; own code.
+                push    de                  ; DE runs on into WA_SEG (the LDIRs below)
+                ld      hl, $0000
+                ld      de, $0001
+                ld      bc, $003F
+                ld      (hl), l
+                ldir
+                pop     de
                 ld      hl, WA_SEG_ROM
                 ld      (WA_JMPTAB + 1), hl
                 ld      hl, WA_SEG_RAM

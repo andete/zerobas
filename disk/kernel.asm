@@ -4117,9 +4117,8 @@ p0_env_tab:
                 dw      $001C, BR_CALSLT ; RST 18 CALSLT    (br1_tmpl, pageenv.asm)
                 dw      $0024, BR_ENASLT ; ENASLT
                 dw      $0030, BR_CALLF ; RST 30 CALLF
-                dw      $0005, BR_BDOS  ; BDOS until MSXDOS.SYS lays its own (D-TPAPTAIL:
-                                        ; the $F37D stub's road with RAM in page 0); the
-                                        ; disk ROM in around it (br3, D-BOOTREGS)
+                ; (no $0005 entry -- D-BOOTP0, 2026-11-27: the CF-3300's page 0 has none at the boot code's
+                ;  entry; $F37D's stub still takes BR_BDOS with RAM in page 0, br3)
                 dw      $0038, INT_H_HIRAM ; maskable-int vector -> A-3 high-RAM handler
                                            ; (NOT page-1 int_h: page 1 is reclaimed by the TPA)
                 dw      0               ; end of table
