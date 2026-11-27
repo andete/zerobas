@@ -90,6 +90,9 @@ STATE = ("scratchpad/gate_last_green.json", "scratchpad/gate_pins")
 SWEEP_PINS = ("build/sweeps-rom.txt", "build/kwsweep-verdicts.json", "build/kwtime.json", "build/kwram.json")
 REWRITE_DIRS = ("machines", "extensions")
 ROM_TREES = ("basic/", "sub/", "disk/", "tape/", "cbios-repack/")   # = pick_gates.ROM_TREES (D-TAPEPLAN)
+# ⚖️ Joost 2026-11-27 (memory ruled-test-vs-build-balance): the tape corpus only when the MAIN ROM changed --
+# a disk-ROM-only commit runs the knives, not the tape corpus
+MAIN_ROM_TREES = ("basic/", "sub/", "tape/", "cbios-repack/")
 EXCLUDED5 = ("bdos-acceptance", "bdos-cfhost-acceptance", "diskbasic-acceptance", "fat-error-acceptance",
              "input-devices-acceptance",
              "dskfmt-acceptance CHOICES=1,4",
@@ -258,6 +261,7 @@ def run(a) -> int:
         fails.append("build")
     changed = [f for f in git("diff", "--name-only", parent, sha).splitlines() if f]
     rom = any(f.startswith(ROM_TREES) for f in changed)
+    main_rom = any(f.startswith(MAIN_ROM_TREES) for f in changed)
     key = knife_key(WT) if not fails and rom and not a.no_knives else None
     try:
         last = json.load(open(KNIFE_STAMP)) if key else {}
@@ -273,7 +277,9 @@ def run(a) -> int:
                            (["python3", "-u", "scratchpad/kwknife.py", "--allfn"], "fn knives")):
             if sh(argv, env, what):
                 fails.append(what)
-        if not env.get("TAPECORPUS_DIR"):
+        if not main_rom:
+            say("tape corpus SKIPPED: no main-ROM tree changed (Joost 2026-11-27: the tape corpus only then)")
+        elif not env.get("TAPECORPUS_DIR"):
             fails.append("tape corpus (TAPECORPUS_DIR unset)")
         elif sh(["python3", "-u", "scratchpad/tapecorpus_run.py"], env, "tape corpus"):
             fails.append("tape corpus")

@@ -1,0 +1,10 @@
+OLD == CBIOS2_CUR_MSX1_EU_NOBASIC_DISK COPY MSXBUNSE.ROM BIG.ROM
+OLD t=20  |  PC=79DF A8=FF
+OLD t=30  |  PC=79D6 A8=FF
+OLD t=45  |  PC=79DD A8=FF
+OLD t=60  |  PC=79D6 A8=FF
+OLD t=90  |  PC=79D9 A8=FF
+OLD t=120  |  PC=1198 A8=FC
+OLD   BIG.ROM attr=00 size=32768 date=2D91 time=A13B sha1=8b14c8ee63ed
+OLD   MSXBUNSE.ROM attr=00 size=32768 date=2D91 time=A13B sha1=e89ea1e8e583
+OLD   bytes differing: 16158 of 32768; first at 0x3ed3, last at 0x7ed2; differing 512-B sectors: [31, 32, 33, 34, 35, 36, 37, 38, 39, 40, 41, 42, 43, 44, 45, 46, 47, 48, 49, 50, 51, 52, 53, 54, 55, 56, 57, 58, 59, 60, 61, 62, 63]

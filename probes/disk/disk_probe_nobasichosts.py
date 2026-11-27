@@ -28,9 +28,13 @@ ALL = ["MSX1_EU", "MSX1", "MSX1_JP", "MSX1_BR", "MSX2", "MSX2_EU", "MSX2_JP", "M
        "MSX2P", "MSX2P_EU", "MSX2P_JP", "MSX2P_BR"]
 
 
-def run(cmd, env):
-    p = subprocess.run(cmd, cwd=REPO, env=env, capture_output=True, text=True, timeout=1800)
+def done(p):
     return p.returncode, p.stdout + p.stderr
+
+
+# every spawn below is a LIST LITERAL with no `-machine` (tools/check_probe_preflight.py): the sub-probes guard
+# their own openMSX launches
+KW = dict(cwd=REPO, capture_output=True, text=True, timeout=1800)
 
 
 def main():
@@ -39,7 +43,8 @@ def main():
     if bad_v:
         print(f"nobasichosts: unknown variant(s) {bad_v}")
         return 2
-    rc, out = run(["python3", "tools/install_cbios_msx2.py", "--pinned", "--variants", ",".join(vs)], dict(os.environ))
+    rc, out = done(subprocess.run(["python3", "tools/install_cbios_msx2.py", "--pinned", "--variants", ",".join(vs)],
+                                  env=dict(os.environ), **KW))
     print(out.strip())
     if rc:
         print("nobasichosts: INSTRUMENT FAULT -- the pinned install refused")
@@ -53,8 +58,8 @@ def main():
             continue
         m = f"CBIOS2_CUR_{v}_NOBASIC_DISK"
         env = dict(os.environ, DOSSESSION_ZB_MACHINE=m, NOBASICREACH_MACHINE=m, NOBASICREACH_SLOT=sub[v])
-        r1, o1 = run(["python3", "-u", "probes/disk/disk_probe_dossession.py"], env)
-        r2, o2 = run(["python3", "-u", "probes/disk/disk_probe_nobasicreach.py"], env)
+        r1, o1 = done(subprocess.run(["python3", "-u", "probes/disk/disk_probe_dossession.py"], env=env, **KW))
+        r2, o2 = done(subprocess.run(["python3", "-u", "probes/disk/disk_probe_nobasicreach.py"], env=env, **KW))
         s1 = next((ln for ln in reversed(o1.splitlines()) if ln.startswith(("PASS", "FAIL", "INSTRUMENT"))), "<none>")
         s2 = next((ln for ln in reversed(o2.splitlines()) if ln.startswith("nobasicreach:")), "<none>")
         print(f"=== {v} (disk {sub[v]}): session rc={r1} {s1}\n{'':20s}reach rc={r2} {s2}", flush=True)

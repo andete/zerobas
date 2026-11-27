@@ -1,0 +1,37 @@
+diff --git a/probes/disk/disk_probe_dossession.py b/probes/disk/disk_probe_dossession.py
+index 33b13b701..6305db7c4 100644
+--- a/probes/disk/disk_probe_dossession.py
++++ b/probes/disk/disk_probe_dossession.py
+@@ -73,6 +73,12 @@ SESSION = [
+     ("dateset", "87-11-23", 4),
+     ("rem", "REM A REMARK", 3),
+     ("bad", "NOSUCHCMD", 5),
++    # D-DISKMSX2HOST (2026-11-27): a COPY big enough that COMMAND.COM's buffer runs through pages 1 and 2 of the TPA
++    # ($4000-$BFFF). Before 742324436 every BDOS call on C-BIOS MSX2 left the disk ROM in page 1 (br_bdos put RAM
++    # back only when its subslot was 0), and no row reached past the 16 KB of page 0. The copy's bytes are checked
++    # against the source too (BIGCOPY below), so both machines going wrong the same way cannot pass.
++    ("bigcopy", "COPY MSXBUNSE.ROM BIG.ROM", 150),
++    ("bigdir", "DIR BIG.ROM", 6),
+     # D-DOSSESSION (a), 2026-11-25: BASIC typed at A> hands over to Disk BASIC (BASENT). Its screen differs by
+     # design (zerobas's banner and "ZB" prompt, basic/repl.asm), so the row after it is compared by its VALUES:
+     # HIMEM, FRE(0), FRE("") -- the RAM Disk BASIC gets after MSX-DOS (D-DISKROMHOST step 4 (c)).
+@@ -290,10 +296,18 @@ def main():
+             for e in lst:
+                 print(f"   {side} {e}")
+         bad.append("disk")
++    # BIGCOPY: the copy holds the source's bytes, on each machine (not only the same bytes as the reference)
++    for side, lst in (("CF", cfl), ("ZB", zbl)):
++        sha = {e.split()[0]: (e.split()[2], e.split()[-1]) for e in lst}
++        ok = "BIG.ROM" in sha and sha.get("BIG.ROM") == sha.get("MSXBUNSE.ROM")
++        print(f"ROW {'bigbytes':9s} {side} BIG.ROM {sha.get('BIG.ROM')} vs MSXBUNSE.ROM {sha.get('MSXBUNSE.ROM')}"
++              f"  {'SAME' if ok else 'DIFFERS'}")
++        if not ok:
++            (blind if side == "CF" else bad).append("bigbytes")
+     if blind:
+         print(f"\nINSTRUMENT FAULT: the CF-3300 gave no reading on {', '.join(blind)}")
+         return 2
+-    n = len(SESSION) + 1 - len(SCORED_ELSEWHERE) - len(UNSCORED)
++    n = len(SESSION) + 2 - len(SCORED_ELSEWHERE) - len(UNSCORED)
+     print(f"\n{'PASS' if not bad else 'FAIL'}: MSX-DOS commands typed at A> ({n - len(bad)}/{n})")
+     return 1 if bad else 0
+ 
