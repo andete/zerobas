@@ -2900,10 +2900,13 @@ nobasic-dossession-acceptance: $(DISK_ROM)
 # C-BIOS copy is an instrument fault, exit 2) with THIS tree's disk ROM, then: the no-BASIC MSX-DOS session against
 # the CF-3300 (disk_probe_dossession), and the reach proof -- no disk-ROM path enters zerobas's main ROM, every run
 # witnessed booting our ROM and reaching its BDOS (probes/disk/disk_probe_nobasicreach.py).
+# D-DISKMSX2HOST (2026-11-27): one host per C-BIOS family in the battery (MSX1 EU, MSX2 EU, MSX2+ EU -- the disk in
+# 3-1, 3-1, 3-3), all 12 config variants in the daily sweeps (nobasic-all-acceptance): probes/disk/disk_probe_nobasichosts.py.
 nobasic-acceptance: $(DISK_ROM)
-	python3 tools/install_cbios_msx2.py --pinned
-	DOSSESSION_ZB_MACHINE=CBIOS2_CUR_MSX1_EU_NOBASIC_DISK python3 -u probes/disk/disk_probe_dossession.py
-	python3 -u probes/disk/disk_probe_nobasicreach.py
+	python3 -u probes/disk/disk_probe_nobasichosts.py MSX1_EU MSX2_EU MSX2P_EU
+
+nobasic-all-acceptance: $(DISK_ROM)
+	python3 -u probes/disk/disk_probe_nobasichosts.py
 
 # --- ramatlas-acceptance: the high-RAM atlas still describes this build (D-RAMATLAS)
 # docs/ram-atlas.md: who writes each range of $D000-$FFFF, at which moment (boot,

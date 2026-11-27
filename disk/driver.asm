@@ -482,7 +482,7 @@ install_p1blit:
                 ld      de, P1_BLIT
                 ld      bc, p1_blit_end - p1_blit_tmpl
                 ldir
-                ret
+                jp      p1_patch            ; the flip's operand (D-DISKMSX2HOST)
 ; (boot_call0 moved to the kernel's old CALLF-handler hole, D-BOOTREGS.)
 ; (hdl_scan, D-LOADBASE's first-line scan, is D-LOADDIRECT's hdl_walk now.)
                 include "basic/tokpay-body.inc"   ; tok_payload (D-LOADBASE)

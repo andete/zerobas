@@ -442,7 +442,7 @@ boot_sig_ok:
 ; into page 0, so the boot code/MSXDOS see RAM where the BIOS ROM was. Derives
 ; the RAM slot from page 3 (gap B: host-adaptive, never hardcoded slot 3-0).
 ; Caller MUST DI (while page 0 is RAM the $0038 int vector is not the BIOS). Saves
-; the originals for page0_ram_out. Clobbers A, C. (provider-oracle-scope.md §8.2)
+; the originals for page0_ram_out. Clobbers A, C, HL (sltt_set). (provider-oracle-scope.md §8.2)
 ; D-DISKREREAD (2026-11-26): each merge is a bit-merge in A (keep bits 7-2, bits
 ; 1-0 := bits 7-6 via ((rot2(a) xor a) and 3) xor a) instead of mask/shift/reload
 ; -- 14 B. $FFFF is now read AFTER `out ($A8)`: it lives in page 3, whose primary
@@ -468,13 +468,35 @@ page0_ram_in:
                 xor     c
                 and     %00000011
                 xor     c
+                ; fall into sltt_set: $FFFF AND its SLTTBL mirror
+
+; sltt_set -- write A as page 3's primary slot's secondary-slot register ($FFFF) AND as
+; that slot's SLTTBL mirror entry. D-DISKMSX2HOST (2026-11-27): page0_ram_in wrote $FFFF
+; alone, so the mirror kept the old page-0 subslot; a BIOS that pages its sub ROM (C-BIOS
+; MSX2: 3-0, page 0) restores the subslot FROM the mirror -- and put the sub ROM back
+; under MSX-DOS, which restarted the machine. On MSX1 hosts the stale value is subslot 0
+; = the RAM, so no gate saw it. The mirror must follow every $FFFF write that outlives
+; the routine (MSX2 TH: SLTTBL holds the secondary registers' values).
+; CLEAN-ROOM: MSX2 Technical Handbook secondary-slot register + SLTTBL ($FCC5) mirror;
+; the C-BIOS MSX2 restart measured black box (scratchpad/AE_msx2host_boottrace.out).
+;   in: A = the value; page 3 on the slot to write.   clobbers C, HL
+sltt_set:
                 ld      ($FFFF), a
+                ld      c, a
+                in      a, ($A8)
+                rlca
+                rlca
+                and     3                   ; A = page 3's primary P
+                add     a, low SLTTBL       ; $FCC5 + P <= $FCC8: no carry out of L
+                ld      l, a
+                ld      h, high SLTTBL
+                ld      (hl), c             ; SLTTBL[P] := the value
                 ret
 
 ; page0_ram_out — restore the original page-0 mapping (BIOS ROM back in page 0).
 page0_ram_out:
                 ld      a, (BOOT_SV_SEC)
-                ld      ($FFFF), a
+                call    sltt_set            ; $FFFF and its mirror (D-DISKMSX2HOST)
                 ld      a, (BOOT_SV_A8)
                 out     ($A8), a
 ; wa_stub — the no-op body for the $F368 segment-switch hooks (RET; see build_wa_table).

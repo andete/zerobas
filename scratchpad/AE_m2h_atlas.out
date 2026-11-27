@@ -1,0 +1,8 @@
+python3 -u tools/ram_atlas.py --check
+  ZBND/plain: as measured (3476 addresses)
+wrote ../../../../tmp/zerobas/zbprobe_783_7trr9fq7/ram-atlas.md: 717 rows over 8 runs
+🔴 ZBD/dos: 0 address(es) newly written, 0 no longer, 47 written at other moments / by other code -- e.g. $D4F5
+🔴 ZBD/basic: 0 address(es) newly written, 0 no longer, 1 written at other moments / by other code -- e.g. $FCC8
+🔴 docs/ram-atlas.md is not what --render writes from the JSON
+ram-atlas: RED -- re-run `python3 -u tools/ram_atlas.py --run ZBND ZBD` and `--render`, then read the page's diff
+make: *** [ramatlas-acceptance] Error 1

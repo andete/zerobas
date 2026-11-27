@@ -1,0 +1,103 @@
+python3 tools/install-repack-machine.py --merged build/zerobas-main-eu.rom --disk-rom build/disk.rom \
+	  --sub-rom build/sub.rom
+wrote C-BIOS_MSX1_EU_REPACK_DISK  (-> machine "C-BIOS_MSX1_EU_REPACK_DISK": merged repack ROM in slot 0, zerobas-disk in slot 3-1, zerobas-sub in slot 3-2)
+     /Users/joost/.openMSX/share/machines/C-BIOS_MSX1_EU_REPACK_DISK.xml
+python3 tools/install-repack-machine.py --merged build/zerobas-main-eu.rom --sub-rom build/sub.rom \
+	  --no-disk
+wrote C-BIOS_MSX1_EU_REPACK_NODISK  (-> machine "C-BIOS_MSX1_EU_REPACK_NODISK": merged repack ROM in slot 0, slot 3-1 EMPTY (diskless target), zerobas-sub in slot 3-2)
+     /Users/joost/.openMSX/share/machines/C-BIOS_MSX1_EU_REPACK_NODISK.xml
+ZEROBAS_OURS_MACHINE=C-BIOS_MSX1_EU_REPACK_DISK python3 probes/disk/disk_bdos_acceptance.py 
+
+===== BDOSX (build_bdosx_disk.py) =====
+  PASS  BDOSX capture 0x0300:0x180: 0-byte-diff (anchor t=17.5 ≥ keys-at; stock 17.8 s, ours 17.5 s); live-reg delta [AF] (benign epilogue)
+  PASS  BDOSX capture 0x0400:0x180: 0-byte-diff (anchor t=17.5 ≥ keys-at; stock 17.8 s, ours 17.5 s); live-reg delta [AF] (benign epilogue)
+
+===== BDOSX2 (build_bdosx2_disk.py) =====
+  PASS  BDOSX2 capture 0x0340:0x78: 0-byte-diff (anchor t=32.3 ≥ keys-at; stock 32.3 s, ours 32.3 s)
+
+===== BDOSX3 (build_bdosx3_disk.py) =====
+  PASS  BDOSX3 capture 0x03b0:0x125: 0-byte-diff (all 2 allowlisted — regs rec16 FOPEN-miss($0F) H — register UNDEFINED on the miss path (A=FF is pinned); regs rec16 FOPEN-miss($0F) L — ditto (undefined on miss))
+  PASS  BDOSX3 capture 0x04d5:0x380: 0-byte-diff (anchor t=30.2 ≥ keys-at; stock 30.2 s, ours 32.2 s)
+
+===== BDOSX0 (build_bdosx0_disk.py) =====
+  PASS  BDOSX0 callseq: ALIGNED, no divergence
+  SKIP  BDOSX0 screen (screen; not gated — use --with-screen)
+
+===== BDOSX4 (build_bdosx4_disk.py) =====
+  PASS  BDOSX4 capture 0x01c5:0x80: 0-byte-diff (anchor t=18.0 ≥ keys-at; stock 18.0 s, ours 20.7 s); live-reg delta [AF] (benign epilogue)
+
+===== BDOSXC (build_bdosxc_disk.py) =====
+  PASS  BDOSXC capture 0x0340:0x3c4: 0-byte-diff (anchor t=15.7 ≥ keys-at; stock 15.7 s, ours 17.5 s)
+
+===== BDOSXK (build_bdosxk_disk.py) =====
+  PASS  BDOSXK capture 0x0340:0x3d8: 0-byte-diff (anchor t=30.7 ≥ keys-at; stock 30.7 s, ours 30.7 s); live-reg delta [IX] (benign epilogue)
+
+===== BDOSXS (build_bdosxs_disk.py) =====
+  PASS  BDOSXS capture 0x0340:0x51: 0-byte-diff (anchor t=33.8 ≥ keys-at; stock 34.0 s, ours 33.8 s); live-reg delta [IX, IY] (benign epilogue)
+
+===== BDOSXE (build_bdosxe_disk.py) =====
+  PASS  BDOSXE capture 0x023d:0x52: 0-byte-diff (anchor t=15.2 ≥ keys-at; stock 18.1 s, ours 15.2 s); live-reg delta [AF, IY] (benign epilogue)
+
+===== BDOSXT (build_bdosxt_disk.py) =====
+  PASS  BDOSXT capture 0x0340:0x083: 0-byte-diff (anchor t=13.9 ≥ keys-at; stock 14.9 s, ours 13.9 s)
+
+===== BDOSXL (build_bdosxl_disk.py) =====
+  PASS  BDOSXL capture 0x0a10:0x135: 0-byte-diff (anchor t=19.8 ≥ keys-at; stock 19.8 s, ours 20.5 s)
+
+===== BDOSXB (build_bdosxb_disk.py) =====
+  PASS  BDOSXB capture 0x0340:0x3ec: 0-byte-diff (anchor t=30.7 ≥ keys-at; stock 31.6 s, ours 30.7 s); live-reg delta [IX, IY] (benign epilogue)
+
+===== BDOSX5 (build_bdosx5_disk.py) =====
+  PASS  BDOSX5 capture 0x019a:0x65: 0-byte-diff (all 1 allowlisted — regs rec2 FOPEN-miss($0F) L — register UNDEFINED on the miss path (A=FF is pinned))
+
+===== BDOSX6 (build_bdosx6_disk.py) =====
+  PASS  BDOSX6 capture 0x0207:0x69: 0-byte-diff (all 1 allowlisted — regs rec1 RDRND($21) L — ancillary register (stock mirrors L:=A on EOF; contract pins A=01))
+  PASS  BDOSX6 capture 0x0270:0x80: 0-byte-diff (anchor t=17.5 ≥ keys-at; stock 17.6 s, ours 17.5 s); live-reg delta [IY] (benign epilogue)
+
+===== BDOSX7 (build_bdosx7_disk.py) =====
+  PASS  BDOSX7 capture 0x01b8:0x65: 0-byte-diff (all 2 allowlisted — regs rec0 FREN($17) H — register UNDEFINED on return (contract pins A only); regs rec0 FREN($17) L — ditto (undefined; A=FF is pinned))
+
+===== BDOSX8 (build_bdosx8_disk.py) =====
+  PASS  BDOSX8 capture 0x01ab:0xca: 0-byte-diff (anchor t=19.8 ≥ keys-at; stock 19.8 s, ours 20.9 s)
+
+===== BDOSX9 (build_bdosx9_disk.py) =====
+  PASS  BDOSX9 capture 0x0400:0x118: 0-byte-diff (anchor t=19.3 ≥ keys-at; stock 19.4 s, ours 19.3 s)
+
+===== BUFINX (build_bufinx_disk.py) =====
+  PASS  BUFINX capture 0x0408:0x18: 0-byte-diff (anchor t=30.2 ≥ keys-at; stock 30.2 s, ours 30.2 s); live-reg delta [AF, HL, IX] (benign epilogue)
+
+===== AUXINX (build_auxinx_disk.py) =====
+  PASS  AUXINX capture 0x0400:0x08: 0-byte-diff (anchor t=13.6 ≥ keys-at; stock 14.8 s, ours 13.6 s); live-reg delta [AF] (benign epilogue)
+
+===== DSKENT (build_dskent_disk.py) =====
+  PASS  DSKENT capture 0x0400:0x40: 0-byte-diff (anchor t=13.9 ≥ keys-at; stock 14.8 s, ours 13.9 s); live-reg delta [BC, DE, IY] (benign epilogue)
+
+===== DSKCHG (build_dskchg_disk.py) =====
+  PASS  DSKCHG capture 0x0400:0x40: 0-byte-diff (anchor t=28.3 ≥ keys-at; stock 28.5 s, ours 28.3 s); live-reg delta [BC, DE, IX, IY] (benign epilogue)
+
+===== WRZER (build_wrzer_disk.py) =====
+  PASS  WRZER capture 0x0400:0x6A0: 0-byte-diff (anchor t=42.8 ≥ keys-at; stock 42.8 s, ours 66.0 s); live-reg delta [IX] (benign epilogue)
+
+===== DOSL-D1 (build_dosl_disk.py) =====
+  PASS  DOSL-D1 capture 0x0400:0x20: 0-byte-diff (anchor t=40.6 ≥ keys-at; stock 40.6 s, ours 40.6 s); live-reg delta [IX] (benign epilogue)
+
+===== DOSL-D2 (build_dosl_disk.py) =====
+  PASS  DOSL-D2 capture 0x0400:0x10: 0-byte-diff (anchor t=17.0 ≥ keys-at; stock 18.3 s, ours 17.0 s); live-reg delta [AF, IX] (benign epilogue)
+
+===== DOSL-D3 (build_dosl_disk.py) =====
+  PASS  DOSL-D3 capture 0x0400:0x20: 0-byte-diff (anchor t=93.0 ≥ keys-at; stock 93.0 s, ours 152.7 s); live-reg delta [IX, IY] (benign epilogue)
+
+===== DOSL-D4 (build_dosl_disk.py) =====
+  PASS  DOSL-D4 capture 0x0400:0x6c: 0-byte-diff (anchor t=17.4 ≥ keys-at; stock 17.4 s, ours 27.2 s); live-reg delta [IY] (benign epilogue)
+
+===== DOSL-D5 (build_dosl_disk.py) =====
+  PASS  DOSL-D5 capture 0x0400:0x10: 0-byte-diff (anchor t=27.3 ≥ keys-at; stock 32.3 s, ours 27.3 s); live-reg delta [AF, IX, IY] (benign epilogue)
+
+===== DOSL-D6 (build_dosl_disk.py) =====
+  PASS  DOSL-D6 capture 0x0480:0x25: 0-byte-diff (anchor t=23.8 ≥ keys-at; stock 23.8 s, ours 32.9 s); live-reg delta [IX, IY] (benign epilogue)
+
+===== DOSL-D7 (build_dosl_disk.py) =====
+  PASS  DOSL-D7 capture 0x0400:0x20: 0-byte-diff (all 6 allowlisted — FCLOSE after WRBLK-0 truncate: stock $FF (its truncate bug), ours 0; RDRND record 7: stock A=1 on its corrupted file, ours 0; RDRND record 8: stock A=1 on its corrupted file, ours 0; SORTED.TXT record 9's byte: stock reads its freed cluster, ours 10; record 7's byte: stock none, ours 8; record 8's byte: stock none, ours 9)
+
+===== BDOSX acceptance: 32/32 gated differentials converged (1 screen skipped) =====
+ALL CONVERGED — the BDOS surface still matches the stock oracle byte-for-byte.

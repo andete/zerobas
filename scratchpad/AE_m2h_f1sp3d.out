@@ -1,0 +1,5 @@
+[  1/1] UNSETTLED     zb  ref S1 pc=49232  zb S0 pc=62348  f1sp3d-2.dsk
+[  1/1] UNSETTLED     zb  ref S1 pc=49232  zb S0 pc=62348  f1sp3d-2.dsk
+OLD ROM: [  1/1] BOTH-RUN    5171  ref S1 pc=49232  zb S0 pc=56776  f1sp3d-2.dsk
+NEW but p1_blit and-F3: [  1/1] UNSETTLED     zb  ref S1 pc=49232  zb S0 pc=62348  f1sp3d-2.dsk
+NEW but no SLTTBL write: [  1/1] BOTH-RUN    5171  ref S1 pc=49232  zb S0 pc=57078  f1sp3d-2.dsk

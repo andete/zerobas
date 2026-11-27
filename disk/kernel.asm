@@ -1579,11 +1579,12 @@ br_bdos_tmpl:
                 call    WA_SEG_ROM          ; register-transparent
                 call    bdos_entry
                 push    af
+                push    bc
                 ld      a, (BR_P1SV)
-                or      a
-                call    z, WA_SEG_RAM       ; it was RAM: RAM again
-                pop     af
-                ret
+                jp      WA_SEG_SET          ; the caller's page-1 subslot back, exactly: its pop bc /
+                                            ; pop af / ret return for us. D-DISKMSX2HOST: was "RAM again
+                                            ; iff the saved bits were 0" -- RAM is subslot 2 on MSX2
+                ds      2, 0                ; (the template keeps its 10 B: BR_P1SV stays put)
 br_p1sv_tmpl:   db      0
 br3_end:
 
@@ -7760,6 +7761,39 @@ dskio_verify:
                 ld      (FDC_DEST), hl
                 pop     hl
                 ret
+; --- D-DISKMSX2HOST (2026-11-27): THE SUBSLOTS ARE THE HOST'S, NOT "RAM 0, DISK ROM 1" ---------------------
+; On C-BIOS MSX2 the RAM is subslot 2 (3-0 is the sub ROM); on MSX2+ the disk ROM sits in 3-3 (3-1 is the music
+; ROM). The page-1 switches hard-coded MSX1's layout; these patch the installed RAM copies with the host's bits
+; (scratchpad/AE_msx2host_boottrace.out, AE_msx2host_ptrace.out: MSX-DOS restarted / never reached our BDOS).
+; CLEAN-ROOM: MSX2 Technical Handbook secondary-slot register ($FFFF, read inverted) and slot byte F000SSPP.
+; wa_patch -- install_dos_env's tail: the $F368 / $F36B bodies' page-1 bits := our subslot / the RAM's
+wa_patch:
+                ld      a, (HOOK_SLOT)
+                and     $0C
+                ld      (WA_SEG_ROM + (wsr_ld - wa_seg_rom_tmpl) + 1), a
+                call    ram_p1bits
+                ld      (WA_SEG_RAM + (wsm_ld - wa_seg_ram_tmpl) + 1), a
+                jp      install_br6         ; ... and br6 (D-CALSLTP0)
+; p1_patch -- install_p1blit's tail: P1_BLIT's flip operand := our page-1 bits XOR the RAM's
+p1_patch:
+                call    ram_p1bits
+                ld      hl, HOOK_SLOT
+                xor     (hl)
+                and     $0C
+                ld      (P1_BLIT + (pb_flip - p1_blit_tmpl) + 1), a
+                ret
+; ram_p1bits -- A = the RAM's subslot in page-1 position (bits 3-2): page 3's, where the stack lives
+; (set_ramad's rule), from the expander of page 3's primary.
+ram_p1bits:
+                ld      a, ($FFFF)
+                cpl
+                rrca
+                rrca
+                rrca
+                rrca
+                and     $0C
+                ret
+
 hk_format_gate:                             ; H_FORM's row (hook_tab), in front of hk_format
                 ; C-BIOS integration step 1 (2026-11-27, scratchpad/abireach_probe.py): H_FORM is ALSO C-BIOS's BIOS
                 ; FORMAT ($0147: `call H_FORM`), and what follows needs zerobas BASIC -- main's key source through
@@ -8392,11 +8426,13 @@ pb_iff:         di
                 ld      a, ($FFFF)          ; A = inverted sub-slot state (MSX2 TH)
                 cpl                         ; A = actual sub-slot write value (P/V kept)
                 push    af                  ; A = the sub-slot state, F's P/V = IFF2
-                and     $F3                 ; bits 3:2 -> 00: page 1 = sub-slot 0 (RAM)
+pb_flip:        xor     0                   ; page-1 bits: OUR subslot -> the RAM's (install_p1blit
+                                            ; patches ours XOR the RAM's; D-DISKMSX2HOST: was
+                                            ; `and $F3`, "the RAM is subslot 0" -- the sub ROM on MSX2)
                 ld      ($FFFF), a          ; page 1 now maps to RAM
                 ldir
                 pop     af                  ; A = original sub-slot write value
-                ld      ($FFFF), a          ; page 1 back to disk ROM (sub-slot 1)
+                ld      ($FFFF), a          ; page 1 back to the disk ROM
                 ret     po                  ; they were off: leave them off
                 ei
                 ret
@@ -8428,12 +8464,12 @@ p1_blit_end:
 wa_seg_rom_tmpl:                            ; $F368 body: map disk ROM into page 1
                 push    af
                 push    bc                  ; B is our scratch -> preserve (transparent)
-                ld      a, $04              ; page-1 bits = subslot 1 (disk ROM)
-                jr      wa_seg_set_tmpl     ; (relocatable: PC-relative)
+wsr_ld:         ld      a, $04              ; page-1 bits = OUR subslot (install_dos_env patches it
+                jr      wa_seg_set_tmpl     ; from HOOK_SLOT; D-DISKMSX2HOST) (relocatable: PC-relative)
 wa_seg_ram_tmpl:                            ; $F36B body: map RAM into page 1
                 push    af
                 push    bc
-                ld      a, $00              ; page-1 bits = subslot 0 (RAM)
+wsm_ld:         ld      a, $00              ; page-1 bits = the RAM's subslot (patched: ram_p1bits)
 wa_seg_set_tmpl:
                 di
                 ld      b, a                ; B = desired page-1 subslot bits

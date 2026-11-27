@@ -37,6 +37,12 @@ import openmsx_paths  # noqa: E402
 # the share openMSX reads -- $OPENMSX_USER_DATA (gate_wt's private share) when set
 USER = os.path.join(openmsx_paths.find_user_share(), "machines")
 PIN = os.path.join(ROOT, "tools", "cbios-nobasic.pin")
+# D-DISKMSX2HOST (2026-11-27): a NOBASIC_DISK machine per C-BIOS config family -- variant -> the bundled config.
+# MSX1_EU is the gated port host; the rest are measured by D-DISKMSX2HOST.
+NOBASIC = {"MSX1_EU": "C-BIOS_MSX1_EU", "MSX1": "C-BIOS_MSX1", "MSX1_JP": "C-BIOS_MSX1_JP", "MSX1_BR": "C-BIOS_MSX1_BR",
+           "MSX2": "C-BIOS_MSX2", "MSX2_EU": "C-BIOS_MSX2_EU", "MSX2_JP": "C-BIOS_MSX2_JP", "MSX2_BR": "C-BIOS_MSX2_BR",
+           "MSX2P": "C-BIOS_MSX2+", "MSX2P_EU": "C-BIOS_MSX2+_EU", "MSX2P_JP": "C-BIOS_MSX2+_JP",
+           "MSX2P_BR": "C-BIOS_MSX2+_BR"}
 # variant -> the bundled config it is made from
 VARIANTS = {"MSX2_EU": "C-BIOS_MSX2_EU", "MSX2_JP": "C-BIOS_MSX2_JP", "MSX2P_JP": "C-BIOS_MSX2+_JP"}
 
@@ -66,7 +72,7 @@ def install(cbios, tag):
         name = f"CBIOS2_{tag.upper()}_{var}"
         open(os.path.join(USER, name + ".xml"), "w").write(xml)
         names.append(name)
-    names.append(install_nobasic(dest, tag))
+    names += [install_nobasic(dest, tag, v)[0] for v in NOBASIC]
     print("installed: " + ", ".join(names) + f"  (ROMs in {dest})")
 
 
@@ -79,24 +85,35 @@ def read_pin():
     return pin
 
 
-def install_pinned(tag):
+def rom_files(var):
+    """the ROM files variant VAR's bundled config names"""
+    return re.findall(r"<filename>([^<]+)</filename>", open(os.path.join(BUNDLED, NOBASIC[var] + ".xml")).read())
+
+
+def install_pinned(tag, variants=("MSX1_EU",)):
     dest = os.path.join(os.path.dirname(USER), "zerobas-cbios2", tag.lower())
     pin = read_pin()
-    for f, want in pin.items():
-        if f == "rev":
-            continue
+    need = sorted({f for v in variants for f in rom_files(v)})
+    unpinned = [f for f in need if f not in pin]
+    if unpinned:
+        print(f"install_cbios_msx2: INSTRUMENT FAULT -- {', '.join(unpinned)} not in tools/cbios-nobasic.pin")
+        return 2
+    for f in need:
+        want = pin[f]
         p = os.path.join(dest, f)
         got = hashlib.sha1(open(p, "rb").read()).hexdigest() if os.path.isfile(p) else "missing"
         if got != want:
             print(f"install_cbios_msx2: INSTRUMENT FAULT -- {p} is {got}, tools/cbios-nobasic.pin wants {want} "
                   f"(C-BIOS {pin.get('rev')}); install it with --cbios <checkout at that revision>, or move the pin")
             return 2
-    name = install_nobasic(dest, tag)
-    print(f"installed: {name}  (C-BIOS {pin.get('rev')}, pinned; disk ROM {os.path.join(ROOT, 'build', 'disk.rom')})")
+    for v in variants:
+        name, sub = install_nobasic(dest, tag, v)
+        print(f"installed: {name}  (disk in 3-{sub}; C-BIOS {pin.get('rev')}, pinned; disk ROM "
+              f"{os.path.join(ROOT, 'build', 'disk.rom')})")
     return 0
 
 
-def install_nobasic(dest, tag):
+def install_nobasic(dest, tag, var="MSX1_EU"):
     # 💽 docs/disk/port-readiness.md gap 3 (2026-11-26): the C-BIOS PORT'S HOST -- the checkout's own MSX1 EU build,
     # NO BASIC anywhere, zerobas's disk ROM in slot 3-1 behind the CF-3300-style FDC. openMSX's bundled C-BIOS (0.29)
     # is not that host: it predates the disk-host work (HIMEM, MS-BASIC's layout at the scan), so it is the
@@ -106,23 +123,53 @@ def install_nobasic(dest, tag):
     inst = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(inst)
     disk_rom = os.path.join(ROOT, "build", "disk.rom")
-    xml = open(os.path.join(BUNDLED, "C-BIOS_MSX1_EU.xml")).read()
+    xml = open(os.path.join(BUNDLED, NOBASIC[var] + ".xml")).read()
     xml = re.sub(r"\s*<sha1>[0-9a-f]+</sha1>", "", xml)
     xml = re.sub(r"<filename>([^<]+)</filename>", lambda m: f"<filename>{os.path.join(dest, m.group(1))}</filename>", xml)
-    xml = inst.expand_slot3(xml, disk_rom, "")
-    name = f"CBIOS2_{tag.upper()}_MSX1_EU_NOBASIC_DISK"
+    slot3 = re.search(r'<primary slot="3">.*?</primary>', xml, re.DOTALL)
+    if "<secondary" not in slot3.group(0):
+        # MSX1: slot 3 is plain RAM -- expand it, RAM in 3-0, the disk in 3-1 (the gated layout)
+        xml, sub = inst.expand_slot3(xml, disk_rom, ""), 1
+    else:
+        # MSX2 / MSX2+: slot 3 is already expanded -- the disk goes in the first subslot the config leaves out
+        # (MSX2: 3-1; MSX2+: 3-3, its 3-1 being the music ROM), inserted in subslot order
+        body = slot3.group(0)
+        used = {int(n) for n in re.findall(r'<secondary slot="(\d)"', body)}
+        sub = next(n for n in (1, 2, 3) if n not in used)
+        block = ('      <secondary slot="%d">\n'
+                 '        <WD2793 id="zerobas-disk FDC">\n'
+                 '          <connectionstyle>National</connectionstyle>\n'
+                 '          <drives>1</drives>\n'
+                 '          <rom>\n'
+                 '            <filename>%s</filename>\n'
+                 '          </rom>\n'
+                 '          <mem base="0x4000" size="0x8000"/>\n'
+                 '        </WD2793>\n'
+                 '      </secondary>\n\n') % (sub, disk_rom)
+        # before the next subslot's line, else before the `</primary>` line (both at their line's start)
+        nxt = re.search(r'^[ \t]*<secondary slot="[%d-3]"' % (sub + 1), body, re.M) if sub < 3 else None
+        at = nxt.start() if nxt else body.rindex("\n", 0, body.rindex("</primary>")) + 1
+        body = body[:at] + block + body[at:]
+        xml = xml[:slot3.start()] + body + xml[slot3.end():]
+    name = f"CBIOS2_{tag.upper()}_{var}_NOBASIC_DISK"
     open(os.path.join(USER, name + ".xml"), "w").write(xml)
-    return name
+    return name, sub
 
 
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--cbios")
     ap.add_argument("--pinned", action="store_true")
+    ap.add_argument("--variants", default="MSX1_EU",
+                    help="with --pinned: comma-separated NOBASIC variants, or 'all' (%s)" % ", ".join(NOBASIC))
     ap.add_argument("--tag", default="CUR")
     a = ap.parse_args()
     if a.pinned:
-        return install_pinned(a.tag)
+        vs = list(NOBASIC) if a.variants == "all" else a.variants.split(",")
+        bad = [v for v in vs if v not in NOBASIC]
+        if bad:
+            ap.error(f"unknown variant(s) {bad}")
+        return install_pinned(a.tag, vs)
     if not a.cbios:
         ap.error("--cbios <checkout> or --pinned")
     install(os.path.abspath(os.path.expanduser(a.cbios)), a.tag)

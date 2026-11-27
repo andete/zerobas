@@ -58,6 +58,11 @@ Philips VG-8020 with a Sony HBD-F1.
    `make nobasic-acceptance` installs that host from the pin with no checkout. A missing or moved C-BIOS is an
    instrument fault, never a green. The target runs the session and the reach proof (row 3) in every battery. A new
    C-BIOS moves the pin by hand (`--cbios <checkout>`, then the suite, then the pin, in one commit).
+7. ✅ **Every C-BIOS config, one ROM** (D-DISKMSX2HOST), 2026-11-27: on C-BIOS MSX2 the ROM restarted the machine at
+   MSX-DOS and on MSX2+ never reached its BDOS -- it had assumed MSX1's slot layout (RAM in subslot 0, itself in 1)
+   and wrote the subslot register without its SLTTBL mirror. Fixed with no RAM address moved; the session and the
+   reach proof pass on all 12 configs (MSX1 / MSX2 / MSX2+ x international, EU, JP, BR). `make nobasic-acceptance`
+   runs one per family in the battery, `make nobasic-all-acceptance` all 12 daily.
 6. ✅ **The standalone build**, 2026-11-27: `make disk-standalone-check` (STATIC tier) assembles the 19 disk-ROM
    sources and the committed ABI include in an empty directory, without make or the main-ROM build, and requires
    the battery's image byte for byte. The integration note covers the build, the slot, the host contract and the

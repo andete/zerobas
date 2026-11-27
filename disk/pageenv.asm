@@ -162,6 +162,7 @@ WA_SEG          equ     BR2_RAM + (br2_end - br2_tmpl)  ; the $F368 hook bodies:
                                 ; shares the address and declares none, so one would only DISPUTE
 WA_SEG_ROM      equ     WA_SEG + (wa_seg_rom_tmpl - wa_seg_rom_tmpl)   ; = WA_SEG
 WA_SEG_RAM      equ     WA_SEG + (wa_seg_ram_tmpl - wa_seg_rom_tmpl)
+WA_SEG_SET      equ     WA_SEG + (wa_seg_set_tmpl - wa_seg_rom_tmpl)   ; A = page-1 bits; [bc][af] pushed
 BR3_RAM         equ     WA_SEG + (wa_seg_end_tmpl - wa_seg_rom_tmpl)
 BR_BDOS         equ     BR3_RAM + (br_bdos_tmpl - br3_tmpl)
 BR_P1SV         equ     BR3_RAM + (br_p1sv_tmpl - br3_tmpl)

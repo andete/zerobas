@@ -858,7 +858,7 @@ install_dos_env:
                 ld      hl, br5_tmpl        ; ... and br5
                 ld      bc, br5_end - br5_tmpl
                 ldir
-                jp      install_br6         ; ... and br6 (D-CALSLTP0)
+                jp      wa_patch            ; the hook bodies' subslots (D-DISKMSX2HOST), then br6
 ; ldir_11 -- D-DISKROMHOST step 2b: the run it replaces stood at 7 sites (kernel.asm)
 ldir_11:
                 ld      bc,11

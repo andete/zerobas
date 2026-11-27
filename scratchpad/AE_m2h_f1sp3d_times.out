@@ -1,0 +1,12 @@
+t=10: [  1/1] BOTH-RUN    5171  ref S1 pc=49236  zb S0 pc=57083  f1sp3d-2.dsk
+t=20: [  1/1] UNSETTLED     zb  ref S1 pc=57034  zb S0 pc= 9233  f1sp3d-2.dsk
+t=30: [  1/1] UNSETTLED     zb  ref S1 pc=56932  zb S0 pc= 5780  f1sp3d-2.dsk
+t=45: [  1/1] UNSETTLED     zb  ref S1 pc=49232  zb S0 pc=62348  f1sp3d-2.dsk
+t=60: [  1/1] BOTH-RUN    5171  ref S1 pc=57060  zb S0 pc=57089  f1sp3d-2.dsk
+t=90: [  1/1] BOTH-RUN    5171  ref S1 pc= 5213  zb S0 pc=56773  f1sp3d-2.dsk
+OLD t=10: [  1/1] UNSETTLED     zb  ref S1 pc=49236  zb S0 pc= 9254  f1sp3d-2.dsk
+OLD t=20: [  1/1] UNSETTLED     zb  ref S1 pc=57034  zb S0 pc= 9239  f1sp3d-2.dsk
+OLD t=30: [  1/1] BOTH-RUN    5171  ref S1 pc=56932  zb S0 pc=57120  f1sp3d-2.dsk
+OLD t=45: [  1/1] BOTH-RUN    5171  ref S1 pc=49232  zb S0 pc=56776  f1sp3d-2.dsk
+OLD t=60: [  1/1] BOTH-RUN    5171  ref S1 pc=57060  zb S0 pc=57074  f1sp3d-2.dsk
+OLD t=90: [  1/1] BOTH-RUN    5171  ref S1 pc= 5213  zb S0 pc=56782  f1sp3d-2.dsk

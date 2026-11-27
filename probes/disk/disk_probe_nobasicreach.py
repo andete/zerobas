@@ -40,7 +40,8 @@ import omsx_preflight  # noqa: E402
 import probe_tmp  # noqa: E402
 
 MACHINE = os.environ.get("NOBASICREACH_MACHINE", "CBIOS2_CUR_MSX1_EU_NOBASIC_DISK")
-SLOT = (3, 1)
+# the disk ROM's subslot: 3-1 on MSX1 / MSX2 hosts, 3-3 on MSX2+ (D-DISKMSX2HOST; install_cbios_msx2 prints it)
+SLOT = tuple(int(x) for x in os.environ.get("NOBASICREACH_SLOT", "3-1").split("-"))
 ENTRIES = ("install_basic_hooks", "bb_term")     # armed (with every hk_*)
 ALLOWED = ("install_basic_hooks", "bb_term")     # may fire; kept apart from ENTRIES so a knife narrowing it stays armed
 MIN_TRANSFERS = 40      # 72 on 2026-11-27; a scan that finds a handful has misread the image or the ABI

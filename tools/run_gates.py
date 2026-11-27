@@ -127,7 +127,9 @@ DAILY_SUITES = ("ctrlkeys-acceptance", "screenerr-acceptance", "lnblank-acceptan
                 "pusing-acceptance", "penderr-acceptance",
                 # ⏱ A3 (2026-11-25, gate_time_review): its --say twin, daily WITH it -- it ran serially after
                 # every FULL among the excluded five (~134 s) while lnblank-acceptance itself was daily
-                "lnblank-say-acceptance")
+                "lnblank-say-acceptance",
+                # D-DISKMSX2HOST (2026-11-27): the disk ROM on all 12 C-BIOS configs (~15 min); the battery runs 3
+                "nobasic-all-acceptance")
 DAILY_STAMP = "daily_suites.stamp"
 SLOW_PIN_KEEP = "scratchpad/gate_pins"
 
@@ -179,7 +181,7 @@ diskfre-acceptance deepexpr-acceptance fcb0-acceptance prec-acceptance dimedge-a
 caswbrk-acceptance casrbrk-acceptance subsig-acceptance
 casdirect-acceptance autorun-acceptance listflt-acceptance
 resetboot-acceptance keyshift-acceptance
-opengrp-acceptance instr128-acceptance ceiling-acceptance officialcell-acceptance basicrom-acceptance diskalias-acceptance floorcensus-acceptance biosl-acceptance initslot-acceptance bdosunop-acceptance phydioerr-acceptance bdosf37d-acceptance nobasic-acceptance""".split()
+opengrp-acceptance instr128-acceptance ceiling-acceptance officialcell-acceptance basicrom-acceptance diskalias-acceptance floorcensus-acceptance biosl-acceptance initslot-acceptance bdosunop-acceptance phydioerr-acceptance bdosf37d-acceptance nobasic-acceptance nobasic-all-acceptance""".split()
 
 # ⚠️ POSTCHECKS IS NOT HERE. `GATES` is what the POOL runs, and a post-pool unit
 # must not also be scheduled in it. The DENOMINATOR adds it separately below --

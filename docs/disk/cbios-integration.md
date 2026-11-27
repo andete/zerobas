@@ -25,9 +25,18 @@ The reference for its behaviour is the National CF-3300.
 
 ## Slot
 
-It is measured in **slot 3-1**, with the FDC in the same slot. That is the CF-3300's layout, and the one
-`tools/install_cbios_msx2.py` builds for C-BIOS. The code is not tied to that slot: it takes its own slot byte from
-A at INIT (host item 5 below) and publishes it (DRVTBL, SLTWRK). Only 3-1 is gated, though.
+**One ROM image for every C-BIOS config** (D-DISKMSX2HOST, 2026-11-27): a config with a disk only adds the WD2793
+block in a subslot of slot 3 it leaves free. Measured and gated on all 12 of C-BIOS's configs:
+
+| family | configs | the disk in | gate |
+|---|---|---|---|
+| MSX1 | international, EU, JP, BR | 3-1 (slot 3 expanded; RAM in 3-0) | EU in the battery, all in the daily sweeps |
+| MSX2 | international, EU, JP, BR | 3-1 (3-0 sub ROM, 3-2 RAM) | EU in the battery, all in the daily sweeps |
+| MSX2+ | international, EU, JP, BR | 3-3 (3-1 is the music ROM) | EU in the battery, all in the daily sweeps |
+
+The ROM takes its own slot byte from A at INIT (host item 5 below) and the RAM's subslot from page 3, and publishes
+its slot (DRVTBL, SLTWRK). Before D-DISKMSX2HOST it assumed MSX1's layout (RAM in subslot 0, itself in subslot 1):
+MSX2 restarted at MSX-DOS, MSX2+ never reached the BDOS.
 
 Only one disk interface is supported. A second one initialised before this one is not handled (Joost, 2026-11-26:
 deferred, very low priority).
@@ -104,7 +113,8 @@ for the BIOS FORMAT routine ($0147).
 
 | target | what it holds |
 |---|---|
-| `make nobasic-acceptance` | Runs on the pinned C-BIOS host (`tools/cbios-nobasic.pin`). The no-BASIC MSX-DOS session must read as on the CF-3300, and every run must show no disk-ROM path reaching zerobas's main ROM |
+| `make nobasic-acceptance` | Runs on the pinned C-BIOS hosts (`tools/cbios-nobasic.pin`): MSX1 EU, MSX2 EU, MSX2+ EU. The no-BASIC MSX-DOS session must read as on the CF-3300, and every run must show no disk-ROM path reaching zerobas's main ROM |
+| `make nobasic-all-acceptance` | The same on all 12 C-BIOS configs (daily sweeps) |
 | `make disk-standalone-check` | The standalone build above |
 | `make bdos-acceptance`, `make bdos-cbios-selfcheck` | The BDOS surface |
 | `make dossession-acceptance` | An MSX-DOS session against the CF-3300 |
