@@ -27,6 +27,18 @@ for m in machines:
     subprocess.run(["cp", os.path.expanduser("~/Documents/msx/msx/disks/test.dsk"), dsk], check=True)
     out = os.path.join(td, "o.txt")
     tcl = D.tcl(out)
+    # FDC command traffic (D-COPYSLOW): every write to the WD2793's command register (any of its mirrors in $7F80-$7FBF -- the National
+    # decode repeats the 8 registers there -- memory-mapped in the interface's page 1 -- hardware traffic, no PC, no ROM byte), counted by command class while the copy runs
+    fdc = os.path.join(td, "fdc.txt")
+    tcl = tcl.replace("set throttle off", "set throttle off\nset ::fdc [dict create]\nset ::fdcsec [dict create]\nset ::counting 0\n"
+        "debug set_watchpoint write_mem {0x7F80 0x7FBF} {$::counting} {if {($::wp_last_address & 7) == 0} {"
+        "set c [expr {$::wp_last_value >> 4}]; dict incr ::fdc $c; "
+        "if {$c == 8 || $c == 10} {dict incr ::fdcsec \"$c:[peek 0x7FB9]:[peek 0x7FBA]\"}}}", 1)
+    # count from the MODE 40 step's snapshot to the COPY step's, which also writes the counts
+    a = "  close $f }"
+    assert tcl.count(a) == 1, "snap's close"
+    tcl = tcl.replace(a, "  if {$tag eq \"mode\"} {set ::counting 1}\n"
+                         "  if {$tag eq \"copy\"} {set ::counting 0; puts $f \"FDC $::fdc\"; puts $f \"FDCSEC $::fdcsec\"}\n" + a)
     for a, b in (('puts $f "$tag W=$w', 'puts $f "$tag T=[format %.2f [machine_info time]] W=$w'),
                  ("$::tries > 240", "$::tries > 12000")):
         assert tcl.count(a) == 1, a
@@ -42,5 +54,15 @@ for m in machines:
         if len(p) > 1 and p[1].startswith("T="):
             t[p[0]] = float(p[1][2:])
     took = f"{t['copy'] - t['mode']:.1f} s" if "copy" in t and "mode" in t else f"NO READING {sorted(t)}"
+    fdcline = next((ln for ln in open(out).read().splitlines() if ln.startswith("FDC ")), "FDC -")
+    names = {0: "restore", 1: "seek", 2: "step", 3: "step", 4: "stepin", 5: "stepin", 6: "stepout", 7: "stepout",
+             8: "read", 9: "readM", 10: "write", 11: "writeM", 12: "readaddr", 13: "irq", 14: "readtrk", 15: "writetrk"}
+    kv = fdcline.split()[1:]
+    took += "  FDC " + " ".join(f"{names.get(int(kv[i]), kv[i])}={kv[i + 1]}" for i in range(0, len(kv) - 1, 2))
     big = [e for e in D.disk_listing(bytearray(open(dsk, "rb").read())) if e.startswith(("BIG.", src))]
     print(f"{m:36s} COPY {src}: {took}   " + " | ".join(big))
+    sec = next((ln for ln in open(out).read().splitlines() if ln.startswith("FDCSEC ")), "FDCSEC")
+    kv = sec.split()[1:]
+    rows = sorted(((int(kv[i + 1]), kv[i]) for i in range(0, len(kv) - 1, 2)), reverse=True)
+    if os.environ.get("FDCSEC"):
+        print("   most-issued (cmd:track:sector): " + ", ".join(f"{k}x{n}" for n, k in rows[:14]))

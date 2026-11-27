@@ -1,0 +1,2 @@
+C-BIOS_MSX1_EU_REPACK_DISK           COPY MSXBUNSE.ROM: 82.8 s  FDC read=241 seek=128 writetrk=4 restore=4 write=139   BIG.ROM attr=00 size=32768 date=2D91 time=A13B sha1=e89ea1e8e583 | MSXBUNSE.ROM attr=00 size=32768 date=2D91 time=A13B sha1=e89ea1e8e583
+   most-issued (cmd:track:sector): 8:0:3x55, 8:0:2x49, 10:0:6x28, 10:0:3x28, 10:0:5x8, 10:0:2x8, 8:0:9x3, 8:0:8x3, 8:0:1x3, 10:0:1x3, 8:40:9x2, 8:40:8x2, 8:40:7x2, 8:40:6x2

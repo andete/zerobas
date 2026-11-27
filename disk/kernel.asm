@@ -7774,6 +7774,22 @@ dskio_verify:
                 ld      (FDC_DEST), hl
                 pop     hl
                 ret
+; fdc_seek -- D-DISKCARVE2's helper (seek to track D, wait); here since D-DSKCHG,
+; whose stamp needed the bytes beside fdc_prep. Entered only by `call`.
+fdc_seek:
+                ; 🔴 D-COPYSLOW (2026-11-27): no seek when the head is already on track D. Every sector seeked
+                ; (with verify: the ID it reads lets the wanted sector pass, ~a rotation lost per sector):
+                ; a 32 KB COPY issued 380 seeks for 380 sector commands, the CF-3300 5, and took 86.5 s to its
+                ; 21.8 (scratchpad/AE_copyslow_fdc32.out). A stale Track register costs one failed attempt,
+                ; which restores and seeks again (fdc_again). CLEAN-ROOM: WD2793 datasheet; own code.
+                ld      a, (FDC_TRACK)
+                cp      d
+                ret     z               ; on track: nothing to do
+                ld      a, d            ; track number via the Data register
+                ld      (FDC_DATA), a
+                ld      a, CMD_SEEK
+                jp      fdc_cmd         ; fdc_restore's store (D-DISKREREAD); jp from the hole
+
 ; --- D-CLAIM473 (2026-11-27): init_gate's two tails, here for room ----------------------------------------
 ; ig_dpb -- DPBLIST ($F355) := the drive-A DPB: $F195 as the CF-3300 at N = 0; one byte lower only at N = 473,
 ; where $F1A7 (its last byte) is the claim's. The CF-3300 moves its DPB by N (scratchpad/AE_claim_dpb.out);

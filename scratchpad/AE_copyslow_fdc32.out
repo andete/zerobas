@@ -1,0 +1,2 @@
+National_CF-3300                     COPY MSXBUNSE.ROM: 21.8 s  FDC read=24 irq=18 seek=5 writetrk=4 restore=4 write=9   BIG.ROM attr=00 size=32768 date=2D91 time=A13B sha1=e89ea1e8e583 | MSXBUNSE.ROM attr=00 size=32768 date=2D91 time=A13B sha1=e89ea1e8e583
+C-BIOS_MSX1_EU_REPACK_DISK           COPY MSXBUNSE.ROM: 86.8 s  FDC seek=380 read=241 writetrk=4 restore=4 write=139   BIG.ROM attr=00 size=32768 date=2D91 time=A13B sha1=e89ea1e8e583 | MSXBUNSE.ROM attr=00 size=32768 date=2D91 time=A13B sha1=e89ea1e8e583

@@ -276,13 +276,7 @@ install_hook:                               ; (D-DISKREREAD 2026-11-26: `ld (hl)
                 ds      $4392 - $, $00      ; pad remainder up to the next canonical entry
 k_4392:
                 jp      fren_wild           ; $4392: BDOS $17 FREN canonical entry (M26; D-FRENWILD)
-; fdc_seek -- D-DISKCARVE2's helper (seek to track D, wait); here since D-DSKCHG,
-; whose stamp needed the bytes beside fdc_prep. Entered only by `call`.
-fdc_seek:
-                ld      a, d            ; track number via the Data register
-                ld      (FDC_DATA), a
-                ld      a, CMD_SEEK
-                jr      fdc_cmd         ; D-DISKREREAD (2026-11-26): fdc_restore's store -- 3 B
+; (fdc_seek moved to disk/kernel.asm's $75A5 hole by D-COPYSLOW, 2026-11-27 -- entered only by `call`.)
 ; fcf_zero -- fat_count_free's DE := 0 exit (MOVED here by D-DISKCARVE6 step 4 (2026-11-17)).
 fcf_zero:
                 ld      de, 0

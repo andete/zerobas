@@ -650,7 +650,7 @@ BPB_FATSZ16     equ     22      ; sectors per FAT copy (word LE)
 ; $7F80-$7FBF aliases a register, not just $7FB8-$7FBF. No ROM code/data may live in
 ; $7F80-$7FBF (enforced by the FDC-window guard in runtime.asm's tail).
 FDC_STATUS      equ     $7FB8   ; read = status, write = command
-; ($7FB9 = track register — unused: seeks target the track via the Data register.)
+FDC_TRACK       equ     $7FB9   ; track register: read by fdc_seek to skip a seek to the track it is on (D-COPYSLOW)
 FDC_SECTOR      equ     $7FBA   ; sector register
 FDC_DATA        equ     $7FBB   ; data register
 FDC_CTRL        equ     $7FBC   ; write = drive/side/motor latch; read = IRQ/!DRQ
