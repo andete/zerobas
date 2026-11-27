@@ -1,0 +1,11 @@
+python3 -u probes/disk/disk_probe_nobasichosts.py MSX1_EU MSX2_EU MSX2P_EU
+installed: CBIOS2_CUR_MSX1_EU_NOBASIC_DISK  (disk in 3-1; C-BIOS 7f55f04, pinned; disk ROM /Users/joost/projects/zerobas/build/disk.rom)
+installed: CBIOS2_CUR_MSX2_EU_NOBASIC_DISK  (disk in 3-1; C-BIOS 7f55f04, pinned; disk ROM /Users/joost/projects/zerobas/build/disk.rom)
+installed: CBIOS2_CUR_MSX2P_EU_NOBASIC_DISK  (disk in 3-3; C-BIOS 7f55f04, pinned; disk ROM /Users/joost/projects/zerobas/build/disk.rom)
+=== MSX1_EU (disk 3-1): session rc=0 PASS: MSX-DOS commands typed at A> (25/25)
+                    reach rc=0 nobasicreach: GREEN -- 30 runs, every one booted our disk ROM and reached its BDOS; only install_basic_hooks / bb_term fired
+=== MSX2_EU (disk 3-1): session rc=0 PASS: MSX-DOS commands typed at A> (25/25)
+                    reach rc=0 nobasicreach: GREEN -- 30 runs, every one booted our disk ROM and reached its BDOS; only install_basic_hooks / bb_term fired
+=== MSX2P_EU (disk 3-3): session rc=0 PASS: MSX-DOS commands typed at A> (25/25)
+                    reach rc=0 nobasicreach: GREEN -- 30 runs, every one booted our disk ROM and reached its BDOS; only install_basic_hooks / bb_term fired
+nobasichosts: 3/3 green

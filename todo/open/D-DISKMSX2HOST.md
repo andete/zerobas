@@ -43,5 +43,11 @@
       both (old: unsettled 10-20 s, runs 30-90; new: runs 10, unsettled 20-45, runs 60-90) -- the game's blank
       loading phases meeting the one sample, as D-DISKROMHOST found for the same disk; it runs on both. At the boot
       code's entry SLTTBL[3] = the live register = $04 on the CF-3300 and on ours ([AE_m2h_slttbl_new.out](../../scratchpad/AE_m2h_slttbl_new.out)).
-      ➡️ LEFT: a DOS program that runs in page 1 of the TPA on MSX2 (br_bdos's old restore left the disk ROM there
-      after every BDOS call -- the session's programs are small; no gate row reaches $4000-$7FFF of the TPA yet).
+      ✅ **THE PAGE-1 RESTORE IS A GATE ROW NOW (2026-11-27, Joost: "yes, add that row").** 🔴 CORRECTION: "br_bdos's
+      old restore left the disk ROM in page 1 after EVERY BDOS call" (said in the session, read from the code) was too
+      wide: br_bdos serves $F37D with RAM in page 0 (and $0005 before MSXDOS.SYS lays its own) -- under MSX-DOS $0005
+      is MSXDOS.SYS's road. Measured: a program keeping $A5 at $4000 across a $0005 call read it back on the KNIFED ROM
+      too ([AE_p1ram_knife_msx2.out](../../scratchpad/AE_p1ram_knife_msx2.out)); across a $F37D call the knifed ROM (the old restore) prints "P1 RAM LOST", the
+      fixed one and the CF-3300 "P1 RAM KEPT" ([AE_p1ram37d_knife_msx2.out](../../scratchpad/AE_p1ram37d_knife_msx2.out), [AE_p1ram37d_fix_msx2.out](../../scratchpad/AE_p1ram37d_fix_msx2.out)). The session row
+      `p1ram` (P1TEST.COM, our own 53 bytes, through $F37D) holds it; the large COPY row is blind to it (its data
+      crosses page 1 only through the ROM's own bounce: knifed ROM 24/24, [AE_p1w_knife_msx2.out](../../scratchpad/AE_p1w_knife_msx2.out)) but found D-P1WRITE.

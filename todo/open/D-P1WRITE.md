@@ -13,3 +13,11 @@
       ACCEPTANCE: the parked row (scratchpad/bigcopy_row.patch: COPY MSXBUNSE.ROM BIG.ROM + BIG.ROM's bytes = the
       source's, on each machine) SAME on the MSX1 / MSX2 / MSX2+ hosts and the zerobas DISK machine; the old ROM on
       MSX2 must fail it (the page-1 restore of D-DISKMSX2HOST).
+      ✅ **FIXED 2026-11-27:** dta_chunk (disk/kernel.asm, the one copy from the DTA that WRSEQ / WRRND / WRBLK share)
+      ends in `jp P1_BLIT` instead of `ldir` + `ret` -- the same 3 bytes; the copy runs with page 1 = RAM, as the read
+      side's always did. The session rows `bigcopy` / `bigdir` + the byte check (`bigbytes`: BIG.ROM = MSXBUNSE.ROM on
+      each machine) 24/24 on the MSX1 C-BIOS host, the zerobas DISK machine, MSX2 EU and MSX2+ EU
+      ([AE_p1w_CBIOS2_CUR_MSX1_EU_NOBASIC_DISK.out](../../scratchpad/AE_p1w_CBIOS2_CUR_MSX1_EU_NOBASIC_DISK.out), [AE_p1w_REPACK.out](../../scratchpad/AE_p1w_REPACK.out), [AE_p1w_CBIOS2_CUR_MSX2_EU_NOBASIC_DISK.out](../../scratchpad/AE_p1w_CBIOS2_CUR_MSX2_EU_NOBASIC_DISK.out), [AE_p1w_CBIOS2_CUR_MSX2P_EU_NOBASIC_DISK.out](../../scratchpad/AE_p1w_CBIOS2_CUR_MSX2P_EU_NOBASIC_DISK.out);
+      🔮 24/24: HIT). Before the fix: 16 KB of the copy = our ROM image on every host ([AE_bigcopy32_old.out](../../scratchpad/AE_bigcopy32_old.out)).
+      ➡️ LEFT: the speed -- a 131072 B COPY > 400 s here, < 60 s on the CF-3300 (to file as its own TIER 2 item once
+      measured with the bytes right).

@@ -46,6 +46,15 @@ if os.environ.get("DOSSESSION_ZB_MACHINE"):
     MACHINES = (MACHINES[0], ("ZB", os.environ["DOSSESSION_ZB_MACHINE"]))
 NOBASIC_HOST = "NOBASIC" in MACHINES[1][1]
 HELLO = b"HELLO FROM THE SESSION\r\nSECOND LINE\r\n\x1a"
+# D-DISKMSX2HOST (2026-11-27): P1TEST.COM, our own 53 bytes -- keeps a byte in page 1 of the TPA across a call of
+# the disk ROM's BDOS entry $F37D (an MSX-DOS program calling it, page 0 = RAM: the br_bdos bridge) and says
+# whether it is still there. Before 742324436 br_bdos put RAM back in page 1 only when its subslot was 0 -- on C-BIOS
+# MSX2 it is 2. ($0005 under MSX-DOS is MSXDOS.SYS's own road, not br_bdos: measured, a $0005 version of this
+# program read KEPT on the knifed ROM too -- scratchpad/AE_p1ram_knife_msx2.out.) The large COPY below cannot see it
+# either (its data crosses page 1 only through the disk ROM's page-1 bounce). Assembled by hand (org $0100):
+#   ld hl,$4000 / ld (hl),$A5 / ld c,$0C / call $F37D / ld a,($4000) / cp $A5 / ld de,ok / jr z,+3 / ld de,bad /
+#   ld c,9 / call 5 / ret / ok: "P1 RAM KEPT$" / bad: "P1 RAM LOST$"
+P1TEST = bytes.fromhex("21004036A50E0CCD7DF33A0040FEA5111D012803112901" "0E09CD0500C9") + b"P1 RAM KEPT$P1 RAM LOST$"
 
 # (tag, the line typed -- None: nothing, wait only -- and the seconds to wait after it)
 SESSION = [
@@ -73,6 +82,13 @@ SESSION = [
     ("dateset", "87-11-23", 4),
     ("rem", "REM A REMARK", 3),
     ("bad", "NOSUCHCMD", 5),
+    # D-DISKMSX2HOST (2026-11-27): a COPY big enough that COMMAND.COM's buffer runs through pages 1 and 2 of the TPA
+    # ($4000-$BFFF). Before 742324436 every BDOS call on C-BIOS MSX2 left the disk ROM in page 1 (br_bdos put RAM
+    # back only when its subslot was 0), and no row reached past the 16 KB of page 0. The copy's bytes are checked
+    # against the source too (BIGCOPY below), so both machines going wrong the same way cannot pass.
+    ("p1ram", "P1TEST", 5),
+    ("bigcopy", "COPY MSXBUNSE.ROM BIG.ROM", 150),
+    ("bigdir", "DIR BIG.ROM", 6),
     # D-DOSSESSION (a), 2026-11-25: BASIC typed at A> hands over to Disk BASIC (BASENT). Its screen differs by
     # design (zerobas's banner and "ZB" prompt, basic/repl.asm), so the row after it is compared by its VALUES:
     # HIMEM, FRE(0), FRE("") -- the RAM Disk BASIC gets after MSX-DOS (D-DISKROMHOST step 4 (c)).
@@ -190,6 +206,7 @@ def run(machine):
     dsk = probe_tmp.tmp(f"dossession_{machine}.dsk")
     img = bytearray(open(DOS, "rb").read())
     fat12_add(img, "HELLO", "TXT", HELLO)
+    fat12_add(img, "P1TEST", "COM", P1TEST)
     _date(img, b"HELLO   TXT", HELLO_DATE)
     open(dsk, "wb").write(img)
     if os.path.exists(out):
@@ -290,10 +307,18 @@ def main():
             for e in lst:
                 print(f"   {side} {e}")
         bad.append("disk")
+    # BIGCOPY: the copy holds the source's bytes, on each machine (not only the same bytes as the reference)
+    for side, lst in (("CF", cfl), ("ZB", zbl)):
+        sha = {e.split()[0]: (e.split()[2], e.split()[-1]) for e in lst}
+        ok = "BIG.ROM" in sha and sha.get("BIG.ROM") == sha.get("MSXBUNSE.ROM")
+        print(f"ROW {'bigbytes':9s} {side} BIG.ROM {sha.get('BIG.ROM')} vs MSXBUNSE.ROM {sha.get('MSXBUNSE.ROM')}"
+              f"  {'SAME' if ok else 'DIFFERS'}")
+        if not ok:
+            (blind if side == "CF" else bad).append("bigbytes")
     if blind:
         print(f"\nINSTRUMENT FAULT: the CF-3300 gave no reading on {', '.join(blind)}")
         return 2
-    n = len(SESSION) + 1 - len(SCORED_ELSEWHERE) - len(UNSCORED)
+    n = len(SESSION) + 2 - len(SCORED_ELSEWHERE) - len(UNSCORED)
     print(f"\n{'PASS' if not bad else 'FAIL'}: MSX-DOS commands typed at A> ({n - len(bad)}/{n})")
     return 1 if bad else 0
 

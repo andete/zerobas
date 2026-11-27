@@ -1,0 +1,161 @@
+ROW boot      '(wait)'                                 differs (the start-up screen: scored by dosmode-acceptance)
+ROW date      ''                                       differs (the start-up screen: scored by dosmode-acceptance)
+ROW mode      'MODE 40'                                SAME
+   == A>
+ROW dir       'DIR'                                    SAME
+   ==       42 files   374784 bytes free
+   == A>
+ROW dirw      'DIR /W'                                 SAME
+   ==       42 files   374784 bytes free
+   == A>
+ROW type      'TYPE HELLO.TXT'                         SAME
+   == SECOND LINE
+   == A>
+ROW copy      'COPY HELLO.TXT COPY1.TXT'               SAME
+   ==        1 file copied
+   == A>
+ROW dircopy   'DIR COPY1.TXT'                          SAME
+   ==        1 file   373760 bytes free
+   == A>
+ROW ren       'REN COPY1.TXT COPY2.TXT'                SAME
+   == A>REN COPY1.TXT COPY2.TXT
+   == A>
+ROW dirren    'DIR COPY?.TXT'                          SAME
+   ==        1 file   373760 bytes free
+   == A>
+ROW concat    'COPY HELLO.TXT+HELLO.TXT CAT.TXT'       SAME
+   ==        1 file copied
+   == A>
+ROW typecat   'TYPE CAT.TXT'                           SAME
+   == SECOND LINE
+   == A>
+ROW del       'DEL COPY2.TXT'                          SAME
+   == A>DEL COPY2.TXT
+   == A>
+ROW dirdel    'DIR COPY?.TXT'                          SAME
+   == File not found
+   == A>
+ROW delnone   'DEL NOSUCH.TXT'                         SAME
+   == File not found
+   == A>
+ROW typenone  'TYPE NOSUCH.TXT'                        SAME
+   == File not found
+   == A>
+ROW verify    'VERIFY ON'                              SAME
+   == A>VERIFY ON
+   == A>
+ROW datecmd   'DATE'                                   SAME
+   == Current date is Sun 1984-01-01
+   == Enter new date:
+ROW dateset   '87-11-23'                               SAME
+   == Enter new date: 87-11-23
+   == A>
+ROW rem       'REM A REMARK'                           SAME
+   == A>REM A REMARK
+   == A>
+ROW bad       'NOSUCHCMD'                              SAME
+   == Bad command or file name
+   == A>
+ROW bigcopy   'COPY MSXBUNSE.ROM BIG.ROM'              SAME
+   ==        1 file copied
+   == A>
+ROW bigdir    'DIR BIG.ROM'                            SAME
+   ==        1 file   340992 bytes free
+   == A>
+ROW basic     'BASIC'                                  printed (Disk BASIC's banner: zerobas's own by design; the next row is scored)
+ROW basicmem  'PRINT "M";HEX$(PEEK(&HFC4A)+256*PEEK(&HFC4B));FRE(0);FRE("")' SAME (no BASIC on this host: A>BASIC restarts into MSX-DOS, as it must)
+   == Ok
+   == color   auto    goto    list    run
+ROW disk      (the directory and file bytes after)     DIVERGES
+   CF AAA.BAS attr=00 size=1793 date=2CDC time=A319 sha1=f4d2c8542901
+   CF B.BAS attr=00 size=252 date=2D71 time=6CF9 sha1=b7eaaad72843
+   CF BIG.ROM attr=00 size=32768 date=2D91 time=A13B sha1=e89ea1e8e583
+   CF BUNSDUMP.ASC attr=00 size=2701 date=2D90 time=B11D sha1=518213338e24
+   CF BUNSDUMP.BAS attr=20 size=226 date=2D90 time=A618 sha1=7eea42fe51a8
+   CF BUNSDUMP.BIN attr=20 size=400 date=2D90 time=A618 sha1=9014cb73fe5e
+   CF CAT.TXT attr=00 size=75 date=0821 time=0000 sha1=51dd58face4f
+   CF COMMAND.COM attr=20 size=6528 date=2D50 time=A014 sha1=d78498d59c30
+   CF DUMP-DEL.BIN attr=20 size=16391 date=2D50 time=AAB7 sha1=7f9cd4913ff6
+   CF DUMP.BIN attr=20 size=16391 date=2D50 time=AB2D sha1=ade9271fa6d5
+   CF HELLO.TXT attr=20 size=38 date=14A5 time=0000 sha1=77ad8729db5c
+   CF IDEFDISK.COM attr=20 size=7340 date=2D4E time=8F65 sha1=d82abb35ad17
+   CF KANJI.BAS attr=00 size=252 date=2D61 time=56A4 sha1=b7eaaad72843
+   CF KANJI2.BAS attr=00 size=252 date=2D61 time=56B1 sha1=953fd276fb2e
+   CF L.BAS attr=00 size=130 date=2E79 time=BD14 sha1=c772f4101d44
+   CF LINES.BAS attr=00 size=118 date=2E79 time=B773 sha1=4c740b80a560
+   CF LIST. attr=20 size=1415 date=2C04 time=6095 sha1=ec24051bbe62
+   CF MOD.BAS attr=00 size=1793 date=2C39 time=AF4B sha1=f4d2c8542901
+   CF MSXBUDIC.ROM attr=00 size=131072 date=2D91 time=A141 sha1=1ebb06062428
+   CF MSXBUNSE.ROM attr=00 size=32768 date=2D91 time=A13B sha1=e89ea1e8e583
+   CF MSXDOS.SYS attr=20 size=2432 date=2D50 time=A024 sha1=61cd9b4a8c06
+   CF MUS.BAS attr=00 size=1793 date=2C39 time=AF4A sha1=f4d2c8542901
+   CF NAME.ASC attr=00 size=2554 date=2D90 time=AED1 sha1=d4037c94e20e
+   CF OPENMSX1.MBK attr=20 size=32824 date=2CA3 time=5157 sha1=ddb67906cd5e
+   CF OPENMSX1.MBM attr=20 size=450 date=2CA3 time=5157 sha1=e5002f542378
+   CF README.TXT attr=20 size=687 date=2710 time=702B sha1=553f346198ab
+   CF RYTHM.BAS attr=00 size=1799 date=2C79 time=906F sha1=331ee3717480
+   CF SCORES.HIG attr=20 size=540 date=2710 time=6C9B sha1=a6fdbf7b5265
+   CF SCR0.BAS attr=00 size=51 date=2C76 time=01D6 sha1=ff4cf28501ae
+   CF SCROLL.BAS attr=20 size=146 date=2E8C time=723C sha1=8571077702ff
+   CF SDR.COM attr=20 size=630 date=2E8D time=ABE8 sha1=48afbfa2dfbe
+   CF SDR.TXT attr=00 size=3000 date=2E8E time=A737 sha1=73b86df542ca
+   CF SIMPLE.BAS attr=00 size=104 date=2C8B time=823B sha1=51a079dd2726
+   CF SPLIT1.ASM attr=20 size=6476 date=2E97 time=90F5 sha1=3413438e5104
+   CF SPLIT1.COM attr=20 size=674 date=2E97 time=90F5 sha1=32f71b0fb7b3
+   CF SPLIT2.ASM attr=20 size=7012 date=2E97 time=90F5 sha1=dea20c91ec01
+   CF SPLIT2.COM attr=20 size=700 date=2E97 time=90F5 sha1=3099ec5472df
+   CF SPLIT3.ASM attr=20 size=6751 date=2E97 time=90F5 sha1=828edbc51f83
+   CF SPLIT3.COM attr=20 size=696 date=2E97 time=90F5 sha1=83715ab1df2e
+   CF SPLIT4.ASM attr=20 size=7379 date=2E97 time=90F5 sha1=c96a5c5666b5
+   CF SPLIT4.COM attr=20 size=707 date=2E97 time=90F5 sha1=72291bbdbde6
+   CF SPRITES1.BAS attr=00 size=141 date=2E8A time=9636 sha1=8b16eda3c6d5
+   CF SPRITES2.BAS attr=00 size=156 date=2E8A time=9692 sha1=a45d51bf83bd
+   CF TEST.BAS attr=00 size=1793 date=2C39 time=AF47 sha1=f4d2c8542901
+   ZB AAA.BAS attr=00 size=1793 date=2CDC time=A319 sha1=f4d2c8542901
+   ZB B.BAS attr=00 size=252 date=2D71 time=6CF9 sha1=b7eaaad72843
+   ZB BIG.ROM attr=00 size=32768 date=2D91 time=A13B sha1=4e905a0d5961
+   ZB BUNSDUMP.ASC attr=00 size=2701 date=2D90 time=B11D sha1=518213338e24
+   ZB BUNSDUMP.BAS attr=20 size=226 date=2D90 time=A618 sha1=7eea42fe51a8
+   ZB BUNSDUMP.BIN attr=20 size=400 date=2D90 time=A618 sha1=9014cb73fe5e
+   ZB CAT.TXT attr=00 size=75 date=0821 time=0000 sha1=51dd58face4f
+   ZB COMMAND.COM attr=20 size=6528 date=2D50 time=A014 sha1=d78498d59c30
+   ZB DUMP-DEL.BIN attr=20 size=16391 date=2D50 time=AAB7 sha1=7f9cd4913ff6
+   ZB DUMP.BIN attr=20 size=16391 date=2D50 time=AB2D sha1=ade9271fa6d5
+   ZB HELLO.TXT attr=20 size=38 date=14A5 time=0000 sha1=77ad8729db5c
+   ZB IDEFDISK.COM attr=20 size=7340 date=2D4E time=8F65 sha1=d82abb35ad17
+   ZB KANJI.BAS attr=00 size=252 date=2D61 time=56A4 sha1=b7eaaad72843
+   ZB KANJI2.BAS attr=00 size=252 date=2D61 time=56B1 sha1=953fd276fb2e
+   ZB L.BAS attr=00 size=130 date=2E79 time=BD14 sha1=c772f4101d44
+   ZB LINES.BAS attr=00 size=118 date=2E79 time=B773 sha1=4c740b80a560
+   ZB LIST. attr=20 size=1415 date=2C04 time=6095 sha1=ec24051bbe62
+   ZB MOD.BAS attr=00 size=1793 date=2C39 time=AF4B sha1=f4d2c8542901
+   ZB MSXBUDIC.ROM attr=00 size=131072 date=2D91 time=A141 sha1=1ebb06062428
+   ZB MSXBUNSE.ROM attr=00 size=32768 date=2D91 time=A13B sha1=e89ea1e8e583
+   ZB MSXDOS.SYS attr=20 size=2432 date=2D50 time=A024 sha1=61cd9b4a8c06
+   ZB MUS.BAS attr=00 size=1793 date=2C39 time=AF4A sha1=f4d2c8542901
+   ZB NAME.ASC attr=00 size=2554 date=2D90 time=AED1 sha1=d4037c94e20e
+   ZB OPENMSX1.MBK attr=20 size=32824 date=2CA3 time=5157 sha1=ddb67906cd5e
+   ZB OPENMSX1.MBM attr=20 size=450 date=2CA3 time=5157 sha1=e5002f542378
+   ZB README.TXT attr=20 size=687 date=2710 time=702B sha1=553f346198ab
+   ZB RYTHM.BAS attr=00 size=1799 date=2C79 time=906F sha1=331ee3717480
+   ZB SCORES.HIG attr=20 size=540 date=2710 time=6C9B sha1=a6fdbf7b5265
+   ZB SCR0.BAS attr=00 size=51 date=2C76 time=01D6 sha1=ff4cf28501ae
+   ZB SCROLL.BAS attr=20 size=146 date=2E8C time=723C sha1=8571077702ff
+   ZB SDR.COM attr=20 size=630 date=2E8D time=ABE8 sha1=48afbfa2dfbe
+   ZB SDR.TXT attr=00 size=3000 date=2E8E time=A737 sha1=73b86df542ca
+   ZB SIMPLE.BAS attr=00 size=104 date=2C8B time=823B sha1=51a079dd2726
+   ZB SPLIT1.ASM attr=20 size=6476 date=2E97 time=90F5 sha1=3413438e5104
+   ZB SPLIT1.COM attr=20 size=674 date=2E97 time=90F5 sha1=32f71b0fb7b3
+   ZB SPLIT2.ASM attr=20 size=7012 date=2E97 time=90F5 sha1=dea20c91ec01
+   ZB SPLIT2.COM attr=20 size=700 date=2E97 time=90F5 sha1=3099ec5472df
+   ZB SPLIT3.ASM attr=20 size=6751 date=2E97 time=90F5 sha1=828edbc51f83
+   ZB SPLIT3.COM attr=20 size=696 date=2E97 time=90F5 sha1=83715ab1df2e
+   ZB SPLIT4.ASM attr=20 size=7379 date=2E97 time=90F5 sha1=c96a5c5666b5
+   ZB SPLIT4.COM attr=20 size=707 date=2E97 time=90F5 sha1=72291bbdbde6
+   ZB SPRITES1.BAS attr=00 size=141 date=2E8A time=9636 sha1=8b16eda3c6d5
+   ZB SPRITES2.BAS attr=00 size=156 date=2E8A time=9692 sha1=a45d51bf83bd
+   ZB TEST.BAS attr=00 size=1793 date=2C39 time=AF47 sha1=f4d2c8542901
+ROW bigbytes  CF BIG.ROM ('size=32768', 'sha1=e89ea1e8e583') vs MSXBUNSE.ROM ('size=32768', 'sha1=e89ea1e8e583')  SAME
+ROW bigbytes  ZB BIG.ROM ('size=32768', 'sha1=4e905a0d5961') vs MSXBUNSE.ROM ('size=32768', 'sha1=e89ea1e8e583')  DIFFERS
+
+FAIL: MSX-DOS commands typed at A> (22/24)
