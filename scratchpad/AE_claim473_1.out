@@ -1,0 +1,70 @@
+== N=0   National_CF-3300
+   HRUNC HIMEM=F380 DRVTBL=0000 SLTWRK3-1p1=0000
+         written in the claim [F380,F380): -
+         written in [D000,EF80): $D000-$EF7F
+   C01E  HIMEM=DF93 DRVTBL=0287 SLTWRK3-1p1=F1BF
+         written in the claim [F380,F380): -
+         written in [D000,EF80): $DC65-$DCB3, $DD7D-$DD81, $DD88, $DE8A, $DE91, $DF93, $E294-$E2B4, $E37E-$E382, $E389, $E48B, $E492, $E594, $E895-$E8B5, $E97F-$E983, $E98A, $EA8C, $EA93, $EA99-$EAB5, $EB7F-$EB83, $EB8A, $EB95-$ED94, $EE8C, $EE91-$EEDF, $EF7F
+   A     HIMEM=DF93 DRVTBL=0287 SLTWRK3-1p1=F1BF
+         written in the claim [F380,F380): -
+         written in [D000,EF80): $D000-$D357, $D359-$D35A, $D35C-$D38B, $D38D-$D3A4, $D3A6-$D3A7, $D3A9-$D3B5, $D3B7-$D3D2, $D3D4-$D401, $D403-$D434, $D436-$D445, $D447-$D48C, $D48E-$D494, $D496-$D4B2, $D4B4-$DCB3, $DD64-$DF93, $E294-$E2B4, $E37E-$E382, $E389, $E48B, $E492, $E594-$E68A, $E68C-$EF7F
+== N=0   C-BIOS_MSX1_EU_REPACK_DISK
+   HRUNC HIMEM=F380 DRVTBL=0000 SLTWRK3-1p1=0000
+         written in the claim [F380,F380): -
+         written in [D000,EF80): $EF42
+   C01E  (not reached)
+   A     HIMEM=F380 DRVTBL=0000 SLTWRK3-1p1=0000
+         written in the claim [F380,F380): -
+         written in [D000,EF80): $EF42
+== N=439 National_CF-3300
+   HRUNC HIMEM=F380 DRVTBL=0000 SLTWRK3-1p1=0000
+         written in the claim [F1C9,F380): $F1C9-$F37F
+         written in [D000,EF80): $D000-$EF7F
+   C01E  HIMEM=DDDC DRVTBL=0287 SLTWRK3-1p1=F008
+         written in the claim [F1C9,F380): $F1C9-$F37F
+         written in [D000,EF80): $DBC6-$DBCA, $DBD1, $DC63-$DCB3, $DCD3, $DCDA, $DDDC, $E1C7-$E1CB, $E1D2, $E294-$E2B4, $E2D4, $E2DB, $E3DD, $E7C8-$E7CC, $E7D3, $E895-$E8B5, $E8D5, $E8DC, $E9C8-$E9CC, $E9D3, $E9DE-$EBDD, $EC97-$ECB5, $ECD5, $ECDC, $EDC8-$EDCC, $EDD3, $EDF2-$EDF6, $EDFD, $EE91-$EEDF, $EEFF, $EF06
+   A     HIMEM=DDDC DRVTBL=0287 SLTWRK3-1p1=F008
+         written in the claim [F1C9,F380): $F1C9-$F37F
+         written in [D000,EF80): $D000-$D157, $D159-$D15A, $D15C-$D18B, $D18D-$D1A4, $D1A6-$D1A7, $D1A9-$D1B5, $D1B7-$D1D2, $D1D4-$D201, $D203-$D234, $D236-$D245, $D247-$D28C, $D28E-$D294, $D296-$D2B2, $D2B4-$DA7F, $DBAD-$DDDC, $E1C7-$E1CB, $E1D2, $E294-$E2B4, $E2D4, $E2DB, $E3DD-$E4D3, $E4D5-$EF7F
+== N=439 C-BIOS_MSX1_EU_REPACK_DISK
+   HRUNC HIMEM=F1C9 DRVTBL=0000 SLTWRK3-1p1=0000
+         written in the claim [F1C9,F380): -
+         written in [D000,EF80): $EF42
+   C01E  (not reached)
+   A     HIMEM=F380 DRVTBL=0000 SLTWRK3-1p1=0000
+         written in the claim [F1C9,F380): -
+         written in [D000,EF80): $EF42
+== N=473 National_CF-3300
+   HRUNC HIMEM=F380 DRVTBL=0000 SLTWRK3-1p1=0000
+         written in the claim [F1A7,F380): $F1A7-$F37F
+         written in [D000,EF80): $D000-$EF7F
+   C01E  HIMEM=DDBA DRVTBL=0287 SLTWRK3-1p1=EFE6
+         written in the claim [F1A7,F380): $F1C9-$F37F
+         written in [D000,EF80): $DBA4-$DBA8, $DBAF, $DC65-$DCB3, $DCB8, $DDBA, $E1A5-$E1A9, $E1B0, $E294-$E2B4, $E2B9, $E3BB, $E7A6-$E7AA, $E7B1, $E895-$E8B5, $E8BA, $E9A6-$E9AA, $E9B1, $E9BC-$EBBB, $EC97-$ECB5, $ECBA, $EDA6-$EDAA, $EDB1, $EDD0-$EDD4, $EDDB, $EE91-$EEDF, $EEE4
+   A     HIMEM=DDBA DRVTBL=0287 SLTWRK3-1p1=EFE6
+         written in the claim [F1A7,F380): $F1C9-$F37F
+         written in [D000,EF80): $D000-$D157, $D159-$D15A, $D15C-$D18B, $D18D-$D1A4, $D1A6-$D1A7, $D1A9-$D1B5, $D1B7-$D1D2, $D1D4-$D201, $D203-$D234, $D236-$D245, $D247-$D28C, $D28E-$D294, $D296-$D2B2, $D2B4-$DA7F, $DB8B-$DDBA, $E1A5-$E1A9, $E1B0, $E294-$E2B4, $E2B9, $E3BB-$E4B1, $E4B3-$EF7F
+== N=473 C-BIOS_MSX1_EU_REPACK_DISK
+   HRUNC HIMEM=F1A7 DRVTBL=0000 SLTWRK3-1p1=0000
+         written in the claim [F1A7,F380): -
+         written in [D000,EF80): $EF42
+   C01E  (not reached)
+   A     HIMEM=F380 DRVTBL=0000 SLTWRK3-1p1=0000
+         written in the claim [F1A7,F380): -
+         written in [D000,EF80): $EF42
+== N=474 National_CF-3300
+   HRUNC HIMEM=F380 DRVTBL=0000 SLTWRK3-1p1=0000
+         written in the claim [F1A6,F380): $F1A6-$F37F
+         written in [D000,EF80): $D000-$EF7F
+   C01E  (not reached)
+   A     HIMEM=EFE5 DRVTBL=0000 SLTWRK3-1p1=EFE5
+         written in the claim [F1A6,F380): $F1C9-$F37F
+         written in [D000,EF80): $EDCF-$EDD3, $EDDA, $EE97-$EEDF, $EEE3
+== N=474 C-BIOS_MSX1_EU_REPACK_DISK
+   HRUNC HIMEM=F1A6 DRVTBL=0000 SLTWRK3-1p1=0000
+         written in the claim [F1A6,F380): -
+         written in [D000,EF80): $EF42
+   C01E  (not reached)
+   A     HIMEM=F380 DRVTBL=0000 SLTWRK3-1p1=0000
+         written in the claim [F1A6,F380): -
+         written in [D000,EF80): $EF42

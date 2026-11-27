@@ -3868,7 +3868,7 @@ hsy_boot:
                 di
                 call    page0_ram_in
                 call    lay_page0_env
-                ld      ix,DRVA_DPB
+                ld      ix,(DPBLIST)        ; D-CLAIM473: the DPB's address as published ($F195, or $F194 at N = 473)
                 ld      a,1
                 ld      ($F340),a           ; MSX-DOS's cold/warm seed: WARM
                 call    dos_handoff_keep    ; a DOS disk does not come back
@@ -3914,15 +3914,19 @@ ig_init:
                 ; so the sbc gives HIMEM - $F381 = -N-1, and adding NMAX+1 carries iff 0 <= N <= NMAX.
                 ; CLEAN-ROOM: HIMEM ($FC4A, MSX2 TH work area) and the references' published cells,
                 ; read as a black box; own code. HL / DE are free: init reads A only.
+                ; 🔴 D-CLAIM473 (2026-11-27): NMAX is the CF-3300's 473 now (our own cells left $F1C5-$F1C8), and
+                ; past it we decline AS THE CF-3300 DOES (Joost: "Copy the CF-3300 exactly"): HIMEM and our
+                ; SLTWRK entry := $F1BF - N, no drive (scratchpad/AE_claim473_1.out, N = 474).
                 ld      hl, (HIMEM)
                 ld      de, $F380
                 sbc     hl, de              ; HL = -N-1
                 ld      de, CLAIM_NMAX + 1
                 add     hl, de              ; HL = NMAX - N; Cy: 0 <= N <= NMAX
-                jr      nc, ig_out          ; a claim we cannot follow: decline
+                jr      nc, ig_out          ; a claim we do not follow (N > NMAX, or N < 0): decline
                 ld      de, GETWRK_AREA - CLAIM_NMAX
                 add     hl, de
                 ld      (CLAIM_D), hl       ; GETWRK_AREA - N (disk/equates.inc)
+                call    ig_dpb              ; DPBLIST := the drive-A DPB's address (D-CLAIM473); HL kept
                 xor     a
                 ld      (VERIFY_F), a       ; D-VERIFYREAD: VERIFY starts OFF (an own cell, nothing else clears it)
                 jp      sltwrk_pub          ; publish SLTWRK, then init (the room is there)
@@ -5070,7 +5074,7 @@ k47b2_return:
                 ; the 24-bit add), so just copy it to BC.
                 ld      b, h
                 ld      c, l
-                ld      ix, DRVA_DPB        ; IX = $F195 drive-A DPB (§8.50)
+                ld      ix, (DPBLIST)       ; IX = the drive-A DPB (§8.50; D-CLAIM473: as published at $F355)
                 call     clr_f306   ; M20 dispatcher-flag rule
                 ld      a, e                ; A = the 0/1 EOF result (restored)
                 ret
@@ -5995,6 +5999,12 @@ sltwrk_pub:
                 ex      de, hl              ; DE = SLTWRK_BASE - N
                 pop     af
                 push    af
+                call    sw_put
+                pop     af
+                jp      init
+; sw_put -- our SLTWRK page-1 entry := DE (A = our slot byte, F000SSPP). D-CLAIM473: the decline at N > NMAX
+; writes it too, as the CF-3300 does.
+sw_put:
                 ld      l, a
                 and     $03
                 rrca
@@ -6011,8 +6021,7 @@ sltwrk_pub:
                 ld      (hl), e
                 inc     hl
                 ld      (hl), d
-                pop     af
-                jp      init
+                ret
 
 ; 🏗️ D-FATENG Option 2 (Joost, 2026-09-18): ONE FAT12 ENGINE, ONE SOURCE, TWO
 ; ROMs -- the same file sub.rom assembles. disk/fat.asm keeps only the
@@ -7766,6 +7775,30 @@ dskio_verify:
                 ld      (FDC_DEST), hl
                 pop     hl
                 ret
+; --- D-CLAIM473 (2026-11-27): init_gate's two tails, here for room ----------------------------------------
+; ig_dpb -- DPBLIST ($F355) := the drive-A DPB: $F195 as the CF-3300 at N = 0; one byte lower only at N = 473,
+; where $F1A7 (its last byte) is the claim's. The CF-3300 moves its DPB by N (scratchpad/AE_claim_dpb.out);
+; ours stays put (Joost: option 1) and $F355 says where it is -- zerobas never wrote $F355 before ($C9C9).
+;   in: HL = GETWRK_AREA - N.   out: HL kept; A, DE clobbered
+; A claim past NMAX declines as SHIFT held does (init_gate's ig_out) -- AS THE CF-3300 ENDS UP at 474 (Joost:
+; "Copy the CF-3300 exactly"): at its BASIC prompt HIMEM is the cartridge's $F380 - N, SLTWRK empty, no drive
+; (scratchpad/AE_claim473_guard1.out). Its HIMEM = SLTWRK = $F1BF - N at 25 s (AE_claim473_1.out) is a
+; TRANSIENT on the way there -- $0006 reads garbage then -- not the end state; first misread as one.
+; CLEAN-ROOM: HIMEM, SLTWRK, $F355, DRVINF -- published cells read as RAM on the CF-3300; own code.
+ig_dpb:
+                push    hl
+                ld      de, -(GETWRK_AREA - CLAIM_NMAX)
+                add     hl, de              ; 0 iff N = NMAX
+                ld      a, h
+                or      l
+                ld      hl, DRVA_DPB
+                jr      nz, igd_put
+                dec     hl
+igd_put:
+                ld      (DPBLIST), hl
+                pop     hl
+                ret
+
 ; --- D-DISKMSX2HOST (2026-11-27): THE SUBSLOTS ARE THE HOST'S, NOT "RAM 0, DISK ROM 1" ---------------------
 ; On C-BIOS MSX2 the RAM is subslot 2 (3-0 is the sub ROM); on MSX2+ the disk ROM sits in 3-3 (3-1 is the music
 ; ROM). The page-1 switches hard-coded MSX1's layout; these patch the installed RAM copies with the host's bits

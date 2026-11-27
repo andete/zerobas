@@ -351,19 +351,24 @@ FAT_SECPERFAT   equ     $ED68   ; sectors per FAT copy (word; from BPB +22)
 ; RES_PRINT starts $F1C9). On both references the whole of $F195-$F37F is the
 ; disk ROM's own work area (AE_claimuse_cf.out / AE_claimuse_hbd.out), so this is
 ; ours to arrange.
-HOOK_SLOT       equ     $F1C8   ; our slot byte for the HPHYD inter-slot hook (1)
+; 🔴 D-CLAIM473 (2026-11-27, Joost: "option 1"): HOOK_SLOT, CLAIM_D and VERIFY_F LEFT $F1C5-$F1C8, which a foreign
+; claim of 440..473 B covers (the CF-3300 installs up to 473 and keeps nothing fixed below $F1C9 --
+; scratchpad/AE_claim473_1.out, AE_claim_dpb.out). Two of them were copies of published DRVTBL cells already:
+HOOK_SLOT       equ     $F348   ; our slot byte = DRVTBL+0 itself (was $F1C8; INIT copied it there) (1)
 ; CLAIM_D -- D-DISKROMHOST step 4 (d), scheme D (2026-11-26, scratchpad/AE_schemeD.md): a cartridge
 ; scanned BEFORE ours that claimed N bytes (HIMEM = $F380 - N at our INIT) moves every NUMBER the
 ; references publish by -N and leaves every cell where it is (scratchpad/AE_wasize.md). init_gate
 ; stores the claim here as the value $4030 hands MSX-DOS, GETWRK_AREA - N (N = 0: $DD0E), so $4030
 ; stays `ld hl,(CLAIM_D) / ret`; layout_rebuild's callers pass their HIMEM as an offset from
-; GETWRK_AREA and it adds this cell. In the INIT-private block below HOOK_SLOT: written by nothing
-; else through an MSX-DOS session, BASIC at A> and a Disk BASIC file write (AE_claimuse_zb2.out:
-; $F195-$F1C7 unwritten), and below $F1C9, so a foreign claim of N <= 439 (NMAX) cannot reach it.
-CLAIM_D         equ     $F1C6   ; $4030's work-area value, GETWRK_AREA - N (2 B)
-VERIFY_F        equ     $F1C5   ; (1 B) BDOS VERIFY: 0 off, else on -- verify_body stores E, INIT clears it,
+; GETWRK_AREA and it adds this cell. Since D-CLAIM473 it IS the published DRVTBL+3 ($F34B, the same
+; value INIT puts there) -- inside the fixed area, which no claim takes from us; until then it sat in
+; $F1C6, below $F1C9, where a claim over 439 B would have reached it.
+CLAIM_D         equ     $F34B   ; $4030's work-area value, GETWRK_AREA - N = DRVTBL+3 itself (was $F1C6) (2 B)
+VERIFY_F        equ     $F23C   ; (1 B) (was $F1C5; a fixed-area byte nothing else writes -- MSX-DOS session watched) BDOS VERIFY: 0 off, else on -- verify_body stores E, INIT clears it,
                                 ; DSKIO's write reads each sector back while set (D-VERIFYREAD); own cell
-CLAIM_NMAX      equ     $F380 - (HOOK_SLOT + 1)   ; NOT-A-CELL: 439, the largest foreign claim followed
+CLAIM_NMAX      equ     473     ; NOT-A-CELL: the largest foreign claim followed -- the CF-3300's (was 439)
+DPBLIST         equ     $F355   ; (2 B) the published DPB-pointer list's drive-A word (D-CLAIM473: the CF-3300 has
+                                ; its DPB's address there at every N; zerobas never wrote it -- it read $C9C9)
 ; BDOS_SRCHIDX (M19) — persistent root-directory search cursor for the runtime
 ; SFIRST ($11) / SNEXT ($12) dir-search entries ($4FB8/$5006). Absolute 0-based
 ; index of the NEXT root-dir entry to examine: SFIRST sets it to (first-match+1),

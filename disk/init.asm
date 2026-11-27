@@ -422,7 +422,7 @@ boot_sig_ok:
                 ; sector PRESERVES IX from $C01E to the MSXDOS.SYS jump (measured), so
                 ; setting it here propagates to entry. $F195 is built by build_resident
                 ; (above, this same INIT) before boot_disk runs.
-                ld      ix, DRVA_DPB    ; IX = $F195 = drive-A DPB the kernel expects
+                ld      ix, (DPBLIST)   ; IX = the drive-A DPB the kernel expects ($F195; D-CLAIM473: $F194 at N = 473)
                 ; --- step 7: CY-set $C01E -- "load the system" -----------------
                 ; A real DOS disk's boot code now loads MSXDOS.SYS at $0100 and JPs
                 ; in (no return). A non-system / data disk's $1E stub (D0 C9) takes
@@ -602,8 +602,7 @@ set_ramad:
                 ; (scratchpad/slotcalls_nowaste.out, scratchpad/masters_cells.out).
                 ; Only the slot byte: the rest of the table points at page-3
                 ; trampolines that are free on the DOS host only.
-                ld      a, (HOOK_SLOT)
-                ld      (DRVTBL), a
+                ; (D-CLAIM473: HOOK_SLOT IS DRVTBL+0 now -- INIT's first store put the slot there)
                 call    install_res_print   ; (D-STROUT, above) -- and D-DRVINT's copy,
                                             ; which needs DRVCNT and DRVTBL+0 set first
                 ld      a, $F9              ; D-SIDES: DSKIO's seating until a disk is
@@ -719,15 +718,19 @@ bdt_tramp:
                 ; already points at it) -- 23 B. +0 (the slot id) is NOT rewritten
                 ; here: set_ramad stored it above the $FF gate and nothing since
                 ; touches it.
+                ld      bc, (CLAIM_D)               ; D-CLAIM473: CLAIM_D IS DRVTBL+3 -- the LDIR below writes it
+                push    bc
                 ex      de, hl                      ; HL = drvtbl_tmpl
                 ld      de, DRVTBL + 1
-                ld      bc, 15
+                ld      bc, 12                      ; +1..+12 (D-CLAIM473: +13 is the DPB pointer)
                 ldir
+                ld      a, $AA                      ; +15 sentinel (stock = $AA)
+                ld      (DRVTBL + 15), a
                 ; D-DISKROMHOST 4 (d) scheme D (2026-11-26): +3 and +1 follow a foreign claim of N
                 ; bytes, as the CF-3300's $F34B does (scratchpad/AE_wasize.md: $DD0E - N). +3 is
                 ; $4030's value; +1 the HIMEM MSX-DOS runs with, the same N below DOS_RESV_TOP.
                 ; CLEAN-ROOM: the published DRVTBL words, read as a black box; own code.
-                ld      hl, (CLAIM_D)               ; GETWRK_AREA - N
+                pop     hl                          ; GETWRK_AREA - N (saved above)
                 ld      (DRVTBL + 3), hl
                 ld      de, DOS_RESV_TOP - GETWRK_AREA
                 add     hl, de
@@ -787,10 +790,11 @@ build_resident:
                 ; DSKIO is already callable here. On a boot-sector read error GETDPB
                 ; returns Cy=1 having written nothing past the id, so a not-ready disk
                 ; cannot leave garbage. Our own code/data; never the stock $F1xx bytes.
-                xor     a
-                ld      (DRVA_DPB), a           ; $F195 +0 = drive-A id ($00)
-                ld      hl, DRVA_DPB            ; GETDPB: HL = DPB base (fills base+1 on)
-                call    getdpb
+                xor     a                       ; A = 0: drive A -- GETDPB's input too (D-CLAIM473: dropping
+                                                ; this `xor a` broke BDOSXE on the CF-3300-BIOS host)
+                ld      hl, (DPBLIST)           ; D-CLAIM473: the DPB's published address ($F195 / $F194)
+                ld      (hl), a                 ; +0 = drive-A id ($00)
+                call    getdpb                  ; GETDPB: HL = DPB base (fills base+1 on)
                 ; --- p1_blit: page-3-resident routine for page-1 bounce (§8.35) --------
                 ; Installed into P1_BLIT ($EE40) so dskio can CALL it from page-1 ROM
                 ; while page 1 is temporarily remapped to RAM. Own-choice free page-3
@@ -840,12 +844,11 @@ drvtbl_tmpl:
                 dw      DRV_TRAMP + 5       ; +7  DSKCHG trampoline
                 dw      DRV_TRAMP + 10      ; +9  GETDPB trampoline
                 dw      0                   ; +11 unused (stock = $0000)
-                dw      DRV_TRAMP + 15      ; +13 DSKFMT trampoline (NOTE: stock +13 =
-                                            ; $F195 = the drive-A DPB pointer, not a
-                                            ; trampoline — §8.22's "driver pointers"
-                                            ; reading of +5/+7/+9/+13 needs revisiting;
-                                            ; but +13 is NOT the IX source, §8.30)
-                db      $AA                 ; +15 sentinel (stock = $AA)
+                ; +13 is NOT copied (D-CLAIM473, 2026-11-27): it is $F355, the drive-A DPB pointer -- the
+                ; stock's +13 = $F195 (this note said so); init_gate's ig_dpb publishes it. It held the
+                ; DSKFMT trampoline here, which the LDIR then wrote over ig_dpb's value, and IX / GETDPB's
+                ; base read the trampoline's address (BDOSXE on the CF-3300-BIOS host). The trampoline
+                ; itself stays installed (DRV_NTRAMP); +15's sentinel is written after the copy.
 ; (wa_stub is page0_ram_out's RET, above.)
 
 ; res_print_tmpl now lives in the free tail (kernel.asm, next to p1_blit_tmpl /

@@ -92,9 +92,14 @@ It publishes its work-area base in its SLTWRK page-1 entry ($F1BF − N).
 
 A cartridge initialised before the disk ROM may claim N bytes under HIMEM:
 
-- **Up to 439 B:** the disk ROM installs, and every published number moves by N, as on the CF-3300.
-- **Over 439 B:** the disk ROM declines to install, the way it does when SHIFT is held at boot. The CF-3300 still
-  installs up to 473 B. This is a known difference, pinned in `make diskguard-acceptance`.
+- **Up to 473 B:** the disk ROM installs, and every published number moves by N, as on the CF-3300 (473 is the
+  CF-3300's own limit; D-CLAIM473, 2026-11-27 -- until then zerobas stopped at 439).
+- **Over 473 B:** the disk ROM declines to install, as the CF-3300 does: no drive, and BASIC keeps all but the
+  cartridge's claim. (zerobas BASIC then puts HIMEM back to $F380 -- D-CARTCLAIM, a BASIC-side item, pinned in
+  `make diskguard-acceptance`; it does not concern a BASIC-less C-BIOS.)
+- The drive-A DPB's address is published at **$F355** ($F195 with no claim, as on the CF-3300). With a claim the
+  CF-3300 moves its DPB down by N; zerobas keeps it at $F195 ($F194 at exactly 473), so at N > 0 the address differs
+  -- $F355 always says where it is. Filed for later (D-CLAIM473, option 2).
 
 ## With and without BASIC
 
@@ -118,7 +123,7 @@ for the BIOS FORMAT routine ($0147).
 | `make disk-standalone-check` | The standalone build above |
 | `make bdos-acceptance`, `make bdos-cbios-selfcheck` | The BDOS surface |
 | `make dossession-acceptance` | An MSX-DOS session against the CF-3300 |
-| `make diskguard-acceptance` | Foreign claims of 0-440 B |
+| `make diskguard-acceptance` | Foreign claims of 0-474 B |
 
 The pin moves only by hand: install the new C-BIOS with `--cbios <checkout>`, run `make nobasic-acceptance`, and
 update the pin's revision and hashes in the same commit.
@@ -127,7 +132,7 @@ update the pin's revision and hashes in the same commit.
 
 | what | on the CF-3300 | here | item |
 |---|---|---|---|
-| a foreign claim of 440-473 B | installs | declines, as with SHIFT | [D-DISKROMHOST](../../todo/done/D-DISKROMHOST.md), pinned |
+| the drive-A DPB with a foreign claim N > 0 | at $F195 − N | at $F195 ($F355 says so) | [D-CLAIM473](../../todo/open/D-CLAIM473.md), option 2 later; not gated (diskguard reads no DPB address) |
 | BIOS FORMAT ($0147) on a host that is not zerobas BASIC | formats | returns Cy = 1 | [D-BIOSFORMAT](../../todo/open/D-BIOSFORMAT.md) |
 | a second disk interface | supported | not handled | deferred |
 | Ctrl-C during console OUTPUT (CONST) | -- | not measured | -- |

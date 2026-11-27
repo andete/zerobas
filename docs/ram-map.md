@@ -215,11 +215,9 @@ second one is the question a per-component map cannot answer.
 | `$F09D` | 1 B | `disk` | `FILES_HASPAT` | DISK-ONLY: FILES: 1 = a filespec pattern is in DISK_FCB_NAME (1) |  |
 | `$F195` | 18 B | `disk` | `DRVA_DPB/INIT_HIMEM` | INIT's (first) claim: the CF-3300's HIMEM at its H.RUNC entry, |  |
 | `$F1AA` |  | `disk` | `W50A9_RET_DE` | DE (= IX) on return: disk work-area pointer |  |
-| `$F1C5` | 1 B | `disk` | `VERIFY_F` | (1 B) BDOS VERIFY: 0 off, else on -- verify_body stores E, INIT clears it, |  |
-| `$F1C6` | 2 B | `disk` | `CLAIM_D` | $4030's work-area value, GETWRK_AREA - N (2 B) |  |
-| `$F1C8` | 1 B | `disk` | `HOOK_SLOT` | our slot byte for the HPHYD inter-slot hook (1) |  |
 | `$F1C9` |  | `disk` | `RES_PRINT` | resident $-string print routine the kernel CALLs (§8.28) |  |
 | `$F23B` | 1 B | `disk` | `PRN_ECHO` | (1 B) the printer-echo flag: Ctrl-P 1, Ctrl-N 0 (D-BUFINCTL, AE_prnflag.out; M27) |  |
+| `$F23C` | 1 B | `disk` | `VERIFY_F` | (1 B) (was $F1C5; a fixed-area byte nothing else writes -- MSX-DOS session watched) BDOS VERIFY: 0 off, else on -- verify_body stores E, INIT clears… |  |
 | `$F23D` | 2 B | `disk` | `DOS_DTAPTR` | disk work-area current-DTA cache (word, LE; M19) |  |
 | `$F242` | 1 B | `disk` | `W50A9_WRKB` | the one work-area cell $50A9 clears (semantic: black-box) (1 B) |  |
 | `$F247` | 1 B | `disk` | `CURDRV_CELL` | current-drive index ($00=A:); read by $50C4 (M18) (1 B) |  |
@@ -232,9 +230,11 @@ second one is the question a per-component map cannot answer.
 | `$F341` | 4 B | `disk` | `RAMAD0` | RAM-slot id per page ($F341-$F344), MSX2 TH work area |  |
 | `$F346` | 1 B | `disk` | `DOS_F346` | disk work area: MSX-DOS has been booted -- CALL SYSTEM's gate (D-F346) (1 B) |  |
 | `$F347` | 1 B | `disk` | `DRVCNT` | DRVTBL-1: logical-drive count ($02); read by $50D5 (M17) (1 B) |  |
-| `$F348` | 16 B | `disk` | `DRVTBL` | MSX-DOS-1 disk-driver table, $F348..$F357 (§8.22; |  |
+| `$F348` | 16 B | `disk` | `DRVTBL/HOOK_SLOT` | our slot byte = DRVTBL+0 itself (was $F1C8; INIT copied it there) (1) |  |
+| `$F34B` | 2 B | `disk` | `CLAIM_D` | $4030's work-area value, GETWRK_AREA - N = DRVTBL+3 itself (was $F1C6) (2 B) |  |
 | `$F351` | 2 B | `basic` | `DSKBUF_PTR` | DISK-ONLY: word -> the DSKI$/DSKO$ sector buffer (2) |  |
 | `$F351` | 2 B | `disk` | `DSKBUF_PTR` | word -> the DSKI$/DSKO$ sector buffer; the disk ROM writes it |  |
+| `$F355` | 2 B | `disk` | `DPBLIST` | (2 B) the published DPB-pointer list's drive-A word (D-CLAIM473: the CF-3300 has |  |
 | `$F359` |  | `disk` | `W50A9_RET_HL` | HL on return: disk work-area pointer (DRVTBL+$11 region) |  |
 | `$F365` |  | `disk` | `F365_STUB` | fixed disk-work-area slot-read stub (IN A,($A8);RET; M15 §7.1) |  |
 | `$F368` | 21 B | `disk` | `WA_JMPTAB` | disk-work-area resident jump table ($F368-$F37C, 7 slots) |  |

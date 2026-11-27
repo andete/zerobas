@@ -19,11 +19,15 @@ the CF-3300 does not) and left out of the SLTWRK comparison.
 FRE and DSKF are POKEd to $A000 / $A002 by typed lines and read back from RAM ($FFFF: the statement failed -- no
 Disk BASIC); openMSX's get_screen reads nothing on zerobas after BASIC at A> (a probe artefact, D-DISKROMHOST).
 
-Rows: N = 0, 16, 300, 439 must be SAME as the CF-3300. N = 440 (CLAIM_NMAX + 1) is a KNOWN difference: zerobas
-declines (its first own cell under $F1C9, HOOK_SLOT $F1C8, is in the claim), the CF-3300 installs (it works up to
-N = 473, scratchpad/AE_wasize_threshold*.out). That row FAILS if it turns SAME, or if either side stops reading as
-pinned. Instrument checks: the CF-3300 must install at every N and read HIMEM $F195 - N at its H.RUNC entry (the
-claimer claimed exactly N), else exit 2.
+Rows: N = 0, 16, 300, 439, 456, 473 (the CF-3300's largest, CLAIM_NMAX) and 474 must ALL be SAME as the CF-3300
+(D-CLAIM473, 2026-11-27: zerobas follows up to 473 and declines at 474 as the CF-3300 ends up doing -- at the
+BASIC prompt HIMEM is the cartridge's $F380 - N, SLTWRK empty, no drive; until then it declined from 440, a KNOWN
+row). Past NMAX the two 20 s readings (HIMEM and $0006 at A>) are left out: the CF-3300 is mid-decline then (HIMEM
+$F1BF - N, $0006 garbage, AE_claim473_guard1.out), a transient. Instrument checks: up to NMAX the CF-3300 must
+install and read HIMEM $F195 - N at its H.RUNC entry; past NMAX it must DECLINE with HIMEM $F380 - N there (the
+claimer claimed exactly N), else exit 2. The 474 rows are KNOWN: the disk ROM declines as the CF-3300 does (FB21,
+HIMEM at H.RUNC, SLTWRK all SAME), but zerobas BASIC then puts HIMEM back to $F380 (D-CARTCLAIM, a BASIC item), so
+HIMEM@BASIC and FRE differ -- the row FAILS if anything else differs, or if it turns SAME (drop the pin then).
 
 Clean room: typed keys in; only RAM cells out -- published work-area cells, MSX-DOS's $0006 and the two POKEd
 words, read from the RAM slot RAMAD0 ($F341) names. Breakpoints sit on RAM addresses only (the H.RUNC hook $FECB,
@@ -52,10 +56,8 @@ DOS = os.path.expanduser("~/Documents/msx/msx/disks/test.dsk")
 DATA = os.path.join(ROOT, "disk", "test720.dsk")
 MACHINES = (("CF", "National_CF-3300"), ("ZB", os.environ.get("DISKGUARD_ZB_MACHINE")
                                          or "C-BIOS_MSX1_EU_REPACK_DISK"))
-NMAX = 439
-NS = (0, 16, 300, NMAX, NMAX + 1)
-KNOWN = {NMAX + 1: "zerobas declines a claim over CLAIM_NMAX (HOOK_SLOT $F1C8 would be in it); "
-                   "the CF-3300 installs up to N = 473"}
+NMAX = 473
+NS = (0, 16, 300, 439, 456, NMAX, NMAX + 1)
 
 POKES = ("POKE &HA000,255:POKE &HA001,255:POKE &HA002,255:POKE &HA003,255\r"
          "POKE &HA000,FRE(0) MOD 256:POKE &HA001,FRE(0)\\256\r"
@@ -223,20 +225,27 @@ def main():
                     bad.append(tag)
                     print(f"ROW {tag} MARKER    ZB_HOST {MARKER} on CF={mk['CF']} ZB={mk['ZB']} (want CF=False ZB=True)")
                 # instrument: the reference installed and the claimer claimed exactly N
-                want_init = f"{0xF195 - n:04X}"
-                if cf["installed(FB21)"][:2] == "00" or cf["DSKF"] == 0xFFFF \
-                        or not cf["HIMEM@INIT/SLTWRK"].startswith(want_init):
+                want_init = f"{0xF195 - n:04X}" if n <= NMAX else f"{0xF380 - n:04X}"
+                cf_on = cf["installed(FB21)"][:2] != "00" and cf["DSKF"] != 0xFFFF
+                if cf_on != (n <= NMAX) or not cf["HIMEM@INIT/SLTWRK"].startswith(want_init):
                     fault.append(tag)
-                    print(f"ROW {tag} INSTRUMENT FAULT: CF-3300 {show(cf)} (want HIMEM@INIT {want_init}, installed)")
+                    print(f"ROW {tag} INSTRUMENT FAULT: CF-3300 {show(cf)} (want HIMEM@INIT {want_init}, "
+                          f"{'installed' if n <= NMAX else 'declined'})")
                     continue
+                if n > NMAX:                    # the CF-3300's mid-decline transient (see the docstring)
+                    for r in (cf, zb):
+                        for k in ("HIMEM@DOS", "HIMEM@A>", "$0006@A>"):
+                            r.pop(k, None)
                 same = cf == zb
-                if n in KNOWN:
-                    declined = zb["installed(FB21)"][:2] == "00" and zb["DSKF"] == 0xFFFF
-                    v = "KNOWN" if declined and not same else "BROKEN-PIN"
+                if n > NMAX:
+                    diff = sorted(k for k in cf if cf[k] != zb.get(k))
+                    v = ("KNOWN" if diff and set(diff) <= {"HIMEM@BASIC", "FRE"} and zb.get("HIMEM@BASIC") == "F380"
+                         else "BROKEN-PIN")
                     if v != "KNOWN":
                         bad.append(tag)
-                    print(f"ROW {tag} {v:10s} CF=[{show(cf)}]\n{'':16s} ZB=[{show(zb)}]\n{'':16s} ({KNOWN[n]})",
-                          flush=True)
+                    print(f"ROW {tag} {v:10s} CF=[{show(cf)}]\n{'':16s} ZB=[{show(zb)}]\n{'':16s} (the disk ROM "
+                          f"declines as the CF-3300; zerobas BASIC restores HIMEM $F380 -- D-CARTCLAIM; differs: "
+                          f"{', '.join(diff) or '-'})", flush=True)
                     continue
                 if not same:
                     bad.append(tag)
@@ -249,7 +258,7 @@ def main():
         print(f"\nINSTRUMENT FAULT: {', '.join(fault)}")
         return 2
     print(f"\ndiskguard: {'RED' if bad else 'GREEN'}" + (f" -- {', '.join(bad)}" if bad else
-          f" ({len(NS) * 2} rows: {len(NS) * 2 - 2} SAME as the CF-3300, 2 KNOWN at N={NMAX + 1})"))
+          f" ({len(NS) * 2} rows: {len(NS) * 2 - 2} SAME as the CF-3300, 2 KNOWN at N={NMAX + 1} -- D-CARTCLAIM)"))
     return 1 if bad else 0
 
 

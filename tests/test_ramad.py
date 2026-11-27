@@ -67,8 +67,11 @@ def run():
         m.poke(EXPTBL, bytes([0x80 if (i == prim and exp) else 0 for i in range(4)]))
         m.poke(0xFFFF, bytes([(~(sub << 6)) & 0xFF]))      # $FFFF reads inverted
         m.poke(WA_JMPTAB, bytes([0x5A]))                   # sentinel: table not built
-        m.poke(m.addr("HOOK_SLOT"), bytes([0x87]))         # this ROM in 3-1, as INIT set it
+        # C-BIOS's fill comes at power-on, BEFORE INIT; INIT's first store then puts our slot in HOOK_SLOT,
+        # which IS $F348 since D-CLAIM473 (2026-11-27) -- so the order matters: fill first, then the slot.
+        # What this test holds now: set_ramad leaves the slot byte alone on every host.
         m.poke(MASTERS, bytes([0xC9]))                     # C-BIOS's fill
+        m.poke(m.addr("HOOK_SLOT"), bytes([0x87]))         # this ROM in 3-1, as INIT set it
         m.cpu.io_in = lambda port, prim=prim: (prim << 6) if port & 0xFF == 0xA8 else 0xFF
         # 🔴 The harness's default SP ($F380) puts the stack ON the $F368 table under test:
         # D-DISKVE's bdos_dskio (8 B more stack on build_resident's failing mount read)

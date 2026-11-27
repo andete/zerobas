@@ -102,6 +102,7 @@ def setup_fcb(m, name, rs, rr):
     m.poke_w(FCB + 28, _OPEN["first"])          # +28 running cluster = first, +30 = 0
     m.poke(FCB + 33, struct.pack("<I", rr)[:3])  # FCB+33..35: random-record (24-bit)
     m.poke_w(m.addr("DOS_DTAPTR"), DTA)
+    m.poke_w(m.addr("DPBLIST"), m.addr("DRVA_DPB"))  # D-CLAIM473: INIT publishes the DPB's address at $F355
 
 
 def call_rdblk(m, count):

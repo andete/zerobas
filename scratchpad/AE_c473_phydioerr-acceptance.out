@@ -1,0 +1,12 @@
+ZEROBAS_BASIC_MACHINE=C-BIOS_MSX1_EU_REPACK_DISK python3 -u probes/disk/disk_probe_phydioerr.py
+ROW read_ok     CF=[R F 0  A 0  B 0 ] ZB=[R F 0  A 0  B 0 ] SAME
+ROW write_ok    CF=[R F 0  A 0  B 0 ] ZB=[R F 0  A 0  B 0 ] sector 13: SAME (CF written) SAME
+ROW write_wp    CF=[R F 1  A 0  B 1 ] ZB=[R F 1  A 0  B 1 ] sector 13: SAME (CF not written) SAME
+ROW read_nodisk CF=[R F 1  A 2  B 1 ] ZB=[R F 1  A 2  B 1 ] SAME
+ROW read_far    CF=[R F 1  A 2  B 1 ] ZB=[R F 1  A 2  B 1 ] SAME
+ROW read_last   CF=[R F 0  A 0  B 0 ] ZB=[R F 0  A 0  B 0 ] SAME
+ROW read_1440   CF=[R F 1  A 2  B 1 ] ZB=[R F 1  A 2  B 1 ] SAME
+ROW read_1500   CF=[R F 1  A 2  B 1 ] ZB=[R F 1  A 2  B 1 ] SAME
+ROW read_ffff   CF=[R F 0  A 0  B 0 ] ZB=[R F 0  A 0  B 0 ] SAME
+PASS: PHYDIO's error paths and a write against the CF-3300 (9/9)
+refcache: 9 hit, 9 miss, 9 stored
