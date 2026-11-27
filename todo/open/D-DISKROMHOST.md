@@ -210,3 +210,10 @@
       zerobas's BASIC ignores BOTTOM: filed [D-BOTTOMIGN](D-BOTTOMIGN.md).
       🧭 JOOST 2026-11-26: a SECOND DISK INTERFACE initialised before ours (a ~491 B top claim, over NMAX) is "deferred
       as very low prio" -- not built for. On the claim limit (439 B) Joost had no view ("dunno"): kept as measured.
+      🧭 JOOST 2026-11-27 -- STEP 4 (d) CLOSED, DONE BY SCHEME D (30affa6cf): "from a historical perspective it makes total
+      sense the disk ram region sits at a fixed location. One can hardly expect every program written back then to be
+      written in a non-fixed location disk ram location compatible way." The fixed area $F1C9-$F37F stays where it is
+      (programs read DRVTBL, RAMAD, $F23B, DISKVE / BREAKV directly -- both references keep it fixed, over a foreign
+      claim); only what lies below $F1C9 follows a claim. The base-addressed REWRITE (2.3-3.6 KB, AE_wasize.md) is
+      NOT to be built: it would make zerobas less compatible, not more. Tweaks found later are normal improvement
+      ("Of course it can happen we find some other issues which means we need to do tweaks").
