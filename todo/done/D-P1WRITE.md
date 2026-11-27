@@ -1,4 +1,4 @@
-- [ ] 🔴 **AN MSX-DOS PROGRAM'S WRITE FROM A BUFFER IN PAGE 1 ($4000-$7FFF) WRITES THE DISK ROM'S BYTES: COPY OF A 32 KB
+- [x] 🔴 **AN MSX-DOS PROGRAM'S WRITE FROM A BUFFER IN PAGE 1 ($4000-$7FFF) WRITES THE DISK ROM'S BYTES: COPY OF A 32 KB
       FILE "SUCCEEDS" WITH 16 KB OF IT REPLACED BY OUR ROM IMAGE (D-P1WRITE, found 2026-11-27).**
       🎚️ TIER 1 — silent data loss under MSX-DOS, every host (MSX1 too), and the C-BIOS port's first user is MSX-DOS.
       🤖 **AUTONOMOUS** — black box: the disk image after a typed COPY, the CF-3300 the reference.
@@ -19,5 +19,5 @@
       each machine) 24/24 on the MSX1 C-BIOS host, the zerobas DISK machine, MSX2 EU and MSX2+ EU
       ([AE_p1w_CBIOS2_CUR_MSX1_EU_NOBASIC_DISK.out](../../scratchpad/AE_p1w_CBIOS2_CUR_MSX1_EU_NOBASIC_DISK.out), [AE_p1w_REPACK.out](../../scratchpad/AE_p1w_REPACK.out), [AE_p1w_CBIOS2_CUR_MSX2_EU_NOBASIC_DISK.out](../../scratchpad/AE_p1w_CBIOS2_CUR_MSX2_EU_NOBASIC_DISK.out), [AE_p1w_CBIOS2_CUR_MSX2P_EU_NOBASIC_DISK.out](../../scratchpad/AE_p1w_CBIOS2_CUR_MSX2P_EU_NOBASIC_DISK.out);
       🔮 24/24: HIT). Before the fix: 16 KB of the copy = our ROM image on every host ([AE_bigcopy32_old.out](../../scratchpad/AE_bigcopy32_old.out)).
-      ➡️ LEFT: the speed -- a 131072 B COPY > 400 s here, < 60 s on the CF-3300 (to file as its own TIER 2 item once
-      measured with the bytes right).
+      ✅ CLOSED 2026-11-27 (bf18cc51f; C-BIOS re-pinned in a1be29b -- Joost: "the ram issue is exactly what got
+      fixed"). The speed, measured with the bytes right, is its own item: D-COPYSLOW (TIER 2).

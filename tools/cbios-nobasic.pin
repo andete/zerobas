@@ -9,7 +9,9 @@
 # cbios_disk.rom, SHA-1 59ea200948da1de043c629e14e0e730a297f8d8c = ours; 7f55f04 adds the 12 _DISK configs). Every
 # file below is byte-identical at both revisions (read from the checkout's derived/bin). NOT gated here: C-BIOS's
 # cbios_disk.rom -- our machines boot THIS tree's build/disk.rom; a new disk-ROM commit here = a re-pin there.
-rev 7f55f04
+# Moved 7f55f04 -> a1be29b (2026-11-27: C-BIOS re-pinned its src/disk/ to our bf18cc51f, D-P1WRITE; cbios_disk.rom
+# a4f37305dceed6aaac6b7b296f604652ace9a22c). Every file below byte-identical again.
+rev a1be29b
 cbios_main_msx1_eu.rom 884e44567dee26329487bc460fdd555d613089b4
 cbios_logo_msx1.rom 427e9f97c0db5648a591506c764c6d233ad4719d
 # D-DISKMSX2HOST (2026-11-27): every ROM the other NOBASIC variants use (--variants all), same revision, same check.
