@@ -2,6 +2,8 @@
       2026-11-17, Joost widening the focus: *"Widen to BDOS/disk BIOS"*)**
       🎚️ TIER 1 — the entry surface; the disk ROM's first user is C-BIOS WITHOUT BASIC (Joost 2026-11-14).
       🤖 **AUTONOMOUS** — black box: registers, RAM, the disk image, the FDC's port traffic; the CF-3300 the reference.
+      ⏸️ **DEFERRED (Joost 2026-11-27): "It may make sense to first port to c-bios as is and then start on that, so skip
+      that one temporary for now."** Resume after the C-BIOS port has landed (docs/disk/cbios-integration.md).
       ➡️ FIRST: a contract inventory as D-BIOSCONTRACT2's (scratchpad/bios_contract_inventory.md) -- per published disk-ROM
       entry (DSKIO, DSKCHG, GETDPB, CHOICE, DSKFMT, MTOFF, the pinned kernel entries) and per BDOS function: what a caller
       can observe, which gate DIFFS it against the CF-3300, the gap -- ranked; then the gaps in order. Out of scope:
