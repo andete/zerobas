@@ -3114,6 +3114,24 @@ hk_dget:
                 ld      hl, (FN_RESUME)
                 call    hkp_sp              ; A = the first non-blank
                 jr      hdg_cmp             ; over the pinned $5C11 below
+; wroe_step -- (sited in the $5C11 pad for room) D-COPYSLOW A' (2026-11-27, Joost "A' + D"): the writer's step to the next cluster. When the cluster
+; it is on is the one this BDOS operation allocated LAST (FAT_CURCLUS + 1 = FAT_ALLOCHINT -- the hint is set to the
+; allocation + 1 and reset to 2 by every fat_mount, and here the cluster is a data cluster >= 2), its FAT entry is
+; the end-of-chain we wrote a moment ago: say so without reading the FAT. Otherwise fat_advance as before. The
+; 32 KB COPY read the FAT 31 times here, one per cluster (scratchpad/AE_copyslow_fatpaths.out).
+; CLEAN-ROOM: our own engine's state; own code.
+wroe_step:
+                ld      hl, (FAT_CURCLUS)
+                inc     hl
+                ld      de, (FAT_ALLOCHINT)
+                or      a
+                sbc     hl, de
+                jp      nz, fat_advance     ; not our fresh tail: read the chain
+                ld      hl, $0FFF
+                ld      (FAT_CURCLUS), hl   ; end of chain, as fat_advance would have found
+                xor     a
+                ld      (FAT_CLUSSEC), a
+                ret
                 ds      $5C11 - $, $00
 ; 📌 k_5C11 -- D-ROBOREG (2026-11-13): a CF-3300 disk-kernel address that software CALLS.
 ; ROBOCOP.DSK's boot code CALSLTs $5C11 (IY $87) with A $F1, BC 0, DE $8780, HL $8680 on
@@ -4511,7 +4529,7 @@ wrblk_read_or_extend_sector:
                 ld      hl, FAT_SECPERCLUS
                 cp      (hl)
                 jr      c, wroe_incluster
-                call    fat_advance
+                call    wroe_step           ; D-COPYSLOW A': no FAT read when it is our own new tail
 wroe_incluster:
                 ld      hl, (FAT_CURCLUS)
                 ld      de, 2

@@ -1,0 +1,16 @@
+  31  R2   dskio_rd+3 < bdos_dskio+7 < dc_result+0 < disk_error+5 < fat_advance+6 < frs_head+A < frs_to+4
+  26  R3   dskio_rd+3 < bdos_dskio+7 < dc_result+0 < fac_loop+27 < wroe_ext+6 < wroe_need_extend+3 < wpe_adv+4
+  25  R3   dskio_rd+3 < bdos_dskio+7 < dc_result+0 < disk_error+5 < fat_advance+6 < wroe_incluster+0 < wpe_adv+4
+  25  W3   dskio_write+6 < bdos_dskio+7 < dc_result+0 < fwba_loop+6 < wx_out+4
+  25  W6   dskio_write+6 < bdos_dskio+7 < dc_result+0 < fwba_loop+6 < wx_out+4
+   6  W2   dskio_write+6 < bdos_dskio+7 < dc_result+0 < fwba_loop+6 < wx_out+4
+   6  W5   dskio_write+6 < bdos_dskio+7 < dc_result+0 < fwba_loop+6 < wx_out+4
+   6  R2   dskio_rd+3 < bdos_dskio+7 < dc_result+0 < disk_error+5 < fat_advance+6 < wroe_incluster+0 < wpe_adv+4
+   5  R2   dskio_rd+3 < bdos_dskio+7 < dc_result+0 < fac_loop+27 < wroe_ext+6 < wroe_need_extend+3 < wpe_adv+4
+   2  W2   dskio_write+6 < bdos_dskio+7 < dc_result+0 < fwba_loop+6 < fwe_byte1+D
+   2  W5   dskio_write+6 < bdos_dskio+7 < dc_result+0 < fwba_loop+6 < fwe_byte1+D
+   2  R2   dskio_rd+3 < bdos_dskio+7 < dc_result+0 < fwe_cmp+E < wroe_ext+19 < wroe_need_extend+3
+   1  R2   dskio_rd+3 < bdos_dskio+7 < dc_result+0 < fat_geom_read+C < fat_mount+3 < snext_body+8
+   1  R2   dskio_rd+3 < bdos_dskio+7 < dc_result+0 < fat_geom_read+C < fat_mount+3 < mnt_find+6 < fopen_fill_body+A
+   1  R2   dskio_rd+3 < bdos_dskio+7 < dc_result+0 < fat_geom_read+C < fat_mount+3 < bdos_create_body+4
+   1  R2   dskio_rd+3 < bdos_dskio+7 < dc_result+0 < fac_loop+27 < wroe_ext+6 < wroe_need_extend+3 < wpe_walk+4

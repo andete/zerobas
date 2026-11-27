@@ -28,3 +28,45 @@
       🧭 JOOST 2026-11-27: "Size it first" -- write up the options (RAM available, 2 sectors vs the whole FAT, deferred
       writes and when to flush: FCLOSE / disk change / DSKRST, what the CF-3300 does visibly -- its FAT writes per copy,
       measured -- and the expected speed-up), then he chooses. Do not build before that.
+      📐 **SIZING (2026-11-27, Joost "Size it first"; zerobas-only call chains, scratchpad/fatpath_probe.py --
+      [AE_copyslow_fatpaths.out](../../scratchpad/AE_copyslow_fatpaths.out)).** The FAT commands of the 32 KB COPY come from three paths:
+        (a) CHAIN RE-WALKS from the file's first cluster to find the current one -- fat_advance from frs_head (the
+            source's reads: 31 + 6) and from wroe_incluster (the copy's writes: 25 + 6): ~68 reads. The cost per sector
+            grows with the position in the file -> quadratic: why 4.0x at 32 KB became 5.9x at 128 KB.
+        (b) the FREE-CLUSTER SCAN at each extension -- fac_loop from wroe_ext: 26 + 5 + 2 reads.
+        (c) FAT WRITE-THROUGH to both copies at each extension -- fwba_loop from wx_out: 25 + 25 + 6 + 6 + 2 + 2 writes.
+      OPTIONS (no new RAM for any; the engine is shared with the sub-ROM -- each needs the BASIC side checked too):
+        A. keep the RUNNING CLUSTER per open file and continue from it (MSX-DOS FCBs already carry one: +28 the current
+           cluster, +30 its index -- zerobas fills them; the CF-3300's FOPEN does too). Removes (a). Biggest win; also
+           what makes the time linear in the file size.
+        B. DEFER FAT writes to FCLOSE / DSKRST / a disk change, reusing FAT_DEFER (D-WCACHE W3a, today BASIC's chain
+           extension only). Removes most of (c): ~66 writes -> 4 (two sectors x two FATs). Risk: a crash or a disk
+           swap before close leaves the FAT stale -- the CF-3300's own behaviour on that is NOT measured yet (needs a
+           black-box test: pull the disk mid-copy, read the image).
+        C. start the free-cluster scan at the last allocated cluster (FAT_ALLOCHINT exists; check why fac_loop still
+           reads per extension -- likely the deferred / single-buffer interplay). Removes most of (b).
+      ESTIMATE: A + B + C leave ~64 data reads + 64 data writes + ~10 FAT / directory commands ~= 140 commands (380 today)
+      -> the 32 KB COPY ~30 s (82.8 s today; CF-3300 21.8 s) and LINEAR -- 128 KB ~120 s (407 s today; CF-3300 68.8 s).
+      The rest of the gap is per-sector rotational waits the CF-3300 seems not to pay (its command counts are not
+      reliable to us -- multi-sector traffic?). A alone: ~380 -> ~300 commands, but the 128 KB case improves most.
+      🧭 JOOST 2026-11-27: "A first" -- build A (the running cluster), re-measure, then decide on B / C.
+      🔴 CORRECTION (same day, before building): (a) is NOT a re-walk from the first cluster. frs_head / fat_advance step
+      ONE cluster from FAT_CURCLUS (the running cluster zerobas already keeps); the 31 / 25 reads are one per cluster
+      (32 KB = 32 one-KB clusters). Read from call-chain labels, not the code -- "quadratic" and option A as written were
+      wrong; Joost's "A first" was asked on that premise. What the counts show is the ONE FAT buffer shared by both files:
+      the source's next-cluster entries (mostly FAT sector 2) and the copy's free-scan / link / step (mostly sector 3)
+      evict each other at every cluster -- ~5 FAT commands per cluster, linear in the size.
+      REVISED OPTIONS (no new RAM unless said):
+        A'. the writer steps to the cluster it has just allocated without reading the FAT (it knows the number): ~31 reads.
+        D.  the reader prefetches its chain's next ~16 cluster numbers whenever it reads a FAT sector (a 32 B table; a
+            142 B run is free at $EDBF): most of the ~37 source reads.
+        B / C as above (deferred FAT writes; the free-scan start).
+      🧭 JOOST 2026-11-27 (asked again on the corrected sizing): "A′ + D" -- both read-side fixes, re-measure, then B.
+      ✅ A' BUILT 2026-11-27: wroe_step (disk/kernel.asm, in the $5C11 pad) -- when the writer's cluster is the one this
+      BDOS operation allocated last (FAT_CURCLUS + 1 = FAT_ALLOCHINT; the hint is the allocation + 1, reset to 2 by every
+      fat_mount), its entry is the end-of-chain just written: no FAT read. No new RAM. 32 KB COPY: reads 241 -> 209,
+      82.8 -> 76.5 s, the copy byte-identical (AE_copyslow_aprime.out; 🔮 "~210 reads, ~-7 s": HIT); the copy's step reads
+      (wroe_incluster, 25 + 6) gone from the path histogram (AE_copyslow_fatpaths2.out). bdos / bdos-cfhost / seqmix /
+      wrblkalt / dossession / nobasic / diskbasic / bdosf37d acceptance, unit tests green; knife re-pinned; disk corpus
+      identical. ➡️ D (the source's read-ahead) needs a 32 B table: RAM first -- $EDBF-$EDFC has no name in any ROM but
+      sits under BASIC_WS_CEIL, NOT a safe assumption; find atlas-verified free RAM before building.
