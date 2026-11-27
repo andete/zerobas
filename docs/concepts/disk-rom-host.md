@@ -196,7 +196,8 @@ where the references leave most of that band unwritten too -- room to arrange it
   without its disk ROM (2026-11-24) -- apart from the screen (item 4).
 - H.RUNC on LOAD: unmeasured (zerobas calls it through NEW's code on LOAD's ASCII path).
 - Met by zerobas's own disk ROM since D-DISKROMHOST step 2b, see "zerobas's own disk ROM" under item 3: the two-step
-  claim. Still not done there: the stock ROMs move their stack below each new STKTOP and record their work area in
-  SLTWRK; ours does neither ([AE_diskhost2_ref.out](../../scratchpad/AE_diskhost2_ref.out)).
+  claim. Still not done there: the stock ROMs move their stack below each new STKTOP; ours does not
+  ([AE_diskhost2_ref.out](../../scratchpad/AE_diskhost2_ref.out)). They also record their work area in SLTWRK, and
+  since scheme D (2026-11-26) ours does too: its page-1 entry = $F1BF - N (`make diskguard-acceptance`).
 - Other disk interfaces: the Sony HBD-F1 measured (items 1-4 hold); the Panasonic FS-FD1A does not start in this
   openMSX (no ROM).

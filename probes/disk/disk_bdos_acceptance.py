@@ -164,11 +164,16 @@ EXERCISERS = [
 CMD_RE = re.compile(r"(python3\s+probes/disk/disk_probe_diff\.py\s+.*)$")
 
 
+def acc_dsk(name: str) -> str:
+    """where build_and_plan leaves exerciser NAME's disk (also read by disk_probe_nobasicreach)"""
+    return f"/tmp/zerobas_acc_{name.lower()}.dsk"
+
+
 def build_and_plan(name: str, script: str, dos_disk: str,
                    extra: tuple = ()) -> tuple[list[list[str]], str]:
     """Run the build script; return (list of probe arg-lists, its raw output).
     `extra`: more build-script arguments (D-DOSLADDER's --prog)."""
-    out_dsk = f"/tmp/zerobas_acc_{name.lower()}.dsk"
+    out_dsk = acc_dsk(name)
     proc = subprocess.run(
         ["python3", os.path.join(HERE, script), "--dos-disk", dos_disk, "--out", out_dsk, *extra],
         cwd=ROOT, capture_output=True, text=True)

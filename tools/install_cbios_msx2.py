@@ -15,16 +15,28 @@ It also writes CBIOS2_<TAG>_MSX1_EU_NOBASIC_DISK: the checkout's MSX1 EU build w
 nobasic-dossession-acceptance CBIOS=...`).
 
     python3 tools/install_cbios_msx2.py --cbios <built C-BIOS checkout> [--tag CUR]
+    python3 tools/install_cbios_msx2.py --pinned
+
+--pinned (C-BIOS integration step 3, 2026-11-27) needs no checkout: it writes only the NOBASIC machine, from the
+ROM copies already in <share>/zerobas-cbios2/cur/, and only when they hash to tools/cbios-nobasic.pin (exit 2
+otherwise: an instrument fault, never a green). Machines go to the share openMSX reads ($OPENMSX_USER_DATA when set
+-- tools/gate_wt.py's private share), and the disk ROM is THIS tree's build/disk.rom, so a gate worktree measures
+its own commit.
 """
 import argparse
 import os
 import re
 import shutil
+import hashlib
 import sys
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 BUNDLED = "/Applications/openMSX.app/Contents/Resources/share/machines"
-USER = os.path.expanduser("~/.openMSX/share/machines")
+sys.path.insert(0, os.path.join(ROOT, "tools"))
+import openmsx_paths  # noqa: E402
+# the share openMSX reads -- $OPENMSX_USER_DATA (gate_wt's private share) when set
+USER = os.path.join(openmsx_paths.find_user_share(), "machines")
+PIN = os.path.join(ROOT, "tools", "cbios-nobasic.pin")
 # variant -> the bundled config it is made from
 VARIANTS = {"MSX2_EU": "C-BIOS_MSX2_EU", "MSX2_JP": "C-BIOS_MSX2_JP", "MSX2P_JP": "C-BIOS_MSX2+_JP"}
 
@@ -54,6 +66,37 @@ def install(cbios, tag):
         name = f"CBIOS2_{tag.upper()}_{var}"
         open(os.path.join(USER, name + ".xml"), "w").write(xml)
         names.append(name)
+    names.append(install_nobasic(dest, tag))
+    print("installed: " + ", ".join(names) + f"  (ROMs in {dest})")
+
+
+def read_pin():
+    pin = {}
+    for ln in open(PIN):
+        p = ln.split()
+        if len(p) == 2 and not ln.startswith("#"):
+            pin[p[0]] = p[1]
+    return pin
+
+
+def install_pinned(tag):
+    dest = os.path.join(os.path.dirname(USER), "zerobas-cbios2", tag.lower())
+    pin = read_pin()
+    for f, want in pin.items():
+        if f == "rev":
+            continue
+        p = os.path.join(dest, f)
+        got = hashlib.sha1(open(p, "rb").read()).hexdigest() if os.path.isfile(p) else "missing"
+        if got != want:
+            print(f"install_cbios_msx2: INSTRUMENT FAULT -- {p} is {got}, tools/cbios-nobasic.pin wants {want} "
+                  f"(C-BIOS {pin.get('rev')}); install it with --cbios <checkout at that revision>, or move the pin")
+            return 2
+    name = install_nobasic(dest, tag)
+    print(f"installed: {name}  (C-BIOS {pin.get('rev')}, pinned; disk ROM {os.path.join(ROOT, 'build', 'disk.rom')})")
+    return 0
+
+
+def install_nobasic(dest, tag):
     # 💽 docs/disk/port-readiness.md gap 3 (2026-11-26): the C-BIOS PORT'S HOST -- the checkout's own MSX1 EU build,
     # NO BASIC anywhere, zerobas's disk ROM in slot 3-1 behind the CF-3300-style FDC. openMSX's bundled C-BIOS (0.29)
     # is not that host: it predates the disk-host work (HIMEM, MS-BASIC's layout at the scan), so it is the
@@ -69,15 +112,19 @@ def install(cbios, tag):
     xml = inst.expand_slot3(xml, disk_rom, "")
     name = f"CBIOS2_{tag.upper()}_MSX1_EU_NOBASIC_DISK"
     open(os.path.join(USER, name + ".xml"), "w").write(xml)
-    names.append(name)
-    print("installed: " + ", ".join(names) + f"  (ROMs in {dest})")
+    return name
 
 
 def main():
     ap = argparse.ArgumentParser()
-    ap.add_argument("--cbios", required=True)
+    ap.add_argument("--cbios")
+    ap.add_argument("--pinned", action="store_true")
     ap.add_argument("--tag", default="CUR")
     a = ap.parse_args()
+    if a.pinned:
+        return install_pinned(a.tag)
+    if not a.cbios:
+        ap.error("--cbios <checkout> or --pinned")
     install(os.path.abspath(os.path.expanduser(a.cbios)), a.tag)
     return 0
 

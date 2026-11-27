@@ -1,0 +1,36 @@
+112 breakpoint sites (72 transfers into the ABI's routines, 40 hook / install / bb_term entries); witness bdos_entry 44FD; on CBIOS2_CUR_MSX1_EU_NOBASIC_DISK
+(a) the no-BASIC MSX-DOS session ...
+(b) every bdos-acceptance exerciser disk, booted for 50 s ...
+    HIT[AUXINX] 66E0 install_basic_hooks  x1
+    HIT[BDOSX0] 66E0 install_basic_hooks  x1
+    HIT[BDOSX2] 66E0 install_basic_hooks  x1
+    HIT[BDOSX3] 66E0 install_basic_hooks  x1
+    HIT[BDOSX4] 66E0 install_basic_hooks  x1
+    HIT[BDOSX5] 66E0 install_basic_hooks  x1
+    HIT[BDOSX6] 66E0 install_basic_hooks  x1
+    HIT[BDOSX7] 66E0 install_basic_hooks  x1
+    HIT[BDOSX8] 66E0 install_basic_hooks  x1
+    HIT[BDOSX9] 66E0 install_basic_hooks  x1
+    HIT[BDOSXB] 66E0 install_basic_hooks  x1
+    HIT[BDOSXC] 66E0 install_basic_hooks  x1
+    HIT[BDOSXE] 66E0 install_basic_hooks  x1
+    HIT[BDOSXK] 66E0 install_basic_hooks  x1
+    HIT[BDOSXL] 66E0 install_basic_hooks  x1
+    HIT[BDOSXS] 66E0 install_basic_hooks  x1
+    HIT[BDOSXT] 66E0 install_basic_hooks  x1
+    HIT[BDOSX] 66E0 install_basic_hooks  x1
+    HIT[BUFINX] 66E0 install_basic_hooks  x1
+    HIT[DOSL-D1] 66E0 install_basic_hooks  x1
+    HIT[DOSL-D2] 66E0 install_basic_hooks  x1
+    HIT[DOSL-D3] 66E0 install_basic_hooks  x1
+    HIT[DOSL-D4] 66E0 install_basic_hooks  x1
+    HIT[DOSL-D5] 66E0 install_basic_hooks  x1
+    HIT[DOSL-D6] 66E0 install_basic_hooks  x1
+    HIT[DOSL-D7] 66E0 install_basic_hooks  x1
+    HIT[DSKCHG] 66E0 install_basic_hooks  x1
+    HIT[DSKENT] 66E0 install_basic_hooks  x1
+    HIT[SESSION] 66E0 install_basic_hooks  x2
+    HIT[WRZER] 66E0 install_basic_hooks  x1
+30 runs; 31 hits; disallowed 31; no install witness -; no BDOS witness -; unbuilt -
+nobasicreach: RED -- a disk-ROM path reached the BASIC-only side on a BASIC-less host: HIT[AUXINX] 66E0 install_basic_hooks, HIT[BDOSX0] 66E0 install_basic_hooks, HIT[BDOSX2] 66E0 install_basic_hooks, HIT[BDOSX3] 66E0 install_basic_hooks, HIT[BDOSX4] 66E0 install_basic_hooks, HIT[BDOSX5] 66E0 install_basic_hooks, HIT[BDOSX6] 66E0 install_basic_hooks, HIT[BDOSX7] 66E0 install_basic_hooks, HIT[BDOSX8] 66E0 install_basic_hooks, HIT[BDOSX9] 66E0 install_basic_hooks, HIT[BDOSXB] 66E0 install_basic_hooks, HIT[BDOSXC] 66E0 install_basic_hooks, HIT[BDOSXE] 66E0 install_basic_hooks, HIT[BDOSXK] 66E0 install_basic_hooks, HIT[BDOSXL] 66E0 install_basic_hooks, HIT[BDOSXS] 66E0 install_basic_hooks, HIT[BDOSXT] 66E0 install_basic_hooks, HIT[BDOSX] 66E0 install_basic_hooks, HIT[BUFINX] 66E0 install_basic_hooks, HIT[DOSL-D1] 66E0 install_basic_hooks, HIT[DOSL-D2] 66E0 install_basic_hooks, HIT[DOSL-D3] 66E0 install_basic_hooks, HIT[DOSL-D4] 66E0 install_basic_hooks, HIT[DOSL-D5] 66E0 install_basic_hooks, HIT[DOSL-D6] 66E0 install_basic_hooks, HIT[DOSL-D7] 66E0 install_basic_hooks, HIT[DSKCHG] 66E0 install_basic_hooks, HIT[DSKENT] 66E0 install_basic_hooks, HIT[SESSION] 66E0 install_basic_hooks, HIT[WRZER] 66E0 install_basic_hooks
+rc= 1

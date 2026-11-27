@@ -1,0 +1,10 @@
+# The C-BIOS build that nobasic-acceptance measures as the C-BIOS port's host (C-BIOS integration step 3,
+# Joost 2026-11-27): the checkout's MSX1 EU build with NO BASIC, zerobas's disk ROM in slot 3-1.
+# `tools/install_cbios_msx2.py --pinned` installs CBIOS2_CUR_MSX1_EU_NOBASIC_DISK from the copies in
+# <openMSX share>/zerobas-cbios2/cur/ only when they hash to these; otherwise it is an INSTRUMENT FAULT, never green.
+# To move the pin: build the new C-BIOS, `python3 tools/install_cbios_msx2.py --cbios <checkout>`, run
+# `make nobasic-acceptance`, and update the revision and hashes below in the same commit.
+# Measured 2026-11-27 (the same files as the checkout's derived/bin).
+rev fac3f41
+cbios_main_msx1_eu.rom 884e44567dee26329487bc460fdd555d613089b4
+cbios_logo_msx1.rom 427e9f97c0db5648a591506c764c6d233ad4719d
