@@ -1,4 +1,4 @@
-- [ ] 🎯 **D-DISKROMHOST — ZEROBAS'S OWN DISK ROM AS A CONTRACT-FOLLOWING CARTRIDGE: ITS MSX-DOS HALF STANDS ON ITS OWN
+- [x] 🎯 **D-DISKROMHOST — ZEROBAS'S OWN DISK ROM AS A CONTRACT-FOLLOWING CARTRIDGE: ITS MSX-DOS HALF STANDS ON ITS OWN
       (Joost 2026-11-24: "this is exactly what I had in mind").**
       🎚️ TIER 1 — preparing disk support for C-BIOS (a host without BASIC): the DOS half must need nothing from zerobas
       BASIC, and must follow the host contract (docs/concepts/disk-rom-host.md) as a stock disk ROM does.
@@ -38,7 +38,9 @@
       at $0006 and $0039 against the CF-3300. Also open: the reference's TWO-STEP claim ($F195 in INIT, $DF93 in
       H.RUNC, with the layout rebuilt under each -- docs/concepts/disk-rom-host.md, Open) against zerobas's one-step
       $DE77 with no rebuild, which leaves an MS-BASIC host's layout inside the claim when no DOS disk boots.
-      ⛔ OPEN (Joost still deciding, 2026-11-24): the DOS-phase block below DISK_HIMEM -- GETWRK_AREA $DD0E and the
+      🧭 RULED (Joost 2026-11-27, asked: "Keep"): the DOS-phase block stays where it is -- option (a), reference-faithful,
+      the CF-3300's addresses ($0006 = $D606, $0038 -> $DDAE on both); consistent with the 11-27 fixed-location ruling.
+      CLOSED. (Was: ⛔ OPEN, Joost still deciding, 2026-11-24:) the DOS-phase block below DISK_HIMEM -- GETWRK_AREA $DD0E and the
       slot bridges from INT_H_HIRAM $DDAE -- options (a) / (b) above. Placement unchanged for now (the CF-3300's
       addresses); measured at MSX-DOS's entry for the decision (scratchpad/AE_diskhost2_ref.out, DOS lines): the
       word at $0006 ends $D606 on all four set-ups; $0038 jumps to $DDAE on the CF-3300 and on ours (both hosts),
@@ -217,3 +219,7 @@
       claim); only what lies below $F1C9 follows a claim. The base-addressed REWRITE (2.3-3.6 KB, AE_wasize.md) is
       NOT to be built: it would make zerobas less compatible, not more. Tweaks found later are normal improvement
       ("Of course it can happen we find some other issues which means we need to do tweaks").
+      ✅ CLOSED 2026-11-27: steps 1-4 done; 4(d) by scheme D (Joost: fixed location); 2b's placement ruled "Keep" the
+      same day; the 439 B limit kept as measured (Joost 11-26: "dunno"), a documented known difference
+      (docs/disk/cbios-integration.md). The host-contract follow-ups live on as D-DISKMSX2HOST (done), D-P1WRITE (done),
+      D-COPYSLOW, D-BOTTOMIGN, D-NODISKHIMEM.
