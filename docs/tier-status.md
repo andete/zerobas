@@ -615,7 +615,7 @@ A keyword's LEVEL is its highest UNBROKEN run of proven rungs from T1: `T1✓ T2
 | — | TIER 6 | 🤖 | the value is 0 on both machines (exponent byte 0); only the result's bytes (VARPTR / PEEK, a USR | T-933CFD |
 | — | TIER 6 | 🤖 | only a number whose bytes were POKEd reaches it (typed `-0`, `-0!`, `-0#` are stored as zero | T-89B531 |
 | — | TIER 6 | 🤖 | only a POKEd single reaches it; the value is 0 on both. | T-5E61CF |
-| — | TIER 6 | ? | MSX2 is on HOLD (Joost: "not the focus of this release"); for zerobas's MSX2 sub-ROM patch set. | T-C4485E |
+| — | TIER 6 | 🤖 | MSX2 is on HOLD (Joost: "not the focus of this release"); for zerobas's MSX2 sub-ROM patch set. | T-C4485E |
 | — | TIER 6 | 🤖 | the value is 0 on both machines; only the result's bytes (VARPTR / PEEK, a USR routine's DAC) differ. | T-555BC2 |
 | — | TIER 6 | 🤖 | a blank between `&` and its letter is rare in typed BASIC and in data; the everyday | T-02F950 |
 | — | TIER 6 | 🤖 | a typed line number alone, for a line that is not there, while a program is stopped. | T-9FDCC4 |
