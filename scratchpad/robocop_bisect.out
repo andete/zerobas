@@ -1,8 +1,9 @@
-e2a56cb7 [  1/1] BOTH-RUN    4769  ref S1 pc=32105  zb S1 pc=   56  ROBOCOP.DSK
-ada5cd6f [  1/1] BOTH-RUN    4769  ref S1 pc=32105  zb S1 pc=   56  ROBOCOP.DSK
-a7bf661a [  1/1] ZB-NOBOOT   None  ref S1 pc=32105  zb S1 pc=   56  ROBOCOP.DSK
-b6bef25e [  1/1] BOTH-RUN    4757  ref S1 pc=32105  zb S1 pc=   56  ROBOCOP.DSK
-d8953faa [  1/1] ZB-NOBOOT   None  ref S1 pc=32105  zb S1 pc=27307  ROBOCOP.DSK
-450ac086 [  1/1] BOTH-RUN    4757  ref S1 pc=32105  zb S1 pc=   56  ROBOCOP.DSK
-eb03a41a [  1/1] BOTH-RUN    4757  ref S1 pc=32105  zb S1 pc=   56  ROBOCOP.DSK
-f6dcb920 [  1/1] ZB-NOBOOT   None  ref S1 pc=32105  zb S1 pc=27307  ROBOCOP.DSK
+[2026-11-27] reference PC values replaced by the classifier's bucket ram/rom (clean room -- Joost, 2026-11-27)
+e2a56cb7 [  1/1] BOTH-RUN    4769  ref S1 pc=  rom  zb S1 pc=   56  ROBOCOP.DSK
+ada5cd6f [  1/1] BOTH-RUN    4769  ref S1 pc=  rom  zb S1 pc=   56  ROBOCOP.DSK
+a7bf661a [  1/1] ZB-NOBOOT   None  ref S1 pc=  rom  zb S1 pc=   56  ROBOCOP.DSK
+b6bef25e [  1/1] BOTH-RUN    4757  ref S1 pc=  rom  zb S1 pc=   56  ROBOCOP.DSK
+d8953faa [  1/1] ZB-NOBOOT   None  ref S1 pc=  rom  zb S1 pc=27307  ROBOCOP.DSK
+450ac086 [  1/1] BOTH-RUN    4757  ref S1 pc=  rom  zb S1 pc=   56  ROBOCOP.DSK
+eb03a41a [  1/1] BOTH-RUN    4757  ref S1 pc=  rom  zb S1 pc=   56  ROBOCOP.DSK
+f6dcb920 [  1/1] ZB-NOBOOT   None  ref S1 pc=  rom  zb S1 pc=27307  ROBOCOP.DSK

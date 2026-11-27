@@ -1,1 +1,2 @@
-[  1/1] FILES-DIFF (1, 0)  ref S1 pc=20069  zb S0 pc=13856  calculus.dsk
+[2026-11-27] reference PC values replaced by the classifier's bucket ram/rom (clean room -- Joost, 2026-11-27)
+[  1/1] FILES-DIFF (1, 0)  ref S1 pc=  rom  zb S0 pc=13856  calculus.dsk

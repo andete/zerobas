@@ -1,5 +1,6 @@
+[2026-11-27] reference PC / return-address values REDACTED (clean room -- Joost, 2026-11-27)
 ### National_CF-3300
-== S1 ('45:')  pc=0D76 curlin=FFFF mode=S0
+== S1 ('45:')  pc=<redacted> curlin=FFFF mode=S0
    | MSX BASIC version 1.0
    | Copyright 1983 by Microsoft
    | 23430 Bytes free

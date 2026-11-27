@@ -1,3 +1,4 @@
-[  1/2] BOTH-RUN    4776  ref S1 pc=  670  zb S1 pc=25852  calculus.di2
-[  2/2] BOTH-RUN    4752  ref S1 pc=  670  zb S1 pc= 6481  calculus.dsk
+[2026-11-27] reference PC values replaced by the classifier's bucket ram/rom (clean room -- Joost, 2026-11-27)
+[  1/2] BOTH-RUN    4776  ref S1 pc=  rom  zb S1 pc=25852  calculus.di2
+[  2/2] BOTH-RUN    4752  ref S1 pc=  rom  zb S1 pc= 6481  calculus.dsk
 TALLY {"BOTH-RUN": 2}

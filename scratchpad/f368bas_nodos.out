@@ -1,5 +1,6 @@
+[2026-11-27] reference PC / return-address values REDACTED (clean room -- Joost, 2026-11-27)
 #### National_CF-3300 data disk (no DOS)
-== S5 ('23:')  pc=0D6A curlin=0000 mode=S1
+== S5 ('23:')  pc=<redacted> curlin=0000 mode=S1
    |  Enter date ( - - ):10 FOR I=0
    |   TO 19:REA
    |  Invalid date

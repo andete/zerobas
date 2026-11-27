@@ -1,4 +1,5 @@
-[  1/1] BOTH-RUN    5544  ref S1 pc=32105  zb S2 pc= 4138  ROBOCOP.DSK
+[2026-11-27] reference PC values replaced by the classifier's bucket ram/rom (clean room -- Joost, 2026-11-27)
+[  1/1] BOTH-RUN    5544  ref S1 pc=  rom  zb S2 pc= 4138  ROBOCOP.DSK
 TALLY {"BOTH-RUN": 1}
 refcache: 1 hit, 1 miss, 1 stored
 refcache: 1 hit, 1 miss, 1 stored

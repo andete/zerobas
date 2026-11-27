@@ -1,146 +1,147 @@
-[  1/143] ZB-ONLY     None  ref S1 pc= 3146  zb S0 pc=35516  BREAKER.DSK
-[  2/143] BOTH-RUN   11464  ref S3 pc=30648  zb S3 pc=   56  DASS.DSK
-[  3/143] BOTH-RUN    5185  ref S1 pc= 2289  zb S1 pc= 2318  DiscStation32A.dsk
-[  4/143] BOTH-RUN    5185  ref S1 pc= 2326  zb S1 pc= 2343  DiscStation32B.dsk
-[  5/143] BOTH-RUN    5185  ref S1 pc= 2326  zb S1 pc= 2343  DiscStation32C.dsk
-[  6/143] UNSETTLED  refzb  ref S1 pc=17543  zb S1 pc=17542  DiscStation32D.dsk
-[  7/143] BOTH-RUN    4224  ref S0 pc= 3066  zb S0 pc=  588  FDD1.DSK
-[  8/143] BOTH-RUN    5171  ref S1 pc=53701  zb S1 pc=53701  FEEDBACK.DSK
-[  9/143] BOTH-RUN    5189  ref S1 pc= 3429  zb S0 pc= 4396  FSA1GT1.DSK
-[ 10/143] BOTH-RUN    5544  ref S1 pc= 2978  zb S2 pc= 4131  FSA1GT2.DSK
-[ 11/143] BOTH-RUN    5189  ref S1 pc= 3434  zb S0 pc= 4396  FSA1GT3.DSK
-[ 12/143] BOTH-RUN    5836  ref S2 pc=45125  zb S2 pc= 4131  Fdd21.dsk
-[ 13/143] BOTH-RUN    4224  ref S0 pc=33342  zb S0 pc=33345  Fdd22.dsk
-[ 14/143] UNSETTLED    ref  ref S1 pc=  661  zb S0 pc= 6085  GAUNT.DSK
-[ 15/143] BOTH-RUN    5255  ref S1 pc= 2980  zb S0 pc= 4396  HALNOTE.DSK
-[ 16/143] BOTH-RUN    5255  ref S1 pc= 2980  zb S0 pc= 4396  HALNOTE1.DSK
-[ 17/143] BOTH-RUN    5255  ref S1 pc= 3449  zb S0 pc= 4396  HALNOTE2.DSK
-[ 18/143] BOTH-RUN    5337  ref S1 pc= 3461  zb S0 pc= 4396  HELLO.DSK
-[ 19/143] BOTH-RUN    5189  ref S1 pc= 2980  zb S0 pc= 4396  MLS.DSK
-[ 20/143] ZB-ONLY     None  ref S1 pc=64922  zb S0 pc=57005  Multiple.dsk
-[ 21/143] BOTH-RUN    4734  ref S1 pc=18009  zb S1 pc=30371  PARADREA.DSK
-[ 22/143] BOTH-RUN    5192  ref S1 pc= 6953  zb S1 pc= 6963  PSYCHO.DSK
-[ 23/143] BOTH-RUN    5544  ref S1 pc=32105  zb S2 pc= 4131  ROBOCOP.DSK
-[ 24/143] BOTH-RUN    5171  ref S2 pc= 1460  zb S2 pc= 1468  SDSNAT1C.DSK
-[ 25/143] BOTH-RUN    5193  ref S1 pc=49680  zb S0 pc=49680  SDSNAT1O.DSK
-[ 26/143] BOTH-RUN    5192  ref S1 pc=49195  zb S0 pc=49195  SDSNAT2.DSK
-[ 27/143] BOTH-RUN    5192  ref S1 pc=49195  zb S0 pc=49195  SDSNAT3.DSK
-[ 28/143] UNSETTLED     zb  ref S1 pc= 3449  zb S0 pc=26872  SNATCHE1.DSK
-[ 29/143] UNSETTLED     zb  ref S1 pc= 3449  zb S0 pc=26872  SNATCHE2.DSK
-[ 30/143] UNSETTLED     zb  ref S1 pc= 3429  zb S0 pc=26872  SNATCHE3.DSK
-[ 31/143] FILES-DIFF (24, 23)  ref S1 pc= 3435  zb S0 pc=  486  STONE.DSK
-[ 32/143] BOTH-RUN    4299  ref S0 pc=49191  zb S0 pc=49191  SWISS.DSK
-[ 33/143] UNSETTLED     zb  ref S1 pc=30706  zb S0 pc=  447  Seedofda.dsk
-[ 34/143] BOTH-RUN    5264  ref S1 pc=49182  zb S0 pc=49182  Seedofdb.dsk
-[ 35/143] BOTH-RUN    5264  ref S1 pc=49182  zb S0 pc=49182  Seedofdc.dsk
-[ 36/143] BOTH-RUN    5276  ref S3 pc=41647  zb S3 pc=25832  SirDan.dsk
-[ 37/143] UNSETTLED  refzb  ref S1 pc= 1328  zb S1 pc= 6080  TestameA.dsk
-[ 38/143] ZB-ONLY     None  ref S1 pc=15668  zb S1 pc= 1723  TestameB.dsk
-[ 39/143] BOTH-RUN    5171  ref S1 pc=47320  zb S0 pc=47327  UNDEADLN.DSK
-[ 40/143] BOTH-RUN    5171  ref S1 pc=47320  zb S0 pc=47327  UNDEADLN2.DSK
-[ 41/143] BOTH-RUN   11695  ref S1 pc=30652  zb S3 pc=   56  UR-1.dsk
-[ 42/143] BOTH-RUN    5189  ref S1 pc= 3426  zb S0 pc= 4396  UR-2.dsk
-[ 43/143] BOTH-RUN    5189  ref S1 pc= 3453  zb S0 pc= 4396  UR-3.dsk
-[ 44/143] ZB-ONLY     None  ref S1 pc=30704  zb S2 pc= 4131  UZIX.DSK
-[ 45/143] BOTH-RUN    7941  ref S2 pc=28454  zb S0 pc=17512  YOUMAKOR.DSK
-[ 46/143] BOTH-RUN    5189  ref S1 pc= 4316  zb S0 pc= 4396  almost_real.dsk
-[ 47/143] BOTH-RUN    4621  ref S1 pc=16580  zb S0 pc=18743  ar4.dsk
-[ 48/143] BOTH-RUN    5268  ref S1 pc=  513  zb S1 pc=  513  bladelo.dsk
-[ 49/143] BOTH-RUN    5209  ref S1 pc= 3462  zb S0 pc= 4396  bombaman.dsk
-[ 50/143] BOTH-RUN    5277  ref S1 pc= 4313  zb S0 pc= 4396  calculus.di2
-[ 51/143] ZB-ONLY     None  ref S1 pc=20069  zb S0 pc=   56  calculus.dsk
-[ 52/143] BOTH-RUN    5277  ref S1 pc= 4313  zb S0 pc= 4396  compass.dsk
-[ 53/143] BOTH-RUN    5189  ref S1 pc= 3435  zb S0 pc= 4396  crossbla.dsk
-[ 54/143] BOTH-RUN    5189  ref S1 pc= 4316  zb S0 pc= 4396  daivas5-save.dsk
-[ 55/143] BOTH-RUN    5270  ref S1 pc= 3458  zb S0 pc= 4396  daivas5.dsk
-[ 56/143] BOTH-RUN    5189  ref S1 pc= 3429  zb S0 pc= 4396  dos2.dsk
-[ 57/143] BOTH-RUN     303  ref S2 pc=49249  zb S2 pc=19401  dr.dsk
-[ 58/143] BOTH-RUN    5277  ref S1 pc= 2980  zb S0 pc= 4396  drkvoyag.di2
-[ 59/143] FILES-SAME (41, 41)  ref S1 pc= 3449  zb S0 pc= 4359  ducktales.dsk
-[ 60/143] BOTH-RUN    3099  ref S2 pc=18427  zb S2 pc=18660  elite.dsk
-[ 61/143] BOTH-RUN    5189  ref S1 pc= 4316  zb S0 pc= 4396  empty.dsk
-[ 62/143] BOTH-RUN    5189  ref S1 pc= 3458  zb S0 pc= 4396  exordemo.dsk
-[ 63/143] BOTH-RUN    4643  ref S3 pc=33197  zb S3 pc=33207  f1sp3d-1.dsk
-[ 64/143] UNSETTLED     zb  ref S1 pc=49232  zb S0 pc=62348  f1sp3d-2.dsk
-[ 65/143] FILES-DIFF (3, 2)  ref S1 pc= 3426  zb S0 pc=  478  facdemo1.di1
-[ 66/143] FILES-EMPTY   None  ref S0 pc= 3434  zb S0 pc= 5364  facdemo2.di2
-[ 67/143] FILES-SAME (41, 41)  ref S1 pc= 3461  zb S0 pc=  483  facdemo3.di2
-[ 68/143] BOTH-RUN   16344  ref S3 pc=64922  zb S3 pc=51448  facdemo4.di2
-[ 69/143] BOTH-RUN    5282  ref S1 pc= 3432  zb S0 pc= 4396  facdemo5.di2
-[ 70/143] BOTH-RUN    5189  ref S1 pc= 3438  zb S0 pc= 4396  feud.dsk
-[ 71/143] BOTH-RUN    5183  ref S1 pc=59274  zb S0 pc=15932  frayd0.dsk
-[ 72/143] BOTH-RUN    5183  ref S1 pc=59274  zb S0 pc=15932  frayd0i.dsk
-[ 73/143] BOTH-RUN    5183  ref S1 pc=59274  zb S0 pc=15932  frayd1.dsk
-[ 74/143] BOTH-RUN    5183  ref S1 pc=59274  zb S0 pc=15932  frayd1i.dsk
-[ 75/143] BOTH-RUN    4899  ref S1 pc=18994  zb S1 pc=57498  frayeng1.xsa
-[ 76/143] BOTH-RUN    6062  ref S1 pc=23995  zb S1 pc=25441  frayeng2.xsa
-[ 77/143] BOTH-RUN    5413  ref S1 pc=37970  zb S1 pc=37970  frayeng3.xsa
-[ 78/143] BOTH-RUN    5413  ref S1 pc=37970  zb S1 pc=37970  frayeng4.xsa
-[ 79/143] BOTH-RUN    5183  ref S1 pc=59274  zb S0 pc=15932  frayg0.dsk
-[ 80/143] BOTH-RUN    5183  ref S1 pc=59274  zb S0 pc=15932  frayg0i.dsk
-[ 81/143] BOTH-RUN    5183  ref S1 pc=59274  zb S0 pc=15932  frayg1.dsk
-[ 82/143] BOTH-RUN    5183  ref S1 pc=59274  zb S0 pc=15932  frayg1i.dsk
-[ 83/143] BOTH-RUN    5171  ref S1 pc=   56  zb S1 pc=   56  ic1.dsk
-[ 84/143] BOTH-RUN    5171  ref S1 pc=   56  zb S1 pc=   56  ic1a.dsk
-[ 85/143] UNSETTLED  refzb  ref S1 pc=30240  zb S0 pc=31236  ic2.dsk
-[ 86/143] UNSETTLED  refzb  ref S1 pc=30235  zb S0 pc=31250  ic3.dsk
-[ 87/143] UNSETTLED  refzb  ref S1 pc=30235  zb S0 pc=31250  ic4.dsk
-[ 88/143] UNSETTLED  refzb  ref S1 pc=30235  zb S0 pc=31250  ic5.dsk
-[ 89/143] UNSETTLED  refzb  ref S1 pc=30235  zb S0 pc=31250  ic6.dsk
-[ 90/143] UNSETTLED  refzb  ref S1 pc=30235  zb S0 pc=31250  ic7.dsk
-[ 91/143] UNSETTLED  refzb  ref S1 pc=30235  zb S0 pc=31250  ic8.dsk
-[ 92/143] FILES-DIFF (43, 41)  ref S0 pc= 3450  zb S0 pc= 5360  kq.dsk
-[ 93/143] BOTH-RUN    5329  ref S1 pc= 3429  zb S0 pc= 4396  mania003.dsk
-[ 94/143] BOTH-RUN    5329  ref S1 pc= 3463  zb S0 pc= 4396  mania017.dsk
-[ 95/143] BOTH-RUN    5329  ref S1 pc= 3453  zb S0 pc= 4396  mania036.dsk
-[ 96/143] BOTH-RUN    5329  ref S1 pc= 3433  zb S0 pc= 4396  mania036_fixed.dsk
-[ 97/143] BOTH-RUN    5282  ref S1 pc= 3441  zb S0 pc= 4396  mania111_starquake.dsk
-[ 98/143] FILES-DIFF (0, 15)  ref S1 pc= 3137  zb S0 pc=  474  mb.dsk
-[ 99/143] FILES-DIFF (13, 12)  ref S1 pc= 3458  zb S0 pc= 4368  megadoom.dsk
-[100/143] FILES-SAME (42, 42)  ref S1 pc= 3461  zb S0 pc=  491  mlimit_a.dsk
-[101/143] FILES-SAME (42, 42)  ref S1 pc= 3432  zb S0 pc= 5368  mlimit_b.dsk
-[102/143] FILES-SAME (42, 42)  ref S1 pc= 3429  zb S0 pc= 5364  mlimit_c.dsk
-[103/143] BOTH-RUN    3805  ref S0 pc=  490  zb S0 pc=  488  mlimita.dsk
-[104/143] FILES-SAME (42, 42)  ref S1 pc= 3458  zb S0 pc= 4364  mlimitb.dsk
-[105/143] FILES-SAME (42, 42)  ref S1 pc= 3446  zb S0 pc= 4367  mlimitc.dsk
-[106/143] FILES-SAME (41, 41)  ref S1 pc= 3432  zb S0 pc=  471  modedit.dsk
-[107/143] BOTH-RUN    5270  ref S1 pc= 3441  zb S0 pc= 4396  msxdos103-cmd111.dsk
-[108/143] BOTH-RUN    5189  ref S1 pc= 4313  zb S0 pc= 4396  muzax3.dsk
-[109/143] FILES-DIFF (7, 6)  ref S0 pc= 4313  zb S0 pc= 5362  no-waste.dsk
-[110/143] FILES-SAME (27, 27)  ref S0 pc= 4313  zb S0 pc= 5364  nosh.di1
-[111/143] BOTH-RUN   13385  ref S3 pc=30651  zb S1 pc=47604  quasar19.dsk
-[112/143] BOTH-RUN    5189  ref S1 pc= 3453  zb S0 pc= 4396  quinpl-save.dsk
-[113/143] ZB-ONLY     None  ref S1 pc=30700  zb S1 pc=22695  quinpl.dsk
-[114/143] FILES-DIFF (7, 6)  ref S1 pc= 2978  zb S0 pc=  183  raydemo.dsk
-[115/143] FILES-DIFF (10, 9)  ref S1 pc= 3461  zb S0 pc=17763  relax.dsk
-[116/143] BOTH-RUN    5270  ref S1 pc= 3461  zb S0 pc= 4396  roxyplay.dsk
-[117/143] BOTH-RUN    4188  ref S0 pc= 3433  zb S0 pc= 4396  sdjapsc1.dsk
-[118/143] BOTH-RUN    4188  ref S0 pc= 3432  zb S0 pc= 4396  sdsnat1i.dsk
-[119/143] BOTH-RUN    5192  ref S1 pc=49195  zb S0 pc=49195  sdsnat2i.dsk
-[120/143] BOTH-RUN    5192  ref S1 pc=49195  zb S0 pc=49195  sdsnat3i.dsk
-[121/143] UNSETTLED  refzb  ref S1 pc=  513  zb S1 pc=  513  senigma.di2
-[122/143] FILES-EMPTY   None  ref S1 pc= 5142  zb S0 pc= 5134  ss-final.dsk
-[123/143] BOTH-RUN    4352  ref S0 pc= 3463  zb S0 pc=  463  starsh1.dsk
-[124/143] UNSETTLED    ref  ref S1 pc=30237  zb ? pc=17891  starsh2.dsk
-[125/143] FILES-SAME (28, 28)  ref S1 pc= 3432  zb S0 pc= 4359  termin-A.dsk
-[126/143] BOTH-RUN    4371  ref S0 pc=19574  zb S0 pc=11198  termin-B.dsk
-[127/143] BOTH-RUN    5277  ref S1 pc= 3446  zb S0 pc= 4396  test.dsk
-[128/143] BOTH-RUN    5189  ref S1 pc= 3434  zb S0 pc= 4396  total.dsk
-[129/143] BOTH-RUN    5269  ref S1 pc= 3437  zb S0 pc= 4396  tribal.dsk
-[130/143] BOTH-RUN    5171  ref S2 pc=13706  zb S2 pc=13689  xak1demo.dsk
-[131/143] BOTH-RUN    5171  ref S2 pc=38873  zb S2 pc=38857  xak1gam1.dsk
-[132/143] BOTH-RUN    5171  ref S2 pc=38873  zb S2 pc=38857  xak1gam2.dsk
-[133/143] UNSETTLED  refzb  ref S1 pc= 6904  zb S0 pc= 6904  xak2eng1.dsk
-[134/143] BOTH-RUN   14930  ref S1 pc=30690  zb S2 pc=30388  xak2eng2.dsk
-[135/143] BOTH-RUN   15164  ref S1 pc=53337  zb S2 pc=30377  xak2eng3.dsk
-[136/143] BOTH-RUN   14929  ref S1 pc=30690  zb S2 pc=30377  xak2eng4.dsk
-[137/143] BOTH-RUN   15164  ref S1 pc=57041  zb S2 pc=30377  xak2eng5.dsk
-[138/143] BOTH-RUN    5189  ref S1 pc= 4316  zb S0 pc= 4396  xak2eng6.dsk
-[139/143] BOTH-RUN    5183  ref S2 pc= 5458  zb S2 pc= 5465  xaki3-1.dsk
-[140/143] BOTH-RUN    5183  ref S2 pc=46691  zb S2 pc=46691  xaki3-2.dsk
-[141/143] BOTH-RUN    5183  ref S2 pc=30303  zb S2 pc=30338  xaki3-3.dsk
-[142/143] BOTH-RUN    5171  ref S2 pc=30310  zb S2 pc=30331  xaki3-4.dsk
-[143/143] FILES-SAME (5, 5)  ref S0 pc= 4316  zb S0 pc= 4364  zonterra.di2
+[2026-11-27] reference PC values replaced by the classifier's bucket ram/rom (clean room -- Joost, 2026-11-27)
+[  1/143] ZB-ONLY     None  ref S1 pc=  rom  zb S0 pc=35516  BREAKER.DSK
+[  2/143] BOTH-RUN   11464  ref S3 pc=  rom  zb S3 pc=   56  DASS.DSK
+[  3/143] BOTH-RUN    5185  ref S1 pc=  rom  zb S1 pc= 2318  DiscStation32A.dsk
+[  4/143] BOTH-RUN    5185  ref S1 pc=  rom  zb S1 pc= 2343  DiscStation32B.dsk
+[  5/143] BOTH-RUN    5185  ref S1 pc=  rom  zb S1 pc= 2343  DiscStation32C.dsk
+[  6/143] UNSETTLED  refzb  ref S1 pc=  rom  zb S1 pc=17542  DiscStation32D.dsk
+[  7/143] BOTH-RUN    4224  ref S0 pc=  rom  zb S0 pc=  588  FDD1.DSK
+[  8/143] BOTH-RUN    5171  ref S1 pc=  ram  zb S1 pc=53701  FEEDBACK.DSK
+[  9/143] BOTH-RUN    5189  ref S1 pc=  rom  zb S0 pc= 4396  FSA1GT1.DSK
+[ 10/143] BOTH-RUN    5544  ref S1 pc=  rom  zb S2 pc= 4131  FSA1GT2.DSK
+[ 11/143] BOTH-RUN    5189  ref S1 pc=  rom  zb S0 pc= 4396  FSA1GT3.DSK
+[ 12/143] BOTH-RUN    5836  ref S2 pc=  ram  zb S2 pc= 4131  Fdd21.dsk
+[ 13/143] BOTH-RUN    4224  ref S0 pc=  ram  zb S0 pc=33345  Fdd22.dsk
+[ 14/143] UNSETTLED    ref  ref S1 pc=  rom  zb S0 pc= 6085  GAUNT.DSK
+[ 15/143] BOTH-RUN    5255  ref S1 pc=  rom  zb S0 pc= 4396  HALNOTE.DSK
+[ 16/143] BOTH-RUN    5255  ref S1 pc=  rom  zb S0 pc= 4396  HALNOTE1.DSK
+[ 17/143] BOTH-RUN    5255  ref S1 pc=  rom  zb S0 pc= 4396  HALNOTE2.DSK
+[ 18/143] BOTH-RUN    5337  ref S1 pc=  rom  zb S0 pc= 4396  HELLO.DSK
+[ 19/143] BOTH-RUN    5189  ref S1 pc=  rom  zb S0 pc= 4396  MLS.DSK
+[ 20/143] ZB-ONLY     None  ref S1 pc=  rom  zb S0 pc=57005  Multiple.dsk
+[ 21/143] BOTH-RUN    4734  ref S1 pc=  rom  zb S1 pc=30371  PARADREA.DSK
+[ 22/143] BOTH-RUN    5192  ref S1 pc=  rom  zb S1 pc= 6963  PSYCHO.DSK
+[ 23/143] BOTH-RUN    5544  ref S1 pc=  rom  zb S2 pc= 4131  ROBOCOP.DSK
+[ 24/143] BOTH-RUN    5171  ref S2 pc=  rom  zb S2 pc= 1468  SDSNAT1C.DSK
+[ 25/143] BOTH-RUN    5193  ref S1 pc=  ram  zb S0 pc=49680  SDSNAT1O.DSK
+[ 26/143] BOTH-RUN    5192  ref S1 pc=  ram  zb S0 pc=49195  SDSNAT2.DSK
+[ 27/143] BOTH-RUN    5192  ref S1 pc=  ram  zb S0 pc=49195  SDSNAT3.DSK
+[ 28/143] UNSETTLED     zb  ref S1 pc=  rom  zb S0 pc=26872  SNATCHE1.DSK
+[ 29/143] UNSETTLED     zb  ref S1 pc=  rom  zb S0 pc=26872  SNATCHE2.DSK
+[ 30/143] UNSETTLED     zb  ref S1 pc=  rom  zb S0 pc=26872  SNATCHE3.DSK
+[ 31/143] FILES-DIFF (24, 23)  ref S1 pc=  rom  zb S0 pc=  486  STONE.DSK
+[ 32/143] BOTH-RUN    4299  ref S0 pc=  ram  zb S0 pc=49191  SWISS.DSK
+[ 33/143] UNSETTLED     zb  ref S1 pc=  rom  zb S0 pc=  447  Seedofda.dsk
+[ 34/143] BOTH-RUN    5264  ref S1 pc=  ram  zb S0 pc=49182  Seedofdb.dsk
+[ 35/143] BOTH-RUN    5264  ref S1 pc=  ram  zb S0 pc=49182  Seedofdc.dsk
+[ 36/143] BOTH-RUN    5276  ref S3 pc=  ram  zb S3 pc=25832  SirDan.dsk
+[ 37/143] UNSETTLED  refzb  ref S1 pc=  rom  zb S1 pc= 6080  TestameA.dsk
+[ 38/143] ZB-ONLY     None  ref S1 pc=  rom  zb S1 pc= 1723  TestameB.dsk
+[ 39/143] BOTH-RUN    5171  ref S1 pc=  ram  zb S0 pc=47327  UNDEADLN.DSK
+[ 40/143] BOTH-RUN    5171  ref S1 pc=  ram  zb S0 pc=47327  UNDEADLN2.DSK
+[ 41/143] BOTH-RUN   11695  ref S1 pc=  rom  zb S3 pc=   56  UR-1.dsk
+[ 42/143] BOTH-RUN    5189  ref S1 pc=  rom  zb S0 pc= 4396  UR-2.dsk
+[ 43/143] BOTH-RUN    5189  ref S1 pc=  rom  zb S0 pc= 4396  UR-3.dsk
+[ 44/143] ZB-ONLY     None  ref S1 pc=  rom  zb S2 pc= 4131  UZIX.DSK
+[ 45/143] BOTH-RUN    7941  ref S2 pc=  rom  zb S0 pc=17512  YOUMAKOR.DSK
+[ 46/143] BOTH-RUN    5189  ref S1 pc=  rom  zb S0 pc= 4396  almost_real.dsk
+[ 47/143] BOTH-RUN    4621  ref S1 pc=  rom  zb S0 pc=18743  ar4.dsk
+[ 48/143] BOTH-RUN    5268  ref S1 pc=  rom  zb S1 pc=  513  bladelo.dsk
+[ 49/143] BOTH-RUN    5209  ref S1 pc=  rom  zb S0 pc= 4396  bombaman.dsk
+[ 50/143] BOTH-RUN    5277  ref S1 pc=  rom  zb S0 pc= 4396  calculus.di2
+[ 51/143] ZB-ONLY     None  ref S1 pc=  rom  zb S0 pc=   56  calculus.dsk
+[ 52/143] BOTH-RUN    5277  ref S1 pc=  rom  zb S0 pc= 4396  compass.dsk
+[ 53/143] BOTH-RUN    5189  ref S1 pc=  rom  zb S0 pc= 4396  crossbla.dsk
+[ 54/143] BOTH-RUN    5189  ref S1 pc=  rom  zb S0 pc= 4396  daivas5-save.dsk
+[ 55/143] BOTH-RUN    5270  ref S1 pc=  rom  zb S0 pc= 4396  daivas5.dsk
+[ 56/143] BOTH-RUN    5189  ref S1 pc=  rom  zb S0 pc= 4396  dos2.dsk
+[ 57/143] BOTH-RUN     303  ref S2 pc=  ram  zb S2 pc=19401  dr.dsk
+[ 58/143] BOTH-RUN    5277  ref S1 pc=  rom  zb S0 pc= 4396  drkvoyag.di2
+[ 59/143] FILES-SAME (41, 41)  ref S1 pc=  rom  zb S0 pc= 4359  ducktales.dsk
+[ 60/143] BOTH-RUN    3099  ref S2 pc=  rom  zb S2 pc=18660  elite.dsk
+[ 61/143] BOTH-RUN    5189  ref S1 pc=  rom  zb S0 pc= 4396  empty.dsk
+[ 62/143] BOTH-RUN    5189  ref S1 pc=  rom  zb S0 pc= 4396  exordemo.dsk
+[ 63/143] BOTH-RUN    4643  ref S3 pc=  ram  zb S3 pc=33207  f1sp3d-1.dsk
+[ 64/143] UNSETTLED     zb  ref S1 pc=  ram  zb S0 pc=62348  f1sp3d-2.dsk
+[ 65/143] FILES-DIFF (3, 2)  ref S1 pc=  rom  zb S0 pc=  478  facdemo1.di1
+[ 66/143] FILES-EMPTY   None  ref S0 pc=  rom  zb S0 pc= 5364  facdemo2.di2
+[ 67/143] FILES-SAME (41, 41)  ref S1 pc=  rom  zb S0 pc=  483  facdemo3.di2
+[ 68/143] BOTH-RUN   16344  ref S3 pc=  rom  zb S3 pc=51448  facdemo4.di2
+[ 69/143] BOTH-RUN    5282  ref S1 pc=  rom  zb S0 pc= 4396  facdemo5.di2
+[ 70/143] BOTH-RUN    5189  ref S1 pc=  rom  zb S0 pc= 4396  feud.dsk
+[ 71/143] BOTH-RUN    5183  ref S1 pc=  ram  zb S0 pc=15932  frayd0.dsk
+[ 72/143] BOTH-RUN    5183  ref S1 pc=  ram  zb S0 pc=15932  frayd0i.dsk
+[ 73/143] BOTH-RUN    5183  ref S1 pc=  ram  zb S0 pc=15932  frayd1.dsk
+[ 74/143] BOTH-RUN    5183  ref S1 pc=  ram  zb S0 pc=15932  frayd1i.dsk
+[ 75/143] BOTH-RUN    4899  ref S1 pc=  rom  zb S1 pc=57498  frayeng1.xsa
+[ 76/143] BOTH-RUN    6062  ref S1 pc=  rom  zb S1 pc=25441  frayeng2.xsa
+[ 77/143] BOTH-RUN    5413  ref S1 pc=  ram  zb S1 pc=37970  frayeng3.xsa
+[ 78/143] BOTH-RUN    5413  ref S1 pc=  ram  zb S1 pc=37970  frayeng4.xsa
+[ 79/143] BOTH-RUN    5183  ref S1 pc=  ram  zb S0 pc=15932  frayg0.dsk
+[ 80/143] BOTH-RUN    5183  ref S1 pc=  ram  zb S0 pc=15932  frayg0i.dsk
+[ 81/143] BOTH-RUN    5183  ref S1 pc=  ram  zb S0 pc=15932  frayg1.dsk
+[ 82/143] BOTH-RUN    5183  ref S1 pc=  ram  zb S0 pc=15932  frayg1i.dsk
+[ 83/143] BOTH-RUN    5171  ref S1 pc=  rom  zb S1 pc=   56  ic1.dsk
+[ 84/143] BOTH-RUN    5171  ref S1 pc=  rom  zb S1 pc=   56  ic1a.dsk
+[ 85/143] UNSETTLED  refzb  ref S1 pc=  rom  zb S0 pc=31236  ic2.dsk
+[ 86/143] UNSETTLED  refzb  ref S1 pc=  rom  zb S0 pc=31250  ic3.dsk
+[ 87/143] UNSETTLED  refzb  ref S1 pc=  rom  zb S0 pc=31250  ic4.dsk
+[ 88/143] UNSETTLED  refzb  ref S1 pc=  rom  zb S0 pc=31250  ic5.dsk
+[ 89/143] UNSETTLED  refzb  ref S1 pc=  rom  zb S0 pc=31250  ic6.dsk
+[ 90/143] UNSETTLED  refzb  ref S1 pc=  rom  zb S0 pc=31250  ic7.dsk
+[ 91/143] UNSETTLED  refzb  ref S1 pc=  rom  zb S0 pc=31250  ic8.dsk
+[ 92/143] FILES-DIFF (43, 41)  ref S0 pc=  rom  zb S0 pc= 5360  kq.dsk
+[ 93/143] BOTH-RUN    5329  ref S1 pc=  rom  zb S0 pc= 4396  mania003.dsk
+[ 94/143] BOTH-RUN    5329  ref S1 pc=  rom  zb S0 pc= 4396  mania017.dsk
+[ 95/143] BOTH-RUN    5329  ref S1 pc=  rom  zb S0 pc= 4396  mania036.dsk
+[ 96/143] BOTH-RUN    5329  ref S1 pc=  rom  zb S0 pc= 4396  mania036_fixed.dsk
+[ 97/143] BOTH-RUN    5282  ref S1 pc=  rom  zb S0 pc= 4396  mania111_starquake.dsk
+[ 98/143] FILES-DIFF (0, 15)  ref S1 pc=  rom  zb S0 pc=  474  mb.dsk
+[ 99/143] FILES-DIFF (13, 12)  ref S1 pc=  rom  zb S0 pc= 4368  megadoom.dsk
+[100/143] FILES-SAME (42, 42)  ref S1 pc=  rom  zb S0 pc=  491  mlimit_a.dsk
+[101/143] FILES-SAME (42, 42)  ref S1 pc=  rom  zb S0 pc= 5368  mlimit_b.dsk
+[102/143] FILES-SAME (42, 42)  ref S1 pc=  rom  zb S0 pc= 5364  mlimit_c.dsk
+[103/143] BOTH-RUN    3805  ref S0 pc=  rom  zb S0 pc=  488  mlimita.dsk
+[104/143] FILES-SAME (42, 42)  ref S1 pc=  rom  zb S0 pc= 4364  mlimitb.dsk
+[105/143] FILES-SAME (42, 42)  ref S1 pc=  rom  zb S0 pc= 4367  mlimitc.dsk
+[106/143] FILES-SAME (41, 41)  ref S1 pc=  rom  zb S0 pc=  471  modedit.dsk
+[107/143] BOTH-RUN    5270  ref S1 pc=  rom  zb S0 pc= 4396  msxdos103-cmd111.dsk
+[108/143] BOTH-RUN    5189  ref S1 pc=  rom  zb S0 pc= 4396  muzax3.dsk
+[109/143] FILES-DIFF (7, 6)  ref S0 pc=  rom  zb S0 pc= 5362  no-waste.dsk
+[110/143] FILES-SAME (27, 27)  ref S0 pc=  rom  zb S0 pc= 5364  nosh.di1
+[111/143] BOTH-RUN   13385  ref S3 pc=  rom  zb S1 pc=47604  quasar19.dsk
+[112/143] BOTH-RUN    5189  ref S1 pc=  rom  zb S0 pc= 4396  quinpl-save.dsk
+[113/143] ZB-ONLY     None  ref S1 pc=  rom  zb S1 pc=22695  quinpl.dsk
+[114/143] FILES-DIFF (7, 6)  ref S1 pc=  rom  zb S0 pc=  183  raydemo.dsk
+[115/143] FILES-DIFF (10, 9)  ref S1 pc=  rom  zb S0 pc=17763  relax.dsk
+[116/143] BOTH-RUN    5270  ref S1 pc=  rom  zb S0 pc= 4396  roxyplay.dsk
+[117/143] BOTH-RUN    4188  ref S0 pc=  rom  zb S0 pc= 4396  sdjapsc1.dsk
+[118/143] BOTH-RUN    4188  ref S0 pc=  rom  zb S0 pc= 4396  sdsnat1i.dsk
+[119/143] BOTH-RUN    5192  ref S1 pc=  ram  zb S0 pc=49195  sdsnat2i.dsk
+[120/143] BOTH-RUN    5192  ref S1 pc=  ram  zb S0 pc=49195  sdsnat3i.dsk
+[121/143] UNSETTLED  refzb  ref S1 pc=  rom  zb S1 pc=  513  senigma.di2
+[122/143] FILES-EMPTY   None  ref S1 pc=  rom  zb S0 pc= 5134  ss-final.dsk
+[123/143] BOTH-RUN    4352  ref S0 pc=  rom  zb S0 pc=  463  starsh1.dsk
+[124/143] UNSETTLED    ref  ref S1 pc=  rom  zb ? pc=17891  starsh2.dsk
+[125/143] FILES-SAME (28, 28)  ref S1 pc=  rom  zb S0 pc= 4359  termin-A.dsk
+[126/143] BOTH-RUN    4371  ref S0 pc=  rom  zb S0 pc=11198  termin-B.dsk
+[127/143] BOTH-RUN    5277  ref S1 pc=  rom  zb S0 pc= 4396  test.dsk
+[128/143] BOTH-RUN    5189  ref S1 pc=  rom  zb S0 pc= 4396  total.dsk
+[129/143] BOTH-RUN    5269  ref S1 pc=  rom  zb S0 pc= 4396  tribal.dsk
+[130/143] BOTH-RUN    5171  ref S2 pc=  rom  zb S2 pc=13689  xak1demo.dsk
+[131/143] BOTH-RUN    5171  ref S2 pc=  ram  zb S2 pc=38857  xak1gam1.dsk
+[132/143] BOTH-RUN    5171  ref S2 pc=  ram  zb S2 pc=38857  xak1gam2.dsk
+[133/143] UNSETTLED  refzb  ref S1 pc=  rom  zb S0 pc= 6904  xak2eng1.dsk
+[134/143] BOTH-RUN   14930  ref S1 pc=  rom  zb S2 pc=30388  xak2eng2.dsk
+[135/143] BOTH-RUN   15164  ref S1 pc=  ram  zb S2 pc=30377  xak2eng3.dsk
+[136/143] BOTH-RUN   14929  ref S1 pc=  rom  zb S2 pc=30377  xak2eng4.dsk
+[137/143] BOTH-RUN   15164  ref S1 pc=  ram  zb S2 pc=30377  xak2eng5.dsk
+[138/143] BOTH-RUN    5189  ref S1 pc=  rom  zb S0 pc= 4396  xak2eng6.dsk
+[139/143] BOTH-RUN    5183  ref S2 pc=  rom  zb S2 pc= 5465  xaki3-1.dsk
+[140/143] BOTH-RUN    5183  ref S2 pc=  ram  zb S2 pc=46691  xaki3-2.dsk
+[141/143] BOTH-RUN    5183  ref S2 pc=  rom  zb S2 pc=30338  xaki3-3.dsk
+[142/143] BOTH-RUN    5171  ref S2 pc=  rom  zb S2 pc=30331  xaki3-4.dsk
+[143/143] FILES-SAME (5, 5)  ref S0 pc=  rom  zb S0 pc= 4364  zonterra.di2
 TALLY {"BOTH-RUN": 98, "FILES-DIFF": 8, "FILES-EMPTY": 2, "FILES-SAME": 11, "UNSETTLED": 18, "ZB-ONLY": 6}
 refcache: 0 hit, 286 miss, 286 stored
 refcache: 0 hit, 286 miss, 286 stored

@@ -1,4 +1,5 @@
-[  1/1] ZB-NOBOOT   None  ref S2 pc= 1460  zb S1 pc=   56  SDSNAT1C.DSK
+[2026-11-27] reference PC values replaced by the classifier's bucket ram/rom (clean room -- Joost, 2026-11-27)
+[  1/1] ZB-NOBOOT   None  ref S2 pc=  rom  zb S1 pc=   56  SDSNAT1C.DSK
 TALLY {"ZB-NOBOOT": 1}
 refcache: 1 hit, 1 miss, 1 stored
 refcache: 1 hit, 1 miss, 1 stored

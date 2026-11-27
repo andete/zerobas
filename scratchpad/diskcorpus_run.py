@@ -51,7 +51,11 @@ def run_one(machine: str, image: str, times: list[float], typed: str | None = No
              "  set r {}",
              "  for {set i 0} {$i < 8} {incr i} { lappend r [vdpreg $i] }",
              "  binary scan [debug read_block memory 0xF41C 2] H* cl",
-             "  puts $f \"$tag [reg pc] $r $cl $v\"",
+             # 🔴 CLEAN ROOM (Joost 2026-11-27, "keep the rule"): never record a REFERENCE PC. On the reference the
+             # capture writes only the classifier's bucket -- 32768 when the PC is in $8000-$F37F (a program in RAM),
+             # else 0 -- so no reference address is written, cached (probe_refcache) or printed. zerobas's own PC stays.
+             ("  puts $f \"$tag [expr {([reg pc] >= 0x8000 && [reg pc] < 0xF380) ? 32768 : 0}] $r $cl $v\""
+              if machine != ZB else "  puts $f \"$tag [reg pc] $r $cl $v\""),
              "  close $f",
              "}"]
     for k, t in enumerate(times):
@@ -301,7 +305,7 @@ def rescore(path, ref_path=None) -> int:
                        else "FILES-SAME" if fr == fz else "FILES-DIFF")
             if cls != r["class"]:
                 moved.append(f"{r['image']}: {r['class']} -> {cls}  (ref {sr} {r['ref_mode']} "
-                             f"CURLIN {r['ref_curlin']} PC ${r['ref_pc']:04X}; zb {sz} "
+                             f"CURLIN {r['ref_curlin']} PC {'ram' if r['ref_pc'] and 0x8000 <= r['ref_pc'] < 0xF380 else 'rom'}; zb {sz} "
                              f"{r['zb_mode']} CURLIN {r['zb_curlin']} PC ${r['zb_pc']:04X})")
         tally[cls] = tally.get(cls, 0) + 1
     for m in moved:
@@ -379,7 +383,7 @@ def main() -> int:
                "zb_text": screen_text(zb[last]) if zb and last in zb else None}
         results.append(row)
         print(f"[{i:3d}/{len(names)}] {cls:9s} {str(apart):>6s}  ref {row['ref_mode']} "
-              f"pc={row['ref_pc']!s:>5s}  zb {row['zb_mode']} pc={row['zb_pc']!s:>5s}  {n}",
+              f"pc={('ram' if row['ref_pc'] else 'rom') if row['ref_pc'] is not None else '-':>5s}  zb {row['zb_mode']} pc={row['zb_pc']!s:>5s}  {n}",
               flush=True)
         json.dump({"times": times, "results": results, "tally": tally}, open(a.out, "w"), indent=1)
     print("TALLY", json.dumps(tally, sort_keys=True))
