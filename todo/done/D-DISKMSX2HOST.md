@@ -1,4 +1,4 @@
-- [ ] **THE DISK ROM ON C-BIOS'S OTHER HOSTS: MSX1 JP / BR / INTERNATIONAL, MSX2 AND MSX2+ -- UNMEASURED (D-DISKMSX2HOST,
+- [x] **THE DISK ROM ON C-BIOS'S OTHER HOSTS: MSX1 JP / BR / INTERNATIONAL, MSX2 AND MSX2+ -- UNMEASURED (D-DISKMSX2HOST,
       queued 2026-11-27).**
       🎚️ TIER 1 — the disk ROM for C-BIOS: Joost (2026-11-27) wants "a with and without variant of each existing
       cbios"; only C-BIOS MSX1 EU is gated (`make nobasic-acceptance`). Asked whether to measure the rest: "yes".
@@ -51,3 +51,6 @@
       fixed one and the CF-3300 "P1 RAM KEPT" ([AE_p1ram37d_knife_msx2.out](../../scratchpad/AE_p1ram37d_knife_msx2.out), [AE_p1ram37d_fix_msx2.out](../../scratchpad/AE_p1ram37d_fix_msx2.out)). The session row
       `p1ram` (P1TEST.COM, our own 53 bytes, through $F37D) holds it; the large COPY row is blind to it (its data
       crosses page 1 only through the ROM's own bounce: knifed ROM 24/24, [AE_p1w_knife_msx2.out](../../scratchpad/AE_p1w_knife_msx2.out)) but found D-P1WRITE.
+      ✅ CLOSED 2026-11-27: all 12 C-BIOS configs measured and gated (nobasic-acceptance: one per family in the battery;
+      nobasic-all-acceptance: all 12 daily); the ROM fixes are 742324436 (subslots) and bf18cc51f (D-P1WRITE, found on
+      the way); C-BIOS carries them (a1be29b, and its 12 _DISK configs in 7f55f04).
