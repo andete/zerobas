@@ -279,6 +279,13 @@ $(DISK_ROM): $(DISK_SRC) $(DISK_PARTS) disk/basic-resident-abi.inc | $(BUILD)
 
 disk: $(DISK_ROM)
 
+# --- disk-standalone-check: disk.rom builds from disk/ + the COMMITTED ABI include alone (C-BIOS step 2) ---
+# tools/disk_standalone_check.py copies only these sources into an empty directory, assembles with pasmo (no make,
+# no build/, no main-ROM symbols) and requires the image byte-identical to $(DISK_ROM). A port (C-BIOS) builds it
+# the same way: `pasmo -I disk --bin disk/disk.asm disk.rom` from a tree holding these files.
+disk-standalone-check: $(DISK_ROM)
+	PASMO=$(PASMO) python3 tools/disk_standalone_check.py $(DISK_ROM) $(DISK_SRC) $(DISK_PARTS) disk/basic-resident-abi.inc
+
 # zerobas-sub: assembled with `pasmo -I sub` (its includes resolve under sub/);
 # the source spans $0000-$7FFF so pad_rom just asserts the 32 KB size.
 SUB_SYM   := $(BUILD)/sub.sym

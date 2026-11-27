@@ -71,7 +71,7 @@ WARM = ["repack-machine", "basic-reloc", "subrom-abi-check", "disk/test720.dsk"]
 # both of that day's real reds came out of the static one.
 # ⏱ W2 (2026-11-25): THOSE FIGURES ARE HISTORY. On 2026-11-25 the STATIC tier was 882 unit-seconds (spec-live and
 # unit-test boot or fork heavily) -- docs/gate-time-review-2026-11-25.md. Read today's from a battery log.
-STATIC = """basic-reloc kwidx-check deps-check subrom-abi-check diskrom-abi-check cbios-abi-check rom-parts-check subrom-closure-check unit-test deadcode
+STATIC = """basic-reloc kwidx-check deps-check subrom-abi-check diskrom-abi-check disk-standalone-check cbios-abi-check rom-parts-check subrom-closure-check unit-test deadcode
 wall-assertion-check ram-claim-check ram-map-check pin-check build-assert-check needle-case-check redundant-load-check stubinl-check rowshape-check injector-check
 dead-alias-check alias-order-check size-check hostkill-check session-path-check
 temp-root-check tracked-inputs-check todo-citation-check todo-marker-check todo-items-check deferral-pin-check error-alphabet-check chokepoint-check wall-literal-check

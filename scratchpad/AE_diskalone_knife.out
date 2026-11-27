@@ -1,0 +1,10 @@
+== knife 1: basic/fat-delete-body.inc dropped from the list
+diskstandalone: RED -- pasmo failed in an empty directory holding only 18 sources (a dependency is missing from the list):
+ERROR: File 'basic/fat-delete-body.inc' not found  on line 6038 of file kernel.asm
+rc=1
+== knife 2: the reference image with one byte changed (offset 100)
+diskstandalone: RED -- standalone sha1 de1a911e0db7192b81c333fe1775b354b4370b39 != scratchpad/zb_knife.rom sha1 2a538b884b0304d3d458b77560ab9c2d18539684
+rc=1
+== unplanted
+diskstandalone: GREEN -- 19 sources in an empty directory, no main-ROM build -> 16384 B, sha1 de1a911e0db7192b81c333fe1775b354b4370b39 == build/disk.rom
+rc=0
