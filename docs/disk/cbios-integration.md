@@ -132,7 +132,7 @@ update the pin's revision and hashes in the same commit.
 
 | what | on the CF-3300 | here | item |
 |---|---|---|---|
-| the drive-A DPB with a foreign claim N > 0 | at $F195 − N | at $F195 ($F355 says so) | [D-CLAIM473](../../todo/open/D-CLAIM473.md), option 2 later; not gated (diskguard reads no DPB address) |
+| the drive-A DPB with a foreign claim N > 0 | at $F195 − N | at $F195 ($F355 says so) | [D-CLAIM473](../../todo/done/D-CLAIM473.md), option 2 later; not gated (diskguard reads no DPB address) |
 | BIOS FORMAT ($0147) on a host that is not zerobas BASIC | formats | returns Cy = 1 | [D-BIOSFORMAT](../../todo/open/D-BIOSFORMAT.md) |
 | a second disk interface | supported | not handled | deferred |
 | Ctrl-C during console OUTPUT (CONST) | -- | not measured | -- |

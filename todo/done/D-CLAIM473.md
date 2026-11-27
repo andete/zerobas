@@ -1,4 +1,4 @@
-- [ ] **A FOREIGN TOP CLAIM OF 440-473 B: THE CF-3300 INSTALLS, ZEROBAS DECLINES -- BRING THE LIMIT AND THE BEHAVIOUR AT IT IN
+- [x] **A FOREIGN TOP CLAIM OF 440-473 B: THE CF-3300 INSTALLS, ZEROBAS DECLINES -- BRING THE LIMIT AND THE BEHAVIOUR AT IT IN
       LINE WITH THE REFERENCE (D-CLAIM473, Joost 2026-11-27).**
       🎚️ TIER 4 — RAM usage: what a disk machine does with RAM a cartridge took before the disk ROM (a convention-breaking
       cartridge -- MSX2 TH ch.5 sec.7 says BOTTOM -- but one the CF-3300 tolerates).
@@ -41,3 +41,5 @@
       where $F1A7 is the claim's), IX and GETDPB's base read from it. diskguard rows 0 16 300 439 456 473 474, the 474
       rows compare the end state (the CF-3300's 20 s readings are its mid-decline transient).
       LEFT for option 2 (filed later): the DPB and the $50A9 pointers moving with N as on the CF-3300.
+      ✅ CLOSED 2026-11-27 (1847a8949, FULL GREEN after the DRVTBL+13 fix; C-BIOS re-pin note diskport-09). Option 2 is
+      its own item: D-DPBMOVE.
