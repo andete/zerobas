@@ -2785,6 +2785,7 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
 - [ ] **THE DISK ROM PAIRED WITH A FOREIGN BASIC -- a goal, at LOWER priority (Joost 2026-11-26: "this is a goal, b...** -> [D-FOREIGNBASIC](todo/open/D-FOREIGNBASIC.md) <!-- item:open/D-FOREIGNBASIC -->
 - [ ] **DISK-ROM ROOM BY RE-READING THE CODE, NEVER BY ADDING ROM SPACE (D-DISKREREAD, Joost 2026-11-26).** -> [D-DISKREREAD](todo/open/D-DISKREREAD.md) <!-- item:open/D-DISKREREAD -->
 - [x] **FAT_MOUNT HUNG ON A DISK WHOSE DATA SECTORS ARE NOT A MULTIPLE OF ITS SECTORS PER CLUSTER (D-FATODDGEO, fou...** -> [D-FATODDGEO](todo/done/D-FATODDGEO.md) <!-- item:done/D-FATODDGEO -->
+- [ ] **BIOS FORMAT ($0147) ON A BASIC-LESS HOST IS REFUSED, NOT PERFORMED (D-BIOSFORMAT, filed 2026-11-27 by C-BIO...** -> [D-BIOSFORMAT](todo/open/D-BIOSFORMAT.md) <!-- item:open/D-BIOSFORMAT -->
 - [x] **D-NMSHOST — ZEROBAS WITHOUT ITS DISK ROM HOSTS A DISK INTERFACE CARTRIDGE AND RUNS MSX-DOS (the host half o...** -> [D-NMSHOST](todo/done/D-NMSHOST.md) <!-- item:done/D-NMSHOST -->
 
 - [ ] **D-INITEDGES — INITXT / INIT32 / DSPFNK / ERAFNK / FNKSB: THE KEY LINE'S ROW AND MARGINS, R0'S KEPT BITS, TH...** -> [D-INITEDGES](todo/open/D-INITEDGES.md) <!-- item:open/D-INITEDGES -->

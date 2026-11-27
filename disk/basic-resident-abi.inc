@@ -17,6 +17,8 @@ round_and_finalize equ 03526H
 pu_deref_body equ 02C7EH
 subrom_call equ 03C24H
 ARGA equ 0F806H   ; operand A / working result, FPNUM record (18)
+ZB_HOST equ 0FD09H   ; (2 B) ZB_HOST_SIG while zerobas BASIC hosts the disk ROM: slot 0's own SLTWRK
+ZB_HOST_SIG equ 0425AH   ; NOT-A-CELL: "ZB", little-endian
 ENDFLAG equ 0F6FFH   ; 1 = END/STOP reached, stop the run (1 B)
 ONEFLG equ 0F6BBH   ; 1 B: $FF = currently inside a handler (no RESUME
 STRSCR equ 0F55EH   ; = BUF ($F55E): [len][bytes:STRMAX] staging (256 B)
@@ -92,7 +94,7 @@ SUBROM_IDX_FORMAT equ 0000AH   ; format_tenant (CALL FORMAT eviction, sub/
 ; --- page-1 call-back targets: reached by an INTER-SLOT call (MSX2 TH), not an absolute one ---
 fname_expr equ 06D25H
 pdfcb_resume equ 06D1EH
-parse_disk_fcb equ 066B0H
+parse_disk_fcb equ 066B6H
 eval equ 04A94H
 fch_check equ 06F23H
 fch_mode_class equ 04F7CH
@@ -109,7 +111,7 @@ type_mismatch_error equ 04271H
 stmt_error equ 04263H
 lrset_finish equ 0718FH
 fch_ctx_addr equ 06EA7H
-disk_error equ 0698AH
+disk_error equ 06990H
 read_line equ 0452FH
 chget_getbyte equ 0700AH
 fch_close_all equ 06F67H

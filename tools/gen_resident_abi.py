@@ -126,6 +126,8 @@ REQUIRED_DISK_CODE = [
 # argument the code half rests on.
 REQUIRED_DISK_RAM = [
     "ARGA",                     # the 15-digit working record
+    "ZB_HOST",                  # C-BIOS integration (2026-11-27): zerobas BASIC's host marker
+    "ZB_HOST_SIG",              # ⚠️ a CONSTANT: its value
     "ENDFLAG",                  # D-F37DTERM: BDOS $00 through $F37D ends the BASIC
     "ONEFLG",                   # program as END does (ENDFLAG 1, ONEFLG 0)
     "STRSCR",                   # [len][bytes] staging buffer

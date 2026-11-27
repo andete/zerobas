@@ -99,6 +99,8 @@ boot_wa:
                 ld      de,$F3FC
                 ld      bc,15
                 ldir
+                ld      hl,ZB_HOST_SIG      ; C-BIOS integration (2026-11-27): the disk ROM's "zerobas BASIC is the
+                ld      (ZB_HOST),hl        ; host" marker, before the scan runs its INIT (disk/kernel.asm hk_format)
                 ld      a,37
                 ld      (LINL40),a
                 ld      a,1

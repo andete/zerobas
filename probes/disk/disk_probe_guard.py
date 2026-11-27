@@ -14,6 +14,8 @@ machine, two boots:
           DSKF(0), MEMSIZ, STKTOP
 plus, in both, DRVTBL ($FB21-$FB22: drives, slot -- installed or not) and every non-zero SLTWRK entry ($FD09-$FD88;
 the disk ROM publishes its work-area base in its page-1 entry -- the CF-3300 $F1BF - N).
+Slot 0-0's page-0 entry ($FD09) is ZB_HOST, zerobas BASIC's host marker "ZB": checked on its own (zerobas has it,
+the CF-3300 does not) and left out of the SLTWRK comparison.
 FRE and DSKF are POKEd to $A000 / $A002 by typed lines and read back from RAM ($FFFF: the statement failed -- no
 Disk BASIC); openMSX's get_screen reads nothing on zerobas after BASIC at A> (a probe artefact, D-DISKROMHOST).
 
@@ -177,6 +179,22 @@ def parse(text, scen):
     return r
 
 
+MARKER = "0-0p0:425A"
+
+
+def strip_marker(r):
+    """drop the ZB_HOST entry from r's SLTWRK lists; True if it was there (in every list that has entries)"""
+    seen = []
+    for k in ("HIMEM@INIT/SLTWRK", "SLTWRK"):
+        v = r[k]
+        head, sep, lst = v.rpartition("/") if "/" in v else ("", "", v)
+        items = [x for x in lst.split(",") if x and x != "-"]
+        seen.append(MARKER in items)
+        rest = ",".join(x for x in items if x != MARKER) or ("" if sep else "-")
+        r[k] = head + sep + rest
+    return all(seen)
+
+
 def show(r):
     return " ".join(f"{k}={v}" for k, v in r.items())
 
@@ -197,6 +215,13 @@ def main():
                     print(f"ROW {tag} NO-READING {[s for s, v in got.items() if v is None]}", flush=True)
                     continue
                 cf, zb = got["CF"], got["ZB"]
+                # ZB_HOST ($FD09 = slot 0-0's own page-0 SLTWRK entry, "ZB"): zerobas BASIC's host marker, written
+                # by boot_wa (C-BIOS integration step 1, Joost 2026-11-27). Pinned, not compared: zerobas MUST carry
+                # it, the CF-3300 must NOT; the rest of SLTWRK is compared as before.
+                mk = {s: strip_marker(r) for s, r in (("CF", cf), ("ZB", zb))}
+                if mk != {"CF": False, "ZB": True}:
+                    bad.append(tag)
+                    print(f"ROW {tag} MARKER    ZB_HOST {MARKER} on CF={mk['CF']} ZB={mk['ZB']} (want CF=False ZB=True)")
                 # instrument: the reference installed and the claimer claimed exactly N
                 want_init = f"{0xF195 - n:04X}"
                 if cf["installed(FB21)"][:2] == "00" or cf["DSKF"] == 0xFFFF \

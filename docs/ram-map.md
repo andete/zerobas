@@ -33,7 +33,7 @@ other component's cell at the same address; the `inside` column
 names the other component's BUFFER this address falls within. That
 second one is the question a per-component map cannot answer.
 
-* **basic** — 70 declared addresses in this project's own workspace `$E000..$F37F` (69 with a machine-readable width), plus **459** in the MSX standard work area at or above `$F380`.
+* **basic** — 70 declared addresses in this project's own workspace `$E000..$F37F` (69 with a machine-readable width), plus **460** in the MSX standard work area at or above `$F380`.
 * **disk** — 129 declared addresses in this project's own workspace `$E000..$F37F` (120 with a machine-readable width), plus **80** in the MSX standard work area at or above `$F380`.
 
 ## This project's own workspace (`$E000..$F37F`)
@@ -730,7 +730,8 @@ extents the standard already fixes would be noise, not rigour.
 | `$FCC1` | 1 B | `disk` | `EXPTBL` | expanded-slot flags, 1 byte/primary, bit 7 = expanded |  |
 | `$FCC5` |  | `disk` | `SLTTBL` | SLTTBL base: per-primary mirror of the secondary-slot regs |  |
 | `$FCC8` |  | `disk` | `SLTTBL3` | SLTTBL[3]: RAM mirror of slot-3 secondary-slot register (=SLTTBL+3) |  |
-| `$FD09` | 2 B | `disk` | `SLTWRK` | PUBLISHED: 2 B per slot x page, a ROM's work-area pointer (MSX2 TH work area) |  |
+| `$FD09` | 2 B | `basic` | `ZB_HOST` | (2 B) ZB_HOST_SIG while zerobas BASIC hosts the disk ROM: slot 0's own SLTWRK |  |
+| `$FD09` | 2 B | `disk` | `SLTWRK/ZB_HOST` | PUBLISHED: 2 B per slot x page, a ROM's work-area pointer (MSX2 TH work area) |  |
 | `$FD0B` | 1 B | `basic` | `SUBSLOT2` | UNUSED: zerobas-sub2's slot id until it was retired (2f) |  |
 | `$FD0C` | 1 B | `basic` | `SUB_PING` | (SLTWRK, D-WSZERO) PING page tag: $C0 (page 0) / $C1 (page 1) (1 B) |  |
 | `$FD0D` | 1 B | `basic` | `SUB_INT_DELTA` | self-test tenant result: JIFFY ticks observed under EI (1) |  |

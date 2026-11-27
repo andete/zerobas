@@ -1,0 +1,35 @@
+111 breakpoint sites (72 transfers into the ABI's routines, 39 hook / install / bb_term entries)
+(a) the no-BASIC MSX-DOS session ...
+    hits: 2
+      HIT 66E0 install_basic_hooks  x2
+(b) every bdos-acceptance exerciser disk, booted for 50 s ...
+    29 exerciser disks run; hits: 29
+      HIT[AUXINX] 66E0 install_basic_hooks  x1
+      HIT[BDOSX0] 66E0 install_basic_hooks  x1
+      HIT[BDOSX2] 66E0 install_basic_hooks  x1
+      HIT[BDOSX3] 66E0 install_basic_hooks  x1
+      HIT[BDOSX4] 66E0 install_basic_hooks  x1
+      HIT[BDOSX5] 66E0 install_basic_hooks  x1
+      HIT[BDOSX6] 66E0 install_basic_hooks  x1
+      HIT[BDOSX7] 66E0 install_basic_hooks  x1
+      HIT[BDOSX8] 66E0 install_basic_hooks  x1
+      HIT[BDOSX9] 66E0 install_basic_hooks  x1
+      HIT[BDOSXB] 66E0 install_basic_hooks  x1
+      HIT[BDOSXC] 66E0 install_basic_hooks  x1
+      HIT[BDOSXE] 66E0 install_basic_hooks  x1
+      HIT[BDOSXK] 66E0 install_basic_hooks  x1
+      HIT[BDOSXL] 66E0 install_basic_hooks  x1
+      HIT[BDOSXS] 66E0 install_basic_hooks  x1
+      HIT[BDOSXT] 66E0 install_basic_hooks  x1
+      HIT[BDOSX] 66E0 install_basic_hooks  x1
+      HIT[BUFINX] 66E0 install_basic_hooks  x1
+      HIT[DOSL-D1] 66E0 install_basic_hooks  x1
+      HIT[DOSL-D2] 66E0 install_basic_hooks  x1
+      HIT[DOSL-D3] 66E0 install_basic_hooks  x1
+      HIT[DOSL-D4] 66E0 install_basic_hooks  x1
+      HIT[DOSL-D5] 66E0 install_basic_hooks  x1
+      HIT[DOSL-D6] 66E0 install_basic_hooks  x1
+      HIT[DOSL-D7] 66E0 install_basic_hooks  x1
+      HIT[DSKCHG] 66E0 install_basic_hooks  x1
+      HIT[DSKENT] 66E0 install_basic_hooks  x1
+      HIT[WRZER] 66E0 install_basic_hooks  x1

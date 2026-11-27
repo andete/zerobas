@@ -31,3 +31,9 @@
       sessions already do). ⚠️ CLEAN ROOM: those addresses are learned only at the boundary (registers, RAM, slot / port
       traffic, which hook fires in what state), never by tracing a reference ROM's code or recording its PC -- the way
       the host contract (D-DISKROMHOST) mapped $7D2F.
+      🧭 JOOST 2026-11-27: "we'll only do disk basic with zerobas for now, which is fine. The more broad compatibility
+      can be a later step." Disk BASIC = a zerobas BASIC host only, for now. The same day C-BIOS integration step 1
+      added zerobas BASIC's host marker (ZB_HOST, $FD09 -- slot 0's own SLTWRK entry -- "ZB", written before the scan;
+      Joost chose the marker cell): H_FORM's handler refuses without it (D-BIOSFORMAT). A first step here, when this
+      item comes up: skip installing the Disk BASIC hooks when the marker is absent, so a foreign BASIC host gets
+      plain MSX-DOS instead of the VG-8020's date-prompt hang.

@@ -5777,7 +5777,7 @@ hook_tab:
                 hookrow H_DSKI, hk_dsk       ; (a sub-ROM tenant behind a presence-only hook before)
                 hookrow H_COPY, hk_copy      ; D-DISKVERB3: body here too
                 hookrow H_ERRP, hk_errp      ; D-DISKERR: the disk codes' messages live HERE
-                hookrow H_FORM, hk_format    ; D-FMTHOOK: CALL FORMAT's menu + tenant
+                hookrow H_FORM, hk_format_gate ; D-FMTHOOK: CALL FORMAT's menu + tenant -- zerobas BASIC's only
                                              ; dispatch live HERE (main keeps the gate)
                 hookrow H_SYST, hk_system    ; D-CALLSYSTEM: CALL SYSTEM, back to MSX-DOS
                 hookrow H_CHOUT, hk_chout_e  ; S10.B: PRINT# to an OUTPUT channel, a byte
@@ -7760,6 +7760,20 @@ dskio_verify:
                 ld      (FDC_DEST), hl
                 pop     hl
                 ret
+hk_format_gate:                             ; H_FORM's row (hook_tab), in front of hk_format
+                ; C-BIOS integration step 1 (2026-11-27, scratchpad/abireach_probe.py): H_FORM is ALSO C-BIOS's BIOS
+                ; FORMAT ($0147: `call H_FORM`), and what follows needs zerobas BASIC -- main's key source through
+                ; calbak, BASIC's STREND. With no zerobas BASIC host (its marker, ZB_HOST) refuse at once, Cy = 1:
+                ; no crash, nothing written. (fmt_dos is no target: its work area is the TPA from $0100 -- the
+                ; CALLER there. A BIOS FORMAT for a BASIC-less host: todo D-BIOSFORMAT.)
+                ; CLEAN-ROOM: our own marker cell (MSX2 TH ch.5 sec.7 SLTWRK) and C-BIOS's published source.
+                ld      hl,(ZB_HOST)
+                ld      de,ZB_HOST_SIG
+                or      a
+                sbc     hl,de
+                scf
+                ret     nz
+                jp      hk_format
 ; bb_term -- BDOS $00 TERMINATE through $F37D (D-F37DTERM, 2026-11-26). From a BASIC program the CF-3300
 ; ends the program SILENTLY -- no further statement, no message, `Ok`, the CLEAR kept (measured by hand, a USR stub
 ; `ld c,0 / call $F37D / ret`; todo/done/D-F37DTERM.md). Here: what END does to the run -- ONEFLG 0, ENDFLAG 1

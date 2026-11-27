@@ -14,7 +14,7 @@ SPDX-License-Identifier: BSD-2-Clause
 
 > **Power-on:** the main ROM's writes before any cartridge's INIT are left out of the rows (they are the RAM test and clear, not a use of the RAM). Addresses of the range the main ROM writes at boot, per run: VG plain 12235, VGHBD dos 12235, VGHBD basic 12235, CF dos 12235, CF basic 12235, ZBND plain 3476, ZBD dos 3437, ZBD basic 3437.
 
-718 rows.
+717 rows.
 
 | range | B | VG plain | VGHBD dos | VGHBD basic | CF dos | CF basic | ZBND plain | ZBD dos | ZBD basic | zerobas |
 |---|---:|---|---|---|---|---|---|---|---|---|
@@ -29,9 +29,9 @@ SPDX-License-Identifier: BSD-2-Clause
 | `$D40F-$D412` | 4 |   | D:DR |   | D:DR |   |   | D:R |   |  |
 | `$D413-$D428` | 22 |   | D:R |   | D:R |   |   | D:R |   |  |
 | `$D429-$D42A` | 2 |   | D:R |   | D:R B:R |   |   | D:R B:R |   |  |
-| `$D42B-$D4F0` | 198 |   | D:R |   | D:R |   |   | D:R |   |  |
-| `$D4F1-$D4FE` | 14 |   | D:R |   | D:R |   |   | D:MR |   |  |
-| `$D4FF-$D518` | 26 |   | D:R |   | D:R |   |   | D:MR B:M |   |  |
+| `$D42B-$D4FE` | 212 |   | D:R |   | D:R |   |   | D:R |   |  |
+| `$D4FF-$D500` | 2 |   | D:R |   | D:R |   |   | D:R B:M |   |  |
+| `$D501-$D518` | 24 |   | D:R |   | D:R |   |   | D:MR B:M |   |  |
 | `$D519-$D51C` | 4 |   | D:R B:R |   | D:R B:R |   |   | D:MR B:MR |   |  |
 | `$D51D-$D51E` | 2 |   | D:R B:R |   | D:R B:R |   |   | D:MR B:R |   |  |
 | `$D51F-$D526` | 8 |   | D:R B:R |   | D:R B:R |   |   | D:R B:R |   |  |
@@ -106,9 +106,8 @@ SPDX-License-Identifier: BSD-2-Clause
 | `$DBD2-$DBD7` | 6 |   | D:MDR B:M |   | D:MDR B:MDR |   |   | D:MR B:MR |   |  |
 | `$DBD8-$DBE7` | 16 |   | D:MDR B:M |   | D:MDR B:MDR |   |   | D:MDR B:MDR |   |  |
 | `$DBE8-$DBEB` | 4 |   | D:MDR B:MR |   | D:MDR B:MDR |   |   | D:MDR B:MDR |   |  |
-| `$DBEC-$DBED` | 2 |   | D:MDR B:MDR |   | D:MDR B:MDR |   |   | D:MDR B:MDR |   |  |
-| `$DBEE-$DBF3` | 6 |   | D:DR B:DR |   | D:DR B:DR |   |   | D:MDR B:MDR |   |  |
-| `$DBF4-$DBF5` | 2 |   | D:DR B:DR |   | D:DR B:DR |   |   | D:MDR B:MD |   |  |
+| `$DBEC-$DBED` | 2 |   | D:MDR B:MDR |   | D:MDR B:MDR |   |   | D:MDR B:MD |   |  |
+| `$DBEE-$DBF5` | 8 |   | D:DR B:DR |   | D:DR B:DR |   |   | D:MDR B:MDR |   |  |
 | `$DBF6-$DBFD` | 8 |   | D:DR B:DR |   | D:DR B:DR |   |   | D:DR B:DR |   |  |
 | `$DBFE-$DBFF` | 2 |   | D:R B:R |   | D:R B:R |   |   | D:R B:R |   |  |
 | `$DC00-$DC60` | 97 |   | D:R |   | D:R |   |   | D:R |   |  |
@@ -695,7 +694,7 @@ SPDX-License-Identifier: BSD-2-Clause
 | `$FD02-$FD03` | 2 |   |   |   | I:M | I:M |   |   |   |  |
 | `$FD04-$FD05` | 2 |   |   |   |   |   |   |   |   |  |
 | `$FD06-$FD07` | 2 |   |   |   | I:M | I:M |   |   |   |  |
-| `$FD08-$FD2A` | 35 |   |   |   |   |   |   |   |   | SUBSLOT2, SUB_PING, SUB_INT_DELTA, STRPTR, SLTWRK |
+| `$FD08-$FD2A` | 35 |   |   |   |   |   |   |   |   | ZB_HOST, SUBSLOT2, SUB_PING, SUB_INT_DELTA, STRPTR, SLTWRK/ZB_HOST |
 | `$FD2B-$FD2C` | 2 |   | I:D | I:D |   |   |   |   |   |  |
 | `$FD2D-$FD72` | 70 |   |   |   |   |   |   |   |   |  |
 | `$FD73-$FD74` | 2 |   |   |   | I:D | I:D |   | b:D | b:D |  |

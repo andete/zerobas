@@ -5223,6 +5223,10 @@ DB_CUR          equ     $F5F4   ; wave-3 detok: the DETOKBUF write cursor, held 
 ; $F14B-$F14C were INT_SUB_PRIM / INT_SUB_SUBSL until D-SUB2 stage 2a
 ; (2026-10-12): the trampoline now restores the live entry state
 ; (basic/subromcall.asm). $F14B is SUBSLOT2 since stage 2c, $F14C GRP_HDR.
+ZB_HOST         equ     $FD09   ; (2 B) ZB_HOST_SIG while zerobas BASIC hosts the disk ROM: slot 0's own SLTWRK
+                                ; page-0 entry (MSX2 TH ch.5 sec.7: a ROM's own work cell), written by boot_wa
+                                ; before the cartridge scan (C-BIOS integration, Joost 2026-11-27: the marker cell)
+ZB_HOST_SIG     equ     $425A   ; NOT-A-CELL: "ZB", little-endian
 SUBSLOT2        equ     $FD0B   ; UNUSED: zerobas-sub2's slot id until it was retired (2f)
                                 ; D-SUB2RETIRE step 2f, 2026-11-04: it held zerobas-sub2's
                                 ; slot ("Z2", 3-3: $8F), cleared by init_ext_roms and set
