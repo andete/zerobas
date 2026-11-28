@@ -215,3 +215,22 @@
         Q8  under BASIC the CF-3300 DOES use $DE77-$DF93 (channel state; untouched in a COPY); drive B's image span
             is untouched but for the 16 B block at $E590, which it writes in every phase (cells just under A's image).
       ➡️ So zerobas BASIC's channel cells have a reference place: $DE77-$DF93. The plan next.
+      📐 **PLAN DRAFT (2026-11-28; for Joost, NOTHING BUILT).** Inventory of zerobas vs the CF-3300's places, by kind:
+          kind                         zerobas today                              CF-3300 place
+          FAT image, drive A           none (one sector, re-read)                 $E595-$EB94  1536 B
+          FAT image, drive B           none                                       $DF94-$E593  1536 B (CTRL boot drops it:
+                                                                                  HIMEM $E48D = $DE77 + 1536 + ~22, D-BOOTKEYS)
+          dir / FAT sector buffer      WBUF / FWBUF $EAAD                         $EB95  512 B
+          file-data buffer             SECTOR_BUF / FSECTOR_BUF $E8AD             $ED95  512 B
+          media-check buffer           none                                       $EF95  512 B
+          disk-ROM state               73 cells ~350 B ($ECAD-$EDBD, $EFDA-$F022)  ~41 B $F1A0-$F1C8 + the fixed area
+                                                                                  (which zerobas already fills)
+          Disk BASIC channel state     DSK_ENGTAB 15 x 50 B ~750 B ($E4BF-$E7AC;  inside the 284 B $DE77-$DF93
+                                       Joost 2026-09-27 "the reference's shape")   (~80 B seen for 2 channels)
+          other Disk BASIC state       66 cells ~700 B ($EDB9-$F09D)              not seen anywhere else
+        zerobas keeps ~1.8 KB of disk state where the CF-3300 keeps ~0.3 KB plus its fixed area. Following its layout is
+        therefore a REDESIGN that shrinks our state by ~1.5 KB, not a relocation: even A's image alone needs DSK_ENGTAB's
+        tail, both sector buffers and BASIC's $E7AD-$E8AC workspace moved out of $E595-$EB94 first.
+        Unknowns that would shape a redesign: the CF's per-channel state size at MAXFILES 15 (284 B / 15 ~ 18 B a
+        channel, against our 50); what the CF keeps in the $E590 block; what zerobas's $E7AD-$E8AC workspace holds.
+        🙋 The shape of the work goes to Joost before anything else.
