@@ -2638,8 +2638,11 @@ hk_chclose_e:
 ; MISSING file is refused, as main's own APPEND open refused it (D-APPMISS). The
 ; FCB resumes at the last WHOLE record: random record = the size rounded down to
 ; 256, and that record's bytes are re-loaded into the block -- a size that is a
-; whole number of records re-loads the last record entire, marked full and
-; unwritten (DOUT_RFULL), its offset one record back. A trailing Ctrl-Z is
+; whole number of records re-loads the last record entire at position 0, its
+; offset one record back, so the next bytes OVERWRITE it from its start: 256 B
+; + APPEND "X" is 256 B, "X" CR LF ^Z over its first four, as on the CF-3300
+; (D-COPYSLOW step 1, scratchpad/AE_bfiles_u2.out; Joost "Copy the CF exactly" --
+; zerobas used to rewrite it and append, DOUT_RFULL). A trailing Ctrl-Z is
 ; stepped back onto, so the next byte overwrites it: "first\r\n\x1a" + APPEND
 ; "second" -> "first\r\nsecond\r\n\x1a" (disk_probe_append.py, the CF-3300).
 ; The size field keeps the file's size (LOF), the random record is LOC: 6 and 0
@@ -2724,12 +2727,8 @@ hfa_src:
                 dec     bc                  ; a Ctrl-Z: the next byte goes ON it
 hfa_pos:
                 call    dout_pos
-                ld      (hl), c             ; the position in the record
-                ld      a, b
-                or      a
-                jr      z, hfa_ok           ; under 256: a partial record
-                set     DOUT_RFULL, (ix+DOUT_FLG)   ; 256: whole, to be rewritten
-hfa_ok:                                     ; D-DISKREREAD (2026-11-26): one jp; 1 B
+                ld      (hl), c             ; the position in the record (0 for a whole one:
+                                            ; the next bytes go OVER it, as the CF-3300's)
                 jp      hfm_ok
 
 ; hk_chout -- PRINT# to an OUTPUT channel (H_CHOUT): A = the byte.
@@ -2743,14 +2742,12 @@ hk_chout:
                 ret
 
 ; dout_put -- store A in the record at the position; write the record when it
-; is full. A full record whose write FAILED is written first, so a full disk
-; fails every later PRINT# the same way (D-DISKFULL) and a CLOSE retries it.
-; IX = the row. Raises on a failed write (never returns then).
+; is full. The position has already wrapped to 0 when that write runs, so a full
+; record whose write FAILS is DROPPED and the next PRINT# starts a fresh one --
+; the CF-3300's face (D-COPYSLOW step 1, Joost "Copy the CF exactly"; it used to
+; be retried, DOUT_RFULL). IX = the row. Raises on a failed write (never returns then).
 dout_put:
                 push    af
-                bit     DOUT_RFULL, (ix+DOUT_FLG)
-                ld      hl, 256
-                call    nz, dout_write      ; the full record, again
                 call    dout_pos
                 ld      e, (hl)             ; E = the position
                 inc     (hl)                ; Z iff the record is now full
@@ -2764,10 +2761,10 @@ dout_put:
                 ld      (hl), b
                 pop     af
                 ret     nz
-                set     DOUT_RFULL, (ix+DOUT_FLG)
                 ld      hl, 256             ; FALLS INTO dout_write
 
-; dout_write -- write the record's first HL bytes (1..256) at the random record
+; dout_write -- write the record -- all 256 B of it, as the CF-3300 writes its record
+; buffer; HL (1..256) is its FILL, what the random record advances by -- at the random record
 ; (FCB +33, a byte offset: RS = 1), which is a whole number of records, so the
 ; record is one HALF of a 512 B sector -- the first half when its bit 8 is 0. The
 ; engine's write cursor (DOUT_CLUS/FIRST/SECIDX) goes into this ROM's FWR_*
@@ -2776,8 +2773,8 @@ dout_put:
 ; stepped BACK onto its sector (as fat_detach_channel does), so the second
 ; half re-reads it and completes it. On success: random record += HL, size :=
 ; max(size, random record) -- WRBLK's own rule, and the CF-3300's LOF, which
-; H_CHIN op 6 reads from here (S10.E: no mirror in main any more) -- and
-; DOUT_RFULL clears; out A = 0, CF = 0. On failure raise what is pending --
+; H_CHIN op 6 reads from here (S10.E: no mirror in main any more); out A = 0,
+; CF = 0. On failure raise what is pending --
 ; 66 from fac_full, or a DSKIO code -- through main's disk_error, the row as
 ; it was. IX = the row (kept).
 dout_write:
@@ -2799,11 +2796,13 @@ dout_write:
 dwr_copy:
                 call    rnd_rec             ; HL = the record (D-DISKREREAD 2026-11-26:
                                             ; dout_pos +3, spelled out here and at hfa_src; 6 B)
-                pop     bc
-                push    bc
+                ; the WHOLE 256 B record goes to the sector, whatever its fill: the CF-3300 writes
+                ; its record buffer entire (APPEND to an exact 256 multiple keeps the reloaded bytes
+                ; past the new ones -- D-COPYSLOW step 1, closefail app256); the count (still on
+                ; the stack) moves the random record and the size only
+                ld      bc, 256
                 ldir
-                pop     hl                  ; the count
-                push    hl
+                ld      hl, 256
                 bit     0, (ix+34)
                 jr      z, dwr_len
                 inc     h                   ; + the first half
@@ -2839,7 +2838,6 @@ dwr_keep:
                 ld      (ix+16), e
                 ld      (ix+17), d          ; size := the random record
 dwr_lof:
-                res     DOUT_RFULL, (ix+DOUT_FLG)
                 xor     a                   ; A = 0, CF = 0: dout_mirror's old exit
                 ret                         ; (S10.E), which no caller reads
 

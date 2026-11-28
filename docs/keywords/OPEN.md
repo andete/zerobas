@@ -42,6 +42,10 @@ the channel number may be left out.
 - **`FOR OUTPUT`** creates the file, or empties an existing one.
 - **`FOR INPUT`** reads an existing file from its start.
 - **`FOR APPEND`** writes after what is already there; the file must exist.
+  One exception, on the CF-3300 and so here: when the file's size is an
+  exact multiple of 256, the new text goes **over the last 256 bytes, from
+  their start**, instead of after them. A 256-byte file with `"X"` appended
+  stays 256 bytes long and starts with `X`, CR, LF and the end-of-file mark.
 - **No `FOR` at all is random access**, for [`FIELD`](FIELD.md), `GET` and
   `PUT`; `LEN=` (1 to 256) is the record length.
 
@@ -180,6 +184,17 @@ Run on the CF-3300 and on zerobas on 2026-10-09; both print exactly this
 
 ## What we found, and how
 
+- **A failing `CLOSE`, a full record that cannot be written, and `APPEND`
+  onto a whole number of records** (2026-11-28, D-COPYSLOW). On the CF-3300
+  a `CLOSE` that fails leaves the channel open in random mode, so the next
+  `CLOSE` only writes the directory entry: on a full disk it then succeeds,
+  on a write-protected one it fails again. A `PRINT #` that fills a record on
+  a full disk drops that record, and the next `PRINT #` goes on. `APPEND`
+  onto a file whose size is a multiple of 256 overwrites the last 256 bytes
+  from their start. Measured by watching which RAM addresses each machine
+  writes and reading the channel's header, then the files left on disk;
+  zerobas now does all three the same way.
+
 - **`TAB` on a `GRP:` channel padded from the text cursor's column** (fixed
   2026-11-01, D-LPRTAB). With the text cursor at column 11, `PRINT #1,"A";TAB(5);"B"`
   padded nothing on zerobas and 5 spaces on the VG-8020, which counts `TAB`
@@ -304,6 +319,9 @@ Run on the CF-3300 and on zerobas on 2026-10-09; both print exactly this
   the cursor walk, the edges, every code from 0 to 255, the `CHR$(1)`
   header, `SCREEN 3`, the comma zone, the channel's errors and header, and
   the dot-by-dot `PSET` comparison.
+- `make closefail-acceptance` — a `CLOSE` that fails on a write-protected
+  and on a full disk, then a second `CLOSE`; a full record on a full disk;
+  `APPEND` onto a file of exactly 256 bytes -- each against the CF-3300.
 - `make dout-acceptance` — output files: lengths across records, two output
   channels in turn, output beside append and input, directions.
 - `make badfnum-acceptance` and `make nohash-acceptance` — channel numbers,

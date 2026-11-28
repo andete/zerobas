@@ -83,6 +83,57 @@ if MFDFULL:  # a FULL disk (D-DISKFULL's face: the 2nd CLOSE frees silently) -- 
     MF15 = True
     STEPS = [("mf", "MAXFILES=1"), ("o1", 'OPEN "F1.TXT" FOR OUTPUT AS #1'), ("p1", 'PRINT #1,"HELLO"'),
              ("c1", "CLOSE"), ("c2", "CLOSE"), ("o1b", 'OPEN "F1.TXT" FOR OUTPUT AS #1'), ("c3", "CLOSE")]
+if os.environ.get("MFRFAIL") == "1":   # a FULL record whose write FAILS (full disk), then one more PRINT#: where is
+    MFDFULL = True                      # "retry that record" kept on the CF (zerobas: DOUT_RFULL)? header values per step
+    MFFLAG = True
+    MF15 = True
+    STEPS = [("cs", "CLEAR 1000"), ("mf", "MAXFILES=1"), ("o1", 'OPEN "F1.TXT" FOR OUTPUT AS #1'),
+             ("pf", 'PRINT #1,STRING$(254,"A")'), ("p2", 'PRINT #1,"B"'), ("c1", "CLOSE"), ("c2", "CLOSE")]
+MFAPP = os.environ.get("MFAPP") == "1"
+if MFAPP:    # APPEND to a file of EXACTLY 256 B (host-injected: BASIC's CLOSE adds a Ctrl-Z): LOC / LOF after the OPEN,
+    MFFLAG = True   # then one PRINT# -- what zerobas's DOUT_RFULL-on-APPEND ("rewrite the reloaded full record") must keep
+    MF15 = True
+    STEPS = [("oa", 'OPEN "F.TXT" FOR APPEND AS #1'), ("lc", "PRINT LOC(1);LOF(1)"), ("px", 'PRINT #1,"X"'),
+             ("cl", "CLOSE")]
+
+
+def inject(path, name11, data):
+    """Write a file into a FAT12 image from the host: the first free root entry, the first free clusters, both FATs."""
+    import struct
+    img = bytearray(open(path, "rb").read())
+    bps, spc, res, nf, nroot, tot, _m, spf = struct.unpack_from("<HBHBHHBH", img, 11)
+    root = (res + nf * spf) * bps
+    data0 = root + nroot * 32
+    ncl = (tot - data0 // bps) // spc + 2
+
+    def get(c):
+        v = struct.unpack_from("<H", img, res * bps + c * 3 // 2)[0]
+        return v >> 4 if c & 1 else v & 0xFFF
+
+    def put(c, val):
+        for k in range(nf):
+            o = (res + k * spf) * bps + c * 3 // 2
+            v = struct.unpack_from("<H", img, o)[0]
+            v = (v & 0x000F) | (val << 4) if c & 1 else (v & 0xF000) | val
+            struct.pack_into("<H", img, o, v)
+    need = max(1, -(-len(data) // (spc * bps)))
+    free = [c for c in range(2, ncl) if get(c) == 0][:need]
+    for i, c in enumerate(free):
+        put(c, free[i + 1] if i + 1 < len(free) else 0xFFF)
+        o = data0 + (c - 2) * spc * bps
+        chunk = data[i * spc * bps:(i + 1) * spc * bps]
+        img[o:o + len(chunk)] = chunk
+    for i in range(nroot):
+        o = root + 32 * i
+        if img[o] in (0, 0xE5):
+            e = bytearray(32)
+            e[0:11] = name11.encode("latin1")
+            struct.pack_into("<HI", e, 26, free[0], len(data))
+            img[o:o + 32] = e
+            break
+    open(path, "wb").write(img)
+
+
 if os.environ.get("MFCRT") == "1":   # a NON-disk device at #7: is the number limit the disk's or BASIC's?
     MF15 = True
     STEPS = [("mf", "MAXFILES=15"), ("o7", 'OPEN "CRT:" FOR OUTPUT AS #7'), ("p7", 'PRINT #7,"YY"'),
@@ -107,6 +158,8 @@ for m in machines:
     td = tempfile.mkdtemp()
     dsk = os.path.join(td, "d.dsk")
     subprocess.run(["cp", SRC, dsk], check=True)
+    if MFAPP:
+        inject(dsk, "F       TXT", b"A" * 254 + b"\r\n")
     if MFDFULL:
         sys.path.insert(0, os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "probes", "disk"))
         import disk_probe_diskfull   # noqa: E402  full_disk(): every free cluster marked used, every FAT copy
@@ -130,7 +183,7 @@ for m in machines:
         ro = os.path.join(td, "ro.dsk")
         subprocess.run(["cp", SRC, ro], check=True)
         os.chmod(ro, 0o444)   # openMSX mounts a read-only image write-protected (probes/disk/build_bdosxe_disk.py)
-        if not (MFFULL or MFDFULL):
+        if not (MFFULL or MFDFULL or MFAPP):
             hook += f"  if {{$tag eq \"p2\"}} {{diska {{{ro}}}}}\n"
     tcl = tcl.replace(a, hook + a)
     tcl = tcl.replace("$::tries > 240", "$::tries > 12000")
@@ -144,6 +197,9 @@ for m in machines:
                    stdout=open(os.path.join(td, "err.txt"), "w"), stderr=subprocess.STDOUT, timeout=2400)
     lines = open(fl).read().splitlines()
     print(f"== {m}   (log {td})")
+    if MFAPP:
+        print("   F.TXT after: " + " | ".join(e for e in D.disk_listing(bytearray(open(dsk, "rb").read()))
+                                          if e.startswith("F.TXT")))
     for ln in lines:
         if ln.startswith("HDR "):
             print(f"   block header +0..+8 after {ln.split()[1]:4s}: " + " ".join(f"{int(x):02X}" for x in ln.split()[2:]))

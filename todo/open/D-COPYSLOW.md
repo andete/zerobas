@@ -274,6 +274,12 @@
         record full (CLEAR 1000; PRINT #1,STRING$(254,"A") = 256 B): the CF fills $DD77-$DE76 and WRITES THE SECTOR IN
           THE SAME PRINT# (FCB +16.. and $E594 updated in that step); zerobas fills it and writes on the NEXT PRINT#
           (DOUT_RFULL). (Without CLEAR both said "Out of string space" -- the first run reached nothing.)
+          🔴 CORRECTED 2026-11-28 (reading dout_put before slice 2): zerobas ALSO writes a full record AT ONCE --
+          dout_put falls into dout_write the moment the record fills. "Writes on the NEXT PRINT#" was an INSTRUMENT
+          BLIND SPOT: zerobas's FCB sits in its row at $E4BF+, outside the per-byte window ($DC00-$DF93), so its FCB
+          updates were invisible and read as "no flush". DOUT_RFULL is "a full record whose WRITE FAILED", retried by
+          the next PRINT# (D-DISKFULL: a full disk fails every later PRINT#). Where the CF keeps THAT state is the
+          open question (measured next).
         CLOSE failed (the disk swapped for a write-protected copy): both "Disk write protected"; a SECOND CLOSE on the
           CF fails AGAIN (the channel stays open, it retries); on zerobas it succeeds silently (DOUT_DEAD frees it).
         So step 1 DROPS the flags byte and moves both behaviours to the reference's: write a full record at once; a
@@ -331,3 +337,22 @@
       🔮 "wp: Disk write protected twice, +0 04 04; full: +0 04 00 04, zerobas the same": HIT (after two parser
       fixes in the new probe -- a wrapped line and repeated CLOSE lines; the machines agreed from the first run).
       Subject suites green: diskfull, nodiskerr, fcbhdr, dout, clearclose, putdir, diskbasic.
+      📏 **DOUT_RFULL'S TWO FACES ON THE CF-3300 (2026-11-28, bfiles_probe.py MFRFAIL / MFAPP, appended to [AE_bfiles_u2.out](../../scratchpad/AE_bfiles_u2.out)):**
+        (1) full disk: the PRINT# that fills a record says "Disk full" and +6 wraps to 00 -- the record is DROPPED;
+            the next PRINT# SUCCEEDS (+6 = 03). zerobas retried it ("Disk full" again). D-DISKFULL's "a full disk
+            fails every later PRINT#" had never been measured past the first error (its program stopped there).
+        (2) APPEND to a file of exactly 256 B (host-injected): LOC 0, LOF 256 on both; then PRINT #1,"X" + CLOSE --
+            the CF-3300's file is 256 B, "X" CR LF ^Z OVER ITS FIRST FOUR BYTES (sha1 6b7d325ca727, checked against the
+            constructed bytes): it overwrites the last record from its start. zerobas appended (260 B).
+        🔮 "no extra state, +6 wraps": HIT; "the next PRINT# fails again": MISS.
+      🧭 JOOST 2026-11-28: "Copy the CF exactly" -- drop DOUT_RFULL outright, both faces as the CF-3300's, gate rows
+      against it, the APPEND loss documented as a reference behaviour in the keyword docs.
+      ✅ **STEP 1a, SLICE 2 BUILT (2026-11-28): DOUT_RFULL GONE, BOTH FACES THE CF-3300'S.** dout_put no longer retries a
+      failed full record (the position has wrapped, the next PRINT# starts a fresh one); hk_fapp's whole last record
+      re-loads at position 0, so APPEND overwrites it from its start; dwr_lof no longer clears a flag. AND, found by
+      the new app256 row: the CF-3300 writes its WHOLE 256 B record buffer, where dout_write zero-padded past the
+      fill (zerobas's first app256 file was "X" CR LF ^Z + 252 zeros, sha1 a1a2dfcb4d4a) -- dout_write now copies the
+      whole record; the fill (still the count) moves the random record and the size only. closefail-acceptance
+      grew rfail + app256: 4/4 ([AE_s1a_closefail.out](../../scratchpad/AE_s1a_closefail.out)). 🔮 "4/4": HIT only after the unpredicted padding fix.
+      Subject suites green: append (differential byte-identical), dout, savetail, loadtail, diskfull, fcbhdr, lof,
+      putdir, diskbasic; redundant-load, ramatlas, knife re-pin (verdicts unchanged).

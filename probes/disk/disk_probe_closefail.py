@@ -1,7 +1,8 @@
 #!/usr/bin/env python3
 # Copyright (c) 2026 Joost Yervante Damad
 # SPDX-License-Identifier: BSD-2-Clause
-"""closefail-acceptance -- a Disk BASIC CLOSE that FAILS, then a second CLOSE (D-COPYSLOW step 1, 2026-11-28).
+"""closefail-acceptance -- a Disk BASIC channel's FAILURE and edge faces, against the CF-3300 (D-COPYSLOW step 1,
+2026-11-28): a CLOSE that fails, a full record whose write fails, APPEND to an exact multiple of 256 B.
 
 Measured on the National CF-3300 (scratchpad/AE_bfiles_u2.out): a failing CLOSE of an OUTPUT channel leaves it OPEN
 in RANDOM mode -- the channel block's +0 mode goes 02 -> 04 -- so the SECOND CLOSE is a random-mode close, the
@@ -11,6 +12,11 @@ Two cases, each on both machines, from MSX-DOS's `BASIC`:
     wp     OPEN / PRINT# on a writable disk, the disk swapped (openMSX `diska`) for a READ-ONLY copy -- openMSX mounts
            it write-protected -- then CLOSE, CLOSE
     full   every free cluster marked used, OPEN / PRINT# / CLOSE / CLOSE / OPEN / CLOSE
+    rfail  a full disk: a PRINT# that FILLS a record (its write fails "Disk full"; the CF DROPS the record), then
+           one more PRINT# (Ok on the CF -- zerobas used to retry and fail again: DOUT_RFULL), CLOSE / CLOSE
+    app256 APPEND to a host-injected file of EXACTLY 256 B, PRINT #1,"X": the CF-3300 OVERWRITES the last record
+           from its start -- a 256 B file, "X" CR LF ^Z over its first four bytes (Joost 2026-11-28: "Copy the CF
+           exactly"); the file's size and sha1 are compared too
 Compared per case: the message after each typed line, and channel #1's block +0 after each CLOSE (BASIC's own data at
 $DD6E with MAXFILES=1 -- a work-area read, not code). Exit 0 when both cases agree, 1 on a divergence, 2 when the
 CF-3300 itself did not answer.
@@ -35,7 +41,48 @@ CASES = {
            ("c1", "CLOSE"), ("c2", "CLOSE")],
     "full": [("mf", "MAXFILES=1"), ("o1", 'OPEN "F1.TXT" FOR OUTPUT AS #1'), ("p1", 'PRINT #1,"HELLO"'),
              ("c1", "CLOSE"), ("c2", "CLOSE"), ("o2", 'OPEN "F1.TXT" FOR OUTPUT AS #1'), ("c3", "CLOSE")],
+    "rfail": [("cs", "CLEAR 1000"), ("mf", "MAXFILES=1"), ("o1", 'OPEN "F1.TXT" FOR OUTPUT AS #1'),
+              ("pf", 'PRINT #1,STRING$(254,"A")'), ("p2", 'PRINT #1,"B"'), ("c1", "CLOSE"), ("c2", "CLOSE")],
+    "app256": [("oa", 'OPEN "F.TXT" FOR APPEND AS #1'), ("lc", "PRINT LOC(1);LOF(1)"), ("px", 'PRINT #1,"X"'),
+               ("c1", "CLOSE")],
 }
+
+
+def inject(path, name11, data):
+    """Write a file into a FAT12 image from the host: the first free root entry, the first free clusters, both FATs."""
+    import struct
+    img = bytearray(open(path, "rb").read())
+    bps, spc, res, nf, nroot, tot, _m, spf = struct.unpack_from("<HBHBHHBH", img, 11)
+    root = (res + nf * spf) * bps
+    data0 = root + nroot * 32
+    ncl = (tot - data0 // bps) // spc + 2
+
+    def get(c):
+        v = struct.unpack_from("<H", img, res * bps + c * 3 // 2)[0]
+        return v >> 4 if c & 1 else v & 0xFFF
+
+    def put(c, val):
+        for k in range(nf):
+            o = (res + k * spf) * bps + c * 3 // 2
+            v = struct.unpack_from("<H", img, o)[0]
+            v = (v & 0x000F) | (val << 4) if c & 1 else (v & 0xF000) | val
+            struct.pack_into("<H", img, o, v)
+    need = max(1, -(-len(data) // (spc * bps)))
+    free = [c for c in range(2, ncl) if get(c) == 0][:need]
+    for i, c in enumerate(free):
+        put(c, free[i + 1] if i + 1 < len(free) else 0xFFF)
+        o = data0 + (c - 2) * spc * bps
+        chunk = data[i * spc * bps:(i + 1) * spc * bps]
+        img[o:o + len(chunk)] = chunk
+    for i in range(nroot):
+        o = root + 32 * i
+        if img[o] in (0, 0xE5):
+            e = bytearray(32)
+            e[0:11] = name11.encode("latin1")
+            struct.pack_into("<HI", e, 26, free[0], len(data))
+            img[o:o + 32] = e
+            break
+    open(path, "wb").write(img)
 BLK0 = 0xDD6E   # channel #1's block +0 at MAXFILES=1, the same address on both (measured)
 
 
@@ -44,8 +91,10 @@ def run(machine, case):
     D.SESSION = [("boot", None, 14), ("date", "", 5), ("basic", "BASIC", 8)] + [(t, x, 30) for t, x in steps]
     dsk = probe_tmp.tmp(f"closefail_{case}_{machine}.dsk")
     shutil.copyfile(SRC, dsk)
-    if case == "full":
+    if case in ("full", "rfail"):
         disk_probe_diskfull.full_disk(dsk)
+    if case == "app256":
+        inject(dsk, "F       TXT", b"A" * 254 + b"\r\n")
     ro = probe_tmp.tmp(f"closefail_{case}_{machine}_ro.dsk")
     if os.path.exists(ro):
         os.chmod(ro, 0o644)
@@ -99,7 +148,10 @@ def run(machine, case):
         nxt = chars[cur - 1][1] + 1
         msg = next((r.strip() for r in rows[nxt:] if r.strip()), "")
         msgs.append("ok" if msg in ("Ok", "ZB") else msg)
-    return {"msgs": msgs, "b0": [b0.get(t) for t, _ in steps if t.startswith("c")]}
+    res = {"msgs": msgs, "b0": [b0.get(t) for t, _ in steps if t.startswith("c") and t != "cs"]}
+    if case == "app256":
+        res["file"] = [e for e in D.disk_listing(bytearray(open(dsk, "rb").read())) if e.startswith("F.TXT")]
+    return res
 
 
 def main():
