@@ -70,3 +70,32 @@
       wrblkalt / dossession / nobasic / diskbasic / bdosf37d acceptance, unit tests green; knife re-pinned; disk corpus
       identical. ➡️ D (the source's read-ahead) needs a 32 B table: RAM first -- $EDBF-$EDFC has no name in any ROM but
       sits under BASIC_WS_CEIL, NOT a safe assumption; find atlas-verified free RAM before building.
+      📏 **WHAT THE CF-3300 DOES (2026-11-28, Joost "Do we know what reference does?"; [AE_copyslow_byarea.out](../../scratchpad/AE_copyslow_byarea.out)):** its
+      driver issues most commands through the PAGE-2 mirror of the FDC registers ($BFB8-$BFBF; the interface maps
+      $4000-$BFFF) -- the page-1-only watch saw 24 reads / 9 writes and was blind. Both mirrors, the 32 KB COPY by area:
+                        CF-3300   zerobas (after A')
+        data read         128        128
+        data write         64         64
+        FAT read           12         72
+        FAT write           6         72
+        track 0 other    10 + 2     9 + 3
+      The data traffic is IDENTICAL; the whole gap is the FAT. The reference keeps the FAT in RAM and writes it back
+      rarely -- both read caching (D / C) and deferred writes (B). So B is "in line with reference", not a risk we would
+      be adding on our own; what the CF-3300 leaves on disk if the disk is swapped mid-copy is still unmeasured.
+      ROOM: 269 B free (largest hole 43 B); D alone ~85 B.
+      📏 **WHERE THE CF-3300 KEEPS ITS FAT (2026-11-28, Joost "We first need to figure out where reference caches
+      this"; [fatdest_probe.py](../../scratchpad/fatdest_probe.py), [AE_fatdest.out](../../scratchpad/AE_fatdest.out)):**
+      while each FAT-sector read command runs, a RAM write watch records only the ADDRESSES written, as a 64-byte-block
+      histogram (no byte read, no PC). Validated on zerobas: its reads land at $E8AD-$EAAC = SECTOR_BUF. The CF-3300's
+      12 FAT reads, in time order, during the 32 KB COPY on the 720 KB test disk:
+        0      sector 2       -> $EF95-$F194 (the 512 B directly under its DPB at $F195)
+        1-3    sectors 2,3,4  -> $E595-$E794, $E795-$E994, $E995-$EB94: THE WHOLE FIRST FAT COPY, 1536 B, read once
+        4-5    sectors 2,3    -> $EB95-$ED94 (one 512 B buffer, both times)
+        6-11   sectors 2..7   -> nothing stored (<= 111 writes, the stack / interrupt noise): one per FAT sector of
+                                 both copies, in order -- matches read-back VERIFIES of its 6 FAT writes (unconfirmed)
+      So the reference caches the FAT as ONE CONTIGUOUS 1536 B IMAGE at $E595, inside the claim zerobas also takes
+      (both HIMEM $DE77 at DOS); its 512 B buffers sit at $EB95 / $ED95 / $EF95. zerobas's SECTOR_BUF ($E8AD-$EAAC) and
+      its FAT state ($ECAD-...) occupy that same span with a different layout: following the reference = MOVING zerobas's
+      buffers to the CF's places (a RAM-address move -> FULL gate), not finding new RAM. Unmeasured: whether the image
+      size follows the disk's FAT (3 sectors here) or a fixed maximum; whether the 6 no-store reads are verifies.
+      🙋 Joost to decide the layout before anything is built.

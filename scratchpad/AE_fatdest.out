@@ -1,0 +1,22 @@
+   (emulator log: /tmp/zerobas/tmphop14amk/err.txt)
+== National_CF-3300: 12 FAT-sector reads during the COPY
+   R2 x1: $DD40-$DDBF
+   R2 x1: $DD80-$DDBF, $E5C0-$E77F
+   R2 x1: $DD80-$DDBF, $EBC0-$ED7F
+   R2 x1: $DD80-$DDBF, $EFC0-$F17F
+   R3 x1: $DD80-$DDBF
+   R3 x1: $DD80-$DDBF, $E7C0-$E97F
+   R3 x1: $DD80-$DDBF, $EBC0-$ED7F
+   R4 x1: $DD40-$DDBF, $E9C0-$EB7F
+   R4 x1: $DD80-$DDBF
+   R5 x1: $DD80-$DDBF
+   R6 x1: $DD40-$DDBF
+   R7 x1: $DD80-$DDBF
+   (emulator log: /tmp/zerobas/tmpay0yrgu7/err.txt)
+== C-BIOS_MSX1_EU_REPACK_DISK: 72 FAT-sector reads during the COPY
+   R2 x34: $DBC0-$DBFF, $E8C0-$EA7F
+   R2 x4: $DBC0-$DBFF, $EAC0-$EC7F
+   R2 x4: $DBC0-$DBFF, $EAC0-$ECBF
+   R2 x1: $DBC0-$DBFF, $EAC0-$ECFF, $FBC0-$FBFF
+   R3 x1: $DB80-$DBFF, $EAC0-$EC7F
+   R3 x28: $DBC0-$DBFF, $EAC0-$EC7F

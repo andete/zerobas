@@ -33,7 +33,10 @@ for m in machines:
     tcl = tcl.replace("set throttle off", "set throttle off\nset ::fdc [dict create]\nset ::fdcsec [dict create]\nset ::counting 0\n"
         "debug set_watchpoint write_mem {0x7F80 0x7FBF} {$::counting} {if {($::wp_last_address & 7) == 0} {"
         "set c [expr {$::wp_last_value >> 4}]; dict incr ::fdc $c; "
-        "if {$c == 8 || $c == 10} {dict incr ::fdcsec \"$c:[peek 0x7FB9]:[peek 0x7FBA]\"}}}", 1)
+        "dict incr ::fdcsec \"$c:[peek 0x7FB9]:[peek 0x7FBA]\"}}\n"
+        "debug set_watchpoint write_mem {0xBF80 0xBFBF} {$::counting} {if {($::wp_last_address & 7) == 0} {"
+        "set c [expr {$::wp_last_value >> 4}]; dict incr ::fdc [expr {$c + 100}]; "
+        "dict incr ::fdcsec \"p2/$c:[peek 0xBFB9]:[peek 0xBFBA]\"}}", 1)
     # count from the MODE 40 step's snapshot to the COPY step's, which also writes the counts
     a = "  close $f }"
     assert tcl.count(a) == 1, "snap's close"
@@ -65,4 +68,13 @@ for m in machines:
     kv = sec.split()[1:]
     rows = sorted(((int(kv[i + 1]), kv[i]) for i in range(0, len(kv) - 1, 2)), reverse=True)
     if os.environ.get("FDCSEC"):
-        print("   most-issued (cmd:track:sector): " + ", ".join(f"{k}x{n}" for n, k in rows[:14]))
+        sm = {}
+        for n, k in rows:
+            cmd, trk, sec = k.split(":")
+            cls = cmd.split("/")[-1]
+            kind = {"8": "read", "10": "write"}.get(cls)
+            if not kind:
+                continue
+            where = ("FAT" if trk == "0" and 2 <= int(sec) <= 7 else "track0-other" if trk == "0" else "data")
+            sm[(kind, where)] = sm.get((kind, where), 0) + n
+        print("   by area (both mirrors): " + ", ".join(f"{k} {w}={v}" for (k, w), v in sorted(sm.items())))
