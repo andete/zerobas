@@ -196,3 +196,22 @@
           read back the same way; data writes are read back after the whole file;
         - a mid-operation swap: the CF never writes its image to the other disk (it stalls; hang or artefact unknown).
       ➡️ NEXT: the cell-by-cell move plan to Joost, from this list. No code before he approves it.
+      📏 SIZED 2026-11-28 for the plan: inside the CF-3300's buffer spans zerobas keeps its 2 sector buffers, 73 disk-ROM
+      state cells (~350 B: $ECAD-$EDBD, $EFDA-$F022) and 66 zerobas-BASIC Disk BASIC cells (~700 B: $EDB9-$F09D); the
+      CF-3300's own state is ~41 B ($F1A0-$F1C8) plus the fixed area, which zerobas already fills. No reference-shaped
+      place for our cells exists yet. 🧭 JOOST 2026-11-28: "Measure Disk BASIC first" --
+        Q7  where the CF-3300 keeps Disk BASIC channel state (MAXFILES 2, OPEN / PRINT# / CLOSE / INPUT#);
+        Q8  whether the CF-3300 ever writes $DE77-$DF93, or drive B's image span, when B: is never used.
+      Then a plan that puts each zerobas cell where the CF keeps the same kind of state.
+      📏 **Q7 + Q8 MEASURED (2026-11-28, [bfiles_probe.py](../../scratchpad/bfiles_probe.py), [AE_bfiles.out](../../scratchpad/AE_bfiles.out); Disk BASIC via `BASIC` at A>, MAXFILES=2,
+      OPEN / PRINT# 720 B / CLOSE / OPEN for INPUT / INPUT# / CLOSE; every write in $C000-$F37F per 16 B block):**
+        HIMEM ($FC4A): $DF93 at boot, $DE77 in BASIC on BOTH machines, MAXFILES=2 does not move it (🔮 "~300 B per
+          file": MISS).
+        Q7  channel BUFFERS: the SAME addresses on both -- #1 at $DC60-$DD6F (1440 writes each during PRINT#), #2 at
+            $DD70-$DE7F (the CF fills it at OPEN, zerobas at the first INPUT#). Channel CONTROL state: the CF-3300 at
+            $DEB0-$DEFF, inside the 284 B $DE77-$DF93 that entering BASIC claims; zerobas at $E4B0-$E52F, inside the
+            span the CF keeps for drive B's FAT image. The CF also writes $F1B0-$F1CF at CLOSE and the fixed area;
+            zerobas neither.
+        Q8  under BASIC the CF-3300 DOES use $DE77-$DF93 (channel state; untouched in a COPY); drive B's image span
+            is untouched but for the 16 B block at $E590, which it writes in every phase (cells just under A's image).
+      ➡️ So zerobas BASIC's channel cells have a reference place: $DE77-$DF93. The plan next.
