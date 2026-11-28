@@ -277,7 +277,12 @@
         CLOSE failed (the disk swapped for a write-protected copy): both "Disk write protected"; a SECOND CLOSE on the
           CF fails AGAIN (the channel stays open, it retries); on zerobas it succeeds silently (DOUT_DEAD frees it).
         So step 1 DROPS the flags byte and moves both behaviours to the reference's: write a full record at once; a
-        failed CLOSE leaves the channel open. The channel BLOCK already matches (header $DD6E: +0 mode, +4 device,
+        failed CLOSE leaves the channel open.
+        🔴 CORRECTED 2026-11-28 (before any code): "DOUT_DEAD does not exist on the CF" was TOO STRONG. D-DISKFULL
+        measured a FULL disk on the CF-3300: CLOSE "Disk full", channel open, and the SECOND CLOSE FREES IT SILENTLY --
+        DOUT_DEAD's face. Today's write-protect case retries instead. The CF's outcome depends on WHY the close failed;
+        whether that takes a flag, or only the ORDER (the pending record consumed before the allocation fails), is
+        being measured before DOUT_DEAD is touched. The channel BLOCK already matches (header $DD6E: +0 mode, +4 device,
         +6 position; record $DD77, the same bytes written on both). Unknown, not chased: the CF writes $DC61-$DC65 and
         $DC6C in every step, zerobas does not.
         🔮 "a full record shows only as its position byte; the second CLOSE clears the slot": MISS on both.
@@ -302,3 +307,17 @@
           block +3 (its meaning unmeasured -- a one-character read-ahead is a guess). 🔮 "no flag; the count is +6":
           HIT, with +3 as the unpredicted part.
       ✅ EVERY ROW FIELD NOW HAS A MEASURED CF PLACE OR HAS NO CF COUNTERPART. Step 1 is buildable as ruled.
+      📏 **A FAILED CLOSE ON THE CF-3300 IS A MODE CHANGE, NOT A FLAG (2026-11-28, bfiles_probe.py MFDFULL + header values,
+      appended to [AE_bfiles_u2.out](../../scratchpad/AE_bfiles_u2.out); channel #1's block header $DD6E-$DD76 READ after every step -- BASIC's data, a
+      work-area read, not code):** block +0 (the mode) is 02 after OPEN for OUTPUT; the failing CLOSE sets it to 04 --
+      the RANDOM mode -- on a FULL disk AND on a write-protected one. The second CLOSE is then a mode-4 close (the
+      directory entry only): on the full disk it succeeds and +0 goes 00 (freed); on the write-protected disk the
+      entry write fails again and +0 stays 04. ONE mechanism gives both faces (D-DISKFULL's and today's). 🔮 "the
+      record count is cleared before the allocation fails": MISS.
+      ALSO: the CF's block +1..+2 = the FCB's ADDRESS ($DEB5) -- the link runs block -> FCB, the reverse of our
+      row -> block (DOUT_BLK); its +3 / +5 / +7 / +8 hold values (00 / FC / 00 / 04 here) where zerobas leaves FF --
+      VARPTR(#n)-visible (D-FCBSHAPE's subject).
+      📐 STEP 1 MAPPING, REVISED: DOUT_DEAD -> the block's +0 := 4 (and FCH_MODES) on a failing CLOSE, the next CLOSE
+      taking the RANDOM path that already exists -- which ALSO fixes the write-protect face; DOUT_BLK -> the block's
+      +1..+2 := the FCB address, as the CF; DOUT_RFULL -> gone (write the full record at once); DIN_LEFT -> block +6;
+      DIN_CRPEND -> block +3 (the CF's own read-state byte; its exact meaning unmeasured, stated as such).

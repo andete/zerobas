@@ -77,6 +77,12 @@ if MFIN:     # an INPUT row's state: the record's unread count (DIN_LEFT) and a 
              ("oi", 'OPEN "T.TXT" FOR INPUT AS #1'), ("r1", 'A$=INPUT$(1,#1):PRINT ASC(A$)'),
              ("r2", 'A$=INPUT$(2,#1):PRINT ASC(A$);ASC(MID$(A$,2))'), ("r3", 'A$=INPUT$(1,#1):PRINT ASC(A$)'),
              ("r4", 'INPUT #1,B$:PRINT B$'), ("cl", "CLOSE")]
+MFDFULL = os.environ.get("MFDFULL") == "1"
+if MFDFULL:  # a FULL disk (D-DISKFULL's face: the 2nd CLOSE frees silently) -- a flag, or only the order of the work?
+    MFFLAG = True
+    MF15 = True
+    STEPS = [("mf", "MAXFILES=1"), ("o1", 'OPEN "F1.TXT" FOR OUTPUT AS #1'), ("p1", 'PRINT #1,"HELLO"'),
+             ("c1", "CLOSE"), ("c2", "CLOSE"), ("o1b", 'OPEN "F1.TXT" FOR OUTPUT AS #1'), ("c3", "CLOSE")]
 if os.environ.get("MFCRT") == "1":   # a NON-disk device at #7: is the number limit the disk's or BASIC's?
     MF15 = True
     STEPS = [("mf", "MAXFILES=15"), ("o7", 'OPEN "CRT:" FOR OUTPUT AS #7'), ("p7", 'PRINT #7,"YY"'),
@@ -101,6 +107,10 @@ for m in machines:
     td = tempfile.mkdtemp()
     dsk = os.path.join(td, "d.dsk")
     subprocess.run(["cp", SRC, dsk], check=True)
+    if MFDFULL:
+        sys.path.insert(0, os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "probes", "disk"))
+        import disk_probe_diskfull   # noqa: E402  full_disk(): every free cluster marked used, every FAT copy
+        disk_probe_diskfull.full_disk(dsk)
     out = os.path.join(td, "o.txt")
     fl = os.path.join(td, "cells.txt")
     tcl = D.tcl(out)
@@ -108,7 +118,11 @@ for m in machines:
                       f"set ::fl [open {{{fl}}} w]\n" + CMD, 1)
     a = "  close $f }"
     assert tcl.count(a) == 1
-    hook = "  puts $::fl \"HIMEM $tag [rd16 0xFC4A]\"\n  if {$tag eq \"" + order[0] + "\"} {set ::counting 1}\n"
+    # MFFLAG / MFDFULL: channel #1's block HEADER VALUES ($DD6E-$DD76 at MAXFILES=1: BASIC's data, a work-area read,
+    # not code) after every step -- where the CF keeps a failed CLOSE's state
+    hook = ("  set hv {}; for {set i 0} {$i < 9} {incr i} {lappend hv [rd [expr {0xDD6E + $i}]]}; puts $::fl \"HDR $tag $hv\"\n"
+            if MFFLAG else "")
+    hook += "  puts $::fl \"HIMEM $tag [rd16 0xFC4A]\"\n  if {$tag eq \"" + order[0] + "\"} {set ::counting 1}\n"
     for k, v in zip(order, order[1:]):
         hook += f"  if {{$tag eq \"{k}\"}} {{set ::step {v}}}\n"
     hook += f"  if {{$tag eq \"{order[-1]}\"}} {{set ::counting 0; puts $::fl \"CELLS $::cells\"; flush $::fl}}\n"
@@ -116,7 +130,7 @@ for m in machines:
         ro = os.path.join(td, "ro.dsk")
         subprocess.run(["cp", SRC, ro], check=True)
         os.chmod(ro, 0o444)   # openMSX mounts a read-only image write-protected (probes/disk/build_bdosxe_disk.py)
-        if not MFFULL:
+        if not (MFFULL or MFDFULL):
             hook += f"  if {{$tag eq \"p2\"}} {{diska {{{ro}}}}}\n"
     tcl = tcl.replace(a, hook + a)
     tcl = tcl.replace("$::tries > 240", "$::tries > 12000")
@@ -130,6 +144,9 @@ for m in machines:
                    stdout=open(os.path.join(td, "err.txt"), "w"), stderr=subprocess.STDOUT, timeout=2400)
     lines = open(fl).read().splitlines()
     print(f"== {m}   (log {td})")
+    for ln in lines:
+        if ln.startswith("HDR "):
+            print(f"   block header +0..+8 after {ln.split()[1]:4s}: " + " ".join(f"{int(x):02X}" for x in ln.split()[2:]))
     print("   HIMEM after each step: " + "  ".join(f"{ln.split()[1]}=${int(ln.split()[2]):04X}"
                                                    for ln in lines if ln.startswith("HIMEM")))
     cl = next((ln for ln in lines if ln.startswith("CELLS ")), "CELLS").split()[1:]
