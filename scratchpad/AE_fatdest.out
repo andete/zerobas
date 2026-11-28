@@ -1,4 +1,5 @@
-   (emulator log: /tmp/zerobas/tmphop14amk/err.txt)
+   (emulator log: /tmp/zerobas/tmp00smz5_h/err.txt)
+   order: R2 x13 R2 R3 R4 x13 D8 x13 D9 x13 D8 x13 D9 x13 x1 r*10 x5 r*18 x5 r*18 x5 r*18 x15*2 x0*2 x15*2 x0*2 x13 x1 D8 x13 D9 x13 D1 x13 R2 x13 R3 x13 D1 x13 E1 D1 x13 x1 w*2 x5 w*18 x5 w*18 x5 w*18 x5 w*8 x1 r*2 x5 r*18 x5 r*18 x5 r*18 x5 r*8 x13 x1 E1 D1 x13 W2 W3 W4 R2 R3 R4 x13 W5 W6 W7 R5 R6 R7 x13
 == National_CF-3300: 12 FAT-sector reads during the COPY
    R2 x1: $DD40-$DDBF
    R2 x1: $DD80-$DDBF, $E5C0-$E77F
@@ -12,7 +13,8 @@
    R5 x1: $DD80-$DDBF
    R6 x1: $DD40-$DDBF
    R7 x1: $DD80-$DDBF
-   (emulator log: /tmp/zerobas/tmpay0yrgu7/err.txt)
+   (emulator log: /tmp/zerobas/tmpr4tzyd7i/err.txt)
+   order: R2 D8 D9 R2 D8 D9 x1 r*2 x1 R2 x1 r*2 x1 R2 x1 r*2 x1 R2 x1 r*2 x1 R2 x1 r*2 x1 R2 x1 r*2 x1 R2 x1 r*2 x1 R2 x1 r*2 x1 R2 x1 r*2 x1 R2 x1 r*2 x1 R2 x1 r*2 x1 R2 x1 r*2 x1 R2 x1 r*2 x1 R2 x1 r*2 x1 R2 x1 r*2 x1 R2 x1 r*2 x1 R2 x1 r*2 x1 R2 x1 r*2 x1 R2 x1 r*2 x1 R2 x1 r*2 x1 R2 x1 r*2 x1 R2 x1 r*2 x1 R2 x1 r*2 x1 R2 x1 r*2 x1 R2 x1 r*2 x1 R2 x1 r*2 x1 R2 x1 r*2 x1 R2 x1 r*2 x1 R2 x1 r*2 x1 R2 x1 r*2 x1 R2 x1 r*2 x1 R2 x1 r*2 x15*2 x0*2 x15*2 x0*2 x1 R2 D8 D9 D1 E1 R2 W2 W5 x1 r w r w x1 R2 W2 W5 x1 r w r w x1 R2 W2 W5 x1 r w r w x1 R2 W2 W5 x1 r w r w x1 R2 W2 W5 x1 r w r w x1 R2 R3 R2 W2 W5 R3 W3 W6 R2 W2 W5 x1 r w r w x1 R3 W3 W6 R2 W2 W5 R3 W3 W6 x1 r w r w x1 R3 W3 W6 x1 r w r w x1 R3 W3 W6 x1 r w r w x1 R3 W3 W6 x1 r w r w x1 R3 W3 W6 x1 r w r w x1 R3 W3 W6 x1 r w r w x1 R3 W3 W6 x1 r w r w x1 R3 W3 W6 x1 r w r w x1 R3 W3 W6 x1 r w r w x1 R3 W3 W6 x1 r w r w x1 R3 W3 W6 x1 r w r w x1 R3 W3 W6 x1 r w r w x1 R3 W3 W6 x1 r w r w x1 R3 W3 W6 x1 r w r w x1 R3 W3 W6 x1 r w r w x1 R3 W3 W6 x1 r w r w x1 R3 W3 W6 x1 r w r w x1 R3 W3 W6 x1 r w r w x1 R3 W3 W6 x1 r w r w x1 R3 W3 W6 x1 r w r w x1 R3 W3 W6 x1 r w r w x1 R3 W3 W6 x1 r w r w x1 R3 W3 W6 x1 r w r w x1 R3 W3 W6 x1 r w r w x1 R3 W3 W6 x1 r w r w x1 R3 W3 W6 x1 r w r w x1 D1*2 E1*2
 == C-BIOS_MSX1_EU_REPACK_DISK: 72 FAT-sector reads during the COPY
    R2 x34: $DBC0-$DBFF, $E8C0-$EA7F
    R2 x4: $DBC0-$DBFF, $EAC0-$EC7F
@@ -20,3 +22,27 @@
    R2 x1: $DBC0-$DBFF, $EAC0-$ECFF, $FBC0-$FBFF
    R3 x1: $DB80-$DBFF, $EAC0-$EC7F
    R3 x28: $DBC0-$DBFF, $EAC0-$EC7F
+##### 360 KB
+   (emulator log: /tmp/zerobas/tmpv0k_9arz/err.txt)
+   order: x1 R2 x13 R2 R3 x13 R6 x13 x1 r*4 x5 r*9 x5 r*9 x5 r*9 x5 r*9 x5 r*9 x5 r*9 x5 r*6 x15*2 x0*2 x15*2 x0*2 x13 x1 W6 R6 x13 x1 w*3 x5 w*9 x5 w*9 x5 w*9 x5 w*9 x5 w*9 x5 w*9 x5 w*7 x1 r*3 x5 r*9 x5 r*9 x5 r*9 x5 r*9 x5 r*9 x5 r*9 x5 r*7 x13 x1 W6 R6 x13 W2 W3 R2 R3 x13 W4 W5 R4 R5 x13
+== National_CF-3300: 10 FAT-sector reads during the COPY
+   R2 x1: $DD80-$DDBF
+   R2 x1: $DD80-$DDBF, $E5C0-$E77F
+   R2 x1: $DD80-$DDBF, $EFC0-$F17F
+   R3 x1: $DD80-$DDBF
+   R3 x1: $DD80-$DDBF, $E7C0-$E97F
+   R4 x1: $DD80-$DDBF
+   R5 x1: $DD80-$DDBF
+   R6 x2: $DD80-$DDBF
+   R6 x1: $DD80-$DDBF, $EBC0-$ED7F
+   (emulator log: /tmp/zerobas/tmp2g7lp8vb/err.txt)
+   order: R2 R6 R2 R6 x1 r*2 x1 R2 x1 r*2 x1 R2 x1 r*2 x1 R2 x1 r*2 x1 R2 x1 r*2 x1 R2 x1 r*2 x1 R2 x1 r x1 r x1 R2 x1 r*2 x1 R2 x1 r*2 x1 R2 x1 r*2 x1 R2 x1 r*2 x1 R2 x1 r*2 x1 R2 x1 r*2 x1 R2 x1 r*2 x1 R2 x1 r*2 x1 R2 x1 r x1 r x1 R2 x1 r*2 x1 R2 x1 r*2 x1 R2 x1 r*2 x1 R2 x1 r*2 x1 R2 x1 r*2 x1 R2 x1 r*2 x1 R2 x1 r*2 x1 R2 x1 r*2 x1 R2 x1 r x1 r x1 R2 x1 r*2 x1 R2 x1 r*2 x1 R2 x1 r*2 x1 R2 x1 r*2 x1 R2 x1 r*2 x1 R2 x1 r*2 x1 R2 x1 r*2 x15*2 x0*2 x15*2 x0*2 x1 R2 R6 W6 R2 W2 W4 x1 r w r w x1 R2 W2 W4 x1 r w x1 r w x1 R2 W2 W4 x1 r w r w x1 R2 W2 W4 x1 r w r w x1 R2 W2 W4 x1 r w r w x1 R2 W2 W4 x1 r w r w x1 R2 W2 W4 x1 r w r w x1 R2 W2 W4 x1 r w r w x1 R2 W2 W4 x1 r w r w x1 R2 W2 W4 x1 r w r w x1 R2 W2 W4 x1 r w x1 r w x1 R2 W2 W4 x1 r w r w x1 R2 W2 W4 x1 r w r w x1 R2 W2 W4 x1 r w r w x1 R2 W2 W4 x1 r w r w x1 R2 W2 W4 x1 r w r w x1 R2 W2 W4 x1 r w r w x1 R2 W2 W4 x1 r w r w x1 R2 W2 W4 x1 r w r w x1 R2 W2 W4 x1 r w x1 r w x1 R2 W2 W4 x1 r w r w x1 R2 W2 W4 x1 r w r w x1 R2 W2 W4 x1 r w r w x1 R2 W2 W4 x1 r w r w x1 R2 W2 W4 x1 r w r w x1 R2 W2 W4 x1 r w r w x1 R2 W2 W4 x1 r w r w x1 R2 W2 W4 x1 r w r w x1 R2 W2 W4 x1 r w x1 r w x1 R2 W2 W4 x1 r w r w x1 R2 W2 W4 x1 r w r w x1 R2 W2 W4 x1 r w r w x1 R6*2 W6*2
+== C-BIOS_MSX1_EU_REPACK_DISK: 71 FAT-sector reads during the COPY
+   R2 x1: $DB80-$DBFF, $E8C0-$EA7F
+   R2 x1: $DB80-$DBFF, $EAC0-$EC7F
+   R2 x33: $DBC0-$DBFF, $E8C0-$EA7F
+   R2 x30: $DBC0-$DBFF, $EAC0-$EC7F
+   R2 x1: $DBC0-$DBFF, $EAC0-$ECFF
+   R6 x1: $DA40-$DA7F, $DBC0-$DBFF, $E8C0-$EA7F
+   R6 x2: $DBC0-$DBFF, $E8C0-$EA7F
+   R6 x2: $DBC0-$DBFF, $EAC0-$EC7F

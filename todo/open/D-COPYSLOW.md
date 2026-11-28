@@ -99,3 +99,24 @@
       buffers to the CF's places (a RAM-address move -> FULL gate), not finding new RAM. Unmeasured: whether the image
       size follows the disk's FAT (3 sectors here) or a fixed maximum; whether the 6 no-store reads are verifies.
       🙋 Joost to decide the layout before anything is built.
+      🧭 JOOST 2026-11-28: "Measure more, then plan" -- address-only, before any code: (1) does the FAT image follow the
+      disk's FAT size (a 360 KB disk, 2-sector FATs) or a fixed maximum; (2) are the 6 no-store reads verifies (the
+      command order around each FAT write); (3) when the FATs are written back. Then a cell-by-cell move plan to him.
+      📏 **MEASURED MORE (2026-11-28, same probe + every FDC command in order; [mk360_dsk.py](../../scratchpad/mk360_dsk.py) builds a
+      360 KB disk, 2-sector FATs; [AE_fatdest.out](../../scratchpad/AE_fatdest.out)).** (FDC sector numbers are 1-based per track:
+      720 KB FAT1 = sectors 2-4, FAT2 = 5-7; 360 KB FAT1 = 2-3, FAT2 = 4-5, root from 6.)
+        (1) THE IMAGE IS FIXED AT $E595, SIZED FOR THE LARGEST FAT: on 360 KB the 2 FAT sectors land at $E595-$E994;
+            on 720 KB the 3 at $E595-$EB94, which ends exactly where the next 512 B buffer ($EB95) begins.
+        (2) THE NO-STORE READS ARE VERIFIES, PER FAT COPY: the COPY's tail is  E1 D1  W2 W3 W4 R2 R3 R4  W5 W6 W7 R5 R6 R7
+            (720 KB; 360 KB: W2 W3 R2 R3 W4 W5 R4 R5) -- the directory sector written and read back, then each FAT copy
+            written whole and read back whole. 🔮 "W2 R2 W3 R3 ...": PARTIAL MISS (deferred to the end: hit; per copy, not
+            per sector).
+        (3) WRITTEN BACK ONCE, AT THE END: no FAT write during the data phase on the CF-3300; zerobas writes R2 W2 W5
+            (read, then both copies) at EVERY cluster.
+      So the CF-3300's buffers below its DPB: $E595 FAT image (1536 B) · $EB95 sector buffer (directory on 360 KB) ·
+      $ED95 file data (D-FATBUF 2026-09-18) · $EF95 the mount's first-FAT-sector read (media check).
+      ALSO SEEN, NOT CHASED: the CF-3300 reads the source in runs of 18 sectors per track (r*18 between steps) and all
+      64 before any write; zerobas alternates r w r w -- it reads each destination sector before writing it (the
+      read-or-extend). Both total 128 data reads, but the reference's runs cost far fewer rotations: likely most of
+      the rest of the gap once the FAT is cached.
+      ➡️ NEXT: the cell-by-cell move plan to Joost (his ruling), nothing built before he approves it.
