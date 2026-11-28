@@ -42,10 +42,13 @@ the channel number may be left out.
 - **`FOR OUTPUT`** creates the file, or empties an existing one.
 - **`FOR INPUT`** reads an existing file from its start.
 - **`FOR APPEND`** writes after what is already there; the file must exist.
-  One exception, on the CF-3300 and so here: when the file's size is an
-  exact multiple of 256, the new text goes **over the last 256 bytes, from
-  their start**, instead of after them. A 256-byte file with `"X"` appended
-  stays 256 bytes long and starts with `X`, CR, LF and the end-of-file mark.
+  One exception, on the CF-3300 and so here: when the file does **not** end
+  in an end-of-file mark (Ctrl-Z) and its size is an exact multiple of 256,
+  the new text goes **over the last 256 bytes, from their start**, instead
+  of after them, and the file keeps its size. A 256-byte file of that kind
+  with `"X"` appended starts with `X`, CR, LF and the end-of-file mark. Files
+  that Disk BASIC wrote always end in Ctrl-Z, so they append correctly;
+  the loss only reaches files written by other programs.
 - **No `FOR` at all is random access**, for [`FIELD`](FIELD.md), `GET` and
   `PUT`; `LEN=` (1 to 256) is the record length.
 

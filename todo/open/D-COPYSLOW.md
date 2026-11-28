@@ -374,3 +374,5 @@
       record's start; Z256 / Z512 (ending in Ctrl-Z) and B256 (written by BASIC, which ends every file with one) append
       correctly (259 / 515 / 259 B). zerobas is byte-identical on all five. 🔮 "BASIC-written files append correctly":
       HIT. So the loss hits files from MSX-DOS programs or a PC, never a file Disk BASIC wrote. 🙋 Joost to decide.
+      🧭 JOOST 2026-11-28: "Keep it: copy the CF" -- the APPEND overwrite stays, documented with its exact condition
+      (no final Ctrl-Z, a 256 multiple) on docs/keywords/OPEN.md, gated by closefail's app256 row.
