@@ -24,7 +24,29 @@ SRC = os.path.expanduser("~/Documents/msx/msx/disks/test.dsk")
 STEPS = [("mf", "MAXFILES=2"), ("op", 'OPEN "F.TXT" FOR OUTPUT AS #1'),
          ("pr", 'FOR I=1 TO 60:PRINT #1,"0123456789":NEXT'), ("cl", "CLOSE #1"),
          ("oi", 'OPEN "F.TXT" FOR INPUT AS #2'), ("ip", "INPUT #2,A$:PRINT A$"), ("cl2", "CLOSE")]
-D.SESSION = [("boot", None, 14), ("date", "", 5), ("basic", "BASIC", 8)] + [(t, x, 8) for t, x in STEPS]
+# MF15=1 (D-COPYSLOW U1 / U2, Joost "Full redesign, staged"): 15 channels open at once, and per-BYTE counts in the
+# CF-3300's $DE77-$DF93 (the per-channel stride) and $E580-$E59F (its cells just under A's image)
+MF15 = os.environ.get("MF15") == "1"
+if MF15:
+    # each loop prints I first, so a refusal names its channel (the CF-3300 said "Bad file number" mid-loop and a
+    # line typed while it was busy arrived garbled, 2026-11-28 -- waits raised to 15 s)
+    STEPS = [("mf", "MAXFILES=15"),
+             ("op", 'FOR I=1 TO 15:PRINT I;:OPEN "F"+CHR$(64+I)+".TXT" FOR OUTPUT AS #I:NEXT'),
+             ("pr", 'FOR I=1 TO 15:PRINT #I,"X":NEXT'), ("cl", "CLOSE")]
+if os.environ.get("MFSTEP") == "1":   # one channel per step: the stride; then #15 with six open (count or number?)
+    MF15 = True
+    STEPS = [("mf", "MAXFILES=15")] + [(f"o{n}", f'OPEN "F{n}.TXT" FOR OUTPUT AS #{n}') for n in range(1, 7)] + [
+        ("o15", 'OPEN "FF.TXT" FOR OUTPUT AS #15'), ("cl", "CLOSE"), ("o15b", 'OPEN "FF.TXT" FOR OUTPUT AS #15'),
+        ("cl2", "CLOSE")]
+if os.environ.get("MFHI") == "1":   # #15 with NOTHING else open: a refusal is about the NUMBER, success about the COUNT
+    MF15 = True
+    STEPS = [("mf", "MAXFILES=15"), ("o15", 'OPEN "FF.TXT" FOR OUTPUT AS #15'), ("p15", 'PRINT #15,"X"'),
+             ("cl", "CLOSE"), ("o7", 'OPEN "F7.TXT" FOR OUTPUT AS #7'), ("cl2", "CLOSE")]
+if os.environ.get("MFCRT") == "1":   # a NON-disk device at #7: is the number limit the disk's or BASIC's?
+    MF15 = True
+    STEPS = [("mf", "MAXFILES=15"), ("o7", 'OPEN "CRT:" FOR OUTPUT AS #7'), ("p7", 'PRINT #7,"YY"'),
+             ("cl", "CLOSE")]
+D.SESSION = [("boot", None, 14), ("date", "", 5), ("basic", "BASIC", 8)] + [(t, x, 30 if os.environ.get("MFHI") == "1" or os.environ.get("MFCRT") == "1" else 15 if MF15 else 8) for t, x in STEPS]
 order = ["basic"] + [t for t, _ in STEPS]
 SPANS = [(0xDE77, 0xDF93, "below B's image"), (0xDF94, 0xE593, "B's FAT image"), (0xE595, 0xEB94, "A's FAT image"),
          (0xEB95, 0xED94, "dir buf"), (0xED95, 0xEF94, "data buf"), (0xEF95, 0xF194, "mount buf"),
@@ -32,6 +54,11 @@ SPANS = [(0xDE77, 0xDF93, "below B's image"), (0xDF94, 0xE593, "B's FAT image"),
 CMD = ("set ::step basic; set ::cells [dict create]\n"
        "debug set_watchpoint write_mem {0xC000 0xF37F} {$::counting} { dict incr ::cells "
        "\"$::step:[expr {$::wp_last_address >> 4}]\" }\n")
+if MF15:   # exact bytes in the two spans of interest, 16 B blocks elsewhere (keys: B<addr> for a byte, <blk> for a block)
+    CMD = ("set ::step basic; set ::cells [dict create]\n"
+           "debug set_watchpoint write_mem {0xC000 0xF37F} {$::counting} { set a $::wp_last_address; "
+           "if {($a >= 0xDE77 && $a <= 0xDF93) || ($a >= 0xE580 && $a <= 0xE59F)} "
+           "{ dict incr ::cells \"$::step:B$a\" } else { dict incr ::cells \"$::step:[expr {$a >> 4}]\" } }\n")
 for m in machines:
     td = tempfile.mkdtemp()
     dsk = os.path.join(td, "d.dsk")
@@ -64,10 +91,26 @@ for m in machines:
     cl = next((ln for ln in lines if ln.startswith("CELLS ")), "CELLS").split()[1:]
     if not cl:
         print("   NO WRITES RECORDED -- instrument failed, not a finding")
-    per = {}
+    per, byte = {}, {}
     for i in range(0, len(cl) - 1, 2):
         step, blk = cl[i].split(":")
+        if blk.startswith("B"):
+            byte.setdefault(step, {})[int(blk[1:])] = int(cl[i + 1])
+            continue
         per.setdefault(step, {})[int(blk) * 16] = int(cl[i + 1])
+    for step in order[1:]:
+        if step in byte:
+            bb_ = byte[step]
+            runs_, st_, pv_ = [], None, None
+            for a_ in sorted(bb_):
+                if st_ is None or a_ != pv_ + 1:
+                    if st_ is not None:
+                        runs_.append((st_, pv_))
+                    st_ = a_
+                pv_ = a_
+            runs_.append((st_, pv_))
+            print(f"   {step:4s} bytes written in $DE77-$DF93 / $E580-$E59F: " +
+                  " ".join(f"${lo:04X}-${hi:04X}" if hi > lo else f"${lo:04X}" for lo, hi in runs_))
     for step in order[1:]:
         blks = per.get(step, {})
         runs, st, prev, tot = [], None, None, 0

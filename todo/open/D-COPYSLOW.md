@@ -234,3 +234,19 @@
         Unknowns that would shape a redesign: the CF's per-channel state size at MAXFILES 15 (284 B / 15 ~ 18 B a
         channel, against our 50); what the CF keeps in the $E590 block; what zerobas's $E7AD-$E8AC workspace holds.
         🙋 The shape of the work goes to Joost before anything else.
+      🧭 JOOST 2026-11-28: "Full redesign, staged" -- first the last unknowns (U1 the CF's per-channel state at
+      MAXFILES 15, U2 its $E590 cells, U3 what zerobas's $E7AD-$E8AC workspace holds), then the steps, each FULL-gated
+      and each brought to him: (1) compact the channel table into $DE77-$DF93; (2) the buffers to the CF's places;
+      (3) the FAT image(s) with the CF's write-back (dirty-only, both copies, read back); (4) shrink the disk-ROM state.
+      📏 **U1 + U2 + U3 MEASURED (2026-11-28, [bfiles_probe.py](../../scratchpad/bfiles_probe.py) MF15 / MFSTEP / MFHI / MFCRT, [AE_bfiles_u1.out](../../scratchpad/AE_bfiles_u1.out); per-BYTE write
+      counts in $DE77-$DF93 and $E580-$E59F):**
+        U1  the CF-3300's Disk BASIC keeps a disk channel as a STANDARD 37-BYTE MSX-DOS FCB, SIX of them, at
+            $DEB5-$DF92: each OPEN fills the next 37 B ($DEB5-$DED9, $DEDA-$DEFE, ... $DF6E-$DF92). Disk files take #1-#6
+            only -- even with MAXFILES=15, OPEN of a disk file AS #7 or #15 (nothing else open) is "Bad file number";
+            "CRT:" AS #7 opens. 🔮 "~18 B a channel at a fixed stride": MISS (37 B, six). zerobas: 15 disk channels,
+            50 B DSK_ENGTAB rows, nothing in $DE77-$DF93 -> the number limit filed as D-DISKFNUM6.
+        U2  the CF's one cell in that block is $E594, the byte under A's image, written in every operation (the other
+            bytes written there are the image's own first bytes, re-read).
+        U3  zerobas's $E7AD-$E8AC: no named cell and no offset use in any of the four ROMs, no write in these runs --
+            256 B that look unused (a computed-offset cell would be invisible to the search).
+        Still unknown: what the CF keeps in $DE77-$DEB4 (62 B, never written in these runs).
