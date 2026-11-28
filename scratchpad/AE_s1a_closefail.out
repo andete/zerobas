@@ -1,0 +1,6 @@
+ZEROBAS_BASIC_MACHINE=C-BIOS_MSX1_EU_REPACK_DISK python3 probes/disk/disk_probe_closefail.py
+  ok   wp    CF {'msgs': ['ok', 'ok', 'ok', 'Disk write protected', 'Disk write protected'], 'b0': [4, 4]}
+             ZB {'msgs': ['ok', 'ok', 'ok', 'Disk write protected', 'Disk write protected'], 'b0': [4, 4]}
+  ok   full  CF {'msgs': ['ok', 'ok', 'ok', 'Disk full', 'ok', 'ok', 'Disk full'], 'b0': [4, 0, 4]}
+             ZB {'msgs': ['ok', 'ok', 'ok', 'Disk full', 'ok', 'ok', 'Disk full'], 'b0': [4, 0, 4]}
+2 cases, 0 diverge, 0 without a reference

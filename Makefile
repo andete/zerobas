@@ -3511,6 +3511,11 @@ parennest-acceptance: repack-machine
 	ZEROBAS_BASIC_MACHINE=$(REPACK_MACHINE) python3 probes/basic/basic_probe_parennest.py
 
 # --- D-DISKERR: an empty drive is ERR 70 (docs/spec-basic-diskerr.md) ---------------
+# D-COPYSLOW step 1 (2026-11-28): a FAILING CLOSE then a second CLOSE -- write-protected and full disks,
+# against the CF-3300 (the channel turns RANDOM; the second CLOSE writes the entry only).
+closefail-acceptance: repack-machine $(DISK_TEST_DSK)
+	ZEROBAS_BASIC_MACHINE=$(REPACK_MACHINE) python3 probes/disk/disk_probe_closefail.py
+
 nodiskerr-acceptance: repack-machine $(DISK_TEST_DSK)
 	ZEROBAS_BASIC_MACHINE=$(REPACK_MACHINE) python3 probes/disk/diskbasic_probe_nodiskerr.py
 

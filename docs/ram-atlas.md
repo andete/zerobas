@@ -14,12 +14,13 @@ SPDX-License-Identifier: BSD-2-Clause
 
 > **Power-on:** the main ROM's writes before any cartridge's INIT are left out of the rows (they are the RAM test and clear, not a use of the RAM). Addresses of the range the main ROM writes at boot, per run: VG plain 12235, VGHBD dos 12235, VGHBD basic 12235, CF dos 12235, CF basic 12235, ZBND plain 3476, ZBD dos 3437, ZBD basic 3437.
 
-717 rows.
+720 rows.
 
 | range | B | VG plain | VGHBD dos | VGHBD basic | CF dos | CF basic | ZBND plain | ZBD dos | ZBD basic | zerobas |
 |---|---:|---|---|---|---|---|---|---|---|---|
 | `$D000-$D355` | 854 |   | D:R |   | D:R |   |   | D:R |   |  |
-| `$D356-$D3D7` | 130 |   | D:R B:R |   | D:R B:R |   |   | D:R B:R |   |  |
+| `$D356-$D356` | 1 |   | D:R B:R |   | D:R B:R |   |   | D:R B:R |   |  |
+| `$D357-$D3D7` | 129 |   | D:R B:R |   | D:R B:R |   |   | D:R |   |  |
 | `$D3D8-$D3D8` | 1 |   | D:R |   | D:R |   |   | D:R |   |  |
 | `$D3D9-$D3DA` | 2 |   | D:R |   | D:R B:R |   |   | D:R B:R |   |  |
 | `$D3DB-$D3ED` | 19 |   | D:R B:R |   | D:R B:R |   |   | D:R |   |  |
@@ -29,11 +30,11 @@ SPDX-License-Identifier: BSD-2-Clause
 | `$D40F-$D412` | 4 |   | D:DR |   | D:DR |   |   | D:R |   |  |
 | `$D413-$D428` | 22 |   | D:R |   | D:R |   |   | D:R |   |  |
 | `$D429-$D42A` | 2 |   | D:R |   | D:R B:R |   |   | D:R B:R |   |  |
-| `$D42B-$D4FC` | 210 |   | D:R |   | D:R |   |   | D:R |   |  |
-| `$D4FD-$D4FE` | 2 |   | D:R |   | D:R |   |   | D:MR |   |  |
-| `$D4FF-$D518` | 26 |   | D:R |   | D:R |   |   | D:MR B:M |   |  |
-| `$D519-$D51C` | 4 |   | D:R B:R |   | D:R B:R |   |   | D:MR B:MR |   |  |
-| `$D51D-$D51E` | 2 |   | D:R B:R |   | D:R B:R |   |   | D:MR B:R |   |  |
+| `$D42B-$D4F8` | 206 |   | D:R |   | D:R |   |   | D:R |   |  |
+| `$D4F9-$D4FA` | 2 |   | D:R |   | D:R |   |   | D:R B:M |   |  |
+| `$D4FB-$D516` | 28 |   | D:R |   | D:R |   |   | D:MR B:M |   |  |
+| `$D517-$D518` | 2 |   | D:R |   | D:R |   |   | D:MR B:R |   |  |
+| `$D519-$D51E` | 6 |   | D:R B:R |   | D:R B:R |   |   | D:MR B:R |   |  |
 | `$D51F-$D526` | 8 |   | D:R B:R |   | D:R B:R |   |   | D:R B:R |   |  |
 | `$D527-$D528` | 2 |   | D:R B:DR |   | D:R B:R |   |   | D:R B:R |   |  |
 | `$D529-$D52A` | 2 |   | D:R B:R |   | D:R B:R |   |   | D:R B:R |   |  |
@@ -43,7 +44,8 @@ SPDX-License-Identifier: BSD-2-Clause
 | `$D533-$DA3C` | 1290 |   | D:R |   | D:R |   |   | D:R |   |  |
 | `$DA3D-$DA3D` | 1 |   | D:R B:R |   | D:R B:R |   |   | D:R B:R |   |  |
 | `$DA3E-$DA40` | 3 |   | D:R |   | D:R B:R |   |   | D:R B:R |   |  |
-| `$DA41-$DA42` | 2 |   | D:DR B:D |   | D:DR B:DR |   |   | D:DR B:DR |   |  |
+| `$DA41-$DA41` | 1 |   | D:DR B:D |   | D:DR B:DR |   |   | D:DR B:R |   |  |
+| `$DA42-$DA42` | 1 |   | D:DR B:D |   | D:DR B:DR |   |   | D:DR B:DR |   |  |
 | `$DA43-$DA45` | 3 |   | D:DR B:D |   | D:DR B:DR |   |   | D:DR B:R |   |  |
 | `$DA46-$DA47` | 2 |   | D:DR B:D |   | D:DR B:R |   |   | D:DR B:R |   |  |
 | `$DA48-$DA4D` | 6 |   | D:DR |   | D:DR B:R |   |   | D:DR B:R |   |  |
@@ -94,8 +96,8 @@ SPDX-License-Identifier: BSD-2-Clause
 | `$DB93-$DB93` | 1 |   | D:R B:MDR |   | D:R | B:MD |   | D:R | B:M |  |
 | `$DB94-$DB96` | 3 |   | D:R B:MD |   | D:R | B:MD |   | D:R | B:M |  |
 | `$DB97-$DB97` | 1 |   | D:R B:MD |   | D:R |   |   | D:R |   |  |
-| `$DB98-$DB9B` | 4 |   | D:R |   | D:R |   |   | D:R |   |  |
-| `$DB9C-$DBA9` | 14 |   | D:R |   | D:R |   |   | D:MR |   |  |
+| `$DB98-$DBA5` | 14 |   | D:R |   | D:R |   |   | D:R |   |  |
+| `$DBA6-$DBA9` | 4 |   | D:R |   | D:R |   |   | D:MR |   |  |
 | `$DBAA-$DBAF` | 6 |   | D:R |   | D:DR B:D |   |   | D:MR |   |  |
 | `$DBB0-$DBB1` | 2 |   | D:R |   | D:DR B:DR |   |   | D:MR |   |  |
 | `$DBB2-$DBB3` | 2 |   | D:MR B:M |   | D:MDR B:DR |   |   | D:MR |   |  |
@@ -107,7 +109,8 @@ SPDX-License-Identifier: BSD-2-Clause
 | `$DBD8-$DBE7` | 16 |   | D:MDR B:M |   | D:MDR B:MDR |   |   | D:MDR B:MDR |   |  |
 | `$DBE8-$DBEB` | 4 |   | D:MDR B:MR |   | D:MDR B:MDR |   |   | D:MDR B:MDR |   |  |
 | `$DBEC-$DBED` | 2 |   | D:MDR B:MDR |   | D:MDR B:MDR |   |   | D:MDR B:MD |   |  |
-| `$DBEE-$DBF5` | 8 |   | D:DR B:DR |   | D:DR B:DR |   |   | D:MDR B:MD |   |  |
+| `$DBEE-$DBF1` | 4 |   | D:DR B:DR |   | D:DR B:DR |   |   | D:MDR B:MD |   |  |
+| `$DBF2-$DBF5` | 4 |   | D:DR B:DR |   | D:DR B:DR |   |   | D:MDR B:MDR |   |  |
 | `$DBF6-$DBFD` | 8 |   | D:DR B:DR |   | D:DR B:DR |   |   | D:DR B:DR |   |  |
 | `$DBFE-$DBFF` | 2 |   | D:R B:R |   | D:R B:R |   |   | D:R B:R |   |  |
 | `$DC00-$DC60` | 97 |   | D:R |   | D:R |   |   | D:R |   |  |
@@ -362,8 +365,8 @@ SPDX-License-Identifier: BSD-2-Clause
 | `$EFFE-$F018` | 27 |   | H:D | B:D | H:D D:D |   |   | H:D | H:D | P1_BLIT |
 | `$F019-$F021` | 9 |   | H:D | B:D | H:D D:D |   |   |   |   | FLD_END |
 | `$F022-$F022` | 1 |   | H:D | B:D | H:D D:D |   |   | H:D | H:D | DSK_CURDRV |
-| `$F023-$F045` | 35 |   | H:D | B:D | H:D D:D |   |   |   |   |  |
-| `$F046-$F051` | 12 |   | H:D | B:D | H:D D:D |   |   |   | H:M |  |
+| `$F023-$F047` | 37 |   | H:D | B:D | H:D D:D |   |   |   |   |  |
+| `$F048-$F051` | 10 |   | H:D | B:D | H:D D:D |   |   |   | H:M |  |
 | `$F052-$F057` | 6 |   | H:D | B:D | H:D D:D |   |   |   | H:M B:M |  |
 | `$F058-$F061` | 10 |   | H:D | B:D | H:D D:D |   |   | H:M | H:M B:M |  |
 | `$F062-$F06D` | 12 |   | H:D | B:D | H:D D:D |   |   | H:M | H:MD B:M |  |

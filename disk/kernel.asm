@@ -2363,14 +2363,18 @@ dout_live:
 
 ; dout_pos -- HL = &block+6, the record position. IX = the row. Clobbers A.
 dout_pos:
+                call    dout_blk
+                inc     hl
+                inc     hl
+                inc     hl
+                inc     hl
+                inc     hl
+                inc     hl
+                ret
+; dout_blk -- HL = &block+0, the channel block's MODE byte (BASIC's: 2 OUTPUT, 4 RANDOM). IX = the row.
+dout_blk:
                 ld      l, (ix+DOUT_BLK)
                 ld      h, (ix+DOUT_BLK+1)
-                inc     hl
-                inc     hl
-                inc     hl
-                inc     hl
-                inc     hl
-                inc     hl
                 ret
 
 ; dout_open -- the FCB both OPENs build in the live channel's row: drive 0, the
@@ -2865,8 +2869,16 @@ cs_mul:
                 ex      de, hl
                 ret
 dwr_fail:
-                ; 🔴 D-PRINTFULLSTAMP (2026-10-06): a FAILING CLOSE (DOUT_DEAD is set
-                ; before its writes) commits nothing, as the CF-3300's: MSX-DOS 1
+                ; 🔁 D-COPYSLOW step 1 (2026-11-28): a FAILING CLOSE is recognised by the
+                ; CF-3300's own mark, not by a flag of ours -- hk_chclose sets the block's
+                ; +0 mode to 4 (RANDOM) before its writes, so +0 = 4 while FCH_MODES is
+                ; not yet 4 is that close (a RANDOM channel's own failure has both = 4 and
+                ; only raises; a PRINT#'s has +0 = 2). FCH_MODES then becomes 4 too, so the
+                ; NEXT CLOSE is a random-mode close -- the entry only: it succeeds on a full
+                ; disk and fails again on a write-protected one, the CF's two measured faces
+                ; (scratchpad/AE_bfiles_u2.out; the DOUT_DEAD bit that used to do this freed
+                ; the channel silently on BOTH).
+                ; 🔴 D-PRINTFULLSTAMP (2026-10-06): a FAILING CLOSE commits nothing, as the CF-3300's: MSX-DOS 1
                 ; writes the FAT at close, so a close that fails leaves the entry
                 ; 0/0 AND the clusters free (scratchpad/savefull_run.out: FAT[714]
                 ; 000 there, FFF here). Our allocator commits each cluster as it
@@ -2875,8 +2887,19 @@ dwr_fail:
                 ; A PRINT# failure keeps the chain: the channel is still open, and
                 ; a later CLOSE retries. The pending code (66 / a DSKIO one) is held
                 ; across the freeing, whose successful reads clear DISKOP_ERR.
-                bit     DOUT_DEAD, (ix+DOUT_FLG)
-                jr      z, dwr_raise
+                call    dout_blk
+                ld      a, (hl)
+                cp      4
+                jr      nz, dwr_raise       ; not a closing channel (a PRINT#'s failure keeps the chain)
+                ld      a, (FCH_ACTIVE)
+                ld      e, a
+                ld      d, 0
+                ld      hl, FCH_MODES
+                add     hl, de
+                ld      a, (hl)
+                cp      4
+                jr      z, dwr_raise        ; a RANDOM channel's own close: raise only
+                ld      (hl), 4             ; the channel is RANDOM now, as the CF-3300's
                 ld      a, (DISKOP_ERR)
                 push    af
                 ld      l, (ix+DOUT_FIRST)
@@ -2898,10 +2921,11 @@ dwr_raise:
 
 ; hk_chclose -- CLOSE of a disk channel (H_CHCLOSE), B = its mode. OUTPUT /
 ; APPEND: Ctrl-Z, the last record, the directory entry; RANDOM (S10.D): the entry
-; only; INPUT (S10.C): nothing. A failure raises with
-; DOUT_DEAD set and the channel still open, so a re-OPEN is 54 and the NEXT
-; CLOSE lands here, clears it and frees the channel without touching the disk
-; -- D-DISKFULL's measured CF-3300 face.
+; only; INPUT (S10.C): nothing. A failing OUTPUT / APPEND close leaves the channel
+; OPEN in RANDOM mode, as the CF-3300's (its block +0 goes 2 -> 4; D-COPYSLOW step 1,
+; scratchpad/AE_bfiles_u2.out): a re-OPEN is 54 and the NEXT CLOSE is a random
+; close, the entry only -- it frees the channel on a full disk (D-DISKFULL's face)
+; and fails again on a write-protected one.
 hk_chclose:
                 ei
                 call    dout_live
@@ -2915,9 +2939,9 @@ hk_chclose:
                 jr      z, hcc_done         ; S10.C: INPUT (1) -- nothing to write; the
                                             ; CF-3300 enters $FE62 here too
                                             ; (s10c_hook_run.out), main frees the row
-                bit     DOUT_DEAD, (ix+DOUT_FLG)
-                jr      nz, hcc_done        ; the failed CLOSE's second: just free it
-                set     DOUT_DEAD, (ix+DOUT_FLG)
+                call    dout_blk
+                ld      (hl), 4             ; the CF-3300's failing-close mark, set before the
+                                            ; writes; dwr_fail reads it (a success frees the row)
                 ld      a, $1A              ; CP/M text EOF, as the CF-3300's CLOSE
                 call    dout_put
                 call    dout_pos
@@ -2942,8 +2966,11 @@ hcc_stamp:
                 push    ix
                 pop     hl
                 call    close_size_upd      ; the size, then fat_dir_update (carve 18)
-                jr      c, dwr_fail
+                jp      c, dwr_fail         ; (jp: dwr_fail grew past jr's reach, D-COPYSLOW step 1)
 hcc_done:
+                call    dout_blk
+                ld      (hl), 0             ; a CLOSE that succeeds leaves the block's +0 mode 00, as the
+                                            ; CF-3300's (D-COPYSLOW step 1, scratchpad/AE_bfiles_u2.out)
                 scf                         ; claimed; main frees the channel
                 ret
 

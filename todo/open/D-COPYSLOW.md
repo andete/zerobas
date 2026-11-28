@@ -321,3 +321,13 @@
       taking the RANDOM path that already exists -- which ALSO fixes the write-protect face; DOUT_BLK -> the block's
       +1..+2 := the FCB address, as the CF; DOUT_RFULL -> gone (write the full record at once); DIN_LEFT -> block +6;
       DIN_CRPEND -> block +3 (the CF's own read-state byte; its exact meaning unmeasured, stated as such).
+      ✅ **STEP 1a, SLICE 1 BUILT (2026-11-28): A FAILING CLOSE IS THE CF-3300'S MODE CHANGE.** hk_chclose sets the channel
+      block's +0 mode to 4 before an OUTPUT / APPEND close's writes; dwr_fail recognises "+0 = 4 while FCH_MODES is not
+      4" as that close (frees the chain as D-PRINTFULLSTAMP measured, then FCH_MODES := 4); a CLOSE that succeeds
+      leaves +0 = 00 (hcc_done), as the CF. DOUT_DEAD is no longer read or written (its equate goes with the row in
+      1b). New gate: closefail-acceptance ([disk_probe_closefail.py](../../probes/disk/disk_probe_closefail.py)) -- a write-protected and a full disk,
+      the messages and block +0 after every CLOSE, against the CF-3300: 2/2 ([AE_s1a_closefail.out](../../scratchpad/AE_s1a_closefail.out)); KNIFE: the
+      previous kernel.asm turns both rows red, ROM hash moved and restored ([AE_s1a_closefail_knife.out](../../scratchpad/AE_s1a_closefail_knife.out)).
+      🔮 "wp: Disk write protected twice, +0 04 04; full: +0 04 00 04, zerobas the same": HIT (after two parser
+      fixes in the new probe -- a wrapped line and repeated CLOSE lines; the machines agreed from the first run).
+      Subject suites green: diskfull, nodiskerr, fcbhdr, dout, clearclose, putdir, diskbasic.
