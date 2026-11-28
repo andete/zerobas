@@ -1,0 +1,65 @@
+== National_CF-3300   (log /tmp/zerobas/tmp_mswxk0q)
+   after: A256.TXT attr=00 size=256 date=0821 time=0000 sha1=6b7d325ca727
+   after: A512.TXT attr=00 size=512 date=0821 time=0000 sha1=67615d6b3901
+   after: B256.TXT attr=00 size=259 date=0821 time=0000 sha1=cc6db040569c
+   after: Z256.TXT attr=00 size=259 date=0821 time=0000 sha1=cc6db040569c
+   after: Z512.TXT attr=00 size=515 date=0821 time=0000 sha1=4e2f2a10702d
+   block header +0..+8 after boot: 14 FC 47 02 C8 FC C0 FC 04
+   block header +0..+8 after date: 14 FC 47 02 C8 FC C0 FC 04
+   block header +0..+8 after basic: 00 FC 47 02 C8 FC C0 00 04
+   block header +0..+8 after cs  : 00 FC 47 02 C8 FC C0 00 04
+   block header +0..+8 after mb  : 00 B5 DE 00 00 FC 00 00 04
+   block header +0..+8 after aA256: 00 B5 DE 1A 00 FC 04 00 04
+   block header +0..+8 after aZ256: 00 B5 DE 1A 00 FC 03 00 04
+   block header +0..+8 after aA512: 00 B5 DE 1A 00 FC 04 00 04
+   block header +0..+8 after aZ512: 00 B5 DE 1A 00 FC 03 00 04
+   block header +0..+8 after aB256: 00 B5 DE 1A 00 FC 03 00 04
+   HIMEM after each step: boot=$DF93  date=$DF93  basic=$DE77  cs=$DE77  mb=$DE77  aA256=$DE77  aZ256=$DE77  aA512=$DE77  aZ512=$DE77  aB256=$DE77
+   cs   bytes written in $DC00-$DF93 / $E580-$E59F: $DC61-$DC65 $DC6C $DD6E $DD75
+   mb   bytes written in $DC00-$DF93 / $E580-$E59F: $DC00-$DC5F $DC65 $DC6C $DD6E-$DD72 $DD74-$DD75 $DD77-$DE76 $DEB5-$DED9 $E594-$E59F
+   aA256 bytes written in $DC00-$DF93 / $E580-$E59F: $DC65 $DC6C $DD6E-$DD72 $DD74-$DD75 $DD77-$DE76 $DEB5-$DED9 $E594-$E59F
+   aZ256 bytes written in $DC00-$DF93 / $E580-$E59F: $DC65 $DC6C $DD6E-$DD72 $DD74-$DD75 $DD77-$DE76 $DEB5-$DED9 $E594-$E59F
+   aA512 bytes written in $DC00-$DF93 / $E580-$E59F: $DC65 $DC6C $DD6E-$DD72 $DD74-$DD75 $DD77-$DE76 $DEB5-$DED9 $E594-$E59F
+   aZ512 bytes written in $DC00-$DF93 / $E580-$E59F: $DC65 $DC6C $DD6E-$DD72 $DD74-$DD75 $DD77-$DE76 $DEB5-$DED9 $E594-$E59F
+   aB256 bytes written in $DC00-$DF93 / $E580-$E59F: $DC65 $DC6C $DD6E-$DD72 $DD74-$DD75 $DD77-$DE76 $DEB5-$DED9 $E594-$E59F
+   cs   $D830-$D87F:4068870  $DB50-$DB9F:117596
+   mb   $D7D0-$D87F:3371146  $DB60-$DBFF:157  $E5A0-$EE9F:7457  $EF90-$F1CF:966  $F230-$F24F:41  $F2B0-$F30F:257  $F330-$F33F:24  $F350-$F35F:6
+   aA256 $D7E0-$D87F:3726828  $E5A0-$F1CF:5976  $F230-$F24F:35  $F2B0-$F30F:264  $F330-$F33F:17  $F350-$F35F:6
+   aZ256 $D7E0-$D87F:3738106  $E5A0-$F1CF:6235  $F230-$F24F:36  $F2B0-$F30F:291  $F330-$F33F:17  $F350-$F35F:6
+   aA512 $D7D0-$D87F:3739704  $E5A0-$F1CF:5985  $F230-$F24F:37  $F2B0-$F30F:309  $F330-$F33F:17  $F350-$F35F:6
+   aZ512 $D7E0-$D87F:3710386  $E5A0-$F1CF:6257  $F230-$F24F:44  $F2B0-$F30F:337  $F330-$F33F:18  $F350-$F35F:6
+   aB256 $D7D0-$D87F:3700684  $E5A0-$F1CF:6238  $F230-$F24F:36  $F2B0-$F30F:297  $F330-$F33F:17  $F350-$F35F:6
+   by CF span (all steps): below B's image=0  B's FAT image=0  A's FAT image=9603  dir buf=21209  data buf=3887  mount buf=3222  DPB + after=2235  fixed area=3178
+   final screen: RINT #1,"X":CLOSE / Ok / OPEN "Z256.TXT" FOR APPEND AS / #1:PRINT #1,"X":CLOSE / Ok / OPEN "A512.TXT" FOR APPEND AS / #1:PRINT #1,"X":CLOSE / Ok / OPEN "Z512.TXT" FOR APPEND AS / #1:PRINT #1,"X":CLOSE / Ok / OPEN "B256.TXT" FOR APPEND AS / #1:PRINT #1,"X":CLOSE / Ok / ÿ / color auto  goto  list  run
+== C-BIOS_MSX1_EU_REPACK_DISK   (log /tmp/zerobas/tmpl3dl501r)
+   after: A256.TXT attr=00 size=256 date=0821 time=0000 sha1=6b7d325ca727
+   after: A512.TXT attr=00 size=512 date=0821 time=0000 sha1=67615d6b3901
+   after: B256.TXT attr=00 size=259 date=0821 time=0000 sha1=cc6db040569c
+   after: Z256.TXT attr=00 size=259 date=0821 time=0000 sha1=cc6db040569c
+   after: Z512.TXT attr=00 size=515 date=0821 time=0000 sha1=4e2f2a10702d
+   block header +0..+8 after boot: FF FF FF FF FF FF FF FF FF
+   block header +0..+8 after date: FF FF FF FF FF FF FF FF FF
+   block header +0..+8 after basic: FF FF FF FF FF FF FF FF FF
+   block header +0..+8 after cs  : FF FF FF FF FF FF FF FF FF
+   block header +0..+8 after mb  : 00 FF FF FF 00 FF 00 FF FF
+   block header +0..+8 after aA256: 00 FF FF FF 00 FF 04 FF FF
+   block header +0..+8 after aZ256: 00 FF FF FF 00 FF 03 FF FF
+   block header +0..+8 after aA512: 00 FF FF FF 00 FF 04 FF FF
+   block header +0..+8 after aZ512: 00 FF FF FF 00 FF 03 FF FF
+   block header +0..+8 after aB256: 00 FF FF FF 00 FF 03 FF FF
+   HIMEM after each step: boot=$DF93  date=$DF93  basic=$DE77  cs=$DE77  mb=$DE77  aA256=$DE77  aZ256=$DE77  aA512=$DE77  aZ512=$DE77  aB256=$DE77
+   mb   bytes written in $DC00-$DF93 / $E580-$E59F: $DC00-$DC5E $DD6E $DD72 $DD74 $DD77-$DE76
+   aA256 bytes written in $DC00-$DF93 / $E580-$E59F: $DD6E $DD72 $DD74 $DD77-$DE76
+   aZ256 bytes written in $DC00-$DF93 / $E580-$E59F: $DD6E $DD72 $DD74 $DD77-$DE76
+   aA512 bytes written in $DC00-$DF93 / $E580-$E59F: $DD6E $DD72 $DD74 $DD77-$DE76
+   aZ512 bytes written in $DC00-$DF93 / $E580-$E59F: $DD6E $DD72 $DD74 $DD77-$DE76
+   aB256 bytes written in $DC00-$DF93 / $E580-$E59F: $DD6E $DD72 $DD74 $DD77-$DE76
+   cs   $D850-$D87F:1836714  $DB60-$DB9F:57649
+   mb   $D800-$D87F:1780969  $DB60-$DBFF:158  $E4B0-$E4EF:65  $E8A0-$ECCF:6749  $ED50-$ED6F:42  $ED90-$ED9F:6  $EDB0-$EDBF:29  $EE40-$EE5F:2  $EF40-$EF5F:19  $EFF0-$EFFF:147
+   aA256 $D810-$D87F:1813312  $E4B0-$E4EF:72  $E8A0-$ECCF:4170  $ED50-$ED6F:32  $ED90-$ED9F:4  $EDB0-$EDBF:22  $EE40-$EE5F:2  $EF40-$EF5F:19  $EFF0-$EFFF:110
+   aZ256 $D810-$D87F:1777614  $E4B0-$E4EF:81  $E8A0-$ECCF:4938  $ED50-$ED6F:40  $ED90-$ED9F:4  $EDB0-$EDBF:26  $EE40-$EE5F:2  $EF40-$EF5F:19  $EFF0-$EFFF:134
+   aA512 $D810-$D87F:1789648  $E4B0-$E4EF:72  $E8A0-$ECCF:4426  $ED50-$ED6F:31  $ED90-$ED9F:4  $EDB0-$EDBF:24  $EE40-$EE5F:2  $EF40-$EF5F:19  $EFF0-$EFFF:122
+   aZ512 $D810-$D87F:1800854  $E4B0-$E4EF:81  $E8A0-$ECCF:4938  $ED50-$ED6F:40  $ED90-$ED9F:4  $EDB0-$EDBF:26  $EE40-$EE5F:2  $EF40-$EF5F:19  $EFF0-$EFFF:134
+   aB256 $D810-$D87F:1787378  $E4B0-$E4EF:81  $E8A0-$ECCF:4938  $ED50-$ED6F:40  $ED90-$ED9F:4  $EDB0-$EDBF:26  $EE40-$EE5F:2  $EF40-$EF5F:19  $EFF0-$EFFF:134
+   by CF span (all steps): below B's image=0  B's FAT image=452  A's FAT image=24845  dir buf=5741  data buf=305  mount buf=781  DPB + after=0  fixed area=0
+   final screen: "X":CLOSE / ZB / OPEN "Z256.TXT" FOR APPEND AS #1:PRIN / T #1,"X":CLOSE / ZB / OPEN "A512.TXT" FOR APPEND AS #1:PRIN / T #1,"X":CLOSE / ZB / OPEN "Z512.TXT" FOR APPEND AS #1:PRIN / T #1,"X":CLOSE / ZB / OPEN "B256.TXT" FOR APPEND AS #1:PRIN / T #1,"X":CLOSE / ZB / ÿ / color  auto   goto   list   run

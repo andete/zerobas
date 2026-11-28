@@ -1,0 +1,72 @@
+== National_CF-3300   (log /tmp/zerobas/tmpmmjfa25q)
+   block header +0..+8 after boot: 14 FC 47 02 C8 FC C0 FC 04
+   block header +0..+8 after date: 14 FC 47 02 C8 FC C0 FC 04
+   block header +0..+8 after basic: 00 FC 47 02 C8 FC C0 00 04
+   block header +0..+8 after cs  : 00 FC 47 02 C8 FC C0 00 04
+   block header +0..+8 after mk  : 00 B5 DE 00 00 FC 6C 00 04
+   block header +0..+8 after oi  : 01 B5 DE 30 00 FC 00 00 04
+   block header +0..+8 after r255: 01 B5 DE 00 00 FC FE 00 04
+   block header +0..+8 after r1  : 01 B5 DE 00 00 FC FF 00 04
+   block header +0..+8 after r1b : 01 B5 DE 00 00 FC 00 00 04
+   block header +0..+8 after eof : 01 B5 DE 34 00 FC 01 00 04
+   block header +0..+8 after r7  : 01 B5 DE 00 00 FC 08 00 04
+   block header +0..+8 after r1c : 01 B5 DE 00 00 FC 09 00 04
+   block header +0..+8 after cl  : 00 B5 DE 00 00 FC 09 00 04
+   HIMEM after each step: boot=$DF93  date=$DF93  basic=$DE77  cs=$DE77  mk=$DE77  oi=$DE77  r255=$DE77  r1=$DE77  r1b=$DE77  eof=$DE77  r7=$DE77  r1c=$DE77  cl=$DE77
+   cs   bytes written in $DC00-$DF93 / $E580-$E59F: $DC61-$DC65 $DC6C $DD6E $DD75
+   mk   bytes written in $DC00-$DF93 / $E580-$E59F: $DC65 $DC6C $DD6E-$DD72 $DD74-$DD75 $DD77-$DE76 $DEB5-$DED9 $E594-$E59F
+   oi   bytes written in $DC00-$DF93 / $E580-$E59F: $DC65 $DC6C $DD6E-$DD72 $DD74 $DD77-$DE76 $DEB5-$DED9 $E594-$E59F
+   r255 bytes written in $DC00-$DF93 / $E580-$E59F: $DC00-$DC5F $DC65 $DC6C $DD71 $DD74
+   r1   bytes written in $DC00-$DF93 / $E580-$E59F: $DC65 $DC6C $DD71 $DD74
+   r1b  bytes written in $DC00-$DF93 / $E580-$E59F: $DC65 $DC6C $DD71 $DD74 $DD77-$DDE3 $DED1-$DED4 $DED6-$DED8
+   eof  bytes written in $DC00-$DF93 / $E580-$E59F: $DC65 $DC6C $DD71 $DD74
+   r7   bytes written in $DC00-$DF93 / $E580-$E59F: $DC65 $DC6C $DD71 $DD74
+   r1c  bytes written in $DC00-$DF93 / $E580-$E59F: $DC65 $DC6C $DD71 $DD74
+   cl   bytes written in $DC00-$DF93 / $E580-$E59F: $DC65 $DC6C $DD6E $DD75
+   cs   $D830-$D87F:4068884  $DB50-$DB9F:117582
+   mk   $D7D0-$D87F:3371668  $E5A0-$EF0F:7565  $EF90-$F1CF:987  $F230-$F24F:44  $F2B0-$F30F:306  $F330-$F33F:24  $F350-$F35F:6
+   oi   $D7E0-$D87F:3891138  $E5A0-$F1CF:5910  $F230-$F24F:28  $F2B0-$F30F:173  $F330-$F33F:15  $F350-$F35F:6
+   r255 $D800-$D87F:4175178  $DB60-$DBFF:159
+   r1   $D830-$D87F:4182668  $DB60-$DB6F:1
+   r1b  $D800-$D87F:4178960  $DB50-$DB5F:1  $F230-$F23F:2  $F2D0-$F30F:42
+   eof  $D820-$D87F:4175542
+   r7   $D810-$D87F:4168112  $DB50-$DB5F:9
+   r1c  $D820-$D87F:4169814  $DB50-$DB5F:1
+   cl   $D820-$D87F:4180184  $F2B0-$F2EF:14  $F300-$F30F:1
+   by CF span (all steps): below B's image=0  B's FAT image=0  A's FAT image=3239  dir buf=8778  data buf=983  mount buf=1069  DPB + after=774  fixed area=1007
+   final screen: Ok / A$=INPUT$(1,#1):PRINT ASC(A$) / 50 / Ok / A$=INPUT$(1,#1):PRINT ASC(A$) / 51 / Ok / PRINT EOF(1) / 0 / Ok / A$=INPUT$(8,#1):PRINT ASC(RIG / HT$(A$,1)) / 48 / Ok / A$=INPUT$(1,#1):PRINT ASC(A$) / 49 / Ok / CLOSE / Ok / ÿ / color auto  goto  list  run
+== C-BIOS_MSX1_EU_REPACK_DISK   (log /tmp/zerobas/tmpw9jb39p9)
+   block header +0..+8 after boot: FF FF FF FF FF FF FF FF FF
+   block header +0..+8 after date: FF FF FF FF FF FF FF FF FF
+   block header +0..+8 after basic: FF FF FF FF FF FF FF FF FF
+   block header +0..+8 after cs  : FF FF FF FF FF FF FF FF FF
+   block header +0..+8 after mk  : 00 FF FF FF 00 FF 6C FF FF
+   block header +0..+8 after oi  : 01 FF FF FF 00 FF 00 FF FF
+   block header +0..+8 after r255: 01 FF FF FF 00 FF FF FF FF
+   block header +0..+8 after r1  : 01 FF FF FF 00 FF 00 FF FF
+   block header +0..+8 after r1b : 01 FF FF FF 00 FF 01 FF FF
+   block header +0..+8 after eof : 01 FF FF FF 00 FF 01 FF FF
+   block header +0..+8 after r7  : 01 FF FF FF 00 FF 09 FF FF
+   block header +0..+8 after r1c : 01 FF FF FF 00 FF 0A FF FF
+   block header +0..+8 after cl  : 00 FF FF FF 00 FF 0A FF FF
+   HIMEM after each step: boot=$DF93  date=$DF93  basic=$DE77  cs=$DE77  mk=$DE77  oi=$DE77  r255=$DE77  r1=$DE77  r1b=$DE77  eof=$DE77  r7=$DE77  r1c=$DE77  cl=$DE77
+   mk   bytes written in $DC00-$DF93 / $E580-$E59F: $DD6E $DD72 $DD74 $DD77-$DE76
+   oi   bytes written in $DC00-$DF93 / $E580-$E59F: $DD6E $DD72 $DD74
+   r255 bytes written in $DC00-$DF93 / $E580-$E59F: $DC00-$DC5E $DD74 $DD77-$DE76
+   r1   bytes written in $DC00-$DF93 / $E580-$E59F: $DD74
+   r1b  bytes written in $DC00-$DF93 / $E580-$E59F: $DD74 $DD77-$DDE2
+   r7   bytes written in $DC00-$DF93 / $E580-$E59F: $DD74
+   r1c  bytes written in $DC00-$DF93 / $E580-$E59F: $DD74
+   cl   bytes written in $DC00-$DF93 / $E580-$E59F: $DD6E
+   cs   $D850-$D87F:1836716  $DB60-$DB9F:57647
+   mk   $D7F0-$D87F:1785508  $E4B0-$E4EF:74  $E8A0-$ECCF:6984  $ED50-$ED6F:50  $ED90-$ED9F:6  $EDB0-$EDBF:33  $EE40-$EE5F:2  $EF40-$EF5F:16  $EFF0-$EFFF:170
+   oi   $D810-$D87F:1871602  $E4B0-$E4EF:62  $E8A0-$EAAF:2586  $ECA0-$ECCF:38  $ED50-$ED6F:10  $ED90-$ED9F:4  $EDB0-$EDBF:14  $EE40-$EE5F:2  $EF40-$EF5F:16  $EFF0-$EFFF:62
+   r255 $D810-$D87F:1878233  $DB60-$DBFF:160  $E4D0-$E4EF:796  $E8A0-$EAAF:512  $ECB0-$ECBF:4  $ED40-$ED5F:1028  $ED70-$ED8F:523  $EDB0-$EDBF:4  $EFF0-$EFFF:12
+   r1   $D830-$D87F:1895896  $DB50-$DB5F:1  $E4E0-$E4EF:3
+   r1b  $D810-$D87F:1883618  $DB50-$DB5F:1  $E4D0-$E4EF:11  $E8A0-$EAAF:512  $ECB0-$ECBF:4  $ED40-$ED5F:436  $ED70-$ED8F:227  $EDB0-$EDBF:4  $EFF0-$EFFF:12
+   eof  $D820-$D87F:1893162
+   r7   $D820-$D87F:1894608  $DB50-$DB5F:9  $E4E0-$E4EF:25
+   r1c  $D820-$D87F:1893994  $DB50-$DB5F:1  $E4E0-$E4EF:3
+   cl   $D820-$D87F:1892280
+   by CF span (all steps): below B's image=0  B's FAT image=974  A's FAT image=7155  dir buf=5849  data buf=101  mount buf=256  DPB + after=0  fixed area=0
+   final screen: OR INPUT AS #1 / ZB / A$=INPUT$(255,#1) / ZB / A$=INPUT$(1,#1):PRINT ASC(A$) / 50 / ZB / A$=INPUT$(1,#1):PRINT ASC(A$) / 51 / ZB / PRINT EOF(1) / 0 / ZB / A$=INPUT$(8,#1):PRINT ASC(RIGHT$(A$,1 / )) / 48 / ZB / A$=INPUT$(1,#1):PRINT ASC(A$) / 49 / ZB / CLOSE / ZB / ÿ / color  auto   goto   list   run

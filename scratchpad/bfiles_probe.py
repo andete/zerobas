@@ -134,6 +134,22 @@ def inject(path, name11, data):
     open(path, "wb").write(img)
 
 
+if os.environ.get("MFIN2") == "1":   # what the CF keeps in an INPUT channel's block +3 / +6 across a RECORD BOUNDARY
+    MFFLAG = True                    # (+6 wraps to 0 both when a record is fresh and when it is spent): header values
+    MF15 = True
+    STEPS = [("cs", "CLEAR 1000"),
+             ("mk", 'OPEN "T.TXT" FOR OUTPUT AS #1:FOR I=1 TO 33:PRINT #1,"012345678":NEXT:CLOSE'),
+             ("oi", 'OPEN "T.TXT" FOR INPUT AS #1'), ("r255", "A$=INPUT$(255,#1)"),
+             ("r1", 'A$=INPUT$(1,#1):PRINT ASC(A$)'), ("r1b", 'A$=INPUT$(1,#1):PRINT ASC(A$)'),
+             ("eof", "PRINT EOF(1)"), ("r7", 'A$=INPUT$(8,#1):PRINT ASC(RIGHT$(A$,1))'),
+             ("r1c", 'A$=INPUT$(1,#1):PRINT ASC(A$)'), ("cl", "CLOSE")]
+MFAPP2 = os.environ.get("MFAPP2") == "1"
+if MFAPP2:   # Joost "Measure first": WHICH files does the CF's APPEND overwrite? host files of a 256 multiple with and
+    MFFLAG = True   # without a final Ctrl-Z, and one BASIC writes itself (253 A + CR LF + its CLOSE's Ctrl-Z = 256 B)
+    MF15 = True
+    STEPS = [("cs", "CLEAR 1000"), ("mb", 'OPEN "B256.TXT" FOR OUTPUT AS #1:PRINT #1,STRING$(253,"A"):CLOSE')]
+    for nm in ("A256", "Z256", "A512", "Z512", "B256"):
+        STEPS += [("a" + nm, f'OPEN "{nm}.TXT" FOR APPEND AS #1:PRINT #1,"X":CLOSE')]
 if os.environ.get("MFCRT") == "1":   # a NON-disk device at #7: is the number limit the disk's or BASIC's?
     MF15 = True
     STEPS = [("mf", "MAXFILES=15"), ("o7", 'OPEN "CRT:" FOR OUTPUT AS #7'), ("p7", 'PRINT #7,"YY"'),
@@ -160,6 +176,11 @@ for m in machines:
     subprocess.run(["cp", SRC, dsk], check=True)
     if MFAPP:
         inject(dsk, "F       TXT", b"A" * 254 + b"\r\n")
+    if MFAPP2:
+        inject(dsk, "A256    TXT", b"A" * 254 + b"\r\n")
+        inject(dsk, "Z256    TXT", b"A" * 253 + b"\r\n\x1a")
+        inject(dsk, "A512    TXT", b"A" * 510 + b"\r\n")
+        inject(dsk, "Z512    TXT", b"A" * 509 + b"\r\n\x1a")
     if MFDFULL:
         sys.path.insert(0, os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "probes", "disk"))
         import disk_probe_diskfull   # noqa: E402  full_disk(): every free cluster marked used, every FAT copy
@@ -183,7 +204,7 @@ for m in machines:
         ro = os.path.join(td, "ro.dsk")
         subprocess.run(["cp", SRC, ro], check=True)
         os.chmod(ro, 0o444)   # openMSX mounts a read-only image write-protected (probes/disk/build_bdosxe_disk.py)
-        if not (MFFULL or MFDFULL or MFAPP):
+        if not (MFFULL or MFDFULL or MFAPP or MFAPP2 or os.environ.get("MFIN2") == "1"):
             hook += f"  if {{$tag eq \"p2\"}} {{diska {{{ro}}}}}\n"
     tcl = tcl.replace(a, hook + a)
     tcl = tcl.replace("$::tries > 240", "$::tries > 12000")
@@ -197,6 +218,10 @@ for m in machines:
                    stdout=open(os.path.join(td, "err.txt"), "w"), stderr=subprocess.STDOUT, timeout=2400)
     lines = open(fl).read().splitlines()
     print(f"== {m}   (log {td})")
+    if MFAPP2:
+        for e in D.disk_listing(bytearray(open(dsk, "rb").read())):
+            if e[:4] in ("A256", "Z256", "A512", "Z512", "B256"):
+                print("   after: " + e)
     if MFAPP:
         print("   F.TXT after: " + " | ".join(e for e in D.disk_listing(bytearray(open(dsk, "rb").read()))
                                           if e.startswith("F.TXT")))

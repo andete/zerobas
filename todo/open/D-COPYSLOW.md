@@ -356,3 +356,21 @@
       grew rfail + app256: 4/4 ([AE_s1a_closefail.out](../../scratchpad/AE_s1a_closefail.out)). 🔮 "4/4": HIT only after the unpredicted padding fix.
       Subject suites green: append (differential byte-identical), dout, savetail, loadtail, diskfull, fcbhdr, lof,
       putdir, diskbasic; redundant-load, ramatlas, knife re-pin (verdicts unchanged).
+      🧭 JOOST 2026-11-28, on the APPEND overwrite ("that seems a serious bug?"): "Measure first, then decide" --
+      which files lose data on the CF-3300: BASIC-written files (ending in its Ctrl-Z) at 256 / 512 B, host files of
+      a 256 multiple with and without a final Ctrl-Z. The copied behaviour stays until he decides.
+      📏 **THE CF-3300'S INPUT CHANNEL KEEPS A ONE-BYTE READ-AHEAD (2026-11-28, bfiles_probe.py MFIN2, [AE_bfiles_in2.out](../../scratchpad/AE_bfiles_in2.out); block
+      header values across a record boundary, 363 B file):** +3 = a byte FETCHED but not yet consumed (after OPEN it is
+      the file's first byte, $30; after EOF() the byte EOF looked at, $34; $00 when none is held), +6 = the INDEX of the
+      last byte fetched from the record (OPEN 00, INPUT$(255) FE, INPUT$(1) FF, the next INPUT$(1) -- a refill -- 00,
+      EOF() 01, INPUT$(8) 08). It fetches eagerly at OPEN and at each refill, so +6 = 255 means "record spent": no
+      ambiguity. zerobas's +6 counts bytes CONSUMED (FF / 00 / 01 / 09 at those steps). Same characters read on both.
+      So DIN_LEFT and DIN_CRPEND fold into the CF's +3 / +6 scheme -- a bigger slice than the others (the end of a
+      record and of the file are found differently; LOC may move). Unmeasured: how the CF tells "nothing held" from a
+      held $00 byte.
+      📏 **WHICH FILES THE CF-3300'S APPEND OVERWRITES (2026-11-28, bfiles_probe.py MFAPP2, [AE_bfiles_app2.out](../../scratchpad/AE_bfiles_app2.out); APPEND "X" to
+      each, every result checked against constructed bytes):** ONLY a file WITHOUT a final Ctrl-Z whose size is a
+      multiple of 256 -- A256 (256 B) and A512 (512 B: bytes 256-511 overwritten) keep their size and lose their last
+      record's start; Z256 / Z512 (ending in Ctrl-Z) and B256 (written by BASIC, which ends every file with one) append
+      correctly (259 / 515 / 259 B). zerobas is byte-identical on all five. 🔮 "BASIC-written files append correctly":
+      HIT. So the loss hits files from MSX-DOS programs or a PC, never a file Disk BASIC wrote. 🙋 Joost to decide.
