@@ -16,6 +16,8 @@ Two cases, each on both machines, from MSX-DOS's `BASIC`:
            one more PRINT# (Ok on the CF -- zerobas used to retry and fail again: DOUT_RFULL), CLOSE / CLOSE
     inlf   INPUT # after an LF in its lead-in (INPUT$ took "AB" CR first, or controls without): the CF skips the LF
            but no blank after it -- LF "12" reads 12, LF " 12" / LF ",12" read 0 (2026-11-28, AE_bfiles_inlf.out)
+    inra   the one-byte read-ahead: block +3 (the byte fetched, $00 none) and +6 (the last fetched index) after every
+           step, across a record boundary; a NUL that EOF() read ahead is LOST, as on the CF-3300 (65, EOF 0, 66, 67)
     inbl   blanks only, and the end met after skipping: an EMPTY item, not "Input past end"; a blank after an LF stays
            unread (B1 " " CR LF " ": 0 and EOF 0; B2 " " CR LF: 0 and EOF -1)
     app256 APPEND to a host-injected file of EXACTLY 256 B, PRINT #1,"X": the CF-3300 OVERWRITES the last record
@@ -55,6 +57,13 @@ CASES = {
          + f'INPUT #1,X:INPUT #1,Y:PRINT "{nm}";X;Y:CLOSE') for nm, (_b, n) in
         {"P1": (0, 3), "P2": (0, 3), "P3": (0, 3), "P4": (0, 3), "Q1": (0, 1), "Q2": (0, 0), "Q3": (0, 4),
          "Q4": (0, 1), "Q5": (0, 2)}.items()],
+    # the CF-3300's one-byte read-ahead: block +3 / +6 after every step, across a record boundary (R.TXT, 363 B) and
+    # with a NUL read ahead by EOF() and then lost (N.TXT "A" 00 "B" "C")
+    "inra": [("cs", "CLEAR 1000"), ("oi", 'OPEN "R.TXT" FOR INPUT AS #1'), ("r255", "A$=INPUT$(255,#1)"),
+             ("r1", "A$=INPUT$(1,#1):PRINT ASC(A$)"), ("r1b", "A$=INPUT$(1,#1):PRINT ASC(A$)"), ("eof", "PRINT EOF(1)"),
+             ("r8", "A$=INPUT$(8,#1):PRINT ASC(RIGHT$(A$,1))"), ("cl", "CLOSE"),
+             ("on", 'OPEN "N.TXT" FOR INPUT AS #1'), ("na", "A$=INPUT$(1,#1):PRINT ASC(A$)"), ("ne", "PRINT EOF(1)"),
+             ("nb", "A$=INPUT$(1,#1):PRINT ASC(A$)"), ("nc", "A$=INPUT$(1,#1):PRINT ASC(A$)"), ("cn", "CLOSE")],
     # blanks only / the end after skipping (tests/test_seqin.py used to pin "the end" for these -- never measured)
     "inbl": [("cs", "CLEAR 500")] + [("t" + nm, f'OPEN "{nm}.TXT" FOR INPUT AS #1:INPUT #1,X:PRINT "{nm}";X;EOF(1):CLOSE')
                                      for nm in ("B1", "B2", "B3", "B4")],
@@ -118,6 +127,9 @@ def run(machine, case):
     if case == "inbl":
         for nm, body in INBL.items():
             inject(dsk, f"{nm:8s}TXT", body)
+    if case == "inra":
+        inject(dsk, "R       TXT", b"012345678\r\n" * 33)
+        inject(dsk, "N       TXT", b"A\x00BC\r\n")
     ro = probe_tmp.tmp(f"closefail_{case}_{machine}_ro.dsk")
     if os.path.exists(ro):
         os.chmod(ro, 0o644)
@@ -129,7 +141,7 @@ def run(machine, case):
     tcl = D.tcl(out)
     a = "  close $f }"
     assert tcl.count(a) == 1
-    hook = f"  puts $f \"B0 $tag [rd {BLK0}]\"\n"
+    hook = f"  puts $f \"B0 $tag [rd {BLK0}] [rd {BLK0 + 3}] [rd {BLK0 + 6}]\"\n"
     if case == "wp":
         hook += f"  if {{$tag eq \"p1\"}} {{diska {{{ro}}}}}\n"
     tcl = tcl.replace(a, hook + a)
@@ -146,6 +158,7 @@ def run(machine, case):
         return None
     lines = open(out).read().splitlines()
     b0 = {ln.split()[1]: int(ln.split()[2]) for ln in lines if ln.startswith("B0 ")}
+    b36 = {ln.split()[1]: (int(ln.split()[3]), int(ln.split()[4])) for ln in lines if ln.startswith("B0 ")}
     if not any(ln.startswith(steps[-1][0] + " ") for ln in lines):
         return None
     # each step's message is read from ITS OWN snapshot (a long session scrolls: reading every step from the last
@@ -155,6 +168,10 @@ def run(machine, case):
         snap = next((ln for ln in lines if ln.startswith(t + " ")), None)
         msgs.append(step_msg(snap, x) if snap else "<no snapshot>")
     res = {"msgs": msgs, "b0": [b0.get(t) for t, _ in steps if t.startswith("c") and t != "cs"]}
+    if case == "inra":   # the read-ahead's two header bytes after every step
+        res["b3b6"] = [b36.get(t) for t, _ in steps if t != "cs"]   # from the first OPEN: before it the block is
+                                                                       # unwritten RAM (the CF's 02 C0, ours FF FF --
+                                                                       # D-FCBSHAPE's header, not the read-ahead)
     if case == "app256":
         res["file"] = [e for e in D.disk_listing(bytearray(open(dsk, "rb").read())) if e.startswith("F.TXT")]
     return res

@@ -89,6 +89,36 @@ srd_same:
                 sbc     hl, de
                 pop     hl
                 ret
+; din_fetch -- A = an INPUT channel's next record byte, +6 moved onto it; at the record's last index (255, or
+; (size - 1) mod 256 once the random record has reached the size: the file's last record) the next record is
+; loaded first (din_fill, disk/fat.asm). CF = none (the end, a failed read). IX = the row. Clobbers BC, DE, HL.
+; D-COPYSLOW step 1a slice 4: the CF-3300's +6, the INDEX of the last byte fetched; sited here for room.
+din_fetch:
+                call    rr_at_size          ; Z = the file's last record (kernel.asm)
+                ld      c, 255
+                jr      nz, dft_cmp
+                ld      c, (ix+16)
+                dec     c                   ; its last index: (size - 1) mod 256
+dft_cmp:
+                call    dout_pos
+                ld      a, (hl)
+                cp      c
+                jr      z, dft_fill
+                inc     a
+                ld      (hl), a
+                jr      dft_get
+dft_fill:
+                call    din_fill            ; the next record, +6 = 0
+                ret     c
+                xor     a                   ; index 0
+dft_get:
+                ld      e, a
+                ld      d, 0
+                call    rnd_rec             ; HL = the record (block+9)
+                add     hl, de
+                ld      a, (hl)
+                or      a                   ; CF clear
+                ret
                 ds      $41EF - $, $00      ; pad (frees the old table tail + callf_body jp)
 k_41EF:
                 jp      cpmver_body         ; $41EF: BDOS $0C CPMVER canonical entry (M22a)

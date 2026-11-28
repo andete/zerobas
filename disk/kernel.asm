@@ -1253,6 +1253,19 @@ innoe_body:
                 di
                 call    br_mainin_tmpl
                 jp      dirio_chget         ; 💰 carve 15: CHGET + the shared exit (runtime.asm)
+; rr_at_size -- Z = an FCB row's random record (+33..35) has reached its size (+16..18): 24 bits, a floppy
+; file never reaches +19. din_fill's "the end" and din_fetch's last-record test (D-COPYSLOW step 1a slice 4).
+; IX = the row. Clobbers A.
+rr_at_size:
+                ld      a, (ix+33)
+                cp      (ix+16)
+                ret     nz
+                ld      a, (ix+34)
+                cp      (ix+17)
+                ret     nz
+                ld      a, (ix+35)
+                cp      (ix+18)
+                ret
                 ds      $53A7 - $, $00  ; pad up to the pinned $53A7 CONOUT-worker entry (M22b)
 k_53A7:
                 jp      conout_body     ; $53A7: BDOS $02 CONOUT canonical entry (M22b slice 1)
@@ -3086,15 +3099,19 @@ hk_frnd:
                                             ; byte for byte (a new, empty entry -- dout_open
                                             ; zeroed the first cluster and the size); 12 B
                 call    set_first           ; the row's first cluster (D-DISKREREAD)
-hfr_size:                                   ; (hk_finp joins here: D-DSKFMT carve 14)
+hfr_size:
+                call    hfr_copy
+                jp      hfm_ok              ; the entry's place, LOF, status 0
+; hfr_copy -- the FCB's +16..19 := FAT_FILESIZE, the whole 32-bit size (D-PUTU32). hk_finp
+; calls it, then reads one ahead before hfm_ok (D-COPYSLOW step 1a slice 4).
+hfr_copy:
                 push    ix
                 pop     hl
                 ld      de, 16
                 add     hl, de
                 ex      de, hl              ; DE = the FCB's size, +16
                 ld      hl, FAT_FILESIZE
-                call    copy4                ; the whole 32-bit size (D-PUTU32)
-                jp      hfm_ok              ; the entry's place, LOF, status 0
+                jp      copy4
 ; set_first -- the row's DOUT_FIRST := FAT_FIRSTCLUS (HL = it on return). D-DISKREREAD
 ; (2026-11-26): it stood inline in hk_frnd and hk_fapp's hfa_found; 2 B.
 set_first:

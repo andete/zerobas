@@ -655,18 +655,13 @@ frg_pass:
 ;   row: +1..11 the name (hkk_open_check), +14 RS = 1, +16..19 the size (LOF,
 ;        the end), +26 the first cluster, +28..31 RDBLK's running cluster and its
 ;        index, +33..35 the random record = the file offset just past the bytes
-;        loaded into the record, DIN_LEFT the record's bytes not yet read.
-;   block+6 = the position in the record (the reference's header +6), +9.. the
-;        record.
+;        loaded into the record.
+;   block+3 = the read-ahead byte ($00 none), block+6 = the index of the last byte
+;        fetched from the record -- the CF-3300's header (D-COPYSLOW step 1a slice 4),
+;        +9.. the record.
 ; The refill is RDBLK's own positioning and byte source (k47b2_seek /
 ; k47b2_nextbyte, D-RDBLKSEEK): no re-mount, no re-find, the chain walked from
 ; the FCB's running cluster -- 256 B a refill, the CF-3300's block size.
-DIN_LEFT        equ     DOUT_FLG+1      ; word: the record's unread bytes (0..256).
-                                        ; DOUT_FIRST's place -- an INPUT row has no
-                                        ; write cursor
-    IF DIN_LEFT+2 > FCH_STATESZ
-                db      DIN_ROW_FIELDS_OVERRUN_FCH_STATESZ
-    ENDIF
 
 ; hk_finp -- OPEN FOR INPUT (H_FOPEN, FOPEN_SEL_INP). FCH_ACTIVE is the channel
 ; being opened (OPEN stores it), DISK_FCB_NAME the parsed 8.3 name. The FCB is
@@ -682,8 +677,18 @@ hk_finp:
                 ld      hl, (FAT_FIRSTCLUS)
                 ld      (ix+26), l
                 ld      (ix+27), h
-                jp      hfr_size            ; the size into +16..19, status 0 (hk_frnd's
-                                            ; tail, kernel.asm: D-DSKFMT carve 14)
+                call    hfr_copy            ; the size into +16..19 (kernel.asm)
+                call    din_held
+                ld      (hl), 0             ; nothing held
+                inc     hl
+                inc     hl
+                inc     hl
+                ld      (hl), 255           ; +6 at the last index: the first fetch fills
+                call    din_peek            ; ... and reads one ahead, as the CF-3300's
+                                            ; OPEN does (its header after OPEN: +3 = the
+                                            ; first byte); a failed read stays pending for
+                                            ; the next one (a fetch at 255 retries the fill)
+                jp      hfm_ok              ; status 0 (kernel.asm)
 
 ; din_lofloc -- A = C = 6 LOF / 8 LOC (S10.E, 2026-10-19): the live channel's
 ; value straight from its FCB row, for a DISK channel in any mode -- INPUT,
@@ -885,50 +890,57 @@ dnm_eat:
                 or      a                   ; = din_ok, inlined: the lead-in grew past jr's reach
                 ret
 
+; 🔁 D-COPYSLOW step 1a slice 4 (2026-11-28): THE CF-3300'S ONE-BYTE READ-AHEAD, in the channel block's
+; header (scratchpad/AE_bfiles_in2.out, AE_bfiles_in7.out): +3 = a byte fetched and not yet consumed ($00 =
+; none -- so a NUL read ahead is LOST, as on the CF: "A" 00 "B" read with INPUT$(1) / EOF() / INPUT$(1) gives
+; 65 0 66), +6 = the INDEX of the last byte fetched from the record. OPEN fills and reads one ahead; a fetch at
+; the record's last index loads the next one. DIN_LEFT (the record's unread count) is gone.
 ; din_peek -- A = the row's next byte, NOT consumed, CF clear; CF set when there
-; is none (the end, a failed read) or it is a Ctrl-Z. A spent record is refilled
-; first, so a peek at a record boundary reads the next 256 B. IX = the row (kept).
-; Clobbers BC, DE, HL.
+; is none (the end, a failed read) or it is a Ctrl-Z (which stays held, so a second
+; read still meets it). IX = the row (kept). Clobbers BC, DE, HL.
 din_peek:
-                ld      a, (ix+DIN_LEFT)
-                or      (ix+DIN_LEFT+1)
-                call    z, din_fill         ; spent: the next block (CF = none)
-                ret     c
-                call    dout_pos            ; HL = &block+6, the position
-                ld      e, (hl)
-                ld      d, 0
-                inc     hl
-                inc     hl
-                inc     hl                  ; HL = the record
-                add     hl, de
+                call    din_held            ; HL = &block+3
                 ld      a, (hl)
+                or      a
+                jr      nz, dpk_have        ; a byte is held
+                push    hl
+                call    din_fetch           ; A = the next byte, CF = none
+                pop     hl
+                ret     c
+                ld      (hl), a             ; held ($00 stays "none": the CF-3300 loses it)
+dpk_have:
                 cp      $1A
                 scf
                 ret     z                   ; Ctrl-Z: the soft end (R1)
                 or      a
                 ret
 
-; din_take -- consume the byte din_peek saw: position + 1, DIN_LEFT - 1. A and
-; the flags are kept; BC, DE, HL clobbered. IX = the row.
+; din_take -- consume the byte din_peek saw: +3 := 0. A and the flags are kept;
+; HL clobbered. IX = the row.
 din_take:
                 push    af
-                call    dout_pos
-                inc     (hl)                ; the position (wraps with the record)
-                ld      l, (ix+DIN_LEFT)
-                ld      h, (ix+DIN_LEFT+1)
-                dec     hl
-                ld      (ix+DIN_LEFT), l
-                ld      (ix+DIN_LEFT+1), h
+                call    din_held
+                ld      (hl), 0
                 pop     af
                 ret
+
+; din_held -- HL = &block+3, the read-ahead byte. Clobbers A.
+din_held:
+                call    dout_pos
+                dec     hl
+                dec     hl
+                dec     hl
+                ret
+
+; (din_fetch: disk/pageenv.asm, in front of $41EF -- this region had no room; rr_at_size: kernel.asm)
 
 ; din_fill -- the record := the file's next (up to) 256 bytes, read at the FCB's
 ; random record (RS = 1, so it is the byte offset) through k47b2_seek, which
 ; bounds it by the size and walks the chain from the FCB's running cluster
 ; (+28/+30), and k47b2_nextbyte. The random record moves past them, the position
-; goes to 0, DIN_LEFT = the count. out: CF = nothing read -- the end, or a failed
-; read with its code pending (DISKOP_ERR). IX = the row (kept: the FAT walk and the
-; driver do not touch it, which k47b2_seek itself relies on).
+; (+6) goes to 0. out: CF = nothing read -- the end, or a failed read with its code
+; pending (DISKOP_ERR). IX = the row (kept: the FAT walk and the driver do not touch
+; it, which k47b2_seek itself relies on).
 din_fill:
                 ; 🔴 THE END IS ANSWERED WITHOUT A SEEK. The random record never
                 ; passes the size, so "equal" is the end -- and k47b2_seek at an
@@ -937,17 +949,9 @@ din_fill:
                 ; an ejected drive raised 70 where main's old reader (FREAD_LEFT = 0,
                 ; no I/O) raised 55, and every EOF() at the end cost a sector read.
                 ; 24 bits: a floppy file's size never reaches +19.
-                ld      a, (ix+33)
-                cp      (ix+16)
-                jr      nz, dfl_go
-                ld      a, (ix+34)
-                cp      (ix+17)
-                jr      nz, dfl_go
-                ld      a, (ix+35)
-                cp      (ix+18)
+                call    rr_at_size          ; (kernel.asm)
                 scf
-                ret     z                   ; RR = the size: the end, DIN_LEFT 0
-dfl_go:
+                ret     z                   ; RR = the size: the end
                 ld      hl, 1
                 ld      (RDBLK_RECSIZE), hl ; RS = 1
                 call    k47b2_seek          ; Cy: unreadable, or past the size
@@ -982,8 +986,6 @@ dfl_done:
                 jr      nc, dfl_set
                 inc     (ix+35)             ; the random record (24 bits)
 dfl_set:
-                ld      (ix+DIN_LEFT), l
-                ld      (ix+DIN_LEFT+1), h
                 ld      a, h
                 or      l
                 ret     nz                  ; CF clear: bytes to read

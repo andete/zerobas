@@ -415,3 +415,13 @@
       📏 Disk corpus for this batch ([AE_s1a_diskcorpus.out](../../scratchpad/AE_s1a_diskcorpus.out), per-image JSON kept as [AE_s1a_diskcorpus.json](../../scratchpad/AE_s1a_diskcorpus.json) so the next batch can
       diff images, not tallies): BOTH-RUN 102 -> 101, FILES-SAME 11 -> 12, nothing worse. The moved image cannot be named
       (no earlier JSON was kept). 🔮 "no class changes": MISS, in the good direction.
+      ✅ **STEP 1a, SLICE 4 BUILT (2026-11-28): THE CF-3300'S ONE-BYTE READ-AHEAD, DIN_LEFT GONE.** block +3 = the byte
+      fetched and not consumed ($00 none -- a NUL read ahead is LOST, as on the CF), +6 = the index of the last byte
+      fetched. din_peek fetches into +3 when nothing is held; din_take clears it; din_fetch (pageenv.asm, for room)
+      refills at the record's last index -- 255, or (size - 1) mod 256 once the random record reached the size
+      (rr_at_size, kernel.asm, shared with din_fill's end); hk_finp sets +3 = 0 / +6 = 255 and reads one ahead, as the
+      CF's OPEN (hfr_size split: hfr_copy). The INPUT region went 34 -> 55 B free (din_fetch moved out).
+      tests/test_seqin.py's rig starts from that OPEN state (42/42). closefail grew `inra` -- +3 / +6 after every step
+      from the first OPEN, across a record boundary and through the lost NUL: 7/7 against the CF-3300. Subject suites
+      green: unit-test, diskbasic, fcbhdr, lof, readflt, diskascii, inputdn, dout. 🔮 (the model's) "+3 / +6 match
+      from OPEN on": HIT, the only difference before OPEN being the block's unwritten RAM (D-FCBSHAPE's header).

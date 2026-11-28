@@ -101,6 +101,9 @@ class Rig:
         m.poke_w(row + 26, FIRST)                            # the first cluster
         m.poke_w(row + s["DOUT_BLK"], BLOCK)
         m.poke(BLOCK, bytes(265))
+        # D-COPYSLOW step 1a slice 4: hk_finp's state before its read-ahead -- +3 = 0 (nothing held), +6 = 255 (at the
+        # last index, so the first fetch fills); +6 is the INDEX of the last byte fetched now, not a count
+        m.poke(BLOCK + 6, 255)
 
         def read_sector(mm):
             sec = mm.cpu.de
