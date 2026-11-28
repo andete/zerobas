@@ -62,12 +62,27 @@ if MFFULL:   # the FULL-record state alone (MFFLAG's STRING$(254) was "Out of st
     MF15 = True   # per-byte counts (forgotten on the first run: it fell back to 16 B blocks, 2026-11-28)
     STEPS = [("cs", "CLEAR 1000"), ("mf", "MAXFILES=1"), ("o1", 'OPEN "F1.TXT" FOR OUTPUT AS #1'),
              ("pf", 'PRINT #1,STRING$(254,"A")'), ("p2", 'PRINT #1,"B"'), ("c1", "CLOSE")]
+MFCTRL = os.environ.get("MFCTRL") == "1"
+MFIN = os.environ.get("MFIN") == "1"
+PROLOGUE = ""
+if MFCTRL:   # CTRL held at boot (the CF's one-drive, HIMEM $E48D boot): where do the FCB slots go?
+    MF15 = True
+    SRC = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "disk", "test720.dsk")
+    PROLOGUE = "keymatrixdown 6 0x02\nafter time 6 { keymatrixup 6 0x02 }\n"   # as probes/disk/disk_probe_bootkeys.py
+    STEPS = [("dt", ""), ("mf", "MAXFILES=2"), ("o1", 'OPEN "F1.TXT" FOR OUTPUT AS #1'),
+             ("o2", 'OPEN "F2.TXT" FOR OUTPUT AS #2'), ("cl", "CLOSE")]
+if MFIN:     # an INPUT row's state: the record's unread count (DIN_LEFT) and a CR handed over alone (DIN_CRPEND)
+    MF15 = True
+    STEPS = [("mk", 'OPEN "T.TXT" FOR OUTPUT AS #1:PRINT #1,"AB":PRINT #1,"CD":CLOSE'),
+             ("oi", 'OPEN "T.TXT" FOR INPUT AS #1'), ("r1", 'A$=INPUT$(1,#1):PRINT ASC(A$)'),
+             ("r2", 'A$=INPUT$(2,#1):PRINT ASC(A$);ASC(MID$(A$,2))'), ("r3", 'A$=INPUT$(1,#1):PRINT ASC(A$)'),
+             ("r4", 'INPUT #1,B$:PRINT B$'), ("cl", "CLOSE")]
 if os.environ.get("MFCRT") == "1":   # a NON-disk device at #7: is the number limit the disk's or BASIC's?
     MF15 = True
     STEPS = [("mf", "MAXFILES=15"), ("o7", 'OPEN "CRT:" FOR OUTPUT AS #7'), ("p7", 'PRINT #7,"YY"'),
              ("cl", "CLOSE")]
-D.SESSION = [("boot", None, 14), ("date", "", 5), ("basic", "BASIC", 8)] + [(t, x, 30 if os.environ.get("MFHI") == "1" or os.environ.get("MFCRT") == "1" or os.environ.get("MFSLOT") == "1" or os.environ.get("MFWR") == "1" or MFFLAG else 15 if MF15 else 8) for t, x in STEPS]
-order = ["basic"] + [t for t, _ in STEPS]
+D.SESSION = ([("boot", None, 14)] if MFCTRL else [("boot", None, 14), ("date", "", 5), ("basic", "BASIC", 8)]) + [(t, x, 30 if os.environ.get("MFHI") == "1" or os.environ.get("MFCRT") == "1" or os.environ.get("MFSLOT") == "1" or os.environ.get("MFWR") == "1" or MFFLAG or MFCTRL or MFIN else 15 if MF15 else 8) for t, x in STEPS]
+order = (["boot"] if MFCTRL else ["basic"]) + [t for t, _ in STEPS]
 SPANS = [(0xDE77, 0xDF93, "below B's image"), (0xDF94, 0xE593, "B's FAT image"), (0xE595, 0xEB94, "A's FAT image"),
          (0xEB95, 0xED94, "dir buf"), (0xED95, 0xEF94, "data buf"), (0xEF95, 0xF194, "mount buf"),
          (0xF195, 0xF1C8, "DPB + after"), (0xF1C9, 0xF37F, "fixed area")]
@@ -79,7 +94,9 @@ if MF15:   # exact bytes in the two spans of interest, 16 B blocks elsewhere (ke
            "debug set_watchpoint write_mem {0xC000 0xF37F} {$::counting} { set a $::wp_last_address; "
            "if {($a >= BYTELO && $a <= 0xDF93) || ($a >= 0xE580 && $a <= 0xE59F)} "
            "{ dict incr ::cells \"$::step:B$a\" } else { dict incr ::cells \"$::step:[expr {$a >> 4}]\" } }\n")
-CMD = CMD.replace("BYTELO", "0xDC00" if MFFLAG else "0xDE77")
+CMD = CMD.replace("BYTELO", "0xDC00" if (MFFLAG or MFIN) else "0xDE77")
+if MFCTRL:   # the slots might sit anywhere in the claim: bytes up to TXTMAX, not just to $DF93
+    CMD = CMD.replace("$a <= 0xDF93", "$a <= 0xE7AD")
 for m in machines:
     td = tempfile.mkdtemp()
     dsk = os.path.join(td, "d.dsk")
@@ -87,11 +104,11 @@ for m in machines:
     out = os.path.join(td, "o.txt")
     fl = os.path.join(td, "cells.txt")
     tcl = D.tcl(out)
-    tcl = tcl.replace("set throttle off", "set throttle off\nset ::counting 0\n"
+    tcl = tcl.replace("set throttle off", "set throttle off\n" + PROLOGUE + "set ::counting 0\n"
                       f"set ::fl [open {{{fl}}} w]\n" + CMD, 1)
     a = "  close $f }"
     assert tcl.count(a) == 1
-    hook = "  puts $::fl \"HIMEM $tag [rd16 0xFC4A]\"\n  if {$tag eq \"basic\"} {set ::counting 1}\n"
+    hook = "  puts $::fl \"HIMEM $tag [rd16 0xFC4A]\"\n  if {$tag eq \"" + order[0] + "\"} {set ::counting 1}\n"
     for k, v in zip(order, order[1:]):
         hook += f"  if {{$tag eq \"{k}\"}} {{set ::step {v}}}\n"
     hook += f"  if {{$tag eq \"{order[-1]}\"}} {{set ::counting 0; puts $::fl \"CELLS $::cells\"; flush $::fl}}\n"

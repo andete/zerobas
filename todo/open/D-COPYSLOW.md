@@ -281,3 +281,24 @@
         +6 position; record $DD77, the same bytes written on both). Unknown, not chased: the CF writes $DC61-$DC65 and
         $DC6C in every step, zerobas does not.
         🔮 "a full record shows only as its position byte; the second CLOSE clears the slot": MISS on both.
+      🔎 **STEP 1 INVENTORY (2026-11-28, read-only sweep of basic / sub / sub2 / disk):** ONLY the disk ROM computes a
+      row, through ONE routine, dout_row (disk/kernel.asm:1829; wrapper dout_live, ~14 callers). Row fields past the
+      FCB: DOUT_BLK +37 (2 uses), DOUT_FLG +39 (RFULL, DEAD -- and a THIRD bit, DIN_CRPEND: an INPUT row's "a CR was
+      handed over, its LF unread", disk/fat.asm:664), DOUT_FIRST / DIN_LEFT +40 (overlaid), DOUT_CLUS +42,
+      DOUT_SECIDX +44, DOUT_DIRSEC / DIROFF +45..48; +49 unused. FCH_CEIL 15 also sizes FCH_MODES / FCH_RECLENS and
+      the MAXFILES bound (those stay: non-disk channels open as #7+ on the CF too); hkk_open_check walks 1..15 with a
+      hard-coded `cp 16` (kernel.asm:6398); the HIMEM asserts at kernel.asm:5919-5922 reserve the old table.
+      STILL UNPLACED before building: DIN_CRPEND (the flags byte's third bit), DIN_LEFT (perhaps the block's +6
+      position the CF already keeps), and the CTRL boot (HIMEM $E48D sits ABOVE $DEB5 -- are the CF's FCB slots fixed
+      or do they follow the claim? $DEB5 = $DE77 + 62).
+      📏 **THE LAST THREE PLACED (2026-11-28, bfiles_probe.py MFCTRL / MFIN, [AE_bfiles_u2.out](../../scratchpad/AE_bfiles_u2.out)):**
+        CTRL boot (one drive, HIMEM $E48D): the CF-3300's FCB slots FOLLOW THE CLAIM -- slot 1 at $E4CB, slot 2 at
+          $E4F0 -- i.e. slot 1 = HIMEM + 62 in both boots ($DE77 + 62 = $DEB5). A 517 B run at $E5A9, straight after the
+          six slots, is written at OPEN: its disk area is laid out RELATIVE TO THE CLAIM. 🔮 "follows the claim, $E4CB":
+          HIT. So step 1's slots are (the disk claim) + 62 + 37*(n-1), not a hard-wired $DEB5. zerobas: $E4BF / $E4F1.
+        INPUT row: the same characters on both (INPUT$(1) 65; INPUT$(2) 66 13; INPUT$(1) 10; INPUT # "CD"). The CF keeps
+          NO CR-pending flag: every read writes the channel block's +3 (zerobas never writes it) and +6 (the position,
+          which zerobas also keeps). So DIN_LEFT -> the block's +6; DIN_CRPEND -> nothing of ours: the CF's state is in
+          block +3 (its meaning unmeasured -- a one-character read-ahead is a guess). 🔮 "no flag; the count is +6":
+          HIT, with +3 as the unpredicted part.
+      ✅ EVERY ROW FIELD NOW HAS A MEASURED CF PLACE OR HAS NO CF COUNTERPART. Step 1 is buildable as ruled.

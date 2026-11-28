@@ -1,0 +1,65 @@
+##### MFCTRL
+== National_CF-3300   (log /tmp/zerobas/tmptl5k6sgp)
+   HIMEM after each step: boot=$E5A9  dt=$E48D  mf=$E48D  o1=$E48D  o2=$E48D  cl=$E48D
+   dt   bytes written in $DE77-$DF93 / $E580-$E59F: $E15D-$E1AC $E277-$E27B $E282 $E384 $E38B $E48D-$E4A5
+   mf   bytes written in $DE77-$DF93 / $E580-$E59F: $E05C-$E0A1 $E167-$E1AA $E27B $E282 $E384 $E38B
+   o1   bytes written in $DE77-$DF93 / $E580-$E59F: $E016-$E09F $E172 $E179 $E27B-$E27F $E281 $E4CB-$E4EF $E5A9-$E7AD
+   o2   bytes written in $DE77-$DF93 / $E580-$E59F: $E016-$E09F $E172 $E179 $E384-$E388 $E38A $E4F0-$E514 $E5A9-$E7AD
+   cl   bytes written in $DE77-$DF93 / $E580-$E59F: $E01A-$E09F $E172 $E179 $E27B $E281-$E282 $E284 $E384 $E38A-$E38B $E38D $E4DB-$E4E3 $E4E5-$E4EA $E4EC-$E4EE $E500-$E508 $E50A-$E50F $E511-$E513 $E5A9-$E5AB $E5B7-$E5BA
+   dt   $C1A0-$C1FF:9592  $F230-$F23F:1  $F320-$F32F:4  $F350-$F37F:9
+   mf   
+   o1   $E7A0-$EDAF:1564  $EFA0-$F1CF:757  $F220-$F24F:13  $F2B0-$F30F:54  $F330-$F33F:10  $F350-$F35F:6
+   o2   $E7A0-$EDAF:1564  $EFA0-$F1CF:756  $F230-$F24F:6  $F2B0-$F30F:56  $F330-$F33F:10  $F350-$F35F:6
+   cl   $EC80-$EC8F:10  $ECA0-$ECAF:10  $EDA0-$EDAF:2  $F1B0-$F1CF:279  $F230-$F24F:22  $F2B0-$F30F:150  $F330-$F33F:8
+   by CF span (all steps): below B's image=0  B's FAT image=0  A's FAT image=2020  dir buf=1140  data buf=54  mount buf=1004  DPB + after=820  fixed area=646
+   final screen: MSX BASIC version 1.0 / Copyright 1983 by Microsoft / 24988 Bytes free / Disk BASIC version 1.0 / Ok / MAXFILES=2 / Ok / OPEN "F1.TXT" FOR OUTPUT AS # / 1 / Ok / OPEN "F2.TXT" FOR OUTPUT AS # / 2 / Ok / CLOSE / Ok / ÿ / color auto  goto  list  run
+== C-BIOS_MSX1_EU_REPACK_DISK   (log /tmp/zerobas/tmp39yu6xxk)
+   HIMEM after each step: boot=$DF93  dt=$E48D  mf=$E48D  o1=$E48D  o2=$E48D  cl=$E48D
+   dt   bytes written in $DE77-$DF93 / $E580-$E59F: $E161-$E1AC $E277-$E27A
+   mf   bytes written in $DE77-$DF93 / $E580-$E59F: $E080-$E0A1 $E17D-$E1AC
+   o1   bytes written in $DE77-$DF93 / $E580-$E59F: $E042-$E0A1 $E27B $E27F $E281 $E4BF-$E4EF
+   o2   bytes written in $DE77-$DF93 / $E580-$E59F: $E042-$E0A1 $E384 $E388 $E38A $E4F1-$E521
+   cl   bytes written in $DE77-$DF93 / $E580-$E59F: $E034-$E0A1 $E281 $E284 $E38A $E38D $E4CF-$E4D0 $E4E0-$E4E1 $E4E6-$E4EB $E501-$E502 $E512-$E513 $E518-$E51D
+   dt   $E8A0-$EAAF:1038  $ECA0-$ECCF:15  $ED60-$ED6F:3  $ED90-$ED9F:2  $EDB0-$EDBF:5  $EF40-$EF5F:11  $EFF0-$EFFF:25  $F050-$F08F:248
+   mf   
+   o1   $E8A0-$ECCF:1622  $ED50-$ED6F:10  $ED90-$ED9F:4  $EDB0-$EDBF:12  $EE40-$EE5F:2  $EF40-$EF5F:17  $EFF0-$EFFF:50
+   o2   $E8A0-$ECCF:1622  $ED50-$ED6F:10  $ED90-$ED9F:4  $EDB0-$EDBF:12  $EE50-$EE5F:2  $EF40-$EF5F:17  $EFF0-$EFFF:50
+   cl   $E8A0-$ECCF:3159  $ED50-$ED6F:64  $ED90-$ED9F:4  $EDB0-$EDBF:26  $EFF0-$EFFF:144
+   by CF span (all steps): below B's image=0  B's FAT image=0  A's FAT image=5689  dir buf=1980  data buf=118  mount buf=517  DPB + after=0  fixed area=0
+   final screen: zerobas version 0.1 / clean-room MSX1 BASIC / zerobas Disk BASIC / ZB / MAXFILES=2 / ZB / OPEN "F1.TXT" FOR OUTPUT AS #1 / ZB / OPEN "F2.TXT" FOR OUTPUT AS #2 / ZB / CLOSE / ZB / ÿ / color  auto   goto   list   run
+##### MFIN
+== National_CF-3300   (log /tmp/zerobas/tmpz566q_ul)
+   HIMEM after each step: boot=$DF93  date=$DF93  basic=$DE77  mk=$DE77  oi=$DE77  r1=$DE77  r2=$DE77  r3=$DE77  r4=$DE77  cl=$DE77
+   mk   bytes written in $DE77-$DF93 / $E580-$E59F: $DC65 $DC6C $DD6E-$DD72 $DD74-$DD75 $DD77-$DD7F $DEB5-$DED9 $E594-$E59F
+   oi   bytes written in $DE77-$DF93 / $E580-$E59F: $DC65 $DC6C $DD6E-$DD72 $DD74 $DD77-$DD80 $DEB5-$DED9 $E594-$E59F
+   r1   bytes written in $DE77-$DF93 / $E580-$E59F: $DC5F $DC65 $DC6C $DD71
+   r2   bytes written in $DE77-$DF93 / $E580-$E59F: $DC5C-$DC5E $DC65 $DC6C $DD71 $DD74
+   r3   bytes written in $DE77-$DF93 / $E580-$E59F: $DC5C $DC65 $DC6C $DD71 $DD74
+   r4   bytes written in $DE77-$DF93 / $E580-$E59F: $DC5A-$DC5B $DC65 $DC6C $DD71 $DD74
+   cl   bytes written in $DE77-$DF93 / $E580-$E59F: $DC65 $DC6C $DD6E $DD75
+   mk   $DAF0-$DB9F:3358766  $E5A0-$ED9F:7210  $EF90-$F1CF:928  $F230-$F24F:41  $F2B0-$F30F:257  $F330-$F33F:24  $F350-$F35F:6
+   oi   $DAF0-$DB9F:3892790  $E5A0-$F1CF:5917  $F230-$F24F:28  $F2B0-$F30F:174  $F330-$F33F:15  $F350-$F35F:6
+   r1   $DB30-$DB9F:4182696
+   r2   $DB40-$DB9F:4179784
+   r3   $DB30-$DB9F:4179472
+   r4   $DB40-$DB9F:4174124
+   cl   $DB40-$DB9F:4180188  $F2B0-$F2EF:14  $F300-$F30F:1
+   by CF span (all steps): below B's image=0  B's FAT image=0  A's FAT image=3239  dir buf=8776  data buf=628  mount buf=1069  DPB + after=722  fixed area=896
+   final screen: #1,"AB":PRINT #1,"CD": / CLOSE / Ok / OPEN "T.TXT" FOR INPUT AS #1 / Ok / A$=INPUT$(1,#1):PRINT ASC(A$) / 65 / Ok / A$=INPUT$(2,#1):PRINT ASC(A$) / ;ASC(MID$(A$,2)) / 66  13 / Ok / A$=INPUT$(1,#1):PRINT ASC(A$) / 10 / Ok / INPUT #1,B$:PRINT B$ / CD / Ok / CLOSE / Ok / ÿ / color auto  goto  list  run
+== C-BIOS_MSX1_EU_REPACK_DISK   (log /tmp/zerobas/tmp8mf8r1k_)
+   HIMEM after each step: boot=$DF93  date=$DF93  basic=$DE77  mk=$DE77  oi=$DE77  r1=$DE77  r2=$DE77  r3=$DE77  r4=$DE77  cl=$DE77
+   mk   bytes written in $DE77-$DF93 / $E580-$E59F: $DD6E $DD72 $DD74 $DD77-$DD7F
+   oi   bytes written in $DE77-$DF93 / $E580-$E59F: $DD6E $DD72 $DD74
+   r1   bytes written in $DE77-$DF93 / $E580-$E59F: $DC5E $DD74 $DD77-$DD7F
+   r2   bytes written in $DE77-$DF93 / $E580-$E59F: $DC5B-$DC5D $DD74
+   r3   bytes written in $DE77-$DF93 / $E580-$E59F: $DC5B $DD74
+   r4   bytes written in $DE77-$DF93 / $E580-$E59F: $DC59-$DC5A $DD74
+   mk   $DB20-$DB9F:1796644  $E4B0-$E4EF:67  $E8A0-$ECCF:6216  $ED50-$ED6F:42  $ED90-$ED9F:6  $EDB0-$EDBF:29  $EE40-$EE5F:2  $EF40-$EF5F:16  $EFF0-$EFFF:146
+   oi   $DB30-$DB9F:1871674  $E4B0-$E4EF:62  $E8A0-$EAAF:2586  $ECA0-$ECCF:38  $ED50-$ED6F:10  $ED90-$ED9F:4  $EDB0-$EDBF:14  $EE40-$EE5F:2  $EF40-$EF5F:16  $EFF0-$EFFF:62
+   r1   $DB30-$DB9F:1875133  $E4D0-$E4EF:11  $E8A0-$EAAF:512  $ECB0-$ECBF:4  $ED40-$ED5F:40  $ED70-$ED8F:29  $EDB0-$EDBF:4  $EFF0-$EFFF:12
+   r2   $DB40-$DB9F:1897514  $E4E0-$E4EF:7
+   r3   $DB50-$DB9F:1895782  $E4E0-$E4EF:3
+   r4   $DB40-$DB9F:1894207  $E4E0-$E4EF:12
+   cl   $DB40-$DB9F:1892342
+   by CF span (all steps): below B's image=0  B's FAT image=162  A's FAT image=5875  dir buf=3692  data buf=93  mount buf=220  DPB + after=0  fixed area=0
+   final screen: 1,"AB":PRINT #1,"CD":CLOSE / ZB / OPEN "T.TXT" FOR INPUT AS #1 / ZB / A$=INPUT$(1,#1):PRINT ASC(A$) / 65 / ZB / A$=INPUT$(2,#1):PRINT ASC(A$);ASC(MID / $(A$,2)) / 66  13 / ZB / A$=INPUT$(1,#1):PRINT ASC(A$) / 10 / ZB / INPUT #1,B$:PRINT B$ / CD / ZB / CLOSE / ZB / ÿ / color  auto   goto   list   run
