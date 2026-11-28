@@ -176,8 +176,12 @@
             still-screen test (no prompt test for BASIC steps) fired while the CF's SAVE was silent for over a second;
             "the CF defers SAVE's writes" would have been a false finding. zerobas: SAVE writes one FAT sector per copy.
             🔮 "same buffers, only SAVE writes the FAT": HIT.
-            Unexplained, not chased: a test.dsk copy with MSXDOS.SYS AND COMMAND.COM deleted host-side still came up
-            at the MSX-DOS date prompt on BOTH machines.
+            🔴 CORRECTED 2026-11-28: "a disk with MSXDOS.SYS and COMMAND.COM deleted still came up at the MSX-DOS date
+            prompt" was MY MISREADING -- the bare `Enter date (--):` / `(M-D-Y):` is the DISK ROM's question before
+            Disk BASIC starts (docs/concepts/disk.md), not COMMAND.COM's "Current date is ... / Enter new date:".
+            Settled black-box ([bootwho_probe.py](../../scratchpad/bootwho_probe.py), [AE_bootwho.out](../../scratchpad/AE_bootwho.out); Joost asked "fixed locations?"): MSXDOS.SYS deleted,
+            deleted with its sectors zeroed, or merely renamed -> Disk BASIC on both machines; COMMAND.COM renamed ->
+            MSX-DOS's "Insert DOS disk" on both. Found BY NAME, not by position; the two machines agree.
         Q6  ONE FAT IMAGE PER DRIVE on the CF-3300: after the drive-B: prompt, B's FAT lands at $DF94-$E593 (1536 B,
             directly below A's at $E595); back on A:, A's is read again into $E595. 🔮 "one shared image": MISS.
             (zerobas's DOS_RESV_TOP is $DF93 -- the byte below B's image.) The same run showed zerobas listing B: with
