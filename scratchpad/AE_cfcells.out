@@ -1,0 +1,32 @@
+== National_CF-3300: BIG.ROM attr=00 size=32768 date=2D91 time=A13B sha1=e89ea1e8e583   (log /tmp/zerobas/tmpqfcw19b6)
+   -- Q1: writes per 16 B block in $DE77-$F37F, by the last FDC command's kind (F FAT, D track-0 other, r/w data, x none) --
+   $E590  F=11  x=7
+   $F1A0  x=16
+   $F1B0  D=2  F=2  w=1  x=121
+   $F1C0  D=19  F=26  r=49  w=24  x=192
+   $F230  x=65
+   $F240  x=24
+   $F2B0  x=135
+   $F2C0  x=20
+   $F2D0  x=15
+   $F2E0  x=180
+   $F2F0  x=58
+   $F300  x=97
+   $F330  x=47
+   $F350  x=8
+   [FAT image $E595-$EB94]  D=88  F=1547  x=64
+   [sector buf $EB95-$ED94]  D=4008  F=1002  x=42
+   [data buf $ED95-$EF94]  F=11  r=22  w=11  x=39
+   [mount buf $EF95-$F194]  F=501  r=1002  w=501  x=1658
+   -- Q2: data commands as <r|w><track>*count, in order --
+   r15*10 r16*18 r17*18 r18*18 w37*2 w38*18 w39*18 w40*18 w41*8 r37*2 r38*18 r39*18 r40*18 r41*8
+== C-BIOS_MSX1_EU_REPACK_DISK: BIG.ROM attr=00 size=32768 date=2D91 time=A13B sha1=e89ea1e8e583   (log /tmp/zerobas/tmpuubaavud)
+   -- Q1: writes per 16 B block in $DE77-$F37F, by the last FDC command's kind (F FAT, D track-0 other, r/w data, x none) --
+   $F230  D=31  x=33
+   $F300  D=67  w=4  x=18
+   [FAT image $E595-$EB94]  D=3596  F=26785  r=98304
+   [sector buf $EB95-$ED94]  D=1309  F=13078  r=469420  w=953  x=6131
+   [data buf $ED95-$EF94]  D=29  F=420  r=254  w=159  x=4
+   [mount buf $EF95-$F194]  D=137  F=1731  r=1529  w=768  x=14
+   -- Q2: data commands as <r|w><track>*count, in order --
+   r15*10 r16*18 r17*18 r18*18 r37 w37 r37 w37 r38 w38 r38 w38 r38 w38 r38 w38 r38 w38 r38 w38 r38 w38 r38 w38 r38 w38 r38 w38 r38 w38 r38 w38 r38 w38 r38 w38 r38 w38 r38 w38 r38 w38 r38 w38 r39 w39 r39 w39 r39 w39 r39 w39 r39 w39 r39 w39 r39 w39 r39 w39 r39 w39 r39 w39 r39 w39 r39 w39 r39 w39 r39 w39 r39 w39 r39 w39 r39 w39 r39 w39 r40 w40 r40 w40 r40 w40 r40 w40 r40 w40 r40 w40 r40 w40 r40 w40 r40 w40 r40 w40 r40 w40 r40 w40 r40 w40 r40 w40 r40 w40 r40 w40 r40 w40 r40 w40 r41 w41 r41 w41 r41 w41 r41 w41 r41 w41 r41 w41 r41 w41 r41 w41

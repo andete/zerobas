@@ -120,3 +120,24 @@
       read-or-extend). Both total 128 data reads, but the reference's runs cost far fewer rotations: likely most of
       the rest of the gap once the FAT is cached.
       ➡️ NEXT: the cell-by-cell move plan to Joost (his ruling), nothing built before he approves it.
+      🧭 JOOST 2026-11-28: "Lets make sure we get as much info as possible before we start writing any code to fix
+      this" -- NO CODE until every question below is measured (address-only, clean room) or explicitly waived by him:
+        Q1  where the CF-3300 keeps its SMALL state cells (clusters, positions, flags) -- a write-address histogram
+            over $DE77-$F37F for a whole COPY (zerobas's ~1 KB of cells sit inside the CF's buffer spans)
+        Q2  what the CF-3300's 64 data reads AFTER the data writes are (destination re-read? track numbers)
+        Q3  when the CF-3300 re-reads its FAT image: a second COPY / DIR straight after; after a disk swap
+        Q4  what the CF-3300 leaves on disk when the disk is swapped mid-COPY (the deferred-write risk, option B)
+        Q5  whether the same buffers serve other operations: a sequential write, delete, rename, Disk BASIC SAVE / LOAD
+        Q6  drive B: on the one drive -- one FAT image shared, or one per drive
+      📏 **Q1 + Q2 MEASURED (2026-11-28, [cfcells_probe.py](../../scratchpad/cfcells_probe.py), [AE_cfcells.out](../../scratchpad/AE_cfcells.out); every RAM write in
+      $DE77-$F37F for a whole COPY, per 16 B block, addresses only):**
+        Q1  the CF-3300's small state lives ABOVE its buffers: $F1A0-$F1C8 (after its DPB at $F195) and the fixed area
+            $F230-$F35F, plus one 16 B block at $E590 (just under the FAT image). NOTHING in $DE77-$E58F. Its data buffer
+            ($ED95) is barely touched in a COPY (data moves straight to the DTA); its $EF95 buffer is busy in every phase.
+            🔮 "the fixed area, little below $E595": HIT. zerobas, same COPY: its cells sit INSIDE the CF's buffer spans,
+            and $EB95-$ED94 (its BDOS / RDBLK cells) takes 469,420 writes during the data reads -- per-byte bookkeeping
+            in RAM, a CPU cost the CF-3300 does not have; a separate item to size.
+        Q2  the CF-3300's 64 data reads after the writes are a READ-BACK OF THE DESTINATION: source r15-r18 (64), then
+            w37-w41 (64), then r37-r41 (64), same tracks, same order. zerobas reads each destination sector BEFORE
+            writing it (r37 w37 r37 w37 ...): equal counts, different reason, and per-sector alternation costs a
+            rotation per sector.
