@@ -190,6 +190,13 @@ if MFBL:     # blanks only (tests/test_seqin.py pins "the end before any byte" f
     MF15 = True
     STEPS = [("cs", "CLEAR 500")] + [("t" + nm, f'OPEN "{nm}.TXT" FOR INPUT AS #1:INPUT #1,X:PRINT "{nm}";X;EOF(1):CLOSE')
                                      for nm in INFB]
+MFIN7 = os.environ.get("MFIN7") == "1"
+if MFIN7:    # is +3 = $00 the CF's "nothing held"? EOF() fetches a NUL into +3, then INPUT$(1): the NUL, or the byte after it?
+    MFFLAG = True
+    MF15 = True
+    STEPS = [("oi", 'OPEN "N.TXT" FOR INPUT AS #1'), ("ra", "A$=INPUT$(1,#1):PRINT ASC(A$)"),
+             ("ef", "PRINT EOF(1)"), ("rn", "A$=INPUT$(1,#1):PRINT ASC(A$)"), ("rb", "A$=INPUT$(1,#1):PRINT ASC(A$)"),
+             ("cl", "CLOSE")]
 if os.environ.get("MFCRT") == "1":   # a NON-disk device at #7: is the number limit the disk's or BASIC's?
     MF15 = True
     STEPS = [("mf", "MAXFILES=15"), ("o7", 'OPEN "CRT:" FOR OUTPUT AS #7'), ("p7", 'PRINT #7,"YY"'),
@@ -220,6 +227,8 @@ for m in machines:
         inject(dsk, "N       TXT", b"A\x00B\r\n12\r\n")
     if MFIN4:
         inject(dsk, "N       TXT", b"AB\r\n12\r\n")
+    if MFIN7:
+        inject(dsk, "N       TXT", b"A\x00BC\r\n")
     if MFBL:
         for nm, body in INFB.items():
             inject(dsk, f"{nm:8s}TXT", body)
@@ -257,7 +266,7 @@ for m in machines:
         ro = os.path.join(td, "ro.dsk")
         subprocess.run(["cp", SRC, ro], check=True)
         os.chmod(ro, 0o444)   # openMSX mounts a read-only image write-protected (probes/disk/build_bdosxe_disk.py)
-        if not (MFFULL or MFDFULL or MFAPP or MFAPP2 or MFIN3 or MFIN4 or os.environ.get("MFIN2") == "1"):
+        if not (MFFULL or MFDFULL or MFAPP or MFAPP2 or MFIN3 or MFIN4 or MFIN7 or os.environ.get("MFIN2") == "1"):
             hook += f"  if {{$tag eq \"p2\"}} {{diska {{{ro}}}}}\n"
     tcl = tcl.replace(a, hook + a)
     tcl = tcl.replace("$::tries > 240", "$::tries > 12000")

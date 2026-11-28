@@ -405,3 +405,13 @@
       older than slice 3). din_num reworked; the unit test corrected from the readings (+ the " " CR LF row);
       closefail grew `inbl` (B1-B4): inlf and inbl both agree with the CF-3300 ([AE_s1a3_inbl.out](../../scratchpad/AE_s1a3_inbl.out)). unit-test and the
       INPUT subject suites green.
+      📏 **+3 = $00 IS THE CF-3300'S "NOTHING HELD" (2026-11-28, bfiles_probe.py MFIN7, [AE_bfiles_in7.out](../../scratchpad/AE_bfiles_in7.out); file "A" 00 "B" "C"):**
+      INPUT$(1) 65, EOF(1) 0 -- it fetched the NUL into +3 ($00, +6 01) -- then INPUT$(1) gives 66 and the next 67: A
+      NUL READ AHEAD IS LOST. zerobas keeps it (0, then 66). 🔮 "the held NUL is lost": HIT. So the CF's read-ahead needs
+      no flag: +3 non-zero = a held byte; +6 = the last fetched index; OPEN fills and reads one ahead; a fetch at the
+      record's last index (255, or (size - 1) mod 256 on the file's last record) refills.
+      📐 SLICE 4 (next): din_peek / din_take / din_fill onto that model -- DIN_LEFT gone, the NUL-after-EOF loss copied
+      (Joost's "copy the CF exactly"); LOC / LOF stay on the FCB (+33 / +16).
+      📏 Disk corpus for this batch ([AE_s1a_diskcorpus.out](../../scratchpad/AE_s1a_diskcorpus.out), per-image JSON kept as [AE_s1a_diskcorpus.json](../../scratchpad/AE_s1a_diskcorpus.json) so the next batch can
+      diff images, not tallies): BOTH-RUN 102 -> 101, FILES-SAME 11 -> 12, nothing worse. The moved image cannot be named
+      (no earlier JSON was kept). 🔮 "no class changes": MISS, in the good direction.
