@@ -376,3 +376,32 @@
       HIT. So the loss hits files from MSX-DOS programs or a PC, never a file Disk BASIC wrote. 🙋 Joost to decide.
       🧭 JOOST 2026-11-28: "Keep it: copy the CF" -- the APPEND overwrite stays, documented with its exact condition
       (no final Ctrl-Z, a 256 multiple) on docs/keywords/OPEN.md, gated by closefail's app256 row.
+      📏 **DIN_CRPEND IS A LEAD-IN RULE, NOT STATE (2026-11-28, bfiles_probe.py MFIN3-6, [AE_bfiles_inlf.out](../../scratchpad/AE_bfiles_inlf.out)):**
+        a held $00: the CF returns 65 0 66 13 correctly and keeps no visible "held" flag in +0..+8 (🔮 "+7": MISS).
+        After INPUT$ took "AB" CR, INPUT #1,X / Y with what FOLLOWS the LF varied -- CF / zerobas:
+          LF "12" CR LF "9"       12 9 / 0 12        LF " 12 " ...  0 12 / 0 12
+          LF ",12" ...             0 12 / 0 0         LF CR LF "12"  12 9 / 0 12
+        and with no CR before (INPUT$ took "A", "AB" CR LF, "AB"; or none): BOTH agree, blanks skipped. ONE rule fits
+        every CF result, D-INPLF's old cases A and H included: AN LF MET IN INPUT #'s LEAD-IN IS SKIPPED BUT TURNS
+        BLANK-SKIPPING OFF for the rest of that lead-in (a space or comma then ends an EMPTY item; CR / LF still
+        skipped). An item-ending CR takes its LF with it, so ordinary files never meet one. INPUT$ leaves no state.
+        🔮 "a multi-byte INPUT$ holds the LF in +3": MISS (no LF held after either). zerobas's D-INPLF (A) rule -- a
+        CR taken by INPUT$ makes a following LF an empty item -- coincided with the CF only when a blank followed the
+        LF (two-rules-that-coincide). Step 1a's INPUT slice: the lead-in rule replaces DIN_CRPEND.
+      ✅ **STEP 1a, SLICE 3 BUILT (2026-11-28): DIN_CRPEND GONE, THE CF-3300'S LEAD-IN RULE IN ITS PLACE.** din_num: an LF
+      in the lead-in is taken and the rest of that lead-in skips only CR / LF (dnm_lf), so a blank or comma ends the
+      item empty; hk_chin's INPUT$ no longer marks a CR, din_take no longer clears it, the equate is gone.
+      closefail-acceptance grew `inlf` (the nine files, each by its own line; its parser now reads every step from its
+      own snapshot -- the long session scrolled the first ones off): 5/5 ([AE_s1a_closefail.out](../../scratchpad/AE_s1a_closefail.out)). KNIFE: the
+      previous fat.asm gives P1 0 12 / P3 0 0 / P4 0 12 again, ROM hash moved and restored ([AE_s1a3_knife.out](../../scratchpad/AE_s1a3_knife.out)).
+      🔮 "5/5, P1 / P3 / P4 now the CF's": HIT. docs/keywords/INPUT.md's D-INPLF paragraph corrected. Subject suites
+      green: diskbasic, fcbhdr, lof, readflt, diskascii, dout, inputdn; redundant-load, ramatlas; knife re-pinned
+      (verdicts unchanged).
+      🔁 **SLICE 3 REFINED (2026-11-28; its first gate RED on tests/test_seqin.py, which pinned "blanks only = the end" --
+      zerobas's own guess, never measured):** the CF-3300 on four blanks files ([AE_bfiles_bl.out](../../scratchpad/AE_bfiles_bl.out)) -- " " CR LF " "
+      reads 0 with EOF 0, " " CR LF reads 0 with EOF -1, CR LF " " CR LF 0 / 0, LF " 5" 0 / 0. So (a) a BLANK after the LF
+      ends an empty item and stays UNREAD (a comma is taken), and (b) the END reached after skipping is an empty item,
+      not "Input past end" -- that error is only for a channel already at its end (zerobas raised it, a divergence
+      older than slice 3). din_num reworked; the unit test corrected from the readings (+ the " " CR LF row);
+      closefail grew `inbl` (B1-B4): inlf and inbl both agree with the CF-3300 ([AE_s1a3_inbl.out](../../scratchpad/AE_s1a3_inbl.out)). unit-test and the
+      INPUT subject suites green.

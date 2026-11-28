@@ -7,4 +7,6 @@ ZEROBAS_BASIC_MACHINE=C-BIOS_MSX1_EU_REPACK_DISK python3 probes/disk/disk_probe_
              ZB {'msgs': ['ok', 'ok', 'ok', 'Disk full', 'ok', 'Disk full', 'ok'], 'b0': [4, 0]}
   ok   app256 CF {'msgs': ['ok', '0  256', 'ok', 'ok'], 'b0': [0], 'file': ['F.TXT attr=00 size=256 date=0821 time=0000 sha1=6b7d325ca727']}
              ZB {'msgs': ['ok', '0  256', 'ok', 'ok'], 'b0': [0], 'file': ['F.TXT attr=00 size=256 date=0821 time=0000 sha1=6b7d325ca727']}
-4 cases, 0 diverge, 0 without a reference
+  ok   inlf  CF {'msgs': ['ok', 'P1 12  9', 'P2 0  12', 'P3 0  12', 'P4 12  9', 'Q1 9  7', 'Q2 12  7', 'Q3 12  7', 'Q4 0  9', 'Q5 9  7'], 'b0': []}
+             ZB {'msgs': ['ok', 'P1 12  9', 'P2 0  12', 'P3 0  12', 'P4 12  9', 'Q1 9  7', 'Q2 12  7', 'Q3 12  7', 'Q4 0  9', 'Q5 9  7'], 'b0': []}
+5 cases, 0 diverge, 0 without a reference

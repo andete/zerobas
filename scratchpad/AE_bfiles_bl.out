@@ -1,0 +1,22 @@
+== National_CF-3300   (log /tmp/zerobas/tmp3vv8ilak)
+   HIMEM after each step: boot=$DF93  date=$DF93  basic=$DE77  cs=$DE77  tB1=$DE77  tB2=$DE77  tB3=$DE77  tB4=$DE77
+   tB1  bytes written in $DE77-$DF93 / $E580-$E59F: $DEB5-$DED9 $E594-$E59F
+   tB2  bytes written in $DE77-$DF93 / $E580-$E59F: $DEB5-$DED9 $E594-$E59F
+   tB3  bytes written in $DE77-$DF93 / $E580-$E59F: $DEB5-$DED9 $E594-$E59F
+   tB4  bytes written in $DE77-$DF93 / $E580-$E59F: $DEB5-$DED9 $E594-$E59F
+   cs   $DA20-$DA6F:2056148  $DB50-$DB9F:104044  $DC60-$DC6F:9  $DD60-$DD7F:3
+   tB1  $D9C0-$DA6F:1820044  $DC60-$DC6F:4  $DD60-$DD7F:27  $E5A0-$F1CF:5911  $F230-$F24F:28  $F2B0-$F30F:189  $F330-$F33F:15  $F350-$F35F:6
+   tB2  $D9C0-$DA6F:1803260  $DC60-$DC6F:4  $DD60-$DD7F:27  $E5A0-$F1CF:5911  $F230-$F24F:28  $F2B0-$F30F:191  $F330-$F33F:15  $F350-$F35F:6
+   tB3  $D9D0-$DA6F:1778208  $DC60-$DC6F:4  $DD60-$DD7F:26  $E5A0-$F1CF:5917  $F230-$F24F:28  $F2B0-$F30F:193  $F330-$F33F:15  $F350-$F35F:6
+   tB4  $D9D0-$DA6F:1788496  $DC60-$DC6F:4  $DD60-$DD7F:28  $E5A0-$F1CF:5912  $F230-$F24F:28  $F2B0-$F30F:195  $F330-$F33F:15  $F350-$F35F:6
+   by CF span (all steps): below B's image=0  B's FAT image=0  A's FAT image=6364  dir buf=12352  data buf=2212  mount buf=2148  DPB + after=1187  fixed area=1432
+   final screen: PEN "B2.TXT" FOR INPUT AS #1 / :INPUT #1,X:PRINT "B2";X;EOF( / 1):CLOSE / B2 0 -1 / Ok / OPEN "B3.TXT" FOR INPUT AS #1 / :INPUT #1,X:PRINT "B3";X;EOF( / 1):CLOSE / B3 0  0 / Ok / OPEN "B4.TXT" FOR INPUT AS #1 / :INPUT #1,X:PRINT "B4";X;EOF( / 1):CLOSE / B4 0  0 / Ok / ÿ / color auto  goto  list  run
+== C-BIOS_MSX1_EU_REPACK_DISK   (log /tmp/zerobas/tmp6en21vzl)
+   HIMEM after each step: boot=$DF93  date=$DF93  basic=$DE77  cs=$DE77  tB1=$DE77  tB2=$DE77  tB3=$DE77  tB4=$DE77
+   cs   $DA40-$DA6F:928410  $DB60-$DB9F:50179
+   tB1  $DA00-$DA6F:930409  $DD60-$DD7F:14  $E4B0-$E4EF:78  $E8A0-$EAAF:3098  $ECA0-$ECCF:42  $ED40-$ED9F:53  $EDB0-$EDBF:18  $EE40-$EE5F:2  $EF40-$EF5F:17  $EFF0-$EFFF:74
+   tB2  $DA00-$DA6F:909308  $DD60-$DD7F:11  $E4B0-$E4EF:76  $E8A0-$EAAF:3579  $ECA0-$ECCF:42  $ED40-$ED9F:47  $EDB0-$EDBF:18  $EE40-$EE5F:2  $EF40-$EF5F:17  $EFF0-$EFFF:75
+   tB3  $DA10-$DA6F:984554  $EF40-$EF5F:17
+   tB4  $DA10-$DA6F:983704  $EF40-$EF5F:17
+   by CF span (all steps): below B's image=0  B's FAT image=154  A's FAT image=6677  dir buf=184  data buf=116  mount buf=149  DPB + after=0  fixed area=0
+   final screen:  AS #1:INPUT # / 1,X:PRINT "B2";X;EOF(1):CLOSE / Input past end / ZB / OPEN "B3.TXT" FOR INPUT AS #1:INPUT # / 1,X:PRINT "B3";X;EOF(1):CLOSE / File already open / ZB / OPEN "B4.TXT" FOR INPUT AS #1:INPUT # / 1,X:PRINT "B4";X;EOF(1):CLOSE / File already open / ZB / ÿ / color  auto   goto   list   run

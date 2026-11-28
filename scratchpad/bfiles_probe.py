@@ -150,6 +150,46 @@ if MFAPP2:   # Joost "Measure first": WHICH files does the CF's APPEND overwrite
     STEPS = [("cs", "CLEAR 1000"), ("mb", 'OPEN "B256.TXT" FOR OUTPUT AS #1:PRINT #1,STRING$(253,"A"):CLOSE')]
     for nm in ("A256", "Z256", "A512", "Z512", "B256"):
         STEPS += [("a" + nm, f'OPEN "{nm}.TXT" FOR APPEND AS #1:PRINT #1,"X":CLOSE')]
+MFIN3 = os.environ.get("MFIN3") == "1"
+if MFIN3:    # a held $00 vs "nothing held" in +3, and the CR-then-LF case (D-INPLF): host file "A" 00 "B" CR LF "12" CR LF
+    MFFLAG = True
+    MF15 = True
+    STEPS = [("oi", 'OPEN "N.TXT" FOR INPUT AS #1'), ("ra", "A$=INPUT$(1,#1):PRINT ASC(A$)"),
+             ("rn", "A$=INPUT$(1,#1):PRINT ASC(A$)"), ("rb", "A$=INPUT$(1,#1):PRINT ASC(A$)"),
+             ("rc", "A$=INPUT$(1,#1):PRINT ASC(A$)"), ("ix", "INPUT #1,X:PRINT X"), ("iy", "INPUT #1,Y:PRINT Y"),
+             ("ef", "PRINT EOF(1)"), ("cl", "CLOSE")]
+MFIN4 = os.environ.get("MFIN4") == "1"
+if MFIN4:    # is the LF HELD (+3) after a multi-byte INPUT$ ends on a CR, and NOT after INPUT$(1) takes it? file "AB" CR LF "12" CR LF
+    MFFLAG = True
+    MF15 = True
+    STEPS = [("om", 'OPEN "N.TXT" FOR INPUT AS #1'), ("r3", "A$=INPUT$(3,#1):PRINT LEN(A$)"),
+             ("im", "INPUT #1,X:PRINT X"), ("cm", "CLOSE"),
+             ("os", 'OPEN "N.TXT" FOR INPUT AS #1'), ("s1", "A$=INPUT$(1,#1)"), ("s2", "A$=INPUT$(1,#1)"),
+             ("s3", "A$=INPUT$(1,#1):PRINT ASC(A$)"), ("is", "INPUT #1,X:PRINT X"), ("cs", "CLOSE")]
+MFIN5 = os.environ.get("MFIN5") == "1"
+INF5 = {"P1": b"AB\r\n12\r\n", "P2": b"AB\r\n 12 \r\n", "P3": b"AB\r\n,12\r\n", "P4": b"AB\r\n\r\n12\r\n"}
+if MFIN5:    # D-INPLF's rule, re-measured: after INPUT$ took a CR, what INPUT # reads depends on what FOLLOWS the LF?
+    MF15 = True
+    STEPS = [("cs", "CLEAR 500")]
+    for nm in INF5:
+        STEPS += [("t" + nm, f'OPEN "{nm}.TXT" FOR INPUT AS #1:A$=INPUT$(3,#1):INPUT #1,X:INPUT #1,Y:'
+                             f'PRINT "{nm}";X;Y:CLOSE')]
+MFIN6 = os.environ.get("MFIN6") == "1"
+# (file, INPUT$ count before the two INPUT # items) -- is blank-skipping off only after INPUT$ took a CR, or after ANY INPUT$?
+INF6 = {"Q1": (b"A 9\r\n7\r\n", 1), "Q2": (b" 12 \r\n7\r\n", 0), "Q3": (b"AB\r\n 12\r\n7\r\n", 4),
+        "Q4": (b"A,9\r\n7\r\n", 1), "Q5": (b"AB 9\r\n7\r\n", 2)}
+if MFIN6:
+    MF15 = True
+    STEPS = [("cs", "CLEAR 500")]
+    for nm, (_b, n) in INF6.items():
+        pre = f"A$=INPUT$({n},#1):" if n else ""
+        STEPS += [("t" + nm, f'OPEN "{nm}.TXT" FOR INPUT AS #1:{pre}INPUT #1,X:INPUT #1,Y:PRINT "{nm}";X;Y:CLOSE')]
+MFBL = os.environ.get("MFBL") == "1"
+INFB = {"B1": b" \r\n ", "B2": b" \r\n", "B3": b"\r\n \r\n", "B4": b"\n 5\r\n"}
+if MFBL:     # blanks only (tests/test_seqin.py pins "the end before any byte" for " " CR LF " "): the CF's reading
+    MF15 = True
+    STEPS = [("cs", "CLEAR 500")] + [("t" + nm, f'OPEN "{nm}.TXT" FOR INPUT AS #1:INPUT #1,X:PRINT "{nm}";X;EOF(1):CLOSE')
+                                     for nm in INFB]
 if os.environ.get("MFCRT") == "1":   # a NON-disk device at #7: is the number limit the disk's or BASIC's?
     MF15 = True
     STEPS = [("mf", "MAXFILES=15"), ("o7", 'OPEN "CRT:" FOR OUTPUT AS #7'), ("p7", 'PRINT #7,"YY"'),
@@ -176,6 +216,19 @@ for m in machines:
     subprocess.run(["cp", SRC, dsk], check=True)
     if MFAPP:
         inject(dsk, "F       TXT", b"A" * 254 + b"\r\n")
+    if MFIN3:
+        inject(dsk, "N       TXT", b"A\x00B\r\n12\r\n")
+    if MFIN4:
+        inject(dsk, "N       TXT", b"AB\r\n12\r\n")
+    if MFBL:
+        for nm, body in INFB.items():
+            inject(dsk, f"{nm:8s}TXT", body)
+    if MFIN6:
+        for nm, (body, _n) in INF6.items():
+            inject(dsk, f"{nm:8s}TXT", body)
+    if MFIN5:
+        for nm, body in INF5.items():
+            inject(dsk, f"{nm:8s}TXT", body + b"9\r\n")
     if MFAPP2:
         inject(dsk, "A256    TXT", b"A" * 254 + b"\r\n")
         inject(dsk, "Z256    TXT", b"A" * 253 + b"\r\n\x1a")
@@ -204,7 +257,7 @@ for m in machines:
         ro = os.path.join(td, "ro.dsk")
         subprocess.run(["cp", SRC, ro], check=True)
         os.chmod(ro, 0o444)   # openMSX mounts a read-only image write-protected (probes/disk/build_bdosxe_disk.py)
-        if not (MFFULL or MFDFULL or MFAPP or MFAPP2 or os.environ.get("MFIN2") == "1"):
+        if not (MFFULL or MFDFULL or MFAPP or MFAPP2 or MFIN3 or MFIN4 or os.environ.get("MFIN2") == "1"):
             hook += f"  if {{$tag eq \"p2\"}} {{diska {{{ro}}}}}\n"
     tcl = tcl.replace(a, hook + a)
     tcl = tcl.replace("$::tries > 240", "$::tries > 12000")

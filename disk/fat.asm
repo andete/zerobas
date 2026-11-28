@@ -661,8 +661,6 @@ frg_pass:
 ; The refill is RDBLK's own positioning and byte source (k47b2_seek /
 ; k47b2_nextbyte, D-RDBLKSEEK): no re-mount, no re-find, the chain walked from
 ; the FCB's running cluster -- 256 B a refill, the CF-3300's block size.
-DIN_CRPEND      equ     2               ; DOUT_FLG bit (an INPUT row): INPUT$ handed over a CR
-                                        ; and its LF is still unread (D-INPLF (A), din_num)
 DIN_LEFT        equ     DOUT_FLG+1      ; word: the record's unread bytes (0..256).
                                         ; DOUT_FIRST's place -- an INPUT row has no
                                         ; write cursor
@@ -779,9 +777,7 @@ hk_chin:
                 jr      nz, din_ok
                 ld      a, (FCH_RDMODE)
                 cp      2                   ; INPUT$ reads the CR-LF pair as data
-                jr      nz, din_inp
-                set     DIN_CRPEND, (ix+DOUT_FLG)   ; D-INPLF (A): its LF is still to come
-                jr      din_cr
+                jr      z, din_cr           ; (its LF is just the next byte: no state, D-COPYSLOW step 1)
 din_inp:
                 call    din_peek            ; INPUT#: what follows the CR?
                 jr      c, din_cr
@@ -805,27 +801,46 @@ din_ok:
 din_num:
                 xor     a
                 ld      (STRSCR), a
-                ; D-INPLF (A), measured on the CF-3300 (scratchpad/inplf_measure.out): after
-                ; INPUT$ took a CR, the LF that follows ENDS AN EMPTY ITEM -- INPUT # reads 0
-                ; there -- where the lead-in below would skip it. The CR is still pending.
-                bit     DIN_CRPEND, (ix+DOUT_FLG)
-                jr      z, dnm_lead
+                ; 🔁 D-COPYSLOW step 1 (2026-11-28, scratchpad/AE_bfiles_inlf.out, AE_bfiles_bl.out),
+                ; the CF-3300's lead-in: blanks, CRs and LFs are skipped, but AN LF TURNS BLANK-
+                ; SKIPPING OFF for the rest of it -- a blank after it ends an EMPTY item and stays
+                ; unread, a comma ends one and is taken, CR / LF are still skipped, a digit is read
+                ; (after INPUT$ took "AB" CR: LF "12" is 12, LF " 12" / LF ",12" are 0, then 12).
+                ; And the END reached after skipping something is an empty item, not an error:
+                ; " " CR LF reads 0 with EOF -1; only a channel ALREADY at its end has no item.
+                ; It replaces D-INPLF (A)'s DIN_CRPEND state ("a CR taken by INPUT$ makes the
+                ; following LF an empty item"), which agreed only when a blank followed the LF.
                 call    din_peek
-                jr      c, dnm_lead
-                cp      $0A
-                jr      nz, dnm_lead
-                call    din_take            ; the LF (and the pending CR with it)
-                or      a                   ; an empty item, CF clear: 0
-                ret
+                ret     c                   ; already at the end: no item (Input past end)
 dnm_lead:
                 call    din_peek
-                ret     c                   ; the end before any byte
+                jr      c, dnm_empty        ; the end after skipping: an empty item
                 cp      ' '
                 jr      z, dnm_skip
                 cp      $0D
                 jr      z, dnm_skip
                 cp      $0A
                 jr      nz, dnm_body
+                call    din_take            ; an LF: from here on no blank is skipped
+dnm_lf:
+                call    din_peek
+                jr      c, dnm_empty
+                cp      ' '
+                jr      z, dnm_empty        ; a blank: an empty item, the blank left unread
+                cp      ','
+                jr      z, dnm_lftake       ; a comma: an empty item, the comma taken
+                cp      $0D
+                jr      z, dnm_lfskip
+                cp      $0A
+                jr      nz, dnm_body
+dnm_lfskip:
+                call    din_take
+                jr      dnm_lf
+dnm_lftake:
+                call    din_take
+dnm_empty:
+                xor     a                   ; CF clear, STRSCR empty: 0
+                ret
 dnm_skip:
                 call    din_take
                 jr      dnm_lead
@@ -867,7 +882,8 @@ dnm_delim:
                 jr      nz, din_ok
 dnm_eat:
                 call    din_take            ; ... and its LF, or the comma
-                jr      din_ok
+                or      a                   ; = din_ok, inlined: the lead-in grew past jr's reach
+                ret
 
 ; din_peek -- A = the row's next byte, NOT consumed, CF clear; CF set when there
 ; is none (the end, a failed read) or it is a Ctrl-Z. A spent record is refilled
@@ -895,7 +911,6 @@ din_peek:
 ; din_take -- consume the byte din_peek saw: position + 1, DIN_LEFT - 1. A and
 ; the flags are kept; BC, DE, HL clobbered. IX = the row.
 din_take:
-                res     DIN_CRPEND, (ix+DOUT_FLG)   ; any byte taken: no CR pending
                 push    af
                 call    dout_pos
                 inc     (hl)                ; the position (wraps with the record)

@@ -129,11 +129,15 @@ keyboard form.
   CF-3300 has rules for it: inside a number read by `INPUT #` it is skipped
   (`5`, line feed, `6` reads 56; zerobas read 5), and `LINE INPUT #` keeps it
   as a character of the line (zerobas dropped it). Both now match on disk
-  ([readings](../../scratchpad/inplf_grid2.out)). The last case followed on
-  2026-11-08: when `INPUT$` takes the carriage return, the line feed after it
-  ends an EMPTY item for the next `INPUT #` on the CF-3300 (a number reads 0),
-  and zerobas had skipped it as the second half of the pair. It now does the
-  same ([after](../../scratchpad/inplf_after3.out)).
+  ([readings](../../scratchpad/inplf_grid2.out)). The last case, a line feed
+  met before `INPUT #` reaches its next item (left, for example, when `INPUT$`
+  took the carriage return in front of it): the CF-3300 skips it, but after
+  it a blank or a comma ends an EMPTY item (a number reads 0), while a digit
+  is read as usual -- line feed, `12` reads 12; line feed, ` 12` reads 0. A
+  first fix (2026-11-08) made every such line feed an empty item, which agreed
+  only when a blank followed it; the rule above is the one that fits all the
+  readings, and zerobas follows it since 2026-11-28
+  ([readings](../../scratchpad/AE_bfiles_inlf.out)).
 
 - **Ctrl-STOP while `INPUT` waited did nothing** (fixed 2026-11-06,
   D-STOPINPUT; found by a typed session). On the VG-8020 Ctrl-STOP or Ctrl-C

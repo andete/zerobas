@@ -14,6 +14,10 @@ Two cases, each on both machines, from MSX-DOS's `BASIC`:
     full   every free cluster marked used, OPEN / PRINT# / CLOSE / CLOSE / OPEN / CLOSE
     rfail  a full disk: a PRINT# that FILLS a record (its write fails "Disk full"; the CF DROPS the record), then
            one more PRINT# (Ok on the CF -- zerobas used to retry and fail again: DOUT_RFULL), CLOSE / CLOSE
+    inlf   INPUT # after an LF in its lead-in (INPUT$ took "AB" CR first, or controls without): the CF skips the LF
+           but no blank after it -- LF "12" reads 12, LF " 12" / LF ",12" read 0 (2026-11-28, AE_bfiles_inlf.out)
+    inbl   blanks only, and the end met after skipping: an EMPTY item, not "Input past end"; a blank after an LF stays
+           unread (B1 " " CR LF " ": 0 and EOF 0; B2 " " CR LF: 0 and EOF -1)
     app256 APPEND to a host-injected file of EXACTLY 256 B, PRINT #1,"X": the CF-3300 OVERWRITES the last record
            from its start -- a 256 B file, "X" CR LF ^Z over its first four bytes (Joost 2026-11-28: "Copy the CF
            exactly"); the file's size and sha1 are compared too
@@ -45,7 +49,20 @@ CASES = {
               ("pf", 'PRINT #1,STRING$(254,"A")'), ("p2", 'PRINT #1,"B"'), ("c1", "CLOSE"), ("c2", "CLOSE")],
     "app256": [("oa", 'OPEN "F.TXT" FOR APPEND AS #1'), ("lc", "PRINT LOC(1);LOF(1)"), ("px", 'PRINT #1,"X"'),
                ("c1", "CLOSE")],
+    # an LF met in INPUT #'s lead-in: skipped, blank-skipping off after it (each file read by its own line)
+    "inlf": [("cs", "CLEAR 500")] + [
+        ("t" + nm, f'OPEN "{nm}.TXT" FOR INPUT AS #1:' + (f"A$=INPUT$({n},#1):" if n else "")
+         + f'INPUT #1,X:INPUT #1,Y:PRINT "{nm}";X;Y:CLOSE') for nm, (_b, n) in
+        {"P1": (0, 3), "P2": (0, 3), "P3": (0, 3), "P4": (0, 3), "Q1": (0, 1), "Q2": (0, 0), "Q3": (0, 4),
+         "Q4": (0, 1), "Q5": (0, 2)}.items()],
+    # blanks only / the end after skipping (tests/test_seqin.py used to pin "the end" for these -- never measured)
+    "inbl": [("cs", "CLEAR 500")] + [("t" + nm, f'OPEN "{nm}.TXT" FOR INPUT AS #1:INPUT #1,X:PRINT "{nm}";X;EOF(1):CLOSE')
+                                     for nm in ("B1", "B2", "B3", "B4")],
 }
+INBL = {"B1": b" \r\n ", "B2": b" \r\n", "B3": b"\r\n \r\n", "B4": b"\n 5\r\n"}
+INLF = {"P1": b"AB\r\n12\r\n9\r\n", "P2": b"AB\r\n 12 \r\n9\r\n", "P3": b"AB\r\n,12\r\n9\r\n",
+        "P4": b"AB\r\n\r\n12\r\n9\r\n", "Q1": b"A 9\r\n7\r\n", "Q2": b" 12 \r\n7\r\n",
+        "Q3": b"AB\r\n 12\r\n7\r\n", "Q4": b"A,9\r\n7\r\n", "Q5": b"AB 9\r\n7\r\n"}
 
 
 def inject(path, name11, data):
@@ -95,6 +112,12 @@ def run(machine, case):
         disk_probe_diskfull.full_disk(dsk)
     if case == "app256":
         inject(dsk, "F       TXT", b"A" * 254 + b"\r\n")
+    if case == "inlf":
+        for nm, body in INLF.items():
+            inject(dsk, f"{nm:8s}TXT", body)
+    if case == "inbl":
+        for nm, body in INBL.items():
+            inject(dsk, f"{nm:8s}TXT", body)
     ro = probe_tmp.tmp(f"closefail_{case}_{machine}_ro.dsk")
     if os.path.exists(ro):
         os.chmod(ro, 0o644)
@@ -123,35 +146,39 @@ def run(machine, case):
         return None
     lines = open(out).read().splitlines()
     b0 = {ln.split()[1]: int(ln.split()[2]) for ln in lines if ln.startswith("B0 ")}
-    snap = next((ln for ln in reversed(lines) if ln.startswith(steps[-1][0] + " ")), None)
-    if snap is None:
+    if not any(ln.startswith(steps[-1][0] + " ") for ln in lines):
         return None
-    p = snap.split()
-    w = int(p[1][2:])
-    raw = bytes.fromhex(p[3])
-    rows = [raw[k * w:(k + 1) * w].decode("latin1").rstrip() for k in range(24)]
-    # the message after each typed line: the screen as ONE flat string (a long line WRAPS -- the CF-3300's OPEN line
-    # does at 32 / 40 columns), each typed line searched AFTER the previous one (every CLOSE is the same text), and
-    # the first non-blank row after the row the line ends on
-    # -- matched with SPACES REMOVED, each kept character remembering its row (the CF's BASIC screen here is SCREEN 1
-    # at WIDTH 29 inside 32-column rows, so a wrapped line is not rejoined by padding the rows: 2026-11-28)
-    chars = [(c, ri) for ri, r in enumerate(rows) for c in r if c != " "]
-    flat = "".join(c for c, _ in chars)
-    msgs, cur = [], 0
+    # each step's message is read from ITS OWN snapshot (a long session scrolls: reading every step from the last
+    # screen lost the first ones -- the inlf case, 2026-11-28)
+    msgs = []
     for t, x in steps:
-        xs = x.replace(" ", "")
-        i = flat.find(xs, cur)
-        if i < 0:
-            msgs.append("<line not seen>")
-            continue
-        cur = i + len(xs)
-        nxt = chars[cur - 1][1] + 1
-        msg = next((r.strip() for r in rows[nxt:] if r.strip()), "")
-        msgs.append("ok" if msg in ("Ok", "ZB") else msg)
+        snap = next((ln for ln in lines if ln.startswith(t + " ")), None)
+        msgs.append(step_msg(snap, x) if snap else "<no snapshot>")
     res = {"msgs": msgs, "b0": [b0.get(t) for t, _ in steps if t.startswith("c") and t != "cs"]}
     if case == "app256":
         res["file"] = [e for e in D.disk_listing(bytearray(open(dsk, "rb").read())) if e.startswith("F.TXT")]
     return res
+
+
+def step_msg(snap, x):
+    """The message after the typed line x on one snapshot."""
+    p = snap.split()
+    w = int(p[1][2:])
+    raw = bytes.fromhex(p[3])
+    rows = [raw[k * w:(k + 1) * w].decode("latin1").rstrip() for k in range(24)]
+    # the typed line's LAST occurrence on its own snapshot (repeated CLOSE lines: the latest is this step's), matched
+    # with SPACES REMOVED, each kept character remembering its row -- a long line WRAPS, and the CF-3300's BASIC screen
+    # here is SCREEN 1 at WIDTH 29 inside 32-column rows, so padding the rows does not rejoin it (2026-11-28); the
+    # message is the first non-blank row after the row the line ends on
+    chars = [(c, ri) for ri, r in enumerate(rows) for c in r if c != " "]
+    flat = "".join(c for c, _ in chars)
+    xs = x.replace(" ", "")
+    i = flat.rfind(xs)
+    if i < 0:
+        return "<line not seen>"
+    nxt = chars[i + len(xs) - 1][1] + 1
+    msg = next((r.strip() for r in rows[nxt:] if r.strip()), "")
+    return "ok" if msg in ("Ok", "ZB") else msg
 
 
 def main():

@@ -130,7 +130,7 @@ The six published entries, then every PINNED address in `disk/*.asm` -- the refe
 | $47B2 | `(jp k_47B2)` | no BDOS function named | disk/fat.asm:371 |
 | $47BE | `k_47BE` | BDOS $26 WRBLK: exercised | disk/fat.asm:391 |
 | $47D1 | `k_47D1` | BDOS $28 WRZER: exercised | disk/fat.asm:412 |
-| $4C29 | `fdc_di_save` | no BDOS function named | disk/fat.asm:1322 |
+| $4C29 | `fdc_di_save` | no BDOS function named | disk/fat.asm:1337 |
 | $4E4B | `(jp k_4E4B)` | no BDOS function named | disk/kernel.asm:94 |
 | $4EDE | `(jp k_4EDE)` | no BDOS function named | disk/kernel.asm:208 |
 | $4FB8 | `sfirst` | BDOS $11 SFIRST (by its label): exercised | disk/kernel.asm:388 |

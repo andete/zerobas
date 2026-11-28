@@ -259,10 +259,22 @@ def run():
     r.op(4)
     b, end = r.op(2)
     report("` 1 CR LF`: nothing left after the last number (EOF -1)", end)
+    # 🔁 D-COPYSLOW step 1 (2026-11-28, scratchpad/AE_bfiles_bl.out -- the CF-3300): "blanks only" is NOT the end. The
+    # lead-in skips " " CR, the LF turns blank-skipping off, and the last blank ends an EMPTY item and stays unread
+    # (the CF: X = 0, EOF 0). This row used to pin "the end before any byte" -- zerobas's own guess, never measured.
     r = Rig(b" \r\n ")
     b, end = r.op(4)
-    report("blanks only: the end before any byte, length 0",
-           end and r.m.mem[r.s["STRSCR"]] == 0, f"end={end}")
+    report("blanks only ` CR LF `: an empty item (0), not the end",
+           not end and r.m.mem[r.s["STRSCR"]] == 0, f"end={end}")
+    b, end = r.op(2)
+    report("... and the blank after the LF is still unread (EOF 0)", not end, f"end={end}")
+    # " " CR LF: the end reached AFTER skipping is an empty item too (the CF: X = 0, EOF -1), not Input past end
+    r = Rig(b" \r\n")
+    b, end = r.op(4)
+    report("` CR LF` then the end: an empty item (0), not an error",
+           not end and r.m.mem[r.s["STRSCR"]] == 0, f"end={end}")
+    b, end = r.op(2)
+    report("... and then EOF is -1", end, f"end={end}")
 
     # --- D-LINEJECT: a failed read is pending, not an end -------------------
     data = bytes(b"z" * 700)
