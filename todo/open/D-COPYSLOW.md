@@ -250,3 +250,22 @@
         U3  zerobas's $E7AD-$E8AC: no named cell and no offset use in any of the four ROMs, no write in these runs --
             256 B that look unused (a computed-offset cell would be invisible to the search).
         Still unknown: what the CF keeps in $DE77-$DEB4 (62 B, never written in these runs).
+      📏 **FCB SLOTS + FIELDS (2026-11-28, bfiles_probe.py MFSLOT / MFWR, appended to [AE_bfiles_u1.out](../../scratchpad/AE_bfiles_u1.out)):** OPEN #3 then #1 ->
+        slot 3 ($DEFF) then slot 1 ($DEB5): the slot IS the file number, FCB(n) = $DEB5 + 37*(n-1). While a file is
+        WRITTEN (1.3 KB, past one cluster) the CF-3300 updates FCB +16..+24, +26..+31 and +33..+35 -- never +25 or +32;
+        CLOSE the same set but +26..+27. So it tracks its clusters INSIDE the standard FCB.
+      📐 **STEP 1 DRAFT (the channel table; nothing built):**
+          channel n's FCB  : DSK_ENGTAB row n (+0..36, TXTMAX-based, 50 B stride)  ->  $DEB5 + 37*(n-1), n = 1..6 (CF)
+          disk OPEN #7+    : opens  ->  "Bad file number" (follows from six slots; D-DISKFNUM6)
+          row +37..38      : the channel block's address  ->  no cell: derived from FILTAB as BASIC already can
+          row +39          : flags (DOUT_RFULL / DOUT_DEAD)  ->  NO CF PLACE MEASURED -- 🙋 question
+          row +40..+44     : first cluster / current cluster / sector index  ->  FCB +26..27 / +28..29 / derived from
+                             +30..31 and +33..35, the fields the CF itself updates while writing
+          row +45..+48     : directory sector + offset  ->  FCB +25 (the directory entry), set at OPEN
+          freed            : DSK_ENGTAB's 750 B ($E4BF-$E7AC) -- needed by step 2 (A's FAT image starts $E595)
+          unknown          : $DE77-$DEB4 (62 B) on the CF -- never written in any run
+          gates            : FULL (a RAM-address move) + diskbasic suites, knife re-pin, disk corpus, a C-BIOS re-pin
+                             note (the disk ROM changes)
+      🧭 JOOST 2026-11-28: "Build; measure flags first" -- one more address-only run for the flags byte's two states
+      (a full record not yet written; a CLOSE that failed), then build step 1 as drafted (FULL gate, knives, disk corpus,
+      a C-BIOS re-pin note).

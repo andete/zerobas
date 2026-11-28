@@ -42,11 +42,19 @@ if os.environ.get("MFHI") == "1":   # #15 with NOTHING else open: a refusal is a
     MF15 = True
     STEPS = [("mf", "MAXFILES=15"), ("o15", 'OPEN "FF.TXT" FOR OUTPUT AS #15'), ("p15", 'PRINT #15,"X"'),
              ("cl", "CLOSE"), ("o7", 'OPEN "F7.TXT" FOR OUTPUT AS #7'), ("cl2", "CLOSE")]
+if os.environ.get("MFSLOT") == "1":   # #3 first, then #1: is FCB slot n tied to file number n, or first-free?
+    MF15 = True
+    STEPS = [("mf", "MAXFILES=6"), ("o3", 'OPEN "F3.TXT" FOR OUTPUT AS #3'), ("o1", 'OPEN "F1.TXT" FOR OUTPUT AS #1'),
+             ("cl", "CLOSE")]
+if os.environ.get("MFWR") == "1":   # which FCB bytes move while a file is WRITTEN (1.3 KB: past one 1 KB cluster)
+    MF15 = True
+    STEPS = [("mf", "MAXFILES=1"), ("o1", 'OPEN "F1.TXT" FOR OUTPUT AS #1'),
+             ("p1", 'FOR I=1 TO 130:PRINT #1,"012345678":NEXT'), ("cl", "CLOSE")]
 if os.environ.get("MFCRT") == "1":   # a NON-disk device at #7: is the number limit the disk's or BASIC's?
     MF15 = True
     STEPS = [("mf", "MAXFILES=15"), ("o7", 'OPEN "CRT:" FOR OUTPUT AS #7'), ("p7", 'PRINT #7,"YY"'),
              ("cl", "CLOSE")]
-D.SESSION = [("boot", None, 14), ("date", "", 5), ("basic", "BASIC", 8)] + [(t, x, 30 if os.environ.get("MFHI") == "1" or os.environ.get("MFCRT") == "1" else 15 if MF15 else 8) for t, x in STEPS]
+D.SESSION = [("boot", None, 14), ("date", "", 5), ("basic", "BASIC", 8)] + [(t, x, 30 if os.environ.get("MFHI") == "1" or os.environ.get("MFCRT") == "1" or os.environ.get("MFSLOT") == "1" or os.environ.get("MFWR") == "1" else 15 if MF15 else 8) for t, x in STEPS]
 order = ["basic"] + [t for t, _ in STEPS]
 SPANS = [(0xDE77, 0xDF93, "below B's image"), (0xDF94, 0xE593, "B's FAT image"), (0xE595, 0xEB94, "A's FAT image"),
          (0xEB95, 0xED94, "dir buf"), (0xED95, 0xEF94, "data buf"), (0xEF95, 0xF194, "mount buf"),
