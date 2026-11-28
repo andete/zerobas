@@ -25,8 +25,9 @@ is the verdict, `GATEWT <sha> GREEN` or `GATEWT <sha> RED: ...`):
      gate_pins/) copied in;
   4. `make repack-machine test-dsk` there (the test disks are generated, untracked);
   5. a commit touching basic/ sub/ disk/: the knives (kwknife --all, --allfn) and the
-     tape corpus ($TAPECORPUS_DIR, required), as the loop does before a commit. A TRACKED file they change (the
-     knife pin) is reported and copied to scratchpad/gate_wt/<sha>.changed/: the
+     tape corpus ($TAPECORPUS_DIR, required), as the loop does before a commit, then `make tiers-md` against the
+     re-pinned knives (2026-11-28: the tier sheet is generated from the pin). A TRACKED file they change (the
+     knife pin, the tier sheet) is reported and copied to scratchpad/gate_wt/<sha>.changed/: the
      battery then gates the tree WITH it, and the commit is amended with those exact
      bytes before the push;
   6. the gate: `plan` (default) is pick_gates --run with ZEROBAS_GATE_BASE = REV's
@@ -283,6 +284,12 @@ def run(a) -> int:
             fails.append("tape corpus (TAPECORPUS_DIR unset)")
         elif sh(["python3", "-u", "scratchpad/tapecorpus_run.py"], env, "tape corpus"):
             fails.append("tape corpus")
+        # the tier sheet is GENERATED from the knife pin: regenerate it here, against the pin the knives just wrote,
+        # so the battery's tiers-md-check sees a consistent pair and the sheet travels back in .changed/ with the pin.
+        # Before this every disk-ROM commit went RED on tiers-md-check (the committed sheet was made with the OLD pin)
+        # and was re-pinned by hand in the main tree -- the knife run twice (Joost 2026-11-28, "gate in parallel").
+        if sh(["make", "-s", "tiers-md"], env, "tier sheet (against the re-pinned knives)"):
+            fails.append("tiers-md")
         moved = [f for f in git("diff", "--name-only", cwd=WT).splitlines() if f]
         # a re-pin whose ONLY change is its "written" stamp is the same pin: restore it,
         # so the battery gates exactly the commit and nothing needs an amend
