@@ -1886,7 +1886,7 @@ str_fn_radix:                               ; C = the build op (rst $10 keeps it
                 ; halves are the normal case and neither costs a byte here.
                 ld      a,(hl)
                 cp      ')'
-                jp      nz,sfg_reject1      ; pops [op], then str_arg_empty
+                jr      nz,sfg_reject1      ; pops [op], then str_arg_empty
                 inc     hl                  ; HL past ')'
                 ex      (sp),hl             ; [cursor]; L = the op
                 ld      a,l                 ; op = 6 HEX / 7 OCT / 14 BIN
@@ -2039,7 +2039,7 @@ sfg_close:                                  ; E = fill byte, HL = cursor       [
                 ld      l,h                 ; blk+0 = the count (sh_go puts the op in H)
                 ld      a,8                 ; op = 8 (FILL) -- shape-C follow-up
                                             ; (same move as SPACE$ above)
-                jp      shx_tail
+                jr      shx_tail  ; (jr: D-COPYSLOW filtab_fill's carve, jr_mapper)
 sfg_reject1:
                 pop     af                  ; discard [count] (or str_fn_radix's [op])
                 jp      str_arg_empty       ; BUG C class: defer FPERR=4 (missing ',' / ')')

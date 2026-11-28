@@ -534,7 +534,7 @@ apc_release:
                 ; z80flow: ld-sp 0
                 ld      sp,hl               ; SP -> the return address
                 ld      hl,(ARY_CUR)        ; HL = cursor past ')'
-                jp      fperr_test          ; D-FPCARVE: tail call, -2 B
+                jr      fperr_test          ; D-FPCARVE: tail call, -2 B; jr: D-COPYSLOW filtab_fill's carve
                                             ; non-zero here exactly when something
                                             ; failed — same verdict, no shadow
                                             ; registers, 4 bytes

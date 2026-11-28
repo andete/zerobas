@@ -288,7 +288,7 @@ dig15_shr:
                 or      a
                 ret     z
                 cp      15
-                jp      nc,dig15_zero15     ; (jp: the $3297 pad between grew past jr reach)
+                jr      nc,dig15_zero15     ; (jr again: the $3297 pad shrank when filtab_fill filled it -- D-COPYSLOW)
                 ld      c,a                 ; C = shift
                 ld      a,l
                 add     a,14                ; no carry: the array never crosses a page
@@ -543,7 +543,7 @@ widen_and_finalize:
                 call    arga_widen
 round_and_finalize:
                 call    arga_dig_iszero
-                jp     z,raf_zero_ok
+                jr     z,raf_zero_ok     ; (jr: D-COPYSLOW filtab_fill's low-region carve, jr_mapper)
                 ld      a,(ARGA+FPNUM_DIG+14)
                 cp      5
                 jr      c,raf_noround
@@ -1693,7 +1693,7 @@ set_factyp_int_ret equ set_factyp2
 widen_lhs_operand:
                 ld      a,(LHS_FACTYP)
                 cp      2
-                jp      nz,widen_lhsframe_to
+                jr      nz,widen_lhsframe_to ; (jr: D-COPYSLOW filtab_fill's low-region carve, jr_mapper)
                 ld      de,(FP_LHSVAL)
                 jr      widen_int_to
 

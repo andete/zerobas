@@ -2387,9 +2387,36 @@ dout_pos:
                 inc     hl
                 ret
 ; dout_blk -- HL = &block+0, the channel block's MODE byte (BASIC's: 2 OUTPUT, 4 RANDOM). IX = the row.
+; 🔁 D-COPYSLOW step 1a (Joost 2026-11-28 "Fill FILTAB, read it"): the block comes from MS-BASIC's FILE TABLE,
+; the word at FILTAB + 2*n (sub/strheap.asm sh_filtab_fill fills it, as the CF-3300's BASIC does), n the row's
+; own channel -- not FCH_ACTIVE: FIELD / GET / PUT / the open check address other channels' rows. The row's
+; DOUT_BLK pointer is gone. Clobbers A ONLY: DE is saved -- dout_pos / rnd_rec are documented "Clobbers A" and
+; callers keep DE across them (din_fetch's index; the first build clobbered it and every suite that reads a file
+; read the wrong bytes).
 dout_blk:
-                ld      l, (ix+DOUT_BLK)
-                ld      h, (ix+DOUT_BLK+1)
+                push    de
+                push    ix
+                pop     hl
+                ld      de, -(TXTMAX-(FCH_CEIL+1)*FCH_STATESZ)
+                add     hl, de              ; HL = the row's offset in DSK_ENGTAB
+                ld      de, FCH_STATESZ
+                xor     a
+dbk_ch:
+                or      a
+                sbc     hl, de
+                inc     a
+                jr      nc, dbk_ch          ; A = its channel + 1
+                dec     a
+                add     a, a
+                ld      e, a
+                ld      d, 0
+                ld      hl, (FILTAB)
+                add     hl, de
+                ld      a, (hl)
+                inc     hl
+                ld      h, (hl)
+                ld      l, a
+                pop     de
                 ret
 
 ; dout_open -- the FCB both OPENs build in the live channel's row: drive 0, the
@@ -2415,19 +2442,15 @@ dop_z:
                 ld      (ix+14), a          ; RS = 1: a record is a byte, so the
                                             ; random record +33 is a byte offset
                 ld      a, (FCH_ACTIVE)
-                ld      ix, fch_ctx_addr
-                call    calbak              ; HL = the channel's 265 B block
-                ei                          ; CALSLT returns DI (cbios slot.asm), and
-                                            ; the mount and the directory work below
-                                            ; must not run masked: the driver keeps
-                                            ; the CALLER's state (fdc_di_save), so a
-                                            ; DI here masked the whole OPEN and the
-                                            ; keys typed meanwhile were lost
-                push    hl
-                call    dout_live           ; (calbak consumed IX)
-                pop     hl
-                ld      (ix+DOUT_BLK), l
-                ld      (ix+DOUT_BLK+1), h
+                call    dout_blk            ; HL = the channel's 265 B block, from FILTAB's
+                                            ; table (D-COPYSLOW step 1a: no row pointer, and no
+                                            ; call into main -- the CALSLT's DI went with it)
+                push    ix
+                pop     de
+                inc     hl
+                ld      (hl), e
+                inc     hl
+                ld      (hl), d             ; block +1..+2 := the FCB, the CF-3300's link
                 call    dout_pos
                 ld      (hl), 0             ; position 0
                 jp      fat_mount

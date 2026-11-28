@@ -444,3 +444,20 @@
       half-sector step-back is gone (10 B). zerobas's FCB +25..+35 is now BYTE-IDENTICAL to the CF-3300's at every step
       of MFFCB (2B / 0150 / 0150 -> 0151 / 0000 -> 0001 / CLOSE +32 97). 🔮: HIT. Subject suites green: unit-test, dout,
       putdir, diskfull, closefail, savetail, clearclose, diskbasic, lof, fcbhdr, append (byte-identical).
+      📏 **FILTAB'S TABLE (2026-11-28, bfiles_probe.py MFTAB, [AE_bfiles_tab.out](../../scratchpad/AE_bfiles_tab.out); work-area reads):** the CF-3300 FILLS MS-BASIC's
+      per-channel pointer table and rewrites it at MAXFILES -- after MAXFILES=2, FILTAB = DB56 -> DB5C DC65 DD6E (blocks
+      #0-#2, 265 apart). zerobas has it right after boot but leaves it stale after MAXFILES (8CFC D49F 2217 ...).
+      🧭 JOOST 2026-11-28: "Fill FILTAB, read it" -- BASIC fills the table wherever the blocks move (MAXFILES, CLEAR, boot),
+      the disk ROM reads block n from it (DOUT_BLK goes), and each block's +1..+2 gets its FCB's address, as the CF.
+      ✅ **STEP 1a, COMMIT 6 BUILT (2026-11-28): THE BLOCK LINK, THE CF-3300'S WAY (Joost "Fill FILTAB, read it").** BASIC
+      fills MS-BASIC's file table at every clear_vars (basic/files.asm filtab_fill, page 1 -- heap_cells' tail; the sub-ROM
+      had 0 / 25 B, too little): the word at FILTAB + 2*i = FCB #i's block. The disk ROM's dout_blk reads it, the channel
+      taken from the row's ADDRESS (FIELD / GET / PUT address other channels' rows); dout_open writes block +1..+2 := the
+      FCB, as the CF, and no longer calls fch_ctx_addr in main (its CALSLT DI workaround went with it). The row's DOUT_BLK
+      pointer is gone. 🔴 FIRST BUILD WRONG: dout_blk clobbered DE under dout_pos / rnd_rec's "Clobbers A" contract --
+      din_fetch keeps its index in DE -- and every suite that reads a file read the wrong bytes (a-scratch-register-that-
+      was-the-callers-value, again); dout_blk now saves DE. Three unit-test rigs (seqin, rand_extend, rand_straddle) put
+      the row at the real dout_row address and name the block in a rig FILTAB table. closefail grew `ftab` (the table
+      PEEKed after MAXFILES=2: DB5C DC65 DD6E on both). Subject suites green: dout 16/16, clearclose, closefail, diskbasic,
+      fcbhdr, putdir, lof, badfnum, nodisk, diskfull, savetail, readflt, diskascii, inputdn, the three rig tests, append.
+      ➡️ STEP 1a DONE once this gates: every row field past the FCB has left the row. Step 1b next.

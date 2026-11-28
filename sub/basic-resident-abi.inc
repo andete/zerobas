@@ -10,28 +10,28 @@
 ; main ROM, read out of our own build's symbol file. Nothing here is derived
 ; from a disassembly or byte-copy of any reference ROM.
 
-fp_add equ 035B6H
-fp_sub equ 03655H
-fp_mul equ 03684H
-fp_div equ 03701H
-fp_cmp equ 037C1H
+fp_add equ 035B4H
+fp_sub equ 03653H
+fp_mul equ 03682H
+fp_div equ 036FFH
+fp_cmp equ 037BFH
 dig15_iszero equ 0330CH
-arga_pack_fac equ 034F8H
-widen_fac_to equ 038F7H
-widen_uint_to equ 03B93H
+arga_pack_fac equ 034F7H
+widen_fac_to equ 038F5H
+widen_uint_to equ 03B90H
 flt_to_int16 equ 032B9H
-vars_reset equ 03D68H
+vars_reset equ 03D65H
 penderr_set equ 02C57H
-flt_fmt equ 031DFH
+flt_fmt equ 031DDH
 rl_vpeek equ 00B9AH
 rl_vpoke equ 00BA5H
 rl_vaddr equ 00BB2H
 rl_lastrow equ 00BD9H
 st_go equ 001F6H
 sub_isr_main equ 00B95H
-scan_isbd equ 03F8CH
-crt_rows equ 03461H
-crt_cp equ 0346BH
+scan_isbd equ 03F88H
+crt_rows equ 03460H
+crt_cp equ 0346AH
 
 ; --- page-0 call-back (p0cb) targets: zerobas-sub's p0cb / p1cb reach these through CLPRIM, never by absolute address ---
 p0_chrgtr equ 00168H   ; main's chrgtr
@@ -69,7 +69,7 @@ p0_upcase equ 04243H   ; main's upcase
 p0_eval equ 04A94H   ; main's eval
 p0_eval_byte_arg equ 044B9H   ; main's eval_byte_arg
 p0_stmt_bare_end equ 04253H   ; main's stmt_bare_end
-p0_mxf_require_end equ 03F06H   ; main's mxf_require_end
+p0_mxf_require_end equ 03F02H   ; main's mxf_require_end
 p0_oo_parse_reclen equ 06D4AH   ; main's oo_parse_reclen
 p0_fch_check_d equ 06F18H   ; main's fch_check_d
 p0_fch_check_nz equ 06F29H   ; main's fch_check_nz
@@ -79,7 +79,7 @@ p0_fch_do_close_ch equ 06F33H   ; main's fch_do_close_ch
 p0_fch_close_all equ 06F67H   ; main's fch_close_all
 p0_fopen_cross equ 06956H   ; main's fopen_cross
 p0_fatprim_op equ 0631BH   ; main's fatprim_op
-p0_cas_capture_cut equ 03F2AH   ; main's cas_capture_cut
+p0_cas_capture_cut equ 03F26H   ; main's cas_capture_cut
 p0_cas_open_match equ 06783H   ; main's cas_open_match
 p0_cas_bufp_set equ 06792H   ; main's cas_bufp_set
 p0_cas_ascii_setup equ 067D0H   ; main's cas_ascii_setup
@@ -92,12 +92,12 @@ p0_run_prog_top equ 06743H   ; main's run_prog_top
 p0_disk_prog_load equ 06819H   ; main's disk_prog_load
 p0_sv_tenant equ 06931H   ; main's sv_tenant
 p0_bload_cont equ 0669DH   ; main's bload_cont
-p0_fch_park equ 03CBFH   ; main's fch_park
+p0_fch_park equ 03CBCH   ; main's fch_park
 p0_list_all equ 06201H   ; main's list_all
 p0_cas_ascii_finish equ 068CBH   ; main's cas_ascii_finish
 p0_cas_capture_name equ 06755H   ; main's cas_capture_name
-p0_cas_name_cut equ 03F2DH   ; main's cas_name_cut
-p0_req_comma equ 031D7H   ; main's req_comma
+p0_cas_name_cut equ 03F29H   ; main's cas_name_cut
+p0_req_comma equ 031D5H   ; main's req_comma
 p0_check_expr_errors equ 04381H   ; main's check_expr_errors
 p0_key_drain equ 05AFDH   ; main's key_drain
 p0_req_operand equ 0413CH   ; main's req_operand

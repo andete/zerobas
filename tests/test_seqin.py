@@ -99,7 +99,8 @@ class Rig:
         m.poke(row + 14, 1)                                  # RS = 1
         m.poke(row + 16, len(data).to_bytes(4, "little"))    # the size
         m.poke_w(row + 26, FIRST)                            # the first cluster
-        m.poke_w(row + s["DOUT_BLK"], BLOCK)
+        m.poke_w(s["FILTAB"], 0xBF00)         # D-COPYSLOW step 1a: the block from FILTAB's table, as BASIC fills it
+        m.poke_w(0xBF00 + 2 * CHAN, BLOCK)
         m.poke(BLOCK, bytes(265))
         # D-COPYSLOW step 1a slice 4: hk_finp's state before its read-ahead -- +3 = 0 (nothing held), +6 = 255 (at the
         # last index, so the first fetch fills); +6 is the INDEX of the last byte fetched now, not a count

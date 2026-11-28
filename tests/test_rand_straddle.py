@@ -63,7 +63,9 @@ DISK_BASE = 0x4000
 SECSIZE = 512
 DISK_ROM, DISK_SYM = tp("rand_straddle_disk.rom"), tp("rand_straddle_disk.sym")
 PHYS0 = 100                     # GP_PHYS = PHYS0 + GP_SEC, under the trap
-ROW = 0xD000                    # the channel's FCB row (IX): +16..19 = the size
+ROW = 0xD000                    # the channel's FCB row (IX): +16..19 = the size -- re-derived once the sym is
+                                # loaded (the real row for channel 1: the disk ROM takes the channel from IX)
+FTAB = 0xBF00                   # the rig's FILTAB table (D-COPYSLOW step 1a)
 BLK = 0xC000                    # the channel's 265 B block (ROW + DOUT_BLK caches it)
 REC = BLK + 9                   # its record, block + FCH_HDRSZ (D-FLDDESC)
 
@@ -99,6 +101,9 @@ def model_put(disk, recno, reclen):
 
 def make_machine(disk):
     m = Machine(DISK_ROM, DISK_SYM, rom_base=DISK_BASE)
+    global ROW                      # the real row for channel 1 (dout_row's arithmetic): the disk ROM derives the
+    s = m.sym                       # channel from IX to index FILTAB's table (D-COPYSLOW step 1a)
+    ROW = s["TXTMAX"] - (s["FCH_CEIL"] + 1) * s["FCH_STATESZ"] + 1 * s["FCH_STATESZ"]
 
     def frnd_locate(mm):
         sec = mm.mem[mm.sym["GP_SEC"]] | (mm.mem[mm.sym["GP_SEC"] + 1] << 8)
@@ -125,7 +130,8 @@ def make_machine(disk):
     # the directory stamp is a separate concern with its own tests
     m.trap("fat_dir_update", lambda mm: mm.cpu.__setattr__("f", mm.cpu.f & ~0x01))
     # D-FLDDESC: the row caches the channel's block; the record is its +9
-    m.poke_w(ROW + m.sym["DOUT_BLK"], BLK)
+    m.poke_w(m.sym["FILTAB"], FTAB)               # D-COPYSLOW step 1a: the block comes from FILTAB's table
+    m.poke_w(FTAB + 2 * 1, BLK)                   # (the rig's channel is 1)
     assert m.sym["FCH_RECMAX"] == 256 and REC - BLK == 9
     return m
 

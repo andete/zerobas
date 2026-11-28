@@ -503,8 +503,17 @@ heap_cells:
                 ld      b,0
                 add     hl,bc
                 ld      (FILTAB+2),hl       ; NULBUF ($F862)
-                ret
+                jp      filtab_fill         ; ... and FILTAB's table (float.asm, page 0: D-COPYSLOW step 1a)
     ENDIF
+
+; filtab_fill -- its ENTRY (heap_cells' tail jump); the rest is in front of the $3297 pin (float.asm ftf_a), split
+; across the low region's two holes (D-COPYSLOW step 1a; see float.asm).
+filtab_fill:
+                push    de
+                ld      hl,(FILTAB)
+                ld      a,(MAXF)
+                inc     a
+                jp      ftf_a
 
 ; low-region overflow guard: the low-region tenants must not reach the $4000 header.
 ; If they do, the `ds` below would be negative (pasmo warns + emits nothing, a silent

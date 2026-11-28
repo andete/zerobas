@@ -209,6 +209,38 @@ flo_fx_b_zloop:
 ; game-internal-addresses.md). FIXED ADDRESS: since the D-CBIOS032 rebase (BASIC from
 ; $2BAF) $3297 falls inside this file, so the pin sits here, after an unconditional
 ; `ret` (tools/pin_plan.py); the `ds` is its pad.
+; filtab_fill -- MS-BASIC's FILE TABLE, filled as the CF-3300's BASIC fills it (D-COPYSLOW step 1a, Joost
+; 2026-11-28 "Fill FILTAB, read it"; scratchpad/AE_bfiles_tab.out -- after MAXFILES=2 its FILTAB DB56 -> DB5C DC65
+; DD6E): the word at (FILTAB) + 2*i = FCB #i's block, i = 0..MAXF, FCH_BLKSZ apart from FCB #0 = (FILTAB) +
+; 2*(MAXF+1), sh_chan_addr's own layout. The disk ROM finds a channel's block here (disk/kernel.asm dout_blk).
+; heap_cells' tail (main.asm), so every clear_vars -- boot, CLEAR, MAXFILES. 🔴 IN PAGE 0: heap_cells is in the
+; page-1 tenant's resident closure (basic-reloc's escape check failed the first build, which had it in page 1 --
+; switched out while a tenant runs). Split across the low region's two holes: this set-up in front of the $3297
+; pin (most of it: ftf_a, the loop and the exit), the entry at the low region's end (main.asm) -- rebalanced
+; when switch-build-check's five switched-off variants overran the tail by 3 B. Keeps heap_cells' contract: clobbers A, B, C, H, L.
+ftf_a:                                      ; (filtab_fill's entry is at the low region's tail, main.asm)
+                ld      b,a                 ; B = MAXF + 1 entries (#0 included)
+                add     a,a
+                ld      e,a
+                ld      d,0
+                push    hl
+                add     hl,de
+                ex      de,hl               ; DE = FCB #0
+                pop     hl
+ftf_lp:
+                ld      (hl),e
+                inc     hl
+                ld      (hl),d
+                inc     hl
+                push    hl
+                ld      hl,FCH_BLKSZ
+                add     hl,de
+                ex      de,hl               ; DE = the next block
+                pop     hl
+                djnz    ftf_lp
+                pop     de
+                ret
+
     IF BASICINT_PINS
                 ds      $3297 - $, $00
 basicint_3297:

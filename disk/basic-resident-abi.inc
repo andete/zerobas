@@ -10,12 +10,12 @@
 ; main ROM, read out of our own build's symbol file. Nothing here is derived
 ; from a disassembly or byte-copy of any reference ROM.
 
-widen_int_to equ 03945H
-widen_fac_to equ 038F7H
-round_single_and_pack equ 03577H
-round_and_finalize equ 03526H
+widen_int_to equ 03943H
+widen_fac_to equ 038F5H
+round_single_and_pack equ 03575H
+round_and_finalize equ 03525H
 pu_deref_body equ 02C7EH
-subrom_call equ 03C24H
+subrom_call equ 03C21H
 ARGA equ 0F806H   ; operand A / working result, FPNUM record (18)
 ZB_HOST equ 0FD09H   ; (2 B) ZB_HOST_SIG while zerobas BASIC hosts the disk ROM: slot 0's own SLTWRK
 ZB_HOST_SIG equ 0425AH   ; NOT-A-CELL: "ZB", little-endian

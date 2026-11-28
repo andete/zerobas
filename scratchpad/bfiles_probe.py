@@ -203,6 +203,11 @@ if MFFCB:    # slice 5: an OUTPUT channel's FCB +25..+35 VALUES (work-area RAM) 
     STEPS = [("mf", "MAXFILES=1"), ("o1", 'OPEN "F1.TXT" FOR OUTPUT AS #1'),
              ("p3", 'FOR I=1 TO 30:PRINT #1,"012345678":NEXT'), ("p13", 'FOR I=1 TO 100:PRINT #1,"012345678":NEXT'),
              ("cl", "CLOSE")]
+MFTAB = os.environ.get("MFTAB") == "1"
+if MFTAB:    # FILTAB ($F860): does the CF fill MS-BASIC's per-channel pointer table with each block's address? (work-area)
+    MF15 = True
+    STEPS = [("mf", "MAXFILES=2"), ("o1", 'OPEN "F1.TXT" FOR OUTPUT AS #1'), ("o2", 'OPEN "F2.TXT" FOR OUTPUT AS #2'),
+             ("cl", "CLOSE")]
 if os.environ.get("MFCRT") == "1":   # a NON-disk device at #7: is the number limit the disk's or BASIC's?
     MF15 = True
     STEPS = [("mf", "MAXFILES=15"), ("o7", 'OPEN "CRT:" FOR OUTPUT AS #7'), ("p7", 'PRINT #7,"YY"'),
@@ -260,6 +265,12 @@ for m in machines:
                       f"set ::fl [open {{{fl}}} w]\n" + CMD, 1)
     a = "  close $f }"
     assert tcl.count(a) == 1
+    if MFTAB:
+        tcl_tab = ("  set ft [rd16 0xF860]; set tv {}; for {set i 0} {$i < 4} {incr i} {lappend tv [format %04X [rd16 "
+                   "[expr {$ft + 2*$i}]]]}; puts $::fl \"TAB $tag [format %04X $ft] MEMSIZ [format %04X [rd16 0xF672]] "
+                   "$tv\"\n")
+    else:
+        tcl_tab = ""
     if MFFCB:
         base = 0xDEB5 if "CF-3300" in m else 0xE4BF
         tcl_fcb = ("  set fv {}; for {set i 25} {$i < 36} {incr i} {lappend fv [rd [expr {%d + $i}]]}; "
@@ -270,7 +281,7 @@ for m in machines:
     # not code) after every step -- where the CF keeps a failed CLOSE's state
     hook = ("  set hv {}; for {set i 0} {$i < 9} {incr i} {lappend hv [rd [expr {0xDD6E + $i}]]}; puts $::fl \"HDR $tag $hv\"\n"
             if MFFLAG else "")
-    hook += tcl_fcb
+    hook += tcl_fcb + tcl_tab
     hook += "  puts $::fl \"HIMEM $tag [rd16 0xFC4A]\"\n  if {$tag eq \"" + order[0] + "\"} {set ::counting 1}\n"
     for k, v in zip(order, order[1:]):
         hook += f"  if {{$tag eq \"{k}\"}} {{set ::step {v}}}\n"
@@ -301,6 +312,8 @@ for m in machines:
         print("   F.TXT after: " + " | ".join(e for e in D.disk_listing(bytearray(open(dsk, "rb").read()))
                                           if e.startswith("F.TXT")))
     for ln in lines:
+        if ln.startswith("TAB "):
+            print("   FILTAB after " + " ".join(ln.split()[1:]))
         if ln.startswith("FCB "):
             print(f"   FCB +25..+35 after {ln.split()[1]:4s}: " + " ".join(f"{int(x):02X}" for x in ln.split()[2:]))
     for ln in lines:

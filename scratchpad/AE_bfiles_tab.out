@@ -1,0 +1,33 @@
+== National_CF-3300   (log /tmp/zerobas/tmp5c1eblv5)
+   FILTAB after boot DD7D MEMSIZ DD7B B15F 265F 9C60 929F
+   FILTAB after date DD7D MEMSIZ DD7B B15F 265F 9C60 929F
+   FILTAB after basic DC61 MEMSIZ DC5F DC65 DD6E 4D00 0000
+   FILTAB after mf DB56 MEMSIZ DB54 DB5C DC65 DD6E 9D00
+   FILTAB after o1 DB56 MEMSIZ DB54 DB5C DC65 DD6E 9D00
+   FILTAB after o2 DB56 MEMSIZ DB54 DB5C DC65 DD6E 9D00
+   FILTAB after cl DB56 MEMSIZ DB54 DB5C DC65 DD6E 9D00
+   HIMEM after each step: boot=$DF93  date=$DF93  basic=$DE77  mf=$DE77  o1=$DE77  o2=$DE77  cl=$DE77
+   o1   bytes written in $DE77-$DF93 / $E580-$E59F: $DEB5-$DED9 $E594-$E59F
+   o2   bytes written in $DE77-$DF93 / $E580-$E59F: $DEDA-$DEFE $E594-$E59F
+   cl   bytes written in $DE77-$DF93 / $E580-$E59F: $DEC5-$DECD $DECF-$DED4 $DED6-$DED8 $DEEA-$DEF2 $DEF4-$DEF9 $DEFB-$DEFD $E594-$E596
+   mf   $DA40-$DA8F:2056028  $DB50-$DB9F:103975  $DC60-$DC6F:5  $DD60-$DD7F:5
+   o1   $DA00-$DA8F:1738598  $DB50-$DB6F:2  $DC60-$DC6F:6  $E5A0-$ED9F:7189  $EF90-$F1CF:806  $F230-$F24F:30  $F2B0-$F30F:182  $F330-$F33F:20  $F350-$F35F:6
+   o2   $D9F0-$DA8F:1760102  $DB50-$DB6F:2  $DD60-$DD7F:6  $E5A0-$ED9F:7189  $EF90-$F1CF:815  $F230-$F24F:26  $F2B0-$F30F:182  $F330-$F33F:20  $F350-$F35F:6
+   cl   $D9E0-$DA8F:1366574  $DB50-$DB6F:4  $DC60-$DC6F:7  $DD60-$DD7F:7  $E780-$E78F:4  $ED00-$ED3F:20  $ED90-$ED9F:2  $F1B0-$F1CF:367  $F230-$F24F:22  $F2B0-$F30F:150  $F330-$F33F:8
+   by CF span (all steps): below B's image=0  B's FAT image=0  A's FAT image=3296  dir buf=11360  data buf=134  mount buf=1064  DPB + after=974  fixed area=1094
+   final screen: MSX BASIC version 1.0 / Copyright 1983 by Microsoft / 23430 Bytes free / Disk BASIC version 1.0 / Ok / MAXFILES=2 / Ok / OPEN "F1.TXT" FOR OUTPUT AS # / 1 / Ok / OPEN "F2.TXT" FOR OUTPUT AS # / 2 / Ok / CLOSE / Ok / ÿ / color auto  goto  list  run
+== C-BIOS_MSX1_EU_REPACK_DISK   (log /tmp/zerobas/tmpm63oerd9)
+   FILTAB after boot DD7D MEMSIZ DD7B DD81 DE8A FFFF FFFF
+   FILTAB after date DD7D MEMSIZ DD7B DD81 DE8A FFFF FFFF
+   FILTAB after basic DC61 MEMSIZ DC5F DC65 DD6E 4D4F 0000
+   FILTAB after mf DB56 MEMSIZ DB54 8CFC D49F 2217 456E
+   FILTAB after o1 DB56 MEMSIZ DB54 8CFC D49F 2217 456E
+   FILTAB after o2 DB56 MEMSIZ DB54 8CFC D49F 2217 456E
+   FILTAB after cl DB56 MEMSIZ DB54 8CFC D49F 2217 456E
+   HIMEM after each step: boot=$DF93  date=$DF93  basic=$DE77  mf=$DE77  o1=$DE77  o2=$DE77  cl=$DE77
+   mf   $DA60-$DA8F:928522  $DB60-$DB9F:50227
+   o1   $DA20-$DA8F:934980  $DC60-$DC6F:3  $E4B0-$E4EF:53  $E8A0-$ECCF:2654  $ED50-$ED6F:10  $ED90-$ED9F:4  $EDB0-$EDBF:16  $EE40-$EE5F:2  $EF40-$EF5F:17  $EFF0-$EFFF:74
+   o2   $DA20-$DA8F:944148  $DD60-$DD7F:3  $E4F0-$E52F:53  $E8A0-$ECCF:2654  $ED50-$ED6F:10  $ED90-$ED9F:4  $EDB0-$EDBF:16  $EE50-$EE5F:2  $EF40-$EF5F:17  $EFF0-$EFFF:74
+   cl   $DA10-$DA8F:847536  $DC60-$DC6F:4  $DD60-$DD7F:4  $E4C0-$E4EF:8  $E500-$E51F:8  $E8A0-$ECCF:5122  $ED50-$ED6F:62  $ED90-$ED9F:4  $EDB0-$EDBF:26  $EFF0-$EFFF:144
+   by CF span (all steps): below B's image=0  B's FAT image=122  A's FAT image=5554  dir buf=5130  data buf=108  mount buf=292  DPB + after=0  fixed area=0
+   final screen: zerobas version 0.1 / clean-room MSX1 BASIC / zerobas Disk BASIC / ZB / MAXFILES=2 / ZB / OPEN "F1.TXT" FOR OUTPUT AS #1 / ZB / OPEN "F2.TXT" FOR OUTPUT AS #2 / ZB / CLOSE / ZB / ÿ / color  auto   goto   list   run

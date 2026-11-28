@@ -35,7 +35,8 @@ sys.path.insert(0, HERE)
 from msxtest import Machine, carry  # noqa: E402
 
 ROM, SYM = tp("rand_extend_disk.rom"), tp("rand_extend_disk.sym")
-ROW, BLK, CHAN = 0xD000, 0xC000, 1
+ROW, BLK, CHAN = 0xD000, 0xC000, 1   # ROW is re-derived per rig (the real row for CHAN)
+FTAB = 0xBF00                         # the rig's FILTAB table
 
 
 def build():
@@ -88,8 +89,14 @@ def put(recno, preused=0, tot=2 + 713, more=()):
     m.poke(s["DISKOP_ERR"], 0)
     m.poke(s["FAT_DEFER"], 0)
     m.poke_w(s["FAT_FATSEC"], 0xFFFF)
-    m.poke(ROW, bytes(64))
-    m.poke_w(ROW + s["DOUT_BLK"], BLK)
+    # D-COPYSLOW step 1a: the disk ROM finds the block through MS-BASIC's FILE TABLE (FILTAB + 2*ch, BASIC fills it --
+    # filtab_fill) and the row's channel from the row's ADDRESS, so the row sits where dout_row puts it and the
+    # table names the block; the row's DOUT_BLK pointer is gone
+    global ROW
+    ROW = s["TXTMAX"] - (s["FCH_CEIL"] + 1) * s["FCH_STATESZ"] + CHAN * s["FCH_STATESZ"]
+    m.poke(ROW, bytes(s["FCH_STATESZ"]))
+    m.poke_w(s["FILTAB"], FTAB)
+    m.poke_w(FTAB + 2 * CHAN, BLK)
     m.poke(s["FCH_ACTIVE"], CHAN)
     m.poke_w(s["FCH_RECLENS"] + CHAN * 2, 1)
     m.poke(ROW + 33, (recno - 1).to_bytes(4, "little"))

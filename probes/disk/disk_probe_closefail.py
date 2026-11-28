@@ -18,6 +18,7 @@ Two cases, each on both machines, from MSX-DOS's `BASIC`:
            but no blank after it -- LF "12" reads 12, LF " 12" / LF ",12" read 0 (2026-11-28, AE_bfiles_inlf.out)
     inra   the one-byte read-ahead: block +3 (the byte fetched, $00 none) and +6 (the last fetched index) after every
            step, across a record boundary; a NUL that EOF() read ahead is LOST, as on the CF-3300 (65, EOF 0, 66, 67)
+    ftab   MS-BASIC's file table after MAXFILES=2, PEEKed: the CF-3300 fills it with each block's address (DB5C DC65 DD6E)
     inbl   blanks only, and the end met after skipping: an EMPTY item, not "Input past end"; a blank after an LF stays
            unread (B1 " " CR LF " ": 0 and EOF 0; B2 " " CR LF: 0 and EOF -1)
     app256 APPEND to a host-injected file of EXACTLY 256 B, PRINT #1,"X": the CF-3300 OVERWRITES the last record
@@ -64,6 +65,9 @@ CASES = {
              ("r8", "A$=INPUT$(8,#1):PRINT ASC(RIGHT$(A$,1))"), ("cl", "CLOSE"),
              ("on", 'OPEN "N.TXT" FOR INPUT AS #1'), ("na", "A$=INPUT$(1,#1):PRINT ASC(A$)"), ("ne", "PRINT EOF(1)"),
              ("nb", "A$=INPUT$(1,#1):PRINT ASC(A$)"), ("nc", "A$=INPUT$(1,#1):PRINT ASC(A$)"), ("cn", "CLOSE")],
+    # MS-BASIC's FILE TABLE, PEEKed by a program after MAXFILES=2: FILTAB's three words (Joost "Fill FILTAB, read it")
+    "ftab": [("mf", "MAXFILES=2"),
+             ("pt", "A=PEEK(&HF860)+256*PEEK(&HF861):FOR I=0 TO 2:PRINT HEX$(PEEK(A+2*I)+256*PEEK(A+2*I+1));\" \";:NEXT")],
     # blanks only / the end after skipping (tests/test_seqin.py used to pin "the end" for these -- never measured)
     "inbl": [("cs", "CLEAR 500")] + [("t" + nm, f'OPEN "{nm}.TXT" FOR INPUT AS #1:INPUT #1,X:PRINT "{nm}";X;EOF(1):CLOSE')
                                      for nm in ("B1", "B2", "B3", "B4")],
