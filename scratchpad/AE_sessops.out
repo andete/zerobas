@@ -1,0 +1,96 @@
+##### SESS=driveb
+== National_CF-3300   (log /tmp/zerobas/tmppcvcyqri)
+   dira  FATr=6  t0r=3
+         track-0 reads land: s1->$EB95 x1  s2->$E595 x1  s2->$EB95 x1  s2->$EF95 x1  s3->$E795 x1  s3->$EB95 x1  s4->$E995 x1  s8->$EB95 x1  s9->$EB95 x1
+   dirb  
+   keyb  FATr=6  t0r=3
+         track-0 reads land: s1->$EB95 x1  s2->$DF94 x1  s2->$EB95 x1  s2->$EF95 x1  s3->$E194 x1  s3->$EB95 x1  s4->$E394 x1  s8->$EB95 x1  s9->$EB95 x1
+   dira2 
+   keya  FATr=6  t0r=3
+         track-0 reads land: s1->$EB95 x1  s2->$E595 x1  s2->$EB95 x1  s2->$EF95 x1  s3->$E795 x1  s3->$EB95 x1  s4->$E995 x1  s8->$EB95 x1  s9->$EB95 x1
+   final screen: M  131072 02-12-17  8:10p /        3 files   375808 bytes free / A>DIR A:MSX*.* / Insert diskette for drive A: / and strike a key when ready / MSXDOS   SYS    2432 02-10-16  8:01p / MSXBUNSE ROM   32768 02-12-17  8:09p / MSXBUDIC ROM  131072 02-12-17  8:10p /        3 files   375808 bytes free / A>ÿ
+== C-BIOS_MSX1_EU_REPACK_DISK   (log /tmp/zerobas/tmpcg5nc71_)
+   dira  FATr=10  t0r=6
+         track-0 reads land: s1->$E8AD x1  s2->$E8A5 x5  s2->$E8AD x1  s2->$EAAD x1  s3->$E8AD x1  s3->$EAAD x1  s4->$EAAD x1  s8->$E8AD x2  s9->$E8AD x3
+   dirb  FATr=10  t0r=6
+         track-0 reads land: s1->$E8AD x1  s2->$E8A5 x5  s2->$E8AD x1  s2->$EAAD x1  s3->$E8AD x1  s3->$EAAD x1  s4->$EAAD x1  s8->$E8AD x2  s9->$E8AD x3
+   keyb  
+   dira2 FATr=10  t0r=6
+         track-0 reads land: s1->$E8AD x1  s2->$E8A5 x5  s2->$E8AD x1  s2->$EAAD x1  s3->$E8AD x1  s3->$EAAD x1  s8->$E8AD x2  s9->$E8AD x3
+   keya  
+   final screen: / MSXBUNSE ROM   32768 02-12-17  8:09p / MSXBUDIC ROM  131072 02-12-17  8:10p /        3 files   375808 bytes free / A> / A>DIR A:MSX*.* / MSXDOS   SYS    2432 02-10-16  8:01p / MSXBUNSE ROM   32768 02-12-17  8:09p / MSXBUDIC ROM  131072 02-12-17  8:10p /        3 files   375808 bytes free / A> / A>
+##### SESS=basic
+== National_CF-3300   (log /tmp/zerobas/tmp7u9zfiie)
+   NO FDC COMMANDS RECORDED -- instrument failed, not a finding
+   prog  
+   save  
+   new   
+   load  
+   files 
+   final screen:   Enter date (--):10 PRINT " /   HI" /   Invalid date /   Enter date (--):SAVE "T.BA /   S" /   Invalid date /   Enter date (--):NEW /   Invalid date /   Enter date (--):LOAD "T.BA /   S" /   Invalid date /   Enter date (--):FILES "T*. /   *" /   Invalid date /   Enter date (--):ÿ
+== C-BIOS_MSX1_EU_REPACK_DISK   (log /tmp/zerobas/tmpkqh2wbna)
+   NO FDC COMMANDS RECORDED -- instrument failed, not a finding
+   prog  
+   save  
+   new   
+   load  
+   files 
+   final screen:   Enter date (M-D-Y):10 PRINT "HI" /   Invalid date /   Enter date (M-D-Y):SAVE "T.BAS" /   Invalid date /   Enter date (M-D-Y):NEW /   Invalid date /   Enter date (M-D-Y):LOAD "T.BAS" /   Invalid date /   Enter date (M-D-Y):FILES "T*.*" /   Invalid date /   Enter date (M-D-Y):
+##### SESS=basic (retry, COMMAND.COM deleted too)
+== National_CF-3300   (log /tmp/zerobas/tmpde3kblrl)
+   NO FDC COMMANDS RECORDED -- instrument failed, not a finding
+   prog  
+   save  
+   new   
+   load  
+   files 
+   final screen:   Enter date (--):10 PRINT " /   HI" /   Invalid date /   Enter date (--):SAVE "T.BA /   S" /   Invalid date /   Enter date (--):NEW /   Invalid date /   Enter date (--):LOAD "T.BA /   S" /   Invalid date /   Enter date (--):FILES "T*. /   *" /   Invalid date /   Enter date (--):ÿ
+== C-BIOS_MSX1_EU_REPACK_DISK   (log /tmp/zerobas/tmpfra_qn3f)
+   NO FDC COMMANDS RECORDED -- instrument failed, not a finding
+   prog  
+   save  
+   new   
+   load  
+   files 
+   final screen:   Enter date (M-D-Y):10 PRINT "HI" /   Invalid date /   Enter date (M-D-Y):SAVE "T.BAS" /   Invalid date /   Enter date (M-D-Y):NEW /   Invalid date /   Enter date (M-D-Y):LOAD "T.BAS" /   Invalid date /   Enter date (M-D-Y):FILES "T*.*" /   Invalid date /   Enter date (M-D-Y):
+##### SESS=basic (via BASIC at A>)
+== National_CF-3300   (log /tmp/zerobas/tmp4awvuli5)
+   prog  
+   save  FATr=8  t0r=8  t0w=1
+         track-0 reads land: s1->$EB95 x3  s1->none x1  s2->$E595 x1  s2->$EB95 x2  s2->$EF95 x1  s3->$E795 x1  s3->$EB95 x2  s4->$E995 x1  s8->$EB95 x2  s9->$EB95 x2
+   new   FATr=6  FATw=6  datar=1  dataw=1  t0r=1  t0w=1
+         track-0 reads land: s1->none x1  s2->none x1  s3->none x1  s4->none x1  s5->none x1  s6->none x1  s7->none x1
+   load  FATr=4  datar=1  t0r=6
+         track-0 reads land: s1->$EB95 x2  s2->$E595 x1  s2->$EF95 x1  s3->$E795 x1  s4->$E995 x1  s8->$EB95 x2  s9->$EB95 x2
+   files FATr=6  t0r=3
+         track-0 reads land: s1->$EB95 x1  s2->$E595 x1  s2->$EB95 x1  s2->$EF95 x1  s3->$E795 x1  s3->$EB95 x1  s4->$E995 x1  s8->$EB95 x1  s9->$EB95 x1
+   final screen:   MSX BASIC version 1.0 /   Copyright 1983 by Microsoft /   23430 Bytes free /   Disk BASIC version 1.0 /   Ok /   10 PRINT "HI" /   SAVE "T.BAS" /   Ok /   NEW /   Ok /   LOAD "T.BAS" /   Ok /   FILES "T*.*" /   T       .BAS TEST    .BAS /   Ok /   ÿ /   color auto  goto  list  run
+== C-BIOS_MSX1_EU_REPACK_DISK   (log /tmp/zerobas/tmpvo5s4f7i)
+   prog  
+   save  FATr=4  FATw=2  dataw=1  t0r=4  t0w=2
+         track-0 reads land: s1->$EAAD x2  s2->$E89A x1  s2->$E8A5 x2  s2->$EAAD x1  s8->$EAAD x1  s9->$EAAD x1
+   new   
+   load  FATr=1  datar=1  t0r=3
+         track-0 reads land: s1->$E8AD x1  s2->$E8A5 x1  s8->$E8AD x1  s9->$E8AD x1
+   files FATr=3  t0r=3
+         track-0 reads land: s1->$E8AD x1  s2->$E8A5 x1  s2->$E8AD x1  s8->$E8AD x1  s9->$E8AD x1
+   final screen:   zerobas version 0.1 /   clean-room MSX1 BASIC /   zerobas Disk BASIC /   ZB /   10 PRINT "HI" /   SAVE "T.BAS" /   ZB /   NEW /   ZB /   LOAD "T.BAS" /   ZB /   FILES "T*.*" /   T       .BAS TEST    .BAS /   ZB /   ÿ /   color  auto   goto   list   run
+##### SESS=basic2
+== National_CF-3300   (log /tmp/zerobas/tmp9_4d5_hh)
+   prog  
+   save  FATr=8  t0r=8  t0w=1
+         track-0 reads land: s1->$EB95 x3  s1->none x1  s2->$E595 x1  s2->$EB95 x2  s2->$EF95 x1  s3->$E795 x1  s3->$EB95 x2  s4->$E995 x1  s8->$EB95 x2  s9->$EB95 x2
+   files FATr=8  FATw=6  datar=1  dataw=1  t0r=4  t0w=1
+         track-0 reads land: s1->$EB95 x1  s1->none x1  s2->$EB95 x1  s2->none x1  s3->$EB95 x1  s3->none x1  s4->none x1  s5->none x1  s6->none x1  s7->none x1  s8->$EB95 x1  s9->$EB95 x1
+   new   
+   files2 FATr=6  t0r=3
+         track-0 reads land: s1->$EB95 x1  s2->$E595 x1  s2->$EB95 x1  s2->$EF95 x1  s3->$E795 x1  s3->$EB95 x1  s4->$E995 x1  s8->$EB95 x1  s9->$EB95 x1
+   final screen:   MSX BASIC version 1.0 /   Copyright 1983 by Microsoft /   23430 Bytes free /   Disk BASIC version 1.0 /   Ok /   10 PRINT "HI" /   SAVE "T.BAS" /   Ok /   FILES "*" /   LIST /   Ok /   NEW /   Ok /   FILES "T*.*" /   T       .BAS TEST    .BAS /   Ok /   ÿ /   color auto  goto  list  run
+##### SESS=basic3
+== National_CF-3300   (log /tmp/zerobas/tmpjnpu4kr2)
+   prog  
+   save  FATr=14  FATw=6  datar=1  dataw=1  t0r=9  t0w=2
+         track-0 reads land: s1->$EB95 x3  s1->none x2  s2->$E595 x1  s2->$EB95 x2  s2->$EF95 x1  s2->none x1  s3->$E795 x1  s3->$EB95 x2  s3->none x1  s4->$E995 x1  s4->none x1  s5->none x1  s6->none x1  s7->none x1  s8->$EB95 x2  s9->$EB95 x2
+   files FATr=6  t0r=3
+         track-0 reads land: s1->$EB95 x1  s2->$E595 x1  s2->$EB95 x1  s2->$EF95 x1  s3->$E795 x1  s3->$EB95 x1  s4->$E995 x1  s8->$EB95 x1  s9->$EB95 x1
+   final screen:   MSX BASIC version 1.0 /   Copyright 1983 by Microsoft /   23430 Bytes free /   Disk BASIC version 1.0 /   Ok /   10 PRINT "HI" /   SAVE "T.BAS" /   Ok /   FILES "T*.*" /   T       .BAS TEST    .BAS /   Ok /   ÿ /   color auto  goto  list  run

@@ -161,3 +161,34 @@
         🔮 "the CF-3300 writes its stale FAT onto the new disk": MISS -- it writes nothing to track 0 after the swap.
         So deferring the FAT the CF's way adds no risk that zerobas's write-through avoids today: zerobas already
         leaks clusters on both disks and reports success for a file that exists nowhere.
+      📏 **Q5 (MSX-DOS part) MEASURED (2026-11-28, [dosops_probe.py](../../scratchpad/dosops_probe.py), [AE_dosops.out](../../scratchpad/AE_dosops.out); COPY of a small file, TYPE, REN,
+      DEL, DIR; every track-0 read's landing window):** the CF-3300 runs the SAME mount sequence in every operation:
+      sector 2 -> $EF95 (media check), sectors 2,3,4 -> the image $E595 / $E795 / $E995, sectors 2,3 -> $EB95 too,
+      directory sectors -> $EB95. The FAT is written back (both copies, each read back) only by COPY and DEL; REN
+      writes ONE directory sector and NO FAT; TYPE and DIR write nothing -- so the write-back happens only when the
+      image has CHANGED (a dirty flag). zerobas: everything through $E8AD / $EAAD. 🔮 "image every op, directory in
+      $EB95, FAT written by COPY / REN / DEL": partial miss (REN writes no FAT). Disk BASIC SAVE / LOAD: still open.
+      📏 **Q5 (Disk BASIC) + Q6 MEASURED (2026-11-28, [sessops_probe.py](../../scratchpad/sessops_probe.py), [AE_sessops.out](../../scratchpad/AE_sessops.out)):**
+        Q5  the CF-3300's Disk BASIC (reached by `BASIC` at A>) uses the SAME mount sequence, image ($E595) and
+            directory buffer ($EB95) as MSX-DOS: SAVE / LOAD / FILES. SAVE writes data, directory, and both FAT copies
+            (each read back) before returning (SESS=basic3: 20 s of quiet after SAVE, every write inside the step).
+            🔴 APPARATUS, CAUGHT: SESS=basic / basic2 had put the CF's SAVE writes in the NEXT step -- the driver's
+            still-screen test (no prompt test for BASIC steps) fired while the CF's SAVE was silent for over a second;
+            "the CF defers SAVE's writes" would have been a false finding. zerobas: SAVE writes one FAT sector per copy.
+            🔮 "same buffers, only SAVE writes the FAT": HIT.
+            Unexplained, not chased: a test.dsk copy with MSXDOS.SYS AND COMMAND.COM deleted host-side still came up
+            at the MSX-DOS date prompt on BOTH machines.
+        Q6  ONE FAT IMAGE PER DRIVE on the CF-3300: after the drive-B: prompt, B's FAT lands at $DF94-$E593 (1536 B,
+            directly below A's at $E595); back on A:, A's is read again into $E595. 🔮 "one shared image": MISS.
+            (zerobas's DOS_RESV_TOP is $DF93 -- the byte below B's image.) The same run showed zerobas listing B: with
+            NO swap prompt -> filed D-DOSDRVBX (TIER 3).
+      ✅ ALL SIX QUESTIONS MEASURED. The reference's design to follow, in one place:
+        - per drive, a FAT image sized for the largest FAT (1536 B): A at $E595, B at $DF94;
+        - 512 B buffers: $EB95 directory / FAT sectors, $ED95 file data (little used by COPY: data goes to the DTA),
+          $EF95 the mount's first-FAT-sector (media) read;
+        - small state above them: $F1A0-$F1C8 and the fixed area; nothing in $DE77-$DF93;
+        - every operation re-reads the image (media check, then the whole FAT); it is written back -- both copies,
+          each read back -- only when changed, at the end of the operation; the directory sector is written and
+          read back the same way; data writes are read back after the whole file;
+        - a mid-operation swap: the CF never writes its image to the other disk (it stalls; hang or artefact unknown).
+      ➡️ NEXT: the cell-by-cell move plan to Joost, from this list. No code before he approves it.
