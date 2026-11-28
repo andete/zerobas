@@ -269,3 +269,15 @@
       🧭 JOOST 2026-11-28: "Build; measure flags first" -- one more address-only run for the flags byte's two states
       (a full record not yet written; a CLOSE that failed), then build step 1 as drafted (FULL gate, knives, disk corpus,
       a C-BIOS re-pin note).
+      📏 **THE FLAGS BYTE'S TWO STATES (2026-11-28, bfiles_probe.py MFFLAG / MFFULL, appended to [AE_bfiles_u1.out](../../scratchpad/AE_bfiles_u1.out); per-byte $DC00-$DF93):**
+      NEITHER EXISTS ON THE CF-3300.
+        record full (CLEAR 1000; PRINT #1,STRING$(254,"A") = 256 B): the CF fills $DD77-$DE76 and WRITES THE SECTOR IN
+          THE SAME PRINT# (FCB +16.. and $E594 updated in that step); zerobas fills it and writes on the NEXT PRINT#
+          (DOUT_RFULL). (Without CLEAR both said "Out of string space" -- the first run reached nothing.)
+        CLOSE failed (the disk swapped for a write-protected copy): both "Disk write protected"; a SECOND CLOSE on the
+          CF fails AGAIN (the channel stays open, it retries); on zerobas it succeeds silently (DOUT_DEAD frees it).
+        So step 1 DROPS the flags byte and moves both behaviours to the reference's: write a full record at once; a
+        failed CLOSE leaves the channel open. The channel BLOCK already matches (header $DD6E: +0 mode, +4 device,
+        +6 position; record $DD77, the same bytes written on both). Unknown, not chased: the CF writes $DC61-$DC65 and
+        $DC6C in every step, zerobas does not.
+        🔮 "a full record shows only as its position byte; the second CLOSE clears the slot": MISS on both.

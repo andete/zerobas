@@ -50,11 +50,23 @@ if os.environ.get("MFWR") == "1":   # which FCB bytes move while a file is WRITT
     MF15 = True
     STEPS = [("mf", "MAXFILES=1"), ("o1", 'OPEN "F1.TXT" FOR OUTPUT AS #1'),
              ("p1", 'FOR I=1 TO 130:PRINT #1,"012345678":NEXT'), ("cl", "CLOSE")]
+MFFLAG = os.environ.get("MFFLAG") == "1"
+if MFFLAG:   # the flags byte's two states: a FULL record not yet written (254 chars + CR LF = 256), then one more
+    #          PRINT#; then the disk swapped for a READ-ONLY copy and CLOSE (fails), then CLOSE again
+    MF15 = True
+    STEPS = [("mf", "MAXFILES=1"), ("o1", 'OPEN "F1.TXT" FOR OUTPUT AS #1'), ("pf", 'PRINT #1,STRING$(254,"A")'),
+             ("p2", 'PRINT #1,"B"'), ("c1", "CLOSE"), ("c2", "CLOSE")]
+MFFULL = os.environ.get("MFFULL") == "1"
+if MFFULL:   # the FULL-record state alone (MFFLAG's STRING$(254) was "Out of string space" on both: CLEAR first)
+    MFFLAG = True
+    MF15 = True   # per-byte counts (forgotten on the first run: it fell back to 16 B blocks, 2026-11-28)
+    STEPS = [("cs", "CLEAR 1000"), ("mf", "MAXFILES=1"), ("o1", 'OPEN "F1.TXT" FOR OUTPUT AS #1'),
+             ("pf", 'PRINT #1,STRING$(254,"A")'), ("p2", 'PRINT #1,"B"'), ("c1", "CLOSE")]
 if os.environ.get("MFCRT") == "1":   # a NON-disk device at #7: is the number limit the disk's or BASIC's?
     MF15 = True
     STEPS = [("mf", "MAXFILES=15"), ("o7", 'OPEN "CRT:" FOR OUTPUT AS #7'), ("p7", 'PRINT #7,"YY"'),
              ("cl", "CLOSE")]
-D.SESSION = [("boot", None, 14), ("date", "", 5), ("basic", "BASIC", 8)] + [(t, x, 30 if os.environ.get("MFHI") == "1" or os.environ.get("MFCRT") == "1" or os.environ.get("MFSLOT") == "1" or os.environ.get("MFWR") == "1" else 15 if MF15 else 8) for t, x in STEPS]
+D.SESSION = [("boot", None, 14), ("date", "", 5), ("basic", "BASIC", 8)] + [(t, x, 30 if os.environ.get("MFHI") == "1" or os.environ.get("MFCRT") == "1" or os.environ.get("MFSLOT") == "1" or os.environ.get("MFWR") == "1" or MFFLAG else 15 if MF15 else 8) for t, x in STEPS]
 order = ["basic"] + [t for t, _ in STEPS]
 SPANS = [(0xDE77, 0xDF93, "below B's image"), (0xDF94, 0xE593, "B's FAT image"), (0xE595, 0xEB94, "A's FAT image"),
          (0xEB95, 0xED94, "dir buf"), (0xED95, 0xEF94, "data buf"), (0xEF95, 0xF194, "mount buf"),
@@ -65,8 +77,9 @@ CMD = ("set ::step basic; set ::cells [dict create]\n"
 if MF15:   # exact bytes in the two spans of interest, 16 B blocks elsewhere (keys: B<addr> for a byte, <blk> for a block)
     CMD = ("set ::step basic; set ::cells [dict create]\n"
            "debug set_watchpoint write_mem {0xC000 0xF37F} {$::counting} { set a $::wp_last_address; "
-           "if {($a >= 0xDE77 && $a <= 0xDF93) || ($a >= 0xE580 && $a <= 0xE59F)} "
+           "if {($a >= BYTELO && $a <= 0xDF93) || ($a >= 0xE580 && $a <= 0xE59F)} "
            "{ dict incr ::cells \"$::step:B$a\" } else { dict incr ::cells \"$::step:[expr {$a >> 4}]\" } }\n")
+CMD = CMD.replace("BYTELO", "0xDC00" if MFFLAG else "0xDE77")
 for m in machines:
     td = tempfile.mkdtemp()
     dsk = os.path.join(td, "d.dsk")
@@ -82,6 +95,12 @@ for m in machines:
     for k, v in zip(order, order[1:]):
         hook += f"  if {{$tag eq \"{k}\"}} {{set ::step {v}}}\n"
     hook += f"  if {{$tag eq \"{order[-1]}\"}} {{set ::counting 0; puts $::fl \"CELLS $::cells\"; flush $::fl}}\n"
+    if MFFLAG:
+        ro = os.path.join(td, "ro.dsk")
+        subprocess.run(["cp", SRC, ro], check=True)
+        os.chmod(ro, 0o444)   # openMSX mounts a read-only image write-protected (probes/disk/build_bdosxe_disk.py)
+        if not MFFULL:
+            hook += f"  if {{$tag eq \"p2\"}} {{diska {{{ro}}}}}\n"
     tcl = tcl.replace(a, hook + a)
     tcl = tcl.replace("$::tries > 240", "$::tries > 12000")
     b = "{boot datecmd basic basicmem}"
@@ -117,7 +136,7 @@ for m in machines:
                     st_ = a_
                 pv_ = a_
             runs_.append((st_, pv_))
-            print(f"   {step:4s} bytes written in $DE77-$DF93 / $E580-$E59F: " +
+            print(f"   {step:4s} bytes written in {'$DC00' if MFFLAG else '$DE77'}-$DF93 / $E580-$E59F: " +
                   " ".join(f"${lo:04X}-${hi:04X}" if hi > lo else f"${lo:04X}" for lo, hi in runs_))
     for step in order[1:]:
         blks = per.get(step, {})
