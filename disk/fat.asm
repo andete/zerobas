@@ -1336,6 +1336,25 @@ seq_k30:
                 ld      a, e
                 ld      (ix+30), a
                 ret
+; dwr_secidx -- A = the sector, within the cluster being filled (+28), that an OUTPUT channel's next record goes
+; to: (random record >> 9) - (+30) x secPerClus -- secPerClus when the record starts the NEXT cluster, which makes
+; fat_flush_data_sector allocate and link it. D-COPYSLOW step 1a slice 5b: derived, where the row kept DOUT_SECIDX.
+; IX = the row. Clobbers B, DE, HL.
+dwr_secidx:
+                ld      l, (ix+34)
+                ld      h, (ix+35)
+                srl     h
+                rr      l                   ; HL = the random record >> 9: the record's sector
+                ld      e, (ix+30)
+                ld      d, (ix+31)          ; DE = the cluster's index in the chain
+                ld      a, (FAT_SECPERCLUS)
+                ld      b, a
+dsx_lp:
+                or      a
+                sbc     hl, de
+                djnz    dsx_lp              ; HL -= index x secPerClus
+                ld      a, l
+                ret
                 ds      $4C29 - $, $00      ; pad to fdc_zero (net-zero)
 ; fdc_di_save / fdc_io_done — bracket a sector op with a DI..(EI) guard.
 ; The WD2793 data transfer is a tight DRQ poll: a foreign interrupt (the 50 Hz

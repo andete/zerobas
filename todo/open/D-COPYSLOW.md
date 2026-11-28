@@ -438,3 +438,9 @@
       already had (fcb_dirloc / wfs_geom); 10 B smaller. zerobas's FCB +25 now reads 2B after OPEN, as the CF-3300's
       (MFFCB re-run). Subject suites green: dout, putdir, clearclose, closefail, diskbasic, savetail, unit-test, append
       (differential byte-identical). The DOUT_DIRSEC / DIROFF equates stay only for dout_open's zero count (1b).
+      ✅ **STEP 1a, COMMIT 5b BUILT (2026-11-28): THE CLUSTERS LIVE IN THE FCB.** DOUT_FIRST = +26, DOUT_CLUS = +28 (equates),
+      +30 = its index in the chain (APPEND's resume stores it; dwr_keep moves it on when the engine takes a new cluster);
+      the sector in the cluster is DERIVED, (random record >> 9) - (+30) x secPerClus (dwr_secidx, fat.asm), and the
+      half-sector step-back is gone (10 B). zerobas's FCB +25..+35 is now BYTE-IDENTICAL to the CF-3300's at every step
+      of MFFCB (2B / 0150 / 0150 -> 0151 / 0000 -> 0001 / CLOSE +32 97). 🔮: HIT. Subject suites green: unit-test, dout,
+      putdir, diskfull, closefail, savetail, clearclose, diskbasic, lof, fcbhdr, append (byte-identical).

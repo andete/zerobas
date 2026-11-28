@@ -2346,9 +2346,11 @@ cr_end:
 ; Row fields past DOUT_FLG are this ROM's alone: Main reaches these at H_CHOUT / H_CHCLOSE (a byte / a CLOSE) and the
 ; H_FOPEN selector FOPEN_SEL_MAKE (OPEN); it guarantees the live channel is a
 ; DOUT_MODE one before it calls the first two.
-DOUT_FIRST      equ     DOUT_FLG+1      ; the file's first cluster (0 = none yet)
-DOUT_CLUS       equ     DOUT_FLG+3      ; the cluster being filled
-DOUT_SECIDX     equ     DOUT_FLG+5      ; the sector in it the next record goes to
+; 🔁 D-COPYSLOW step 1a slice 5b (2026-11-28, scratchpad/AE_bfiles_fcb.out): the clusters live IN THE FCB, where
+; the CF-3300 keeps them while writing -- +26 the first cluster, +28 the last (the one being filled), +30 its index
+; in the chain; the sector in it is derived from the random record (dwr_secidx), no longer stored (DOUT_SECIDX).
+DOUT_FIRST      equ     26              ; the file's first cluster (0 = none yet)
+DOUT_CLUS       equ     28              ; the cluster being filled; +30 = its index in the chain
 DOUT_DIRSEC     equ     DOUT_FLG+6      ; the directory entry: its sector,
 DOUT_DIROFF     equ     DOUT_FLG+8      ; and its offset in it
     IF DOUT_DIROFF+2 > FCH_STATESZ
@@ -2697,7 +2699,8 @@ hfa_div:
                 inc     c
                 jr      hfa_div
 hfa_divd:
-                ld      (ix+DOUT_SECIDX), a
+                ld      (ix+30), c          ; the cluster's index in the chain (+30, the CF's)
+                ld      (ix+31), 0
                 ld      (FWR_SECIDX), a
                 ld      l, (ix+DOUT_FIRST)
                 ld      h, (ix+DOUT_FIRST+1)
@@ -2798,7 +2801,7 @@ dout_write:
                 ld      l, (ix+DOUT_FIRST)
                 ld      h, (ix+DOUT_FIRST+1)
                 ld      (FWR_FIRST), hl
-                ld      a, (ix+DOUT_SECIDX)
+                call    dwr_secidx          ; A = the sector in the cluster, from the random record
                 ld      (FWR_SECIDX), a
                 ld      de, FAT_DBUF
                 bit     0, (ix+34)          ; offset bit 8: the sector's second half?
@@ -2824,19 +2827,29 @@ dwr_len:
                 call    fat_flush_data_sector
                 pop     bc                  ; BC = the count
                 jr      c, dwr_fail
-                bit     0, (ix+34)
-                jr      nz, dwr_keep        ; the sector is complete: move on
-                ld      hl, FWR_SECIDX
-                dec     (hl)                ; back onto it, for the second half
+                                            ; (no step back onto a half-written sector any more:
+                                            ; the next write derives its sector from the random
+                                            ; record -- dwr_secidx, D-COPYSLOW step 1a slice 5b)
 dwr_keep:
                 ld      hl, (FWR_CLUS)
+                ld      e, (ix+DOUT_CLUS)
+                ld      d, (ix+DOUT_CLUS+1)
+                ld      a, d
+                or      e
+                jr      z, dk_clus          ; the first cluster: its index stays 0
+                or      a
+                sbc     hl, de
+                add     hl, de
+                jr      z, dk_clus          ; the same cluster
+                inc     (ix+30)             ; a new one: its index moves on (+30, the CF's)
+                jr      nz, dk_clus
+                inc     (ix+31)
+dk_clus:
                 ld      (ix+DOUT_CLUS), l
                 ld      (ix+DOUT_CLUS+1), h
                 ld      hl, (FWR_FIRST)
                 ld      (ix+DOUT_FIRST), l
                 ld      (ix+DOUT_FIRST+1), h
-                ld      a, (FWR_SECIDX)
-                ld      (ix+DOUT_SECIDX), a
                 ld      l, (ix+33)
                 ld      h, (ix+34)
                 add     hl, bc
