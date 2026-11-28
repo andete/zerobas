@@ -1,0 +1,18 @@
+== National_CF-3300: swap after data write 30   (log /tmp/zerobas/tmpzmi1ql14)
+   after the swap: 34 data writes, 0 track-0 writes (FAT / dir), 0 track-0 reads
+   first image: BIG.ROM attr=00 size=0 date=0821 time=0000 sha1=da39a3ee5e6b | DUMP.BIN attr=20 size=16391 date=2D50 time=AB2D sha1=ade9271;  FAT1==FAT2, lost clusters 31, bad chains none
+   swapped-in image: no BIG*;  FAT1==FAT2, lost clusters 31, bad chains none
+   screen at copy: A>COPY MSXBUNSE.ROM BIG.ROM
+   screen at dir: A>COPY MSXBUNSE.ROM BIG.ROM
+== C-BIOS_MSX1_EU_REPACK_DISK: swap after data write 30   (log /tmp/zerobas/tmp97dk439z)
+   after the swap: 34 data writes, 34 track-0 writes (FAT / dir), 24 track-0 reads
+   first image: BIG.ROM attr=00 size=0 date=0821 time=0000 sha1=da39a3ee5e6b | DUMP.BIN attr=20 size=16391 date=2D50 time=AB2D sha1=ade9271;  FAT1==FAT2, lost clusters 46, bad chains none
+   swapped-in image: no BIG*;  FAT1==FAT2, lost clusters 49, bad chains none
+   screen at copy: A>COPY MSXBUNSE.ROM BIG.ROM /        1 file copied / A>
+   screen at dir: A>COPY MSXBUNSE.ROM BIG.ROM /        1 file copied / A>DIR BIG*.* / File not found / A>
+== National_CF-3300: swap after data write 10   (log /tmp/zerobas/tmpcvm5xfv5)
+   after the swap: 54 data writes, 0 track-0 writes (FAT / dir), 0 track-0 reads
+   first image: BIG.ROM attr=00 size=0 date=0821 time=0000 sha1=da39a3ee5e6b | DUMP.BIN attr=20 size=16391 date=2D50 time=AB2D sha1=ade9271;  FAT1==FAT2, lost clusters 31, bad chains none
+   swapped-in image: no BIG*;  FAT1==FAT2, lost clusters 31, bad chains none
+   screen at copy: A>COPY MSXBUNSE.ROM BIG.ROM
+   screen at dir: A>COPY MSXBUNSE.ROM BIG.ROM

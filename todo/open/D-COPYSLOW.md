@@ -141,3 +141,23 @@
             w37-w41 (64), then r37-r41 (64), same tracks, same order. zerobas reads each destination sector BEFORE
             writing it (r37 w37 r37 w37 ...): equal counts, different reason, and per-sector alternation costs a
             rotation per sector.
+      📏 **Q3 MEASURED (2026-11-28, [fatcache_probe.py](../../scratchpad/fatcache_probe.py), [AE_fatcache.out](../../scratchpad/AE_fatcache.out); COPY, DIR, COPY, disk SWAPPED, DIR, COPY):**
+        the CF-3300's FAT image lives for ONE COMMAND, not the session: each of the three COPYs reads it again
+        (12 FAT reads + 6 writes, identical every time) and each DIR reads it again (6 reads). 🔮 "read once, kept
+        until the swap": MISS. A swap BETWEEN commands is therefore harmless on the CF-3300 -- and on zerobas: both
+        said "File not found" on the swapped-in disk and wrote BIG3.ROM onto it correctly. zerobas: 72 / 8 / 67 / 3 / 72.
+        So the cache to follow is PER-OPERATION (a COPY's whole run), with the write-back at its end.
+      📏 **Q4 MEASURED (2026-11-28, [swapmid_probe.py](../../scratchpad/swapmid_probe.py), [AE_swapmid.out](../../scratchpad/AE_swapmid.out); the disk swapped after the COPY's 30th
+      and, again, 10th data write, for a copy of the original with DUMP.BIN deleted so a stale write would show;
+      baseline: test.dsk already has 31 lost clusters):**
+        CF-3300: writes the remaining data sectors onto the new disk, seeks back for its read-back, issues ONE read
+          (track 37 sector 8) and then NO FDC command for the rest of the wait (~3000 emulated s), no message, no
+          prompt. Its FAT image and directory sector are NEVER written: the swapped-in disk keeps its own FAT and
+          directory (31 lost, DUMP.BIN stays deleted); the first disk keeps an empty BIG.ROM entry. Same at write 30
+          and 10. Whether that is a real hang or an artefact of openMSX swapping mid-command is NOT decidable without
+          tracing the reference (clean room) -- recorded as seen.
+        zerobas: "1 file copied"; the first disk +15 lost clusters (empty BIG.ROM entry), the swapped-in disk +18 lost
+          clusters and no file -- it writes the FAT through at every cluster onto whichever disk is in.
+        🔮 "the CF-3300 writes its stale FAT onto the new disk": MISS -- it writes nothing to track 0 after the swap.
+        So deferring the FAT the CF's way adds no risk that zerobas's write-through avoids today: zerobas already
+        leaks clusters on both disks and reports success for a file that exists nowhere.

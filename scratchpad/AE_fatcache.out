@@ -1,0 +1,22 @@
+== National_CF-3300   (log /tmp/zerobas/tmp1opqi_a4)
+   copy1  FATread=12  FATwrite=6  read=128  t0read=10  t0write=2  write=64
+   dir1   FATread=6  t0read=3
+   copy2  FATread=12  FATwrite=6  read=128  t0read=10  t0write=2  write=64
+   dir2   FATread=6  t0read=3  (after the swap)
+   copy3  FATread=12  FATwrite=6  read=128  t0read=10  t0write=2  write=64
+   first image: BIG.ROM attr=00 size=32768 date=2D91 time=A13B sha1=e89ea1e8e583 | BIG2.ROM attr=00 size=32768 date=2D91 time=A13B sha1=e89ea1e8e583
+   swapped-in image: BIG3.ROM attr=00 size=32768 date=2D91 time=A13B sha1=e89ea1e8e583
+   screen at dir1: A>COPY MSXBUNSE.ROM BIG.ROM /        1 file copied / A>DIR BIG*.* / BIG      ROM   32768 02-12-17  8:09p /        1 file   343040 bytes free / A>ÿ
+   screen at dir2: A>COPY MSXBUNSE.ROM BIG.ROM /        1 file copied / A>DIR BIG*.* / BIG      ROM   32768 02-12-17  8:09p /        1 file   343040 bytes free / A>COPY MSXBUNSE.ROM BIG2.ROM /        1 file copied / A>DIR BIG*.* / File not found / A>ÿ
+   screen at copy3: M /        1 file copied / A>DIR BIG*.* / BIG      ROM   32768 02-12-17  8:09p /        1 file   343040 bytes free / A>COPY MSXBUNSE.ROM BIG2.ROM /        1 file copied / A>DIR BIG*.* / File not found / A>COPY MSXBUNSE.ROM BIG3.ROM /        1 file copied / A>ÿ
+== C-BIOS_MSX1_EU_REPACK_DISK   (log /tmp/zerobas/tmp6cm1guru)
+   copy1  FATread=72  FATwrite=72  read=128  t0read=9  t0write=3  write=64
+   dir1   FATread=8  t0read=4
+   copy2  FATread=67  FATwrite=64  read=128  t0read=9  t0write=3  write=64
+   dir2   FATread=3  t0read=3  (after the swap)
+   copy3  FATread=72  FATwrite=72  read=128  t0read=9  t0write=3  write=64
+   first image: BIG.ROM attr=00 size=32768 date=2D91 time=A13B sha1=e89ea1e8e583 | BIG2.ROM attr=00 size=32768 date=2D91 time=A13B sha1=e89ea1e8e583
+   swapped-in image: BIG3.ROM attr=00 size=32768 date=2D91 time=A13B sha1=e89ea1e8e583
+   screen at dir1: A>COPY MSXBUNSE.ROM BIG.ROM /        1 file copied / A>DIR BIG*.* / BIG      ROM   32768 02-12-17  8:09p /        1 file   343040 bytes free / A>
+   screen at dir2: A>COPY MSXBUNSE.ROM BIG.ROM /        1 file copied / A>DIR BIG*.* / BIG      ROM   32768 02-12-17  8:09p /        1 file   343040 bytes free / A>COPY MSXBUNSE.ROM BIG2.ROM /        1 file copied / A>DIR BIG*.* / File not found / A>
+   screen at copy3: OM /        1 file copied / A>DIR BIG*.* / BIG      ROM   32768 02-12-17  8:09p /        1 file   343040 bytes free / A>COPY MSXBUNSE.ROM BIG2.ROM /        1 file copied / A>DIR BIG*.* / File not found / A>COPY MSXBUNSE.ROM BIG3.ROM /        1 file copied / A>
