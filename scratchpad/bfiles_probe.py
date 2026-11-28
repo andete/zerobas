@@ -197,6 +197,12 @@ if MFIN7:    # is +3 = $00 the CF's "nothing held"? EOF() fetches a NUL into +3,
     STEPS = [("oi", 'OPEN "N.TXT" FOR INPUT AS #1'), ("ra", "A$=INPUT$(1,#1):PRINT ASC(A$)"),
              ("ef", "PRINT EOF(1)"), ("rn", "A$=INPUT$(1,#1):PRINT ASC(A$)"), ("rb", "A$=INPUT$(1,#1):PRINT ASC(A$)"),
              ("cl", "CLOSE")]
+MFFCB = os.environ.get("MFFCB") == "1"
+if MFFCB:    # slice 5: an OUTPUT channel's FCB +25..+35 VALUES (work-area RAM) on both -- the CF's slot 1 $DEB5, zerobas's
+    MF15 = True   # DSK_ENGTAB row 1 $E4BF -- after OPEN, 300 B, 1.3 KB of PRINT#, and CLOSE: same field meanings?
+    STEPS = [("mf", "MAXFILES=1"), ("o1", 'OPEN "F1.TXT" FOR OUTPUT AS #1'),
+             ("p3", 'FOR I=1 TO 30:PRINT #1,"012345678":NEXT'), ("p13", 'FOR I=1 TO 100:PRINT #1,"012345678":NEXT'),
+             ("cl", "CLOSE")]
 if os.environ.get("MFCRT") == "1":   # a NON-disk device at #7: is the number limit the disk's or BASIC's?
     MF15 = True
     STEPS = [("mf", "MAXFILES=15"), ("o7", 'OPEN "CRT:" FOR OUTPUT AS #7'), ("p7", 'PRINT #7,"YY"'),
@@ -254,10 +260,17 @@ for m in machines:
                       f"set ::fl [open {{{fl}}} w]\n" + CMD, 1)
     a = "  close $f }"
     assert tcl.count(a) == 1
+    if MFFCB:
+        base = 0xDEB5 if "CF-3300" in m else 0xE4BF
+        tcl_fcb = ("  set fv {}; for {set i 25} {$i < 36} {incr i} {lappend fv [rd [expr {%d + $i}]]}; "
+                   "puts $::fl \"FCB $tag $fv\"\n" % base)
+    else:
+        tcl_fcb = ""
     # MFFLAG / MFDFULL: channel #1's block HEADER VALUES ($DD6E-$DD76 at MAXFILES=1: BASIC's data, a work-area read,
     # not code) after every step -- where the CF keeps a failed CLOSE's state
     hook = ("  set hv {}; for {set i 0} {$i < 9} {incr i} {lappend hv [rd [expr {0xDD6E + $i}]]}; puts $::fl \"HDR $tag $hv\"\n"
             if MFFLAG else "")
+    hook += tcl_fcb
     hook += "  puts $::fl \"HIMEM $tag [rd16 0xFC4A]\"\n  if {$tag eq \"" + order[0] + "\"} {set ::counting 1}\n"
     for k, v in zip(order, order[1:]):
         hook += f"  if {{$tag eq \"{k}\"}} {{set ::step {v}}}\n"
@@ -287,6 +300,9 @@ for m in machines:
     if MFAPP:
         print("   F.TXT after: " + " | ".join(e for e in D.disk_listing(bytearray(open(dsk, "rb").read()))
                                           if e.startswith("F.TXT")))
+    for ln in lines:
+        if ln.startswith("FCB "):
+            print(f"   FCB +25..+35 after {ln.split()[1]:4s}: " + " ".join(f"{int(x):02X}" for x in ln.split()[2:]))
     for ln in lines:
         if ln.startswith("HDR "):
             print(f"   block header +0..+8 after {ln.split()[1]:4s}: " + " ".join(f"{int(x):02X}" for x in ln.split()[2:]))

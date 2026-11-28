@@ -425,3 +425,16 @@
       from the first OPEN, across a record boundary and through the lost NUL: 7/7 against the CF-3300. Subject suites
       green: unit-test, diskbasic, fcbhdr, lof, readflt, diskascii, inputdn, dout. 🔮 (the model's) "+3 / +6 match
       from OPEN on": HIT, the only difference before OPEN being the block's unwritten RAM (D-FCBSHAPE's header).
+      📏 **AN OUTPUT CHANNEL'S FCB +25..+35 ON BOTH (2026-11-28, bfiles_probe.py MFFCB, [AE_bfiles_fcb.out](../../scratchpad/AE_bfiles_fcb.out); the CF's slot 1 $DEB5,
+      zerobas's DSK_ENGTAB row 1 $E4BF -- work-area values):** the CF-3300 after OPEN +25 = 2B (the root index), the rest 0;
+      after 330 B +26 = 0150 (first cluster), +28 = 0150 (last cluster), +30 = 0000 (its index), RR 0100; after 1430 B
+      +28 = 0151, +30 = 0001, RR 0500; CLOSE +32 = 97. zerobas: +25..+31 stay 00 (its DOUT_* hold them), RR the same,
+      +32 97 the same. So the CF's +28 / +30 are exactly the running cluster + index zerobas's BDOS engine already keeps
+      (wrblk_fcb_keep / k47b2_seek), and +25 the root index fcb_dirloc writes.
+      📐 SLICE 5: DOUT_FIRST -> +26, DOUT_CLUS -> +28 (+30 kept as its index), DOUT_SECIDX -> derived from the random
+      record, DOUT_DIRSEC / DIROFF -> +25 (wrblk_fcbstate's sector / offset arithmetic).
+      ✅ **STEP 1a, SLICE 5a BUILT (2026-11-28): THE DIRECTORY POSITION IS THE FCB'S +25 ROOT INDEX.** dout_dirpos stores
+      dir_index(FWR_DIRSEC, FWR_DIROFF) in +25; hcc_stamp gets them back through root_pos -- the arithmetic the BDOS path
+      already had (fcb_dirloc / wfs_geom); 10 B smaller. zerobas's FCB +25 now reads 2B after OPEN, as the CF-3300's
+      (MFFCB re-run). Subject suites green: dout, putdir, clearclose, closefail, diskbasic, savetail, unit-test, append
+      (differential byte-identical). The DOUT_DIRSEC / DIROFF equates stay only for dout_open's zero count (1b).

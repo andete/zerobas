@@ -2431,14 +2431,14 @@ dop_z:
                 jp      fat_mount
 
 ; dout_dirpos -- the directory entry fat_dir_create / fat_find just located
-; (FWR_DIRSEC/FWR_DIROFF) into the row, for CLOSE.
+; (FWR_DIRSEC/FWR_DIROFF) into the FCB's +25 as its ROOT INDEX, for CLOSE -- where
+; the CF-3300 keeps it (D-COPYSLOW step 1a slice 5a, scratchpad/AE_bfiles_fcb.out:
+; +25 = 2B after OPEN); it was the row's DOUT_DIRSEC / DIROFF, 4 B past the FCB.
 dout_dirpos:
-                ld      hl, (FWR_DIRSEC)
-                ld      (ix+DOUT_DIRSEC), l
-                ld      (ix+DOUT_DIRSEC+1), h
+                ld      de, (FWR_DIRSEC)
                 ld      hl, (FWR_DIROFF)
-                ld      (ix+DOUT_DIROFF), l
-                ld      (ix+DOUT_DIROFF+1), h
+                call    dir_index
+                ld      (ix+25), a
                 ret
 
 ; (dout_mirror -- GONE with S10.E, 2026-10-19. It copied the FCB's size (+16)
@@ -2965,11 +2965,9 @@ hk_chclose:
 hcc_stamp:
                 ; the directory entry, once: first cluster, size, the date
                 ; (fat_dir_update dates it as the CF-3300 dates a written file)
-                ld      l, (ix+DOUT_DIRSEC)
-                ld      h, (ix+DOUT_DIRSEC+1)
-                ld      (FWR_DIRSEC), hl
-                ld      l, (ix+DOUT_DIROFF)
-                ld      h, (ix+DOUT_DIROFF+1)
+                ld      a, (ix+25)          ; the root index (dout_dirpos)
+                call    root_pos
+                ld      (FWR_DIRSEC), de
                 ld      (FWR_DIROFF), hl
                 ld      l, (ix+DOUT_FIRST)
                 ld      h, (ix+DOUT_FIRST+1)
